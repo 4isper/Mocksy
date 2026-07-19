@@ -72,6 +72,14 @@ test("watch frame renders as a circle", async ({ page }) => {
   expect(radius).toContain("50%");
 });
 
+test("opens with demo media when nothing is saved", async ({ page, context }) => {
+  await context.clearCookies();
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload();
+  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+});
+
 
 
 

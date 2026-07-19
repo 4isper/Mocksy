@@ -5,7 +5,7 @@ import type { AnimationPreset, EditorScene, MediaType, MockupFrame, StylePreset 
 
 interface EditorStoreState {
   scene: EditorScene;
-  setScene: (scene: EditorScene) => void;
+  setScene: (scene: Partial<EditorScene>) => void;
   setMedia: (mediaUrl: string | null, mediaType: MediaType, mediaName?: string | null) => void;
   setFrame: (frame: MockupFrame) => void;
   setStylePreset: (stylePreset: StylePreset) => void;
