@@ -4,19 +4,12 @@ import type { ChangeEvent } from "react";
 import { useEditorStore } from "@/lib/state/editorStore";
 import type { AnimationPreset, MockupFrame, StylePreset } from "@/lib/types/editor";
 import { FRAME_ORDER } from "@/lib/render/frames";
+import { loadMediaFromFile } from "@/lib/media/loadFile";
 
 const frames: MockupFrame[] = FRAME_ORDER;
 const styles: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
 const animations: AnimationPreset[] = ["none", "zoomIn", "zoomOut", "parallax"];
 const aspectRatios = ["16 / 9", "4 / 3", "3 / 2", "1 / 1", "9 / 16"];
-const videoExt = /\.(mp4|mov|m4v|webm|ogg|ogv|avi|mkv)$/i;
-
-function detectMediaType(file: File): "video" | "image" {
-  if (file.type.startsWith("video/")) return "video";
-  if (file.type.includes("mp4") || file.type.includes("quicktime") || file.type.includes("webm")) return "video";
-  if (videoExt.test(file.name)) return "video";
-  return "image";
-}
 
 export function ControlPanel() {
   const {
@@ -45,8 +38,8 @@ export function ControlPanel() {
   const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const mediaType = detectMediaType(file);
-    setMedia(URL.createObjectURL(file), mediaType, file.name);
+    const { url, mediaType, mediaName } = loadMediaFromFile(file);
+    setMedia(url, mediaType, mediaName);
   };
 
   return (

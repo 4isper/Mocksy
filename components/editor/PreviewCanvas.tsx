@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { DragEvent } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
 import { isVideoScene } from "@/lib/render/mediaKind";
+import { loadMediaFromFile } from "@/lib/media/loadFile";
 import { useEditorStore } from "@/lib/state/editorStore";
 
 interface PreviewCanvasProps {
@@ -13,7 +15,9 @@ interface PreviewCanvasProps {
 export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const sceneCss = useMemo(() => buildSceneCss(scene), [scene]);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const { setVideoDuration, setVideoCurrentTime } = useEditorStore();
+  const dragDepth = useRef(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const { setMedia, setVideoDuration, setVideoCurrentTime } = useEditorStore();
   const useVideo = isVideoScene(scene);
 
   useEffect(() => {
@@ -24,8 +28,32 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
     if (delta > 0.05) video.currentTime = scene.videoCurrentTime;
   }, [useVideo, scene.videoCurrentTime]);
 
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    dragDepth.current = 0;
+    setIsDragging(false);
+    const file = event.dataTransfer.files?.[0];
+    if (!file) return;
+    const { url, mediaType, mediaName } = loadMediaFromFile(file);
+    setMedia(url, mediaType, mediaName);
+  };
+
   return (
-    <div className="panel" style={{ height: "100%", padding: 16 }}>
+    <div
+      className="panel"
+      style={{ height: "100%", padding: 16, outline: isDragging ? "2px dashed #00d9ff" : "2px dashed transparent" }}
+      onDragEnter={(e) => {
+        e.preventDefault();
+        dragDepth.current += 1;
+        setIsDragging(true);
+      }}
+      onDragOver={(e) => e.preventDefault()}
+      onDragLeave={() => {
+        dragDepth.current -= 1;
+        if (dragDepth.current <= 0) setIsDragging(false);
+      }}
+      onDrop={handleDrop}
+    >
       <div
         id="preview-canvas"
         style={{
@@ -115,6 +143,25 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           <span style={{ position: "absolute", right: 16, bottom: 16, color: "rgba(255,255,255,0.8)" }}>
             {scene.watermarkText}
           </span>
+        )}
+        {scene.mediaUrl && (
+          <button
+            type="button"
+            onClick={() => setMedia(null, "none")}
+            style={{
+              position: "absolute",
+              top: 12,
+              right: 12,
+              padding: "4px 10px",
+              borderRadius: 8,
+              border: "1px solid #27272a",
+              background: "rgba(17,17,20,0.8)",
+              color: "#f4f4f5",
+              cursor: "pointer"
+            }}
+          >
+            Clear media
+          </button>
         )}
       </div>
     </div>

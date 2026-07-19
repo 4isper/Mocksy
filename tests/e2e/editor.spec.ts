@@ -18,3 +18,23 @@ test("templates include the 16 Pro Glass preset", async ({ page }) => {
   await expect(page.getByRole("button", { name: "16 Pro Glass" })).toBeVisible();
 });
 
+test("uploading media reveals a Clear button that resets it", async ({ page }) => {
+  await page.goto("/");
+  const fileInput = page.locator('input[type="file"]');
+  await fileInput.setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  const clear = page.getByRole("button", { name: "Clear media" });
+  await expect(clear).toBeVisible();
+  await clear.click();
+  await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(0);
+  await expect(page.getByText("Drop image or video to start")).toBeVisible();
+});
+
+
