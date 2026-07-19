@@ -46,8 +46,9 @@ const RENDER = {
   glassLightStroke: "rgba(255,255,255,0.45)",
   /** Background of the media placeholder when no media is loaded. */
   emptyMediaFill: "rgba(255,255,255,0.04)",
-  /** Watermark font size (px) at pixelRatio 1; scaled by DPI on render. */
-  watermarkFontSize: 24,
+  /** Watermark font size (px) at pixelRatio 1; scaled by DPI on render.
+   *  Kept in sync with .preview-watermark (13px) in globals.css. */
+  watermarkFontSize: 13,
   /** Gradient angle in degrees (120deg in CSS). */
   gradientAngleDeg: 120
 } as const;
@@ -239,11 +240,21 @@ export function renderMockupToCanvas(
   }
 
   if (scene.watermarkEnabled && scene.watermarkText) {
+    // Mirror the on-screen .preview-watermark: 13px, weight 500, white at 0.85,
+    // 16px inset from the canvas edge, and a soft text shadow for legibility.
+    // Scale by dpiScale so the exported watermark matches the preview exactly.
     const watermarkSize = RENDER.watermarkFontSize * dpiScale;
+    const inset = 16 * dpiScale;
+    ctx.save();
     ctx.fillStyle = "rgba(255,255,255,0.85)";
-    ctx.font = `${watermarkSize}px Inter, system-ui, sans-serif`;
+    ctx.font = `500 ${watermarkSize}px Inter, system-ui, sans-serif`;
     ctx.textAlign = "right";
-    ctx.fillText(scene.watermarkText, width - watermarkSize, height - watermarkSize);
+    ctx.shadowColor = "rgba(0,0,0,0.6)";
+    ctx.shadowBlur = 3 * dpiScale;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 1 * dpiScale;
+    ctx.fillText(scene.watermarkText, width - inset, height - inset);
+    ctx.restore();
   }
 }
 

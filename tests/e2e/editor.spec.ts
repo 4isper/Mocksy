@@ -152,6 +152,48 @@ test("exporting an image scene triggers a PNG download", async ({ page }) => {
   expect(download.suggestedFilename()).toMatch(/mocksy-export\.png$/);
 });
 
+test("watermark preview matches the exported image", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+
+  // Enable the watermark toggle.
+  await page.locator('label.toggle:has-text("Watermark")').click();
+  await expect(page.locator(".preview-watermark")).toBeVisible();
+
+  // The on-screen watermark must read as 13px Inter/500 at a 16px inset so it
+  // visually matches what renderMockup paints onto the exported canvas.
+  const wm = await page.evaluate(() => {
+    const span = document.querySelector(".preview-watermark") as HTMLElement;
+    const canvas = document.querySelector("#preview-canvas")!.getBoundingClientRect();
+    const r = span.getBoundingClientRect();
+    const cs = getComputedStyle(span);
+    return {
+      fontSize: parseFloat(cs.fontSize),
+      fontWeight: cs.fontWeight,
+      rightGap: Math.round(canvas.right - r.right),
+      bottomGap: Math.round(canvas.bottom - r.bottom)
+    };
+  });
+  expect(wm.fontSize).toBe(13);
+  expect(wm.fontWeight).toBe("500");
+  expect(wm.rightGap).toBe(16);
+  expect(wm.bottomGap).toBe(16);
+
+  // Exporting with the watermark on must still produce a PNG download.
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export PNG" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/mocksy-export\.png$/);
+});
+
 test("autosaves the scene and restores it after reload", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "Tablet");
