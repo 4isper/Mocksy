@@ -65,6 +65,9 @@ export const initialScene: EditorScene = {
 const HISTORY_LIMIT = 100;
 
 function pushHistory(s: EditorStoreState, scene: EditorScene) {
+  if (s.scene.mediaUrl && s.scene.mediaUrl.startsWith("blob:") && s.scene.mediaUrl !== scene.mediaUrl) {
+    URL.revokeObjectURL(s.scene.mediaUrl);
+  }
   const past = [...s.past, s.scene].slice(-HISTORY_LIMIT);
   return { past, future: [], scene };
 }
