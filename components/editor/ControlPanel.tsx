@@ -3,8 +3,9 @@
 import type { ChangeEvent } from "react";
 import { useEditorStore } from "@/lib/state/editorStore";
 import type { AnimationPreset, MockupFrame, StylePreset } from "@/lib/types/editor";
+import { FRAME_ORDER } from "@/lib/render/frames";
 
-const frames: MockupFrame[] = ["none", "iphone", "desktop", "tablet"];
+const frames: MockupFrame[] = FRAME_ORDER;
 const styles: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
 const animations: AnimationPreset[] = ["none", "zoomIn", "zoomOut", "parallax"];
 const aspectRatios = ["16 / 9", "4 / 3", "3 / 2", "1 / 1", "9 / 16"];

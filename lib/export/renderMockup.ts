@@ -1,6 +1,7 @@
 "use client";
 
 import type { EditorScene } from "@/lib/types/editor";
+import { getFrameSpec } from "@/lib/render/frames";
 
 function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   const radius = Math.max(0, Math.min(r, Math.min(w, h) / 2));
@@ -17,13 +18,16 @@ function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w:
   ctx.closePath();
 }
 
-function framePadding(frame: EditorScene["frame"]) {
-  if (frame === "iphone") return 18;
-  if (frame === "tablet") return 14;
-  if (frame === "desktop") return 10;
-  return 0;
+export interface RenderTransform {
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
 }
 
+/**
+ * Renders the mockup onto a 2D canvas. For overlay frames (SVG device skins)
+ * the caller should pass `frameOverlay` so the skin is drawn above the media.
+ */
 export function renderMockupToCanvas(
   canvas: HTMLCanvasElement,
   scene: EditorScene,
@@ -33,12 +37,14 @@ export function renderMockupToCanvas(
   frameWidth?: number,
   frameHeight?: number,
   pixelRatio = 2,
-  zoom = 1,
-  backgroundFill?: string
+  transform?: RenderTransform,
+  backgroundFill?: string,
+  frameOverlay?: CanvasImageSource | null
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
+  const spec = getFrameSpec(scene.frame);
   const width = canvas.width;
   const height = canvas.height;
   const dpiScale = pixelRatio;
@@ -61,7 +67,7 @@ export function renderMockupToCanvas(
   }
   ctx.fillRect(0, 0, width, height);
 
-  const actualZoom = Math.max(0.01, zoom);
+  const actualZoom = Math.max(0.01, transform?.zoom ?? scene.zoom);
   const baseFrameW = typeof frameWidth === "number" && frameWidth > 0
     ? frameWidth
     : Math.min(900, width / dpiScale * 0.8) * dpiScale;
@@ -70,34 +76,38 @@ export function renderMockupToCanvas(
     : baseFrameW * (10 / 16);
   const frameW = baseFrameW * actualZoom;
   const frameH = baseFrameH * actualZoom;
-  const x = typeof frameX === "number" ? frameX : (width - frameW) / 2;
-  const y = typeof frameY === "number" ? frameY : (height - frameH) / 2;
-  const pad = framePadding(scene.frame) * dpiScale * actualZoom;
-  const outerRadius = (scene.borderRadius + framePadding(scene.frame)) * dpiScale * actualZoom;
+  const offsetX = (transform?.offsetX ?? 0) * dpiScale * actualZoom;
+  const offsetY = (transform?.offsetY ?? 0) * dpiScale * actualZoom;
+  const x = (typeof frameX === "number" ? frameX : (width - frameW) / 2) + offsetX;
+  const y = (typeof frameY === "number" ? frameY : (height - frameH) / 2) + offsetY;
+  const pad = spec.padding * dpiScale * actualZoom;
+  const outerRadius = (spec.isOverlay ? spec.screenRadius : scene.borderRadius + spec.padding) * dpiScale * actualZoom;
   const innerX = x + pad;
   const innerY = y + pad;
   const innerW = frameW - pad * 2;
   const innerH = frameH - pad * 2;
-  const innerRadius = Math.max(0, scene.borderRadius * dpiScale * actualZoom);
+  const innerRadius = Math.max(0, spec.screenRadius * dpiScale * actualZoom);
 
   // Draw shadow (matches HTML box-shadow: 0 28px 70px), scaled with transform and DPI
-  ctx.save();
-  ctx.shadowColor = `rgba(0,0,0,${Math.max(0, Math.min(1, scene.shadowOpacity))})`;
-  ctx.shadowBlur = 70 * dpiScale * actualZoom;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 28 * dpiScale * actualZoom;
-  roundedRectPath(ctx, x, y, frameW, frameH, outerRadius);
-  ctx.fillStyle = scene.stylePreset === "glassDark" ? "rgba(7,7,9,0.35)" : "rgba(255,255,255,0.06)";
-  ctx.fill();
-  ctx.restore();
-
-  if (scene.stylePreset === "outline" || scene.stylePreset.startsWith("glass")) {
+  if (!spec.isOverlay) {
     ctx.save();
+    ctx.shadowColor = `rgba(0,0,0,${Math.max(0, Math.min(1, scene.shadowOpacity))})`;
+    ctx.shadowBlur = 70 * dpiScale * actualZoom;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 28 * dpiScale * actualZoom;
     roundedRectPath(ctx, x, y, frameW, frameH, outerRadius);
-    ctx.lineWidth = (scene.stylePreset === "outline" ? 2 : 1) * dpiScale * actualZoom;
-    ctx.strokeStyle = scene.stylePreset === "glassDark" ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.45)";
-    ctx.stroke();
+    ctx.fillStyle = scene.stylePreset === "glassDark" ? "rgba(7,7,9,0.35)" : "rgba(255,255,255,0.06)";
+    ctx.fill();
     ctx.restore();
+
+    if (scene.stylePreset === "outline" || scene.stylePreset.startsWith("glass")) {
+      ctx.save();
+      roundedRectPath(ctx, x, y, frameW, frameH, outerRadius);
+      ctx.lineWidth = (scene.stylePreset === "outline" ? 2 : 1) * dpiScale * actualZoom;
+      ctx.strokeStyle = scene.stylePreset === "glassDark" ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.45)";
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   ctx.save();
@@ -127,6 +137,10 @@ export function renderMockupToCanvas(
   }
   ctx.restore();
 
+  if (frameOverlay) {
+    ctx.drawImage(frameOverlay, x, y, frameW, frameH);
+  }
+
   if (scene.watermarkEnabled && scene.watermarkText) {
     const watermarkSize = 24 * dpiScale;
     ctx.fillStyle = "rgba(255,255,255,0.85)";
@@ -135,3 +149,13 @@ export function renderMockupToCanvas(
     ctx.fillText(scene.watermarkText, width - watermarkSize, height - watermarkSize);
   }
 }
+
+export function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+    img.src = src;
+  });
+}
+

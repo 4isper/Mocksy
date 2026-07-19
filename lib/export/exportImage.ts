@@ -1,7 +1,8 @@
 "use client";
 
 import type { EditorScene } from "@/lib/types/editor";
-import { renderMockupToCanvas } from "@/lib/export/renderMockup";
+import { loadImage, renderMockupToCanvas } from "@/lib/export/renderMockup";
+import { getFrameSpec } from "@/lib/render/frames";
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -46,6 +47,16 @@ export async function exportImage(scene: EditorScene, containerId: string, filen
   const containerHeight = node.clientHeight;
   if (!containerWidth || !containerHeight) return;
 
+  const spec = getFrameSpec(scene.frame);
+  let overlay: HTMLImageElement | null = null;
+  if (spec.isOverlay && spec.asset) {
+    try {
+      overlay = await loadImage(spec.asset);
+    } catch {
+      overlay = null;
+    }
+  }
+
   const pixelRatio = Math.max(2, window.devicePixelRatio || 1);
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(containerWidth * pixelRatio));
@@ -54,7 +65,19 @@ export async function exportImage(scene: EditorScene, containerId: string, filen
   const frameWidth = Math.max(1, Math.round(baseFrameWidth * pixelRatio));
   const frameHeight = Math.max(1, Math.round(baseFrameHeight * pixelRatio));
 
-  renderMockupToCanvas(canvas, scene, media, undefined, undefined, frameWidth, frameHeight, pixelRatio, scene.zoom);
+  renderMockupToCanvas(
+    canvas,
+    scene,
+    media,
+    undefined,
+    undefined,
+    frameWidth,
+    frameHeight,
+    pixelRatio,
+    { zoom: scene.zoom, offsetX: 0, offsetY: 0 },
+    undefined,
+    overlay
+  );
 
   const pngBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
   if (!pngBlob) return;

@@ -18,6 +18,7 @@ const scene: EditorScene = {
   gradientTo: "#ffffff",
   watermarkText: "Mocksy",
   watermarkEnabled: false,
+  aspectRatio: "16 / 9",
   videoMuted: true,
   videoLoop: true,
   videoAutoplay: true,
@@ -33,5 +34,21 @@ describe("buildVideoTimeline", () => {
     const timeline = buildVideoTimeline(scene);
     expect(timeline.length).toBe(2);
     expect(timeline[1]?.zoom).toBeGreaterThan(timeline[0]?.zoom ?? 0);
+  });
+
+  it("returns a three-point parallax timeline", () => {
+    const parallaxScene = { ...scene, animationPreset: "parallax" as const };
+    const timeline = buildVideoTimeline(parallaxScene);
+    expect(timeline.length).toBe(3);
+    expect(timeline[0]?.at).toBe(0);
+    expect(timeline[2]?.at).toBe(1);
+    expect(timeline[1]?.x).not.toBe(0);
+  });
+
+  it("returns a single static keyframe for none", () => {
+    const noneScene = { ...scene, animationPreset: "none" as const };
+    const timeline = buildVideoTimeline(noneScene);
+    expect(timeline.length).toBe(1);
+    expect(timeline[0]?.zoom).toBe(noneScene.zoom);
   });
 });

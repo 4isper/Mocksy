@@ -65,7 +65,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
                   width: "100%",
                   height: "100%",
                   objectFit: "cover",
-                  borderRadius: scene.borderRadius,
+                  borderRadius: sceneCss.screenRadius,
                   background: "#0a0a0a"
                 }}
               />
@@ -77,7 +77,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
                   width: "100%",
                   height: "100%",
                   objectFit: "cover",
-                  borderRadius: scene.borderRadius
+                  borderRadius: sceneCss.screenRadius
                 }}
               />
             )
@@ -86,7 +86,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
               style={{
                 width: "100%",
                 height: "100%",
-                borderRadius: scene.borderRadius,
+                borderRadius: sceneCss.screenRadius,
                 display: "grid",
                 placeItems: "center",
                 color: "#a1a1aa",
@@ -95,6 +95,20 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             >
               Drop image or video to start
             </div>
+          )}
+          {sceneCss.frameOverlay && (
+            <img
+              src={sceneCss.frameOverlay}
+              alt=""
+              aria-hidden
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                pointerEvents: "none"
+              }}
+            />
           )}
         </div>
         {scene.watermarkEnabled && (
