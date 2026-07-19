@@ -44,6 +44,10 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
     // aspect ratio only resizes the canvas, never distorts the frame. The
     // "none" frame has no device shape, so it still follows the scene.
     aspectRatio: spec.aspectRatio ?? (scene.frame === "none" ? scene.aspectRatio : undefined),
+    // Never let the frame dictate the canvas size; it must fit inside the
+    // canvas (whose shape is the scene aspect ratio) and stay centered.
+    maxWidth: "100%",
+    maxHeight: "100%",
     borderRadius: spec.isOverlay ? 0 : scene.frame === "watch" ? "50%" : scene.borderRadius + framePadding,
     border: spec.isOverlay ? "none" : frameBorder,
     // The SVG skin already paints the bezel; a CSS box-shadow/border on the
@@ -121,8 +125,9 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
   return {
     container: {
       position: "relative",
-      display: "grid",
-      placeItems: "center",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
       background
     },
     frame: frameStyle,

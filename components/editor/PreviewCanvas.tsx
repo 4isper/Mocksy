@@ -47,7 +47,15 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   return (
     <div
       className="panel"
-      style={{ height: "100%", padding: 16, outline: isDragging ? "2px dashed #00d9ff" : "2px dashed transparent" }}
+      style={{
+        height: "100%",
+        minHeight: 0,
+        padding: 16,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        outline: isDragging ? "2px dashed #00d9ff" : "2px dashed transparent"
+      }}
       onDragEnter={(e) => {
         e.preventDefault();
         dragDepth.current += 1;
@@ -64,6 +72,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         id="preview-canvas"
         style={{
           width: "100%",
+          height: "auto",
+          maxHeight: "100%",
           aspectRatio: scene.aspectRatio,
           position: "relative",
           borderRadius: 12,
