@@ -24,7 +24,6 @@ const scene: EditorScene = {
   videoAutoplay: true,
   videoPosterTime: 0,
   videoDuration: 0,
-  videoCurrentTime: 0,
   videoTrimStart: 0,
   videoTrimEnd: 0
 };

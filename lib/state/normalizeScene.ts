@@ -59,7 +59,6 @@ export function normalizeScene(raw: unknown): EditorScene {
     videoAutoplay: r.videoAutoplay !== false,
     videoPosterTime: num(r.videoPosterTime, 0, 0, 1e6),
     videoDuration: num(r.videoDuration, 0, 0, 1e6),
-    videoCurrentTime: num(r.videoCurrentTime, 0, 0, 1e6),
     videoTrimStart: num(r.videoTrimStart, 0, 0, 1e6),
     videoTrimEnd: num(r.videoTrimEnd, 0, 0, 1e6)
   };

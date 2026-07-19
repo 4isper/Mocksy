@@ -21,15 +21,16 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const setMedia = useEditorStore((s) => s.setMedia);
   const setVideoDuration = useEditorStore((s) => s.setVideoDuration);
   const setVideoCurrentTime = useEditorStore((s) => s.setVideoCurrentTime);
+  const videoCurrentTime = useEditorStore((s) => s.videoCurrentTime);
   const useVideo = isVideoScene(scene);
 
   useEffect(() => {
     if (!useVideo) return;
     const video = videoRef.current;
     if (!video) return;
-    const delta = Math.abs(video.currentTime - scene.videoCurrentTime);
-    if (delta > 0.05) video.currentTime = scene.videoCurrentTime;
-  }, [useVideo, scene.videoCurrentTime]);
+    const delta = Math.abs(video.currentTime - videoCurrentTime);
+    if (delta > 0.05) video.currentTime = videoCurrentTime;
+  }, [useVideo, videoCurrentTime]);
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -112,9 +113,9 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
                 onTimeUpdate={(e) => {
                   // Throttle store writes to ~10fps: playback scrubbing doesn't
                   // need per-frame precision and the store update re-renders
-                  // every component subscribed to scene.
+                  // every component subscribed to videoCurrentTime.
                   const t = e.currentTarget.currentTime;
-                  if (Math.abs(t - scene.videoCurrentTime) >= 0.1) setVideoCurrentTime(t);
+                  if (Math.abs(t - videoCurrentTime) >= 0.1) setVideoCurrentTime(t);
                 }}
                 style={sceneCss.mediaStyle}
               />

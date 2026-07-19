@@ -26,7 +26,6 @@ export interface EditorScene {
   videoAutoplay: boolean;
   videoPosterTime: number;
   videoDuration: number;
-  videoCurrentTime: number;
   videoTrimStart: number;
   videoTrimEnd: number;
 }

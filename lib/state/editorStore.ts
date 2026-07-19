@@ -8,6 +8,9 @@ interface EditorStoreState {
   scene: EditorScene;
   past: EditorScene[];
   future: EditorScene[];
+  /** Playback scrubber position; kept out of scene so playback doesn't
+   *  churn history or re-render scene subscribers every frame. */
+  videoCurrentTime: number;
   setScene: (scene: Partial<EditorScene>) => void;
   resetScene: () => void;
   undo: () => void;
@@ -57,7 +60,6 @@ export const initialScene: EditorScene = {
   videoAutoplay: true,
   videoPosterTime: 0,
   videoDuration: 0,
-  videoCurrentTime: 0,
   videoTrimStart: 0,
   videoTrimEnd: 0
 };
@@ -76,6 +78,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   scene: initialScene,
   past: [],
   future: [],
+  videoCurrentTime: 0,
   setScene: (scene) => set((s) => pushHistory(s, { ...initialScene, ...scene })),
   resetScene: () =>
     set((s) =>
@@ -99,18 +102,18 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
       return { scene: next, past: [...s.past, s.scene], future: s.future.slice(1) };
     }),
   setMedia: (mediaUrl, mediaType, mediaName = null) =>
-    set((s) =>
-      pushHistory(s, {
+    set((s) => ({
+      ...pushHistory(s, {
         ...s.scene,
         mediaUrl,
         mediaType,
         mediaName,
         videoDuration: 0,
-        videoCurrentTime: 0,
         videoTrimStart: 0,
         videoTrimEnd: 0
-      })
-    ),
+      }),
+      videoCurrentTime: 0
+    })),
   setFrame: (frame) => set((s) => pushHistory(s, { ...s.scene, frame })),
   setStylePreset: (stylePreset) => set((s) => pushHistory(s, { ...s.scene, stylePreset })),
   setAnimationPreset: (animationPreset) => set((s) => pushHistory(s, { ...s.scene, animationPreset })),
@@ -135,7 +138,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
         videoTrimEnd: s.scene.videoTrimEnd > 0 ? Math.min(s.scene.videoTrimEnd, videoDuration) : videoDuration
       })
     ),
-  setVideoCurrentTime: (videoCurrentTime) => set((s) => ({ scene: { ...s.scene, videoCurrentTime } })),
+  setVideoCurrentTime: (videoCurrentTime) => set({ videoCurrentTime }),
   setVideoTrimStart: (videoTrimStart) =>
     set((s) => pushHistory(s, { ...s.scene, videoTrimStart: Math.min(videoTrimStart, s.scene.videoTrimEnd || videoTrimStart) })),
   setVideoTrimEnd: (videoTrimEnd) =>

@@ -18,9 +18,9 @@ describe("editorStore", () => {
     expect(scene.mediaUrl).toBe("blob:abc");
     expect(scene.mediaName).toBe("shot.png");
     expect(scene.videoDuration).toBe(0);
-    expect(scene.videoCurrentTime).toBe(0);
     expect(scene.videoTrimStart).toBe(0);
     expect(scene.videoTrimEnd).toBe(0);
+    expect(store().videoCurrentTime).toBe(0);
   });
 
   it("setVideoDuration clamps existing trim end to duration", () => {
@@ -112,9 +112,10 @@ describe("editorStore", () => {
     expect(store().scene.backgroundMode).toBe("transparent");
   });
 
-  it("setVideoCurrentTime does not pollute history (driven by playback)", () => {
-    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene } });
+  it("setVideoCurrentTime is kept out of scene/history (driven by playback)", () => {
+    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene }, videoCurrentTime: 0 });
     store().setVideoCurrentTime(3);
     expect(store().past.length).toBe(0);
+    expect(store().videoCurrentTime).toBe(3);
   });
 });

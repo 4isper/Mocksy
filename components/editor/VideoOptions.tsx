@@ -14,6 +14,7 @@ export function VideoOptions() {
     setVideoPosterTime,
     setVideoCurrentTime
   } = useEditorStore();
+  const videoCurrentTime = useEditorStore((s) => s.videoCurrentTime);
 
   return (
     <div className="field-group video-options">
@@ -65,7 +66,7 @@ export function VideoOptions() {
               min={0}
               max={Math.max(scene.videoDuration, 0.1)}
               step={0.01}
-              value={scene.videoCurrentTime}
+              value={videoCurrentTime}
               onChange={(e) => setVideoCurrentTime(Number(e.target.value))}
             />
           </label>
