@@ -34,6 +34,7 @@ async function recordCanvasToWebm(
   canvas: HTMLCanvasElement,
   media: HTMLVideoElement | HTMLImageElement | null,
   frameElement: HTMLElement | null,
+  pixelRatio: number,
   onStatus?: (message: string) => void,
   onProgress?: (progress: number) => void
 ) {
@@ -50,7 +51,9 @@ async function recordCanvasToWebm(
   // Match the PNG export: size the frame from its on-screen box so overlay
   // skins (iphone15/16pro) keep their native aspect ratio instead of being
   // stretched to the default 10/16 fallback in computeFrameBox.
-  const pixelRatio = 2;
+  // MP4 (mpeg4) can't carry an alpha channel, so a transparent scene is
+  // composited onto black for the video export (PNG keeps real transparency).
+  const backgroundFill = scene.backgroundMode === "transparent" ? "#000000" : undefined;
   const frameWidth = frameElement ? Math.max(1, Math.round(frameElement.offsetWidth * pixelRatio)) : undefined;
   const frameHeight = frameElement ? Math.max(1, Math.round(frameElement.offsetHeight * pixelRatio)) : undefined;
 
@@ -104,7 +107,7 @@ async function recordCanvasToWebm(
       if (media instanceof HTMLVideoElement) {
         if (media.currentTime >= end || elapsed >= duration) {
           media.pause();
-          renderMockupToCanvas(canvas, scene, media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, undefined, overlay);
+          renderMockupToCanvas(canvas, scene, media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay);
           recorder.stop();
           cancelAnimationFrame(raf);
           onProgress?.(100);
@@ -117,7 +120,7 @@ async function recordCanvasToWebm(
         return;
       }
 
-      renderMockupToCanvas(canvas, scene, media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, undefined, overlay);
+      renderMockupToCanvas(canvas, scene, media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay);
       raf = requestAnimationFrame(tick);
     };
 
@@ -142,22 +145,28 @@ export async function exportVideo(
       return;
     }
 
+  // Match the PNG export's pixel ratio so both outputs use the same sharpness
+  // and frame sizing instead of the video path hard-coding 2x.
+  const pixelRatio = Math.max(2, window.devicePixelRatio || 1);
   const canvas = document.createElement("canvas");
-  canvas.width = Math.max(640, previewNode.clientWidth * 2);
-  canvas.height = Math.max(360, previewNode.clientHeight * 2);
+  canvas.width = Math.max(640, Math.round(previewNode.clientWidth * pixelRatio));
+  canvas.height = Math.max(360, Math.round(previewNode.clientHeight * pixelRatio));
 
   const videoInPreview = previewNode.querySelector("video");
   const imageInPreview = previewNode.querySelector("img");
+  // When exporting a video scene we create a detached <video> from the media
+  // URL; track it so we can stop/remove it and free its blob: URL afterwards.
+  let sourceVideo: HTMLVideoElement | null = null;
   let media: HTMLVideoElement | HTMLImageElement | null = null;
   if (isVideoScene(scene) && scene.mediaUrl) {
-    const sourceVideo = document.createElement("video");
+    sourceVideo = document.createElement("video");
     sourceVideo.src = scene.mediaUrl;
     sourceVideo.crossOrigin = "anonymous";
     sourceVideo.muted = true;
     sourceVideo.playsInline = true;
     await new Promise<void>((resolve, reject) => {
-      sourceVideo.onloadedmetadata = () => resolve();
-      sourceVideo.onerror = () => reject(new Error("Unable to load video for export"));
+      sourceVideo!.onloadedmetadata = () => resolve();
+      sourceVideo!.onerror = () => reject(new Error("Unable to load video for export"));
     });
     media = sourceVideo;
   } else if (imageInPreview instanceof HTMLImageElement) {
@@ -167,7 +176,16 @@ export async function exportVideo(
   }
 
   const frameElement = previewNode.querySelector<HTMLElement>("[data-mockup-frame]");
-  const webmBlob = await recordCanvasToWebm(scene, canvas, media, frameElement, onStatus, onProgress);
+  let webmBlob: Blob | null = null;
+  try {
+    webmBlob = await recordCanvasToWebm(scene, canvas, media, frameElement, pixelRatio, onStatus, onProgress);
+  } finally {
+    if (sourceVideo) {
+      sourceVideo.pause();
+      if (sourceVideo.src.startsWith("blob:")) URL.revokeObjectURL(sourceVideo.src);
+      sourceVideo.remove();
+    }
+  }
   if (!webmBlob || webmBlob.size === 0) {
     onError?.("Recording produced no video frames.");
     return;
