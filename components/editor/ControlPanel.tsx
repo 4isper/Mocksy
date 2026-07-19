@@ -4,14 +4,14 @@ import type { ChangeEvent } from "react";
 import { useState } from "react";
 import { useEditorStore } from "@/lib/state/editorStore";
 import type { AnimationPreset, MockupFrame, StylePreset } from "@/lib/types/editor";
-import { FRAME_ORDER } from "@/lib/render/frames";
+import { FRAME_ORDER, ANIMATION_PRESETS } from "@/lib/render/frames";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { backgroundPresets } from "@/lib/presets/presets";
 import { VideoOptions } from "@/components/editor/VideoOptions";
 
 const frames: MockupFrame[] = FRAME_ORDER;
 const styles: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
-const animations: AnimationPreset[] = ["none", "zoomIn", "zoomOut", "parallax"];
+const animations = ANIMATION_PRESETS;
 const aspectRatios = ["16 / 9", "4 / 3", "3 / 2", "1 / 1", "9 / 16"];
 
 const FRAME_LABELS: Record<MockupFrame, string> = {

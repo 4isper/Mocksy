@@ -1,4 +1,4 @@
-import type { MockupFrame } from "@/lib/types/editor";
+import type { AnimationPreset, MockupFrame } from "@/lib/types/editor";
 
 export interface FrameSpec {
   /** SVG overlay asset path, or null for CSS-only frames (none/iphone/desktop/tablet). */
@@ -55,3 +55,5 @@ export const FRAME_ORDER: MockupFrame[] = [
   "tablet",
   "watch"
 ];
+
+export const ANIMATION_PRESETS: AnimationPreset[] = ["none", "zoomIn", "zoomOut", "parallax"];

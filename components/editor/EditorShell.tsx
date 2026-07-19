@@ -15,7 +15,11 @@ const AUTOSAVE_KEY = "mocksy-scene";
 const AUTOSAVE_DELAY = 500;
 
 export function EditorShell() {
-  const { scene, setScene, resetScene, undo, redo } = useEditorStore();
+  const scene = useEditorStore((s) => s.scene);
+  const setScene = useEditorStore((s) => s.setScene);
+  const resetScene = useEditorStore((s) => s.resetScene);
+  const undo = useEditorStore((s) => s.undo);
+  const redo = useEditorStore((s) => s.redo);
   const pastLength = useEditorStore((s) => s.past.length);
   const futureLength = useEditorStore((s) => s.future.length);
   const [videoExportStatus, setVideoExportStatus] = useState<string | null>(null);

@@ -18,7 +18,9 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const dragDepth = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dropError, setDropError] = useState<string | null>(null);
-  const { setMedia, setVideoDuration, setVideoCurrentTime } = useEditorStore();
+  const setMedia = useEditorStore((s) => s.setMedia);
+  const setVideoDuration = useEditorStore((s) => s.setVideoDuration);
+  const setVideoCurrentTime = useEditorStore((s) => s.setVideoCurrentTime);
   const useVideo = isVideoScene(scene);
 
   useEffect(() => {
@@ -108,7 +110,11 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
                   setVideoCurrentTime(current);
                 }}
                 onTimeUpdate={(e) => {
-                  setVideoCurrentTime(e.currentTarget.currentTime);
+                  // Throttle store writes to ~10fps: playback scrubbing doesn't
+                  // need per-frame precision and the store update re-renders
+                  // every component subscribed to scene.
+                  const t = e.currentTarget.currentTime;
+                  if (Math.abs(t - scene.videoCurrentTime) >= 0.1) setVideoCurrentTime(t);
                 }}
                 style={sceneCss.mediaStyle}
               />

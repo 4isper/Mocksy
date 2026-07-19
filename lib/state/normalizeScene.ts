@@ -1,17 +1,15 @@
 import type {
-  AnimationPreset,
   BackgroundMode,
   EditorScene,
   MediaType,
   MockupFrame,
   StylePreset
 } from "@/lib/types/editor";
-import { FRAME_SPECS } from "@/lib/render/frames";
+import { FRAME_SPECS, ANIMATION_PRESETS } from "@/lib/render/frames";
 import { initialScene } from "@/lib/state/editorStore";
 
 const FRAMES = Object.keys(FRAME_SPECS) as MockupFrame[];
 const STYLE_PRESETS: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
-const ANIMATION_PRESETS: AnimationPreset[] = ["none", "zoomIn", "zoomOut", "parallax"];
 const BACKGROUND_MODES: BackgroundMode[] = ["transparent", "solid", "gradient"];
 const MEDIA_TYPES: MediaType[] = ["none", "image", "video"];
 
