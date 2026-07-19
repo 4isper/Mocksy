@@ -5,6 +5,7 @@ import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { loadImage, renderMockupToCanvas, type RenderTransform } from "@/lib/export/renderMockup";
 import { buildVideoTimeline } from "@/lib/render/videoComposer";
 import { getFrameSpec } from "@/lib/render/frames";
+import { isVideoScene } from "@/lib/render/mediaKind";
 
 let ffmpegSingleton: FFmpeg | null = null;
 
@@ -24,11 +25,6 @@ async function getFfmpegInstance() {
 
 function sanitizeFilename(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_");
-}
-
-function isVideoScene(scene: EditorScene) {
-  if (scene.mediaType === "video") return true;
-  return Boolean(scene.mediaName && /\.(mp4|mov|m4v|webm|ogg|ogv|avi|mkv)$/i.test(scene.mediaName));
 }
 
 /** Interpolate the animation transform at a normalized progress (0..1). */

@@ -28,7 +28,7 @@ interface EditorStoreState {
   setVideoTrimEnd: (time: number) => void;
 }
 
-const initialScene: EditorScene = {
+export const initialScene: EditorScene = {
   mediaUrl: null,
   mediaType: "none",
   mediaName: null,

@@ -3,22 +3,18 @@
 import { useEffect, useMemo, useRef } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
+import { isVideoScene } from "@/lib/render/mediaKind";
 import { useEditorStore } from "@/lib/state/editorStore";
 
 interface PreviewCanvasProps {
   scene: EditorScene;
 }
 
-function isVideoMedia(scene: EditorScene) {
-  if (scene.mediaType === "video") return true;
-  return Boolean(scene.mediaName && /\.(mp4|mov|m4v|webm|ogg|ogv|avi|mkv)$/i.test(scene.mediaName));
-}
-
 export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const sceneCss = useMemo(() => buildSceneCss(scene), [scene]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { setVideoDuration, setVideoCurrentTime } = useEditorStore();
-  const useVideo = isVideoMedia(scene);
+  const useVideo = isVideoScene(scene);
 
   useEffect(() => {
     if (!useVideo) return;
@@ -70,6 +66,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
                 }}
               />
             ) : (
+              // Local blob/object URLs can't be optimized by next/image.
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={scene.mediaUrl}
                 alt="Uploaded media"
@@ -97,6 +95,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             </div>
           )}
           {sceneCss.frameOverlay && (
+            // Local static SVG device skins served from /public.
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={sceneCss.frameOverlay}
               alt=""
