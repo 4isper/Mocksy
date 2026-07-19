@@ -23,7 +23,8 @@ describe("FRAME_SPECS", () => {
       "iphone15",
       "iphone16pro",
       "desktop",
-      "tablet"
+      "tablet",
+      "watch"
     ];
     expect(FRAME_ORDER).toEqual(expected);
   });

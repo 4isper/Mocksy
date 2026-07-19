@@ -59,6 +59,12 @@ describe("computeFrameBox geometry", () => {
     expect(box.height).toBeCloseTo(box.width * (10 / 16), 5);
   });
 
+  it("clips the watch frame to a full circle", () => {
+    const box = computeFrameBox(scene({ frame: "watch" }), 1000, 1000, 2, 400, 400);
+    expect(box.outerRadius).toBeCloseTo(200, 3);
+    expect(box.innerRadius).toBeCloseTo((400 - 2 * (18 * 2)) / 2, 3);
+  });
+
   it("centers the frame when no explicit position is given", () => {
     const box = computeFrameBox(scene({ frame: "none" }), 1000, 500, 1, 400, 250);
     expect(box.x).toBeCloseTo((1000 - 400) / 2, 5);

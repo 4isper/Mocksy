@@ -1,5 +1,5 @@
 export type BackgroundMode = "transparent" | "solid" | "gradient";
-export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "desktop" | "tablet";
+export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "desktop" | "tablet" | "watch";
 export type StylePreset = "default" | "glassLight" | "glassDark" | "outline";
 export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax";
 export type MediaType = "none" | "image" | "video";

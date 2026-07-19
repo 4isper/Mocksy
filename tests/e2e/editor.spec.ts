@@ -63,6 +63,15 @@ test("autosaves the scene and restores it after reload", async ({ page }) => {
   await expect(page.locator("select").first()).toHaveValue("tablet");
 });
 
+test("watch frame renders as a circle", async ({ page }) => {
+  await page.goto("/");
+  const frameSelect = page.locator("select").first();
+  await expect(frameSelect.locator("option", { hasText: "watch" })).toHaveCount(1);
+  await frameSelect.selectOption("watch");
+  const radius = await page.locator("[data-mockup-frame]").evaluate((el) => getComputedStyle(el).borderRadius);
+  expect(radius).toContain("50%");
+});
+
 
 
 

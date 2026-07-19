@@ -66,12 +66,16 @@ export function computeFrameBox(
   const x = (typeof frameX === "number" ? frameX : (canvasWidth - frameW) / 2) + offsetX;
   const y = (typeof frameY === "number" ? frameY : (canvasHeight - frameH) / 2) + offsetY;
   const pad = spec.padding * dpiScale * actualZoom;
-  const outerRadius = (spec.isOverlay ? spec.screenRadius : scene.borderRadius + spec.padding) * dpiScale * actualZoom;
+  // Circular frames (watch) ignore the corner radius and clip to a full circle.
+  const isCircular = scene.frame === "watch";
+  const outerRadius = isCircular
+    ? Math.min(frameW, frameH) / 2
+    : (spec.isOverlay ? spec.screenRadius : scene.borderRadius + spec.padding) * dpiScale * actualZoom;
   const innerX = x + pad;
   const innerY = y + pad;
   const innerW = frameW - pad * 2;
   const innerH = frameH - pad * 2;
-  const innerRadius = Math.max(0, spec.screenRadius * dpiScale * actualZoom);
+  const innerRadius = isCircular ? Math.min(innerW, innerH) / 2 : Math.max(0, spec.screenRadius * dpiScale * actualZoom);
   return { x, y, width: frameW, height: frameH, pad, outerRadius, innerX, innerY, innerW, innerH, innerRadius };
 }
 

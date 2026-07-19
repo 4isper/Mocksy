@@ -17,7 +17,8 @@ export const FRAME_SPECS: Record<MockupFrame, FrameSpec> = {
   iphone15: { asset: "/devices/iphone15.svg", padding: 14, screenRadius: 46, isOverlay: true },
   iphone16pro: { asset: "/devices/iphone16pro.svg", padding: 14, screenRadius: 48, isOverlay: true },
   desktop: { asset: null, padding: 10, screenRadius: 8, isOverlay: false },
-  tablet: { asset: null, padding: 14, screenRadius: 24, isOverlay: false }
+  tablet: { asset: null, padding: 14, screenRadius: 24, isOverlay: false },
+  watch: { asset: null, padding: 18, screenRadius: 999, isOverlay: false }
 };
 
 export function getFrameSpec(frame: MockupFrame): FrameSpec {
@@ -30,5 +31,6 @@ export const FRAME_ORDER: MockupFrame[] = [
   "iphone15",
   "iphone16pro",
   "desktop",
-  "tablet"
+  "tablet",
+  "watch"
 ];

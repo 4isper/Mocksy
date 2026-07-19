@@ -35,7 +35,7 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
   const frameStyle: CSSProperties = {
     width: "min(900px, 80%)",
     aspectRatio: scene.aspectRatio,
-    borderRadius: spec.isOverlay ? spec.screenRadius : scene.borderRadius + framePadding,
+    borderRadius: spec.isOverlay ? spec.screenRadius : scene.frame === "watch" ? "50%" : scene.borderRadius + framePadding,
     border: spec.isOverlay ? "none" : frameBorder,
     boxShadow: baseShadow,
     transform: `scale(${scene.zoom})`,

@@ -62,4 +62,9 @@ describe("buildSceneCss", () => {
     const { screenRadius } = buildSceneCss(base({ frame: "iphone16pro" }));
     expect(screenRadius).toBe(48);
   });
+
+  it("renders the watch frame as a full circle", () => {
+    const { frame } = buildSceneCss(base({ frame: "watch" }));
+    expect(frame.borderRadius).toBe("50%");
+  });
 });
