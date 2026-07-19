@@ -162,6 +162,23 @@ test("video scene shows a dual-range trim control", async ({ page }) => {
   await expect(trimLabel).toBeVisible();
 });
 
+test("video options accordion collapses and expands", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles("public/sample-video.mp4");
+  const toggle = page.getByRole("button", { name: "Video options" });
+  await expect(toggle).toBeVisible();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByText("Trim")).toBeVisible();
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByText("Trim")).toHaveCount(0);
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByText("Trim")).toBeVisible();
+});
+
 test("rejects unsupported file types with an inline error", async ({ page }) => {
   await page.goto("/");
   await page.locator('input[type="file"]').setInputFiles({

@@ -7,7 +7,7 @@ import type { AnimationPreset, MockupFrame, StylePreset } from "@/lib/types/edit
 import { FRAME_ORDER } from "@/lib/render/frames";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { backgroundPresets } from "@/lib/presets/presets";
-import { VideoTrimControl } from "@/components/editor/VideoTrimControl";
+import { VideoOptions } from "@/components/editor/VideoOptions";
 
 const frames: MockupFrame[] = FRAME_ORDER;
 const styles: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
@@ -30,12 +30,7 @@ export function ControlPanel() {
     setBackgroundTransparent,
     toggleWatermark,
     setWatermarkText,
-    setAspectRatio,
-    setVideoMuted,
-    setVideoLoop,
-    setVideoAutoplay,
-    setVideoPosterTime,
-    setVideoCurrentTime
+    setAspectRatio
   } = useEditorStore();
 
   const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
@@ -64,45 +59,7 @@ export function ControlPanel() {
           {mediaError}
         </span>
       ) : null}
-      {scene.mediaType === "video" && (
-        <>
-          <label>
-            Video muted
-            <input type="checkbox" checked={scene.videoMuted} onChange={(e) => setVideoMuted(e.target.checked)} />
-          </label>
-          <label>
-            Video loop
-            <input type="checkbox" checked={scene.videoLoop} onChange={(e) => setVideoLoop(e.target.checked)} />
-          </label>
-          <label>
-            Video autoplay
-            <input type="checkbox" checked={scene.videoAutoplay} onChange={(e) => setVideoAutoplay(e.target.checked)} />
-          </label>
-          <label>
-            Poster time
-            <input
-              type="range"
-              min={0}
-              max={Math.max(scene.videoDuration, 0.1)}
-              step={0.1}
-              value={scene.videoPosterTime}
-              onChange={(e) => setVideoPosterTime(Number(e.target.value))}
-            />
-          </label>
-          <label>
-            Timeline
-            <input
-              type="range"
-              min={0}
-              max={Math.max(scene.videoDuration, 0.1)}
-              step={0.01}
-              value={scene.videoCurrentTime}
-              onChange={(e) => setVideoCurrentTime(Number(e.target.value))}
-            />
-          </label>
-          <VideoTrimControl duration={scene.videoDuration} />
-        </>
-      )}
+      {scene.mediaType === "video" && <VideoOptions />}
       <label>
         Frame
         <select value={scene.frame} onChange={(e) => setFrame(e.target.value as MockupFrame)}>
