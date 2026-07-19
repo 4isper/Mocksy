@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ControlPanel } from "@/components/editor/ControlPanel";
 import { PreviewCanvas } from "@/components/editor/PreviewCanvas";
 import { TemplatesPanel } from "@/components/editor/TemplatesPanel";
@@ -15,7 +15,9 @@ const AUTOSAVE_KEY = "mocksy-scene";
 const AUTOSAVE_DELAY = 500;
 
 export function EditorShell() {
-  const { scene, setScene, resetScene } = useEditorStore();
+  const { scene, setScene, resetScene, undo, redo } = useEditorStore();
+  const pastLength = useEditorStore((s) => s.past.length);
+  const futureLength = useEditorStore((s) => s.future.length);
   const [videoExportStatus, setVideoExportStatus] = useState<string | null>(null);
   const [videoExportProgress, setVideoExportProgress] = useState<number>(0);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -47,39 +49,100 @@ export function EditorShell() {
     };
   }, [scene]);
 
+  const saveNow = useCallback(() => {
+    window.localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(scene));
+    setSaved(true);
+  }, [scene]);
+
+  const copyShareUrl = useCallback(async () => {
+    const url = sceneToShareUrl(scene);
+    await navigator.clipboard.writeText(url);
+  }, [scene]);
+
+  const handleExportPng = useCallback(() => {
+    setExportError(null);
+    exportImage(scene, "preview-canvas", "mocksy-export", setExportError);
+  }, [scene]);
+
+  const handleExportMp4 = useCallback(async () => {
+    setExportError(null);
+    try {
+      setVideoExportStatus("Starting...");
+      setVideoExportProgress(0);
+      await exportVideo(scene, setVideoExportStatus, setVideoExportProgress, setExportError);
+    } finally {
+      setTimeout(() => {
+        setVideoExportStatus(null);
+        setVideoExportProgress(0);
+      }, 800);
+    }
+  }, [scene]);
+
+  const handleReset = useCallback(() => {
+    resetScene();
+    setSaved(false);
+  }, [resetScene]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const modifier = event.metaKey || event.ctrlKey;
+      if (modifier && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redo();
+        else undo();
+        return;
+      }
+      if (modifier && event.key.toLowerCase() === "y") {
+        event.preventDefault();
+        redo();
+        return;
+      }
+      if (modifier && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        saveNow();
+        return;
+      }
+      if (modifier && event.key.toLowerCase() === "e") {
+        event.preventDefault();
+        handleExportPng();
+        return;
+      }
+      if (event.key.toLowerCase() === "r" && !modifier) {
+        const target = event.target as HTMLElement | null;
+        if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT")) return;
+        event.preventDefault();
+        handleReset();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [undo, redo, saveNow, handleExportPng, handleReset]);
+
   return (
-    <main style={{ minHeight: "100dvh", display: "grid", gridTemplateColumns: "320px 1fr 280px", gap: 16, padding: 16 }}>
+    <main className="editor-shell">
       <ControlPanel />
       <section style={{ display: "grid", gridTemplateRows: "1fr auto", gap: 12 }}>
         <PreviewCanvas scene={scene} />
-        <div className="panel" style={{ padding: 12, display: "flex", gap: 8, alignItems: "center" }}>
-          <button type="button" onClick={() => {
-            setExportError(null);
-            exportImage(scene, "preview-canvas", "mocksy-export", setExportError);
-          }}>
+        <div className="panel" style={{ padding: 12, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <button type="button" onClick={undo} disabled={pastLength === 0} title="Undo (⌘Z)">
+            Undo
+          </button>
+          <button type="button" onClick={redo} disabled={futureLength === 0} title="Redo (⇧⌘Z)">
+            Redo
+          </button>
+          <button type="button" onClick={handleExportPng} title="Export PNG (⌘E)">
             Export PNG
           </button>
           <button
             type="button"
             disabled={videoExportStatus !== null}
-            onClick={async () => {
-              setExportError(null);
-              try {
-                setVideoExportStatus("Starting...");
-                setVideoExportProgress(0);
-                await exportVideo(scene, setVideoExportStatus, setVideoExportProgress, setExportError);
-              } finally {
-                setTimeout(() => {
-                  setVideoExportStatus(null);
-                  setVideoExportProgress(0);
-                }, 800);
-              }
-            }}
+            onClick={handleExportMp4}
+            title="Export MP4"
           >
             Export MP4
           </button>
           {videoExportStatus ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 160 }}>
               <span style={{ flex: 1, minWidth: 0 }}>{videoExportStatus}</span>
               <div
                 style={{
@@ -111,31 +174,13 @@ export function EditorShell() {
               {saved ? "Saved" : "Editing…"}
             </span>
           )}
-          <button
-            type="button"
-            onClick={() => {
-              window.localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(scene));
-              setSaved(true);
-            }}
-          >
+          <button type="button" onClick={saveNow} title="Save (⌘S)">
             Save now
           </button>
-          <button
-            type="button"
-            onClick={async () => {
-              const url = sceneToShareUrl(scene);
-              await navigator.clipboard.writeText(url);
-            }}
-          >
+          <button type="button" onClick={copyShareUrl} title="Copy Share URL">
             Copy Share URL
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              resetScene();
-              setSaved(false);
-            }}
-          >
+          <button type="button" onClick={handleReset} title="Reset (R)">
             Reset
           </button>
         </div>

@@ -5,6 +5,8 @@ import { useEditorStore } from "@/lib/state/editorStore";
 import type { AnimationPreset, MockupFrame, StylePreset } from "@/lib/types/editor";
 import { FRAME_ORDER } from "@/lib/render/frames";
 import { loadMediaFromFile } from "@/lib/media/loadFile";
+import { backgroundPresets } from "@/lib/presets/presets";
+import { VideoTrimControl } from "@/components/editor/VideoTrimControl";
 
 const frames: MockupFrame[] = FRAME_ORDER;
 const styles: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
@@ -23,6 +25,7 @@ export function ControlPanel() {
     setBorderRadius,
     setBackgroundSolid,
     setBackgroundGradient,
+    setBackgroundTransparent,
     toggleWatermark,
     setWatermarkText,
     setAspectRatio,
@@ -30,9 +33,7 @@ export function ControlPanel() {
     setVideoLoop,
     setVideoAutoplay,
     setVideoPosterTime,
-    setVideoCurrentTime,
-    setVideoTrimStart,
-    setVideoTrimEnd
+    setVideoCurrentTime
   } = useEditorStore();
 
   const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
@@ -84,28 +85,7 @@ export function ControlPanel() {
               onChange={(e) => setVideoCurrentTime(Number(e.target.value))}
             />
           </label>
-          <label>
-            Trim start
-            <input
-              type="range"
-              min={0}
-              max={Math.max(scene.videoDuration, 0.1)}
-              step={0.01}
-              value={scene.videoTrimStart}
-              onChange={(e) => setVideoTrimStart(Number(e.target.value))}
-            />
-          </label>
-          <label>
-            Trim end
-            <input
-              type="range"
-              min={0}
-              max={Math.max(scene.videoDuration, 0.1)}
-              step={0.01}
-              value={scene.videoTrimEnd || scene.videoDuration}
-              onChange={(e) => setVideoTrimEnd(Number(e.target.value))}
-            />
-          </label>
+          <VideoTrimControl duration={scene.videoDuration} />
         </>
       )}
       <label>
@@ -169,12 +149,44 @@ export function ControlPanel() {
       </label>
       <div style={{ display: "grid", gap: 8 }}>
         <span>Background</span>
-        <button onClick={() => setBackgroundSolid("#09090b")} type="button">
-          Solid
-        </button>
-        <button onClick={() => setBackgroundGradient("#1d4ed8", "#7c3aed")} type="button">
-          Gradient
-        </button>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {backgroundPresets.map((preset) => {
+            const active =
+              (preset.kind === "transparent" && scene.backgroundMode === "transparent") ||
+              (preset.kind === "solid" && scene.backgroundMode === "solid" && scene.backgroundColor === preset.backgroundColor) ||
+              (preset.kind === "gradient" &&
+                scene.backgroundMode === "gradient" &&
+                scene.gradientFrom === preset.gradientFrom &&
+                scene.gradientTo === preset.gradientTo);
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                title={preset.name}
+                aria-pressed={active}
+                onClick={() => {
+                  if (preset.kind === "transparent") setBackgroundTransparent();
+                  else if (preset.kind === "solid" && preset.backgroundColor) setBackgroundSolid(preset.backgroundColor);
+                  else if (preset.kind === "gradient" && preset.gradientFrom && preset.gradientTo)
+                    setBackgroundGradient(preset.gradientFrom, preset.gradientTo);
+                }}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 8,
+                  cursor: "pointer",
+                  border: active ? "2px solid #00d9ff" : "1px solid #27272a",
+                  background:
+                    preset.swatch === "transparent"
+                      ? "repeating-conic-gradient(#3f3f46 0% 25%, #18181b 0% 50%) 50% / 12px 12px"
+                      : preset.kind === "gradient"
+                        ? `linear-gradient(135deg, ${preset.gradientFrom}, ${preset.gradientTo})`
+                        : preset.swatch
+                }}
+              />
+            );
+          })}
+        </div>
       </div>
       <label>
         Watermark

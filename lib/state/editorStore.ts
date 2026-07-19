@@ -6,8 +6,12 @@ import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
 
 interface EditorStoreState {
   scene: EditorScene;
+  past: EditorScene[];
+  future: EditorScene[];
   setScene: (scene: Partial<EditorScene>) => void;
   resetScene: () => void;
+  undo: () => void;
+  redo: () => void;
   setMedia: (mediaUrl: string | null, mediaType: MediaType, mediaName?: string | null) => void;
   setFrame: (frame: MockupFrame) => void;
   setStylePreset: (stylePreset: StylePreset) => void;
@@ -17,6 +21,7 @@ interface EditorStoreState {
   setBorderRadius: (radius: number) => void;
   setBackgroundSolid: (color: string) => void;
   setBackgroundGradient: (from: string, to: string) => void;
+  setBackgroundTransparent: () => void;
   toggleWatermark: (enabled: boolean) => void;
   setWatermarkText: (text: string) => void;
   setAspectRatio: (aspectRatio: string) => void;
@@ -57,16 +62,42 @@ export const initialScene: EditorScene = {
   videoTrimEnd: 0
 };
 
+const HISTORY_LIMIT = 100;
+
+function pushHistory(s: EditorStoreState, scene: EditorScene) {
+  const past = [...s.past, s.scene].slice(-HISTORY_LIMIT);
+  return { past, future: [], scene };
+}
+
 export const useEditorStore = create<EditorStoreState>((set) => ({
   scene: initialScene,
-  setScene: (scene) => set(() => ({ scene: { ...initialScene, ...scene } })),
+  past: [],
+  future: [],
+  setScene: (scene) => set((s) => pushHistory(s, { ...initialScene, ...scene })),
   resetScene: () =>
-    set(() => ({
-      scene: { ...initialScene, mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME }
-    })),
+    set((s) =>
+      pushHistory(s, {
+        ...initialScene,
+        mediaUrl: DEMO_MEDIA_URL,
+        mediaType: "image",
+        mediaName: DEMO_MEDIA_NAME
+      })
+    ),
+  undo: () =>
+    set((s) => {
+      if (s.past.length === 0) return {};
+      const previous = s.past[s.past.length - 1];
+      return { scene: previous, past: s.past.slice(0, -1), future: [s.scene, ...s.future] };
+    }),
+  redo: () =>
+    set((s) => {
+      if (s.future.length === 0) return {};
+      const next = s.future[0];
+      return { scene: next, past: [...s.past, s.scene], future: s.future.slice(1) };
+    }),
   setMedia: (mediaUrl, mediaType, mediaName = null) =>
-    set((s) => ({
-      scene: {
+    set((s) =>
+      pushHistory(s, {
         ...s.scene,
         mediaUrl,
         mediaType,
@@ -75,36 +106,35 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
         videoCurrentTime: 0,
         videoTrimStart: 0,
         videoTrimEnd: 0
-      }
-    })),
-  setFrame: (frame) => set((s) => ({ scene: { ...s.scene, frame } })),
-  setStylePreset: (stylePreset) => set((s) => ({ scene: { ...s.scene, stylePreset } })),
-  setAnimationPreset: (animationPreset) => set((s) => ({ scene: { ...s.scene, animationPreset } })),
-  setZoom: (zoom) => set((s) => ({ scene: { ...s.scene, zoom } })),
-  setShadowOpacity: (shadowOpacity) => set((s) => ({ scene: { ...s.scene, shadowOpacity } })),
-  setBorderRadius: (borderRadius) => set((s) => ({ scene: { ...s.scene, borderRadius } })),
-  setBackgroundSolid: (backgroundColor) =>
-    set((s) => ({ scene: { ...s.scene, backgroundMode: "solid", backgroundColor } })),
-  setBackgroundGradient: (gradientFrom, gradientTo) =>
-    set((s) => ({ scene: { ...s.scene, backgroundMode: "gradient", gradientFrom, gradientTo } })),
-  toggleWatermark: (watermarkEnabled) => set((s) => ({ scene: { ...s.scene, watermarkEnabled } })),
-  setWatermarkText: (watermarkText) => set((s) => ({ scene: { ...s.scene, watermarkText } })),
-  setAspectRatio: (aspectRatio) => set((s) => ({ scene: { ...s.scene, aspectRatio } })),
-  setVideoMuted: (videoMuted) => set((s) => ({ scene: { ...s.scene, videoMuted } })),
-  setVideoLoop: (videoLoop) => set((s) => ({ scene: { ...s.scene, videoLoop } })),
-  setVideoAutoplay: (videoAutoplay) => set((s) => ({ scene: { ...s.scene, videoAutoplay } })),
-  setVideoPosterTime: (videoPosterTime) => set((s) => ({ scene: { ...s.scene, videoPosterTime } })),
+      })
+    ),
+  setFrame: (frame) => set((s) => pushHistory(s, { ...s.scene, frame })),
+  setStylePreset: (stylePreset) => set((s) => pushHistory(s, { ...s.scene, stylePreset })),
+  setAnimationPreset: (animationPreset) => set((s) => pushHistory(s, { ...s.scene, animationPreset })),
+  setZoom: (zoom) => set((s) => pushHistory(s, { ...s.scene, zoom })),
+  setShadowOpacity: (shadowOpacity) => set((s) => pushHistory(s, { ...s.scene, shadowOpacity })),
+  setBorderRadius: (borderRadius) => set((s) => pushHistory(s, { ...s.scene, borderRadius })),
+  setBackgroundSolid: (backgroundColor) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "solid", backgroundColor })),
+  setBackgroundGradient: (gradientFrom, gradientTo) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "gradient", gradientFrom, gradientTo })),
+  setBackgroundTransparent: () => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "transparent" })),
+  toggleWatermark: (watermarkEnabled) => set((s) => pushHistory(s, { ...s.scene, watermarkEnabled })),
+  setWatermarkText: (watermarkText) => set((s) => pushHistory(s, { ...s.scene, watermarkText })),
+  setAspectRatio: (aspectRatio) => set((s) => pushHistory(s, { ...s.scene, aspectRatio })),
+  setVideoMuted: (videoMuted) => set((s) => pushHistory(s, { ...s.scene, videoMuted })),
+  setVideoLoop: (videoLoop) => set((s) => pushHistory(s, { ...s.scene, videoLoop })),
+  setVideoAutoplay: (videoAutoplay) => set((s) => pushHistory(s, { ...s.scene, videoAutoplay })),
+  setVideoPosterTime: (videoPosterTime) => set((s) => pushHistory(s, { ...s.scene, videoPosterTime })),
   setVideoDuration: (videoDuration) =>
-    set((s) => ({
-      scene: {
+    set((s) =>
+      pushHistory(s, {
         ...s.scene,
         videoDuration,
         videoTrimEnd: s.scene.videoTrimEnd > 0 ? Math.min(s.scene.videoTrimEnd, videoDuration) : videoDuration
-      }
-    })),
+      })
+    ),
   setVideoCurrentTime: (videoCurrentTime) => set((s) => ({ scene: { ...s.scene, videoCurrentTime } })),
   setVideoTrimStart: (videoTrimStart) =>
-    set((s) => ({ scene: { ...s.scene, videoTrimStart: Math.min(videoTrimStart, s.scene.videoTrimEnd || videoTrimStart) } })),
+    set((s) => pushHistory(s, { ...s.scene, videoTrimStart: Math.min(videoTrimStart, s.scene.videoTrimEnd || videoTrimStart) })),
   setVideoTrimEnd: (videoTrimEnd) =>
-    set((s) => ({ scene: { ...s.scene, videoTrimEnd: Math.max(videoTrimEnd, s.scene.videoTrimStart) } }))
+    set((s) => pushHistory(s, { ...s.scene, videoTrimEnd: Math.max(videoTrimEnd, s.scene.videoTrimStart) }))
 }));

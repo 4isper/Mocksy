@@ -26,3 +26,64 @@ select {
   border-radius: 12px;
   background: #111114;
 }
+
+.editor-shell {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 320px 1fr 280px;
+  gap: 16px;
+  padding: 16px;
+  align-items: start;
+}
+
+/* Stack the three panels on narrow screens so nothing overflows. */
+@media (max-width: 900px) {
+  .editor-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Dual-range trim: the inputs sit on top of the painted track, but only the
+   thumbs capture pointer events so the rail itself stays non-interactive. */
+.trim-range {
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.trim-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #00d9ff;
+  border: 2px solid #09090b;
+  cursor: pointer;
+}
+
+.trim-range::-moz-range-thumb {
+  pointer-events: auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #00d9ff;
+  border: 2px solid #09090b;
+  cursor: pointer;
+}
+
+.trim-range::-webkit-slider-runnable-track {
+  background: transparent;
+}
+
+.trim-range::-moz-range-track {
+  background: transparent;
+}

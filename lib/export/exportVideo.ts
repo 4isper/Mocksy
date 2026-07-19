@@ -9,19 +9,21 @@ import { isVideoScene } from "@/lib/render/mediaKind";
 
 let ffmpegSingleton: FFmpeg | null = null;
 
-async function getFfmpegInstance() {
+async function getFfmpegInstance(onStatus?: (message: string) => void) {
   if (ffmpegSingleton) return ffmpegSingleton;
 
   const ffmpeg = new FFmpeg();
-  console.log("loading ffmpeg...");
+  onStatus?.("Loading encoder…");
   await ffmpeg.load({
     coreURL: "/ffmpeg-core.js",
     wasmURL: "/ffmpeg-core.wasm",
   });
-  console.log("ffmpeg loaded");
   ffmpegSingleton = ffmpeg;
   return ffmpeg;
 }
+
+/** Duration of an animated still-image export, in seconds. */
+const ANIMATION_DURATION_SEC = 3;
 
 function sanitizeFilename(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -85,7 +87,8 @@ async function recordCanvasToWebm(
 
   const start = Math.max(0, scene.videoTrimStart || 0);
   const end = scene.videoTrimEnd > start ? scene.videoTrimEnd : scene.videoDuration;
-  const duration = Math.max(0.2, end - start);
+  const isVideo = media instanceof HTMLVideoElement;
+  const duration = isVideo ? Math.max(0.2, end - start) : ANIMATION_DURATION_SEC;
 
   await new Promise<void>((resolve, reject) => {
     recorder.onstop = () => resolve();
@@ -179,7 +182,7 @@ export async function exportVideo(
 
   onStatus?.("Converting to MP4...");
   onProgress?.(0);
-  const ffmpeg = await getFfmpegInstance();
+  const ffmpeg = await getFfmpegInstance(onStatus);
   const inputName = "input.webm";
   const outputName = "mocksy-export.mp4";
   await ffmpeg.writeFile(inputName, new Uint8Array(await webmBlob.arrayBuffer()));

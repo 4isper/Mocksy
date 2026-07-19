@@ -76,4 +76,45 @@ describe("editorStore", () => {
     expect(store().scene.mediaUrl).toContain("data:image/svg");
     expect(store().scene.mediaType).toBe("image");
   });
+
+  it("records history on a mutation and supports undo/redo", () => {
+    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene } });
+    store().setFrame("desktop");
+    expect(store().scene.frame).toBe("desktop");
+    expect(store().past.length).toBe(1);
+
+    store().undo();
+    expect(store().scene.frame).toBe(initialScene.frame);
+    expect(store().future.length).toBe(1);
+
+    store().redo();
+    expect(store().scene.frame).toBe("desktop");
+    expect(store().future.length).toBe(0);
+  });
+
+  it("undo is a no-op with empty history", () => {
+    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene } });
+    store().undo();
+    expect(store().scene).toEqual(initialScene);
+  });
+
+  it("a new mutation clears the redo stack", () => {
+    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene } });
+    store().setFrame("desktop");
+    store().undo();
+    store().setZoom(1.5);
+    expect(store().future.length).toBe(0);
+    expect(store().scene.zoom).toBe(1.5);
+  });
+
+  it("setBackgroundTransparent switches mode without color", () => {
+    store().setBackgroundTransparent();
+    expect(store().scene.backgroundMode).toBe("transparent");
+  });
+
+  it("setVideoCurrentTime does not pollute history (driven by playback)", () => {
+    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene } });
+    store().setVideoCurrentTime(3);
+    expect(store().past.length).toBe(0);
+  });
 });
