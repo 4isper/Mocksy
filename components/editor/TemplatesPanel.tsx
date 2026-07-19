@@ -7,12 +7,13 @@ export function TemplatesPanel() {
   const { setFrame, setStylePreset, setAnimationPreset, setZoom } = useEditorStore();
 
   return (
-    <div className="panel" style={{ padding: 16, display: "grid", gap: 8 }}>
-      <h3 style={{ margin: 0 }}>Templates</h3>
+    <div className="panel" style={{ padding: 16, display: "grid", gap: 8, alignContent: "start" }}>
+      <h2 className="panel-title">Templates</h2>
       {templatePresets.map((preset) => (
         <button
           key={preset.id}
           type="button"
+          className="template-card"
           onClick={() => {
             setFrame(preset.frame);
             setStylePreset(preset.stylePreset);

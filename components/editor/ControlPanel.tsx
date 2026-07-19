@@ -49,78 +49,94 @@ export function ControlPanel() {
   };
 
   return (
-    <div className="panel" style={{ padding: 16, display: "grid", gap: 12 }}>
-      <label>
-        Media
-        <input type="file" accept="image/*,video/*" onChange={handleFile} />
-      </label>
-      {mediaError ? (
-        <span role="alert" style={{ color: "#f87171", fontSize: 13 }}>
-          {mediaError}
-        </span>
-      ) : null}
-      {scene.mediaType === "video" && <VideoOptions />}
-      <label>
-        Frame
-        <select value={scene.frame} onChange={(e) => setFrame(e.target.value as MockupFrame)}>
-          {frames.map((frame) => (
-            <option key={frame} value={frame}>
-              {frame}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Aspect ratio
-        <select value={scene.aspectRatio} onChange={(e) => setAspectRatio(e.target.value)}>
-          {aspectRatios.map((ratio) => (
-            <option key={ratio} value={ratio}>
-              {ratio}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Style
-        <select value={scene.stylePreset} onChange={(e) => setStylePreset(e.target.value as StylePreset)}>
-          {styles.map((style) => (
-            <option key={style} value={style}>
-              {style}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Animation
-        <select value={scene.animationPreset} onChange={(e) => setAnimationPreset(e.target.value as AnimationPreset)}>
-          {animations.map((anim) => (
-            <option key={anim} value={anim}>
-              {anim}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Zoom
-        <input type="range" min={0.8} max={1.5} step={0.01} value={scene.zoom} onChange={(e) => setZoom(Number(e.target.value))} />
-      </label>
-      <label>
-        Shadow
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
-          value={scene.shadowOpacity}
-          onChange={(e) => setShadowOpacity(Number(e.target.value))}
-        />
-      </label>
-      <label>
-        Radius
-        <input type="range" min={0} max={48} step={1} value={scene.borderRadius} onChange={(e) => setBorderRadius(Number(e.target.value))} />
-      </label>
-      <div style={{ display: "grid", gap: 8 }}>
-        <span>Background</span>
+    <div className="panel" style={{ padding: 16, display: "grid", gap: 16 }}>
+      <h2 className="panel-title">Controls</h2>
+      <div className="field-group">
+        <div className="field">
+          <span>Media</span>
+          <input type="file" accept="image/*,video/*" onChange={handleFile} />
+        </div>
+        {mediaError ? (
+          <span role="alert" style={{ color: "var(--danger)", fontSize: 13 }}>
+            {mediaError}
+          </span>
+        ) : null}
+        {scene.mediaType === "video" && <VideoOptions />}
+      </div>
+
+      <div className="divider" />
+
+      <div className="field-group">
+        <label className="field">
+          <span>Frame</span>
+          <select value={scene.frame} onChange={(e) => setFrame(e.target.value as MockupFrame)}>
+            {frames.map((frame) => (
+              <option key={frame} value={frame}>
+                {frame}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span>Aspect ratio</span>
+          <select value={scene.aspectRatio} onChange={(e) => setAspectRatio(e.target.value)}>
+            {aspectRatios.map((ratio) => (
+              <option key={ratio} value={ratio}>
+                {ratio}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span>Style</span>
+          <select value={scene.stylePreset} onChange={(e) => setStylePreset(e.target.value as StylePreset)}>
+            {styles.map((style) => (
+              <option key={style} value={style}>
+                {style}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span>Animation</span>
+          <select value={scene.animationPreset} onChange={(e) => setAnimationPreset(e.target.value as AnimationPreset)}>
+            {animations.map((anim) => (
+              <option key={anim} value={anim}>
+                {anim}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="divider" />
+
+      <div className="field-group">
+        <label className="field">
+          <span>Zoom</span>
+          <input type="range" min={0.8} max={1.5} step={0.01} value={scene.zoom} onChange={(e) => setZoom(Number(e.target.value))} />
+        </label>
+        <label className="field">
+          <span>Shadow</span>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={scene.shadowOpacity}
+            onChange={(e) => setShadowOpacity(Number(e.target.value))}
+          />
+        </label>
+        <label className="field">
+          <span>Radius</span>
+          <input type="range" min={0} max={48} step={1} value={scene.borderRadius} onChange={(e) => setBorderRadius(Number(e.target.value))} />
+        </label>
+      </div>
+
+      <div className="divider" />
+
+      <div className="field-group">
+        <span style={{ color: "var(--text-dim)", fontSize: 12, fontWeight: 500 }}>Background</span>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {backgroundPresets.map((preset) => {
             const active =
@@ -147,7 +163,7 @@ export function ControlPanel() {
                   height: 28,
                   borderRadius: 8,
                   cursor: "pointer",
-                  border: active ? "2px solid #00d9ff" : "1px solid #27272a",
+                  border: active ? "2px solid var(--accent)" : "1px solid var(--panel-border)",
                   background:
                     preset.swatch === "transparent"
                       ? "repeating-conic-gradient(#3f3f46 0% 25%, #18181b 0% 50%) 50% / 12px 12px"
@@ -160,14 +176,19 @@ export function ControlPanel() {
           })}
         </div>
       </div>
-      <label>
-        Watermark
-        <input type="checkbox" checked={scene.watermarkEnabled} onChange={(e) => toggleWatermark(e.target.checked)} />
-      </label>
-      <label>
-        Watermark text
-        <input value={scene.watermarkText} onChange={(e) => setWatermarkText(e.target.value)} />
-      </label>
+
+      <div className="divider" />
+
+      <div className="field-group">
+        <label className="field" style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <input type="checkbox" checked={scene.watermarkEnabled} onChange={(e) => toggleWatermark(e.target.checked)} />
+          <span>Watermark</span>
+        </label>
+        <label className="field">
+          <span>Watermark text</span>
+          <input value={scene.watermarkText} onChange={(e) => setWatermarkText(e.target.value)} />
+        </label>
+      </div>
     </div>
   );
 }

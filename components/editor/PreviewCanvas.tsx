@@ -127,21 +127,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           </span>
         )}
         {scene.mediaUrl && (
-          <button
-            type="button"
-            onClick={() => setMedia(null, "none")}
-            style={{
-              position: "absolute",
-              top: 12,
-              right: 12,
-              padding: "4px 10px",
-              borderRadius: 8,
-              border: "1px solid #27272a",
-              background: "rgba(17,17,20,0.8)",
-              color: "#f4f4f5",
-              cursor: "pointer"
-            }}
-          >
+          <button type="button" className="preview-chip" onClick={() => setMedia(null, "none")}>
             Clear media
           </button>
         )}

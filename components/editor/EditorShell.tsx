@@ -120,72 +120,78 @@ export function EditorShell() {
 
   return (
     <main className="editor-shell">
-      <ControlPanel />
-      <section style={{ display: "grid", gridTemplateRows: "1fr auto", gap: 12 }}>
-        <PreviewCanvas scene={scene} />
-        <div className="panel" style={{ padding: 12, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <button type="button" onClick={undo} disabled={pastLength === 0} title="Undo (⌘Z)">
-            Undo
-          </button>
-          <button type="button" onClick={redo} disabled={futureLength === 0} title="Redo (⇧⌘Z)">
-            Redo
-          </button>
-          <button type="button" onClick={handleExportPng} title="Export PNG (⌘E)">
-            Export PNG
-          </button>
-          <button
-            type="button"
-            disabled={videoExportStatus !== null}
-            onClick={handleExportMp4}
-            title="Export MP4"
-          >
-            Export MP4
-          </button>
-          {videoExportStatus ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 160 }}>
-              <span style={{ flex: 1, minWidth: 0 }}>{videoExportStatus}</span>
-              <div
-                style={{
-                  width: 100,
-                  height: 6,
-                  backgroundColor: "rgba(255,255,255,0.1)",
-                  borderRadius: 3,
-                  overflow: "hidden"
-                }}
-              >
+      <div className="brand">
+        <h1>Mocksy</h1>
+        <span className="tag">Free mockup editor — no subscriptions</span>
+      </div>
+      <div className="editor-grid">
+        <ControlPanel />
+        <section style={{ display: "grid", gridTemplateRows: "1fr auto", gap: 12 }}>
+          <PreviewCanvas scene={scene} />
+          <div className="panel toolbar">
+            <button type="button" className="btn" onClick={undo} disabled={pastLength === 0} title="Undo (⌘Z)">
+              Undo
+            </button>
+            <button type="button" className="btn" onClick={redo} disabled={futureLength === 0} title="Redo (⇧⌘Z)">
+              Redo
+            </button>
+            <button type="button" className="btn btn-primary" onClick={handleExportPng} title="Export PNG (⌘E)">
+              Export PNG
+            </button>
+            <button
+              type="button"
+              className="btn"
+              disabled={videoExportStatus !== null}
+              onClick={handleExportMp4}
+              title="Export MP4"
+            >
+              Export MP4
+            </button>
+            {videoExportStatus ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 160 }}>
+                <span style={{ flex: 1, minWidth: 0 }}>{videoExportStatus}</span>
                 <div
                   style={{
-                    height: "100%",
-                    width: `${videoExportProgress}%`,
-                    backgroundColor: "#00d9ff",
-                    transition: "width 0.2s ease"
+                    width: 100,
+                    height: 6,
+                    backgroundColor: "rgba(255,255,255,0.1)",
+                    borderRadius: 3,
+                    overflow: "hidden"
                   }}
-                />
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${videoExportProgress}%`,
+                      backgroundColor: "var(--accent)",
+                      transition: "width 0.2s ease"
+                    }}
+                  />
+                </div>
+                <span style={{ fontSize: 12, minWidth: 32 }}>{Math.round(videoExportProgress)}%</span>
               </div>
-              <span style={{ fontSize: 12, minWidth: 32 }}>{Math.round(videoExportProgress)}%</span>
-            </div>
-          ) : null}
-          {exportError ? (
-            <span style={{ color: "#f87171", fontSize: 13, flex: 1, minWidth: 0 }} role="alert">
-              {exportError}
-            </span>
-          ) : (
-            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", minWidth: 48 }}>
-              {saved ? "Saved" : "Editing…"}
-            </span>
-          )}
-          <button type="button" onClick={saveNow} title="Save (⌘S)">
-            Save now
-          </button>
-          <button type="button" onClick={copyShareUrl} title="Copy Share URL">
-            Copy Share URL
-          </button>
-          <button type="button" onClick={handleReset} title="Reset (R)">
-            Reset
-          </button>
-        </div>
-      </section>
-      <TemplatesPanel />
+            ) : null}
+            {exportError ? (
+              <span className="error" role="alert">
+                {exportError}
+              </span>
+            ) : (
+              <span className={`status${saved ? " saved" : ""}`}>{saved ? "Saved" : "Editing…"}</span>
+            )}
+            <span className="spacer" />
+            <button type="button" className="btn" onClick={saveNow} title="Save (⌘S)">
+              Save
+            </button>
+            <button type="button" className="btn" onClick={copyShareUrl} title="Copy Share URL">
+              Share
+            </button>
+            <button type="button" className="btn" onClick={handleReset} title="Reset (R)">
+              Reset
+            </button>
+          </div>
+        </section>
+        <TemplatesPanel />
+      </div>
     </main>
   );
 }
