@@ -49,6 +49,31 @@ test("iphone16pro media stays inside the device cutout, not under the bezel", as
   expect(inside).toBe(true);
 });
 
+test("iphone15 and iphone16pro overlays have a transparent screen cutout", async ({ page }) => {
+  await page.goto("/");
+  const frameSelect = page.locator("select").first();
+
+  for (const frame of ["iphone15", "iphone16pro"] as const) {
+    await frameSelect.selectOption(frame);
+    await page.waitForTimeout(200);
+
+    // Draw the overlay skin onto a canvas and read the alpha at the screen
+    // center. A real cutout is transparent there; an opaque skin is not.
+    const centerAlpha = await page.evaluate(async () => {
+      const overlay = document.querySelector('img[aria-hidden="true"]') as HTMLImageElement;
+      const canvas = document.createElement("canvas");
+      canvas.width = overlay.naturalWidth;
+      canvas.height = overlay.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return -1;
+      ctx.drawImage(overlay, 0, 0);
+      const { data } = ctx.getImageData(canvas.width / 2, canvas.height / 2, 1, 1);
+      return data[3];
+    });
+    expect(centerAlpha, `${frame} screen center should be transparent`).toBe(0);
+  }
+});
+
 test("templates include the 16 Pro Glass preset", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("button", { name: "16 Pro Glass" })).toBeVisible();

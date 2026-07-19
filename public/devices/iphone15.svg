@@ -1,17 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844" fill="none">
-  <!-- iPhone 15 frame-only overlay: transparent screen, drawn notch, rounded titanium-look bezel -->
+  <!-- iPhone 15 frame-only overlay: the screen area is a real transparent
+       cutout (via mask) so the media behind shows through. -->
   <defs>
     <linearGradient id="bezel15" x1="0" y1="0" x2="390" y2="844" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#3a3a3c"/>
       <stop offset="0.5" stop-color="#1c1c1e"/>
       <stop offset="1" stop-color="#2c2c2e"/>
     </linearGradient>
+    <mask id="screen15">
+      <rect x="0" y="0" width="390" height="844" fill="white"/>
+      <rect x="14" y="14" width="362" height="816" rx="46" ry="46" fill="black"/>
+    </mask>
   </defs>
-  <!-- Outer body -->
-  <rect x="6" y="6" width="378" height="832" rx="54" ry="54" fill="url(#bezel15)" stroke="#0a0a0a" stroke-width="2"/>
-  <!-- Inner screen cutout (transparent) -->
-  <rect x="14" y="14" width="362" height="816" rx="46" ry="46" fill="#000000" fill-opacity="0"/>
-  <!-- Screen edge highlight -->
+  <!-- Outer body with the screen masked out to transparency. -->
+  <rect x="6" y="6" width="378" height="832" rx="54" ry="54" fill="url(#bezel15)" stroke="#0a0a0a" stroke-width="2" mask="url(#screen15)"/>
+  <!-- Screen edge highlight (only the visible rim, not the cutout interior). -->
   <rect x="14" y="14" width="362" height="816" rx="46" ry="46" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
   <!-- Notch -->
   <path d="M155 14 h80 a8 8 0 0 1 8 8 v18 a8 8 0 0 1 -8 8 h-80 a8 8 0 0 1 -8 -8 v-18 a8 8 0 0 1 8 -8 z" fill="#0a0a0a"/>
