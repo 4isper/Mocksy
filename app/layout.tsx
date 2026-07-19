@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Mocksy - Free Shots Clone",
+  title: "Mocksy — Free mockup editor",
   description: "Create mockups, animations and exports without subscriptions."
 };
 

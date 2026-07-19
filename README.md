@@ -2,7 +2,7 @@
 
 Free alternative to Shots-style mockup editor with no subscriptions.
 
-Reference inspiration: [shots.so](https://shots.so/).
+Reference inspiration: [shots.so](https://shots.so/), [PostSpark device mockup](https://postspark.app/device-mockup).
 
 ## Features
 
