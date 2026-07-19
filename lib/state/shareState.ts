@@ -1,4 +1,5 @@
 import type { EditorScene } from "@/lib/types/editor";
+import { normalizeScene } from "@/lib/state/normalizeScene";
 
 export function sceneToShareUrl(scene: EditorScene): string {
   const serialized = encodeURIComponent(JSON.stringify(scene));
@@ -12,7 +13,7 @@ export function readSceneFromUrl(): EditorScene | null {
   const raw = url.searchParams.get("scene");
   if (!raw) return null;
   try {
-    return JSON.parse(decodeURIComponent(raw)) as EditorScene;
+    return normalizeScene(JSON.parse(decodeURIComponent(raw)));
   } catch {
     return null;
   }

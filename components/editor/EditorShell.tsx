@@ -8,6 +8,7 @@ import { useEditorStore } from "@/lib/state/editorStore";
 import { exportImage } from "@/lib/export/exportImage";
 import { exportVideo } from "@/lib/export/exportVideo";
 import { readSceneFromUrl, sceneToShareUrl } from "@/lib/state/shareState";
+import { normalizeScene } from "@/lib/state/normalizeScene";
 import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
 
 const AUTOSAVE_KEY = "mocksy-scene";
@@ -25,8 +26,13 @@ export function EditorShell() {
     const fromUrl = readSceneFromUrl();
     const fromLocal = window.localStorage.getItem(AUTOSAVE_KEY);
     if (fromUrl) setScene(fromUrl);
-    else if (fromLocal) setScene(JSON.parse(fromLocal));
-    else setScene({ mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME });
+    else if (fromLocal) {
+      try {
+        setScene(normalizeScene(JSON.parse(fromLocal)));
+      } catch {
+        setScene({ mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME });
+      }
+    } else setScene({ mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME });
   }, [setScene]);
 
   useEffect(() => {
