@@ -66,6 +66,22 @@ describe("buildSceneCss", () => {
     expect(css.aspectRatio).toBe("390 / 844");
   });
 
+  it("sizes a portrait frame by its height so maxHeight never stretches it wide", () => {
+    // On a wide (16/9) canvas a fixed width + maxHeight used to clamp the
+    // height and stretch the phone into a wide rectangle, distorting the skin.
+    const css = buildSceneCss(base({ frame: "iphone15", aspectRatio: "16 / 9" })).frame;
+    expect(css.height).toBe("100%");
+    expect(css.width).toBe("auto");
+  });
+
+  it("sizes a landscape frame by its width on a portrait canvas so it stays contained", () => {
+    // A wide frame on a narrow (9/16) canvas must lean on the width limit,
+    // otherwise maxWidth clamps the width and breaks the ratio.
+    const css = buildSceneCss(base({ frame: "desktop", aspectRatio: "9 / 16" })).frame;
+    expect(css.width).toBe("100%");
+    expect(css.height).toBe("auto");
+  });
+
   it("still follows the scene aspect ratio for the 'none' frame", () => {
     const css = buildSceneCss(base({ frame: "none", aspectRatio: "16 / 9" })).frame;
     expect(css.aspectRatio).toBe("16 / 9");

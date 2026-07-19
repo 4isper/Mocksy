@@ -38,12 +38,27 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
           ? "1px solid rgba(255,255,255,0.15)"
           : "none";
 
+  // Each device frame keeps its own aspect ratio so changing the scene's
+  // aspect ratio only resizes the canvas, never distorts the frame. The
+  // "none" frame has no device shape, so it still follows the scene.
+  const ratioSrc = spec.aspectRatio ?? (scene.frame === "none" ? scene.aspectRatio : "1 / 1");
+  const [ratioW, ratioH] = ratioSrc.split("/").map((n) => Number(n.trim()));
+  const [canvasW, canvasH] = scene.aspectRatio.split("/").map((n) => Number(n.trim()));
+  const frameAr = ratioW / ratioH;
+  const canvasAr = canvasW / canvasH;
+  // Contain the frame inside the canvas: pick the limiting axis so the cross-
+  // axis max constraint never clamps and breaks the aspect ratio. A fixed
+  // width + maxHeight (the old code) let maxHeight clamp the height while the
+  // width stayed fixed, stretching portrait phones into wide rectangles and
+  // distorting the SVG skin + media.
+  const basis: CSSProperties =
+    frameAr <= canvasAr
+      ? { height: "100%", width: "auto", maxWidth: "100%" }
+      : { width: "100%", height: "auto", maxHeight: "100%" };
+
   const frameStyle: CSSProperties = {
-    width: "min(900px, 80%)",
-    // Each device frame keeps its own aspect ratio so changing the scene's
-    // aspect ratio only resizes the canvas, never distorts the frame. The
-    // "none" frame has no device shape, so it still follows the scene.
-    aspectRatio: spec.aspectRatio ?? (scene.frame === "none" ? scene.aspectRatio : undefined),
+    ...basis,
+    aspectRatio: ratioSrc,
     // Never let the frame dictate the canvas size; it must fit inside the
     // canvas (whose shape is the scene aspect ratio) and stay centered.
     maxWidth: "100%",
