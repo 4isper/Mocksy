@@ -9,6 +9,10 @@ interface SceneCss {
   frameOverlay: string | null;
   /** Corner radius (px) for the media inside the frame. */
   screenRadius: number;
+  /** Style for the media (image/video) element, inset to the frame's screen area. */
+  mediaStyle: CSSProperties;
+  /** Style for the empty-media placeholder when no media is loaded. */
+  emptyMediaStyle: CSSProperties;
 }
 
 export function buildSceneCss(scene: EditorScene): SceneCss {
@@ -50,7 +54,54 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
           : "rgba(255,255,255,0.06)"
   };
 
-  frameStyle.padding = framePadding;
+  // Overlay skins carry their own bezel; keep the frame padding at 0 so the
+  // media can be inset to the SVG's transparent cutout without double-offset.
+  frameStyle.padding = spec.isOverlay ? 0 : framePadding;
+
+  // For overlay skins the media must sit exactly inside the SVG's transparent
+  // screen cutout, not fill the whole frame (which would spill under the opaque
+  // bezel). Inset the media by the same padding the cutout uses.
+  const mediaStyle: CSSProperties = spec.isOverlay
+    ? {
+        position: "absolute",
+        top: framePadding,
+        left: framePadding,
+        width: `calc(100% - ${framePadding * 2}px)`,
+        height: `calc(100% - ${framePadding * 2}px)`,
+        objectFit: "cover",
+        borderRadius: spec.screenRadius,
+        background: "#0a0a0a"
+      }
+    : {
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+        borderRadius: spec.screenRadius,
+        background: "#0a0a0a"
+      };
+
+  const emptyMediaStyle: CSSProperties = spec.isOverlay
+    ? {
+        position: "absolute",
+        top: framePadding,
+        left: framePadding,
+        width: `calc(100% - ${framePadding * 2}px)`,
+        height: `calc(100% - ${framePadding * 2}px)`,
+        borderRadius: spec.screenRadius,
+        display: "grid",
+        placeItems: "center",
+        color: "#a1a1aa",
+        background: "rgba(255,255,255,0.03)"
+      }
+    : {
+        position: "absolute",
+        inset: 0,
+        borderRadius: spec.screenRadius,
+        display: "grid",
+        placeItems: "center",
+        color: "#a1a1aa",
+        background: "rgba(255,255,255,0.03)"
+      };
 
   return {
     container: {
@@ -61,6 +112,8 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
     },
     frame: frameStyle,
     frameOverlay: spec.isOverlay ? spec.asset : null,
-    screenRadius: spec.screenRadius
+    screenRadius: spec.screenRadius,
+    mediaStyle,
+    emptyMediaStyle
   };
 }

@@ -50,10 +50,13 @@ describe("buildSceneCss", () => {
     expect(css.aspectRatio).toBe("16 / 9");
   });
 
-  it("applies padding to overlay frames so media sits inside the SVG screen cutout", () => {
-    const overlay = buildSceneCss(base({ frame: "iphone15" })).frame;
+  it("insets media to the SVG cutout for overlay frames (frame padding drops to 0)", () => {
+    const overlay = buildSceneCss(base({ frame: "iphone15" }));
     const cssOnly = buildSceneCss(base({ frame: "iphone" })).frame;
-    expect(overlay.padding).toBe(14);
+    expect(overlay.frame.padding).toBe(0);
+    expect(overlay.mediaStyle.position).toBe("absolute");
+    expect(overlay.mediaStyle.top).toBe(14);
+    expect(overlay.mediaStyle.left).toBe(14);
     expect(cssOnly.padding).toBe(18);
   });
 

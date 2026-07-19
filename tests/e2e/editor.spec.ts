@@ -17,6 +17,38 @@ test("selecting iphone16pro renders the device overlay", async ({ page }) => {
   expect(ratio).toContain("390 / 844");
 });
 
+test("iphone16pro media stays inside the device cutout, not under the bezel", async ({ page }) => {
+  await page.goto("/");
+  const frameSelect = page.locator("select").first();
+  await frameSelect.selectOption("iphone16pro");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+
+  // The media must be inset within the overlay's transparent screen cutout so
+  // it never spills across the opaque bezel ("on top of everything").
+  const inside = await page.evaluate(() => {
+    const overlay = document.querySelector('img[aria-hidden="true"]') as HTMLElement;
+    const media = document.querySelector('img[alt="Uploaded media"]') as HTMLElement;
+    const o = overlay.getBoundingClientRect();
+    const m = media.getBoundingClientRect();
+    return (
+      m.width > 0 &&
+      m.left >= o.left &&
+      m.top >= o.top &&
+      m.right <= o.right + 1 &&
+      m.bottom <= o.bottom + 1
+    );
+  });
+  expect(inside).toBe(true);
+});
+
 test("templates include the 16 Pro Glass preset", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("button", { name: "16 Pro Glass" })).toBeVisible();

@@ -91,45 +91,20 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
                 onTimeUpdate={(e) => {
                   setVideoCurrentTime(e.currentTarget.currentTime);
                 }}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  borderRadius: sceneCss.screenRadius,
-                  background: "#0a0a0a"
-                }}
+                style={sceneCss.mediaStyle}
               />
             ) : (
               // Local blob/object URLs can't be optimized by next/image.
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={scene.mediaUrl}
-                alt="Uploaded media"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  borderRadius: sceneCss.screenRadius
-                }}
-              />
+              <img src={scene.mediaUrl} alt="Uploaded media" style={sceneCss.mediaStyle} />
             )
           ) : (
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                borderRadius: sceneCss.screenRadius,
-                display: "grid",
-                placeItems: "center",
-                color: "#a1a1aa",
-                background: "rgba(255,255,255,0.03)"
-              }}
-            >
-              Drop image or video to start
-            </div>
+            <div style={sceneCss.emptyMediaStyle}>Drop image or video to start</div>
           )}
           {sceneCss.frameOverlay && (
-            // Local static SVG device skins served from /public.
+            // Local static SVG device skins served from /public. The overlay sits
+            // above the media but its screen cutout is transparent, so the media
+            // (inset to the same cutout) shows through.
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={sceneCss.frameOverlay}
