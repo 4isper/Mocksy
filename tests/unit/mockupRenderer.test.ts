@@ -64,8 +64,11 @@ describe("buildSceneCss", () => {
     const cssOnly = buildSceneCss(base({ frame: "iphone" })).frame;
     expect(overlay.frame.padding).toBe(0);
     expect(overlay.mediaStyle.position).toBe("absolute");
-    expect(overlay.mediaStyle.top).toBe(14);
-    expect(overlay.mediaStyle.left).toBe(14);
+    // Percent-based inset matching the viewBox cutout (14/390, 14/844).
+    expect(overlay.mediaStyle.left).toBe(`${(14 / 390) * 100}%`);
+    expect(overlay.mediaStyle.top).toBe(`${(14 / 844) * 100}%`);
+    expect(overlay.mediaStyle.width).toBe(`${(362 / 390) * 100}%`);
+    expect(overlay.mediaStyle.height).toBe(`${(816 / 844) * 100}%`);
     expect(cssOnly.padding).toBe(18);
   });
 

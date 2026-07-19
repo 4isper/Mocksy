@@ -9,14 +9,17 @@ const scene = (overrides: Partial<EditorScene> = {}): EditorScene => ({
   ...overrides
 });
 
-// In the CSS preview the media is inset by `frameStyle.padding` (CSS px) inside
-// a frame of `offsetWidth` (CSS px). The exported canvas gets frameWidth in
-// device px (offsetWidth * pixelRatio), so the inset ratio must stay
-// spec.padding / offsetWidth regardless of pixelRatio.
+// For CSS-only frames the media is inset by `frameStyle.padding` (CSS px)
+// inside a frame of `offsetWidth` (CSS px). The exported canvas gets
+// frameWidth in device px (offsetWidth * pixelRatio), so the inset ratio must
+// stay spec.padding / offsetWidth regardless of pixelRatio. Overlay skins use
+// a viewBox-based cutout ratio (cutout.x / 390) instead, which must also be
+// pixelRatio-independent.
 describe("computeFrameBox geometry", () => {
-  it("keeps the media inset ratio independent of pixelRatio", () => {
+  it("keeps the media inset ratio independent of pixelRatio (overlay cutout)", () => {
     const cssWidth = 700;
     const spec = getFrameSpec("iphone15");
+    const expectedRatio = (spec.cutout?.x ?? 0) / 390;
 
     const atDpr = (dpr: number) =>
       computeFrameBox(scene({ frame: "iphone15" }), 1400, 1400, dpr, cssWidth * dpr, cssWidth * dpr * (10 / 16));
@@ -27,8 +30,8 @@ describe("computeFrameBox geometry", () => {
     const ratioLow = low.pad / low.width;
     const ratioHigh = high.pad / high.width;
 
-    expect(ratioLow).toBeCloseTo(spec.padding / cssWidth, 5);
-    expect(ratioHigh).toBeCloseTo(spec.padding / cssWidth, 5);
+    expect(ratioLow).toBeCloseTo(expectedRatio, 5);
+    expect(ratioHigh).toBeCloseTo(expectedRatio, 5);
     expect(ratioHigh).toBeCloseTo(ratioLow, 5);
   });
 

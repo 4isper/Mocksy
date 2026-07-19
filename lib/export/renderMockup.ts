@@ -93,17 +93,30 @@ export function computeFrameBox(
   const offsetY = (transform?.offsetY ?? 0) * dpiScale * actualZoom;
   const x = (typeof frameX === "number" ? frameX : (canvasWidth - frameW) / 2) + offsetX;
   const y = (typeof frameY === "number" ? frameY : (canvasHeight - frameH) / 2) + offsetY;
-  const pad = spec.padding * dpiScale * actualZoom;
+  // Overlay skins define their screen cutout in viewBox units; convert to
+  // device px off the rendered frame so the media matches the skin at any size.
+  // Other frames use a simple padding-based inset.
+  const cutout = spec.cutout;
+  const padX = cutout ? (cutout.x / 390) * frameW : spec.padding * dpiScale * actualZoom;
+  const padY = cutout ? (cutout.y / 844) * frameH : spec.padding * dpiScale * actualZoom;
+  // `pad` keeps its historical meaning of the horizontal inset (used by ratio
+  // checks and any callers); X and Y insets differ because the skin viewBox is
+  // not square, but innerX/innerY/innerW/innerH use the correct per-axis values.
+  const pad = spec.isOverlay ? padX : spec.padding * dpiScale * actualZoom;
   // Circular frames (watch) ignore the corner radius and clip to a full circle.
   const isCircular = scene.frame === "watch";
   const outerRadius = isCircular
     ? Math.min(frameW, frameH) / 2
     : (spec.isOverlay ? spec.screenRadius : scene.borderRadius + spec.padding) * dpiScale * actualZoom;
-  const innerX = x + pad;
-  const innerY = y + pad;
-  const innerW = frameW - pad * 2;
-  const innerH = frameH - pad * 2;
-  const innerRadius = isCircular ? Math.min(innerW, innerH) / 2 : Math.max(0, spec.screenRadius * dpiScale * actualZoom);
+  const innerX = x + padX;
+  const innerY = y + padY;
+  const innerW = frameW - padX * 2;
+  const innerH = frameH - padY * 2;
+  const innerRadius = isCircular
+    ? Math.min(innerW, innerH) / 2
+    : cutout
+      ? Math.max(0, (cutout.rx / cutout.w) * innerW, (cutout.rx / cutout.h) * innerH)
+      : Math.max(0, spec.screenRadius * dpiScale * actualZoom);
   return { x, y, width: frameW, height: frameH, pad, outerRadius, innerX, innerY, innerW, innerH, innerRadius };
 }
 

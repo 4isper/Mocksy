@@ -64,17 +64,18 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
   frameStyle.padding = spec.isOverlay ? 0 : framePadding;
 
   // For overlay skins the media must sit exactly inside the SVG's transparent
-  // screen cutout, not fill the whole frame (which would spill under the opaque
-  // bezel). Inset the media by the same padding the cutout uses.
-  const mediaStyle: CSSProperties = spec.isOverlay
+  // screen cutout. The cutout is defined in viewBox units, so express the
+  // inset and corner radius as percentages of the frame — otherwise they would
+  // only line up at the SVG's native 390px width and drift at any other size.
+  const mediaStyle: CSSProperties = spec.isOverlay && spec.cutout
     ? {
         position: "absolute",
-        top: framePadding,
-        left: framePadding,
-        width: `calc(100% - ${framePadding * 2}px)`,
-        height: `calc(100% - ${framePadding * 2}px)`,
+        left: `${(spec.cutout.x / 390) * 100}%`,
+        top: `${(spec.cutout.y / 844) * 100}%`,
+        width: `${(spec.cutout.w / 390) * 100}%`,
+        height: `${(spec.cutout.h / 844) * 100}%`,
         objectFit: "cover",
-        borderRadius: spec.screenRadius,
+        borderRadius: `${(spec.cutout.rx / spec.cutout.w) * 100}% / ${(spec.cutout.rx / spec.cutout.h) * 100}%`,
         background: "#0a0a0a"
       }
     : {
@@ -85,14 +86,14 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
         background: "#0a0a0a"
       };
 
-  const emptyMediaStyle: CSSProperties = spec.isOverlay
+  const emptyMediaStyle: CSSProperties = spec.isOverlay && spec.cutout
     ? {
         position: "absolute",
-        top: framePadding,
-        left: framePadding,
-        width: `calc(100% - ${framePadding * 2}px)`,
-        height: `calc(100% - ${framePadding * 2}px)`,
-        borderRadius: spec.screenRadius,
+        left: `${(spec.cutout.x / 390) * 100}%`,
+        top: `${(spec.cutout.y / 844) * 100}%`,
+        width: `${(spec.cutout.w / 390) * 100}%`,
+        height: `${(spec.cutout.h / 844) * 100}%`,
+        borderRadius: `${(spec.cutout.rx / spec.cutout.w) * 100}% / ${(spec.cutout.rx / spec.cutout.h) * 100}%`,
         display: "grid",
         placeItems: "center",
         color: "#a1a1aa",
