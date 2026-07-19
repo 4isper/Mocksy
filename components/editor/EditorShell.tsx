@@ -34,7 +34,15 @@ export function EditorShell() {
     if (fromUrl) setScene(fromUrl);
     else if (fromLocal) {
       try {
-        setScene(normalizeScene(JSON.parse(fromLocal)));
+        const restored = normalizeScene(JSON.parse(fromLocal));
+        // Object URLs (blob:) are revoked when the tab closes, so a saved
+        // blob: mediaUrl can never reload after a refresh. Fall back to the
+        // demo media instead of showing an empty canvas.
+        if (restored.mediaUrl && restored.mediaUrl.startsWith("blob:")) {
+          setScene({ ...restored, mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME });
+        } else {
+          setScene(restored);
+        }
       } catch {
         setScene({ mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME });
       }

@@ -1,12 +1,67 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { DragEvent } from "react";
+import type { CSSProperties, DragEvent, ReactNode } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
 import { isVideoScene } from "@/lib/render/mediaKind";
+import { buildVideoTimeline, sampleVideoTransform } from "@/lib/render/videoComposer";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { useEditorStore } from "@/lib/state/editorStore";
+
+/** Duration of one animation loop in the preview, matching the video export. */
+const ANIMATION_DURATION_MS = 3000;
+
+/**
+ * Wraps the mockup frame and drives zoomIn/zoomOut/parallax in the live
+ * preview by writing the transform straight to the DOM via rAF — no React
+ * re-render per frame, and buildSceneCss (the expensive part) is untouched.
+ * The sampled transform mirrors buildVideoTimeline / sampleVideoTransform used
+ * by the video export, so what you see previews what you export.
+ */
+function AnimationLayer({ scene, children }: { scene: EditorScene; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const animates = scene.animationPreset !== "none";
+  const timeline = buildVideoTimeline(scene);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    if (!animates) {
+      const base = sampleVideoTransform(scene, 0);
+      node.style.transform = `scale(${base.zoom}) translate(${base.x * 2}px, ${base.y * 2}px)`;
+      return;
+    }
+    let raf = 0;
+    const start = performance.now();
+    const tick = () => {
+      const progress = ((performance.now() - start) % ANIMATION_DURATION_MS) / ANIMATION_DURATION_MS;
+      const { zoom, x, y } = sampleVideoTransform(scene, progress);
+      node.style.transform = `scale(${zoom}) translate(${x * 2}px, ${y * 2}px)`;
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // timeline identity changes when the preset/keyframes change
+  }, [animates, scene, timeline]);
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        transformOrigin: "center",
+        willChange: "transform"
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 interface PreviewCanvasProps {
   scene: EditorScene;
@@ -92,7 +147,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           ...sceneCss.container
         }}
       >
-        <div style={sceneCss.frame} data-mockup-frame>
+        <AnimationLayer scene={scene}>
+          <div style={sceneCss.frame} data-mockup-frame>
           {scene.mediaUrl ? (
             useVideo ? (
               <video
@@ -146,7 +202,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
               }}
             />
           )}
-        </div>
+          </div>
+        </AnimationLayer>
         {scene.watermarkEnabled && <span className="preview-watermark">{scene.watermarkText}</span>}
         {scene.mediaUrl && (
           <button type="button" className="preview-chip" onClick={() => setMedia(null, "none")}>

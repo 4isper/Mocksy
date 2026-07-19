@@ -26,11 +26,11 @@ describe("buildSceneCss", () => {
     expect(container.background).toBe("transparent");
   });
 
-  it("scales the frame by zoom", () => {
+  it("does not scale the frame by zoom (zoom is applied by AnimationLayer)", () => {
     const scaled = buildSceneCss(base({ zoom: 1.2 })).frame.transform;
     const unscaled = buildSceneCss(base({ zoom: 1 })).frame.transform;
-    expect(scaled).toContain("scale(1.2)");
-    expect(unscaled).toContain("scale(1)");
+    expect(scaled).toBe("none");
+    expect(unscaled).toBe("none");
   });
 
   it("uses overlay asset for iphone15 and omits frame border", () => {

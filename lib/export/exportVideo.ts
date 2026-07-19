@@ -3,7 +3,7 @@
 import type { EditorScene } from "@/lib/types/editor";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { loadImage, renderMockupToCanvas, type RenderTransform } from "@/lib/export/renderMockup";
-import { buildVideoTimeline } from "@/lib/render/videoComposer";
+import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoScene } from "@/lib/render/mediaKind";
 
@@ -27,34 +27,6 @@ const ANIMATION_DURATION_SEC = 3;
 
 function sanitizeFilename(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_");
-}
-
-/** Interpolate the animation transform at a normalized progress (0..1). */
-function sampleTransform(scene: EditorScene, progress: number): RenderTransform {
-  const timeline = buildVideoTimeline(scene);
-  if (timeline.length === 0) return { zoom: scene.zoom, offsetX: 0, offsetY: 0 };
-  if (timeline.length === 1) {
-    const k = timeline[0];
-    return { zoom: k.zoom, offsetX: k.x, offsetY: k.y };
-  }
-  const p = Math.max(0, Math.min(1, progress));
-  let lower = timeline[0];
-  let upper = timeline[timeline.length - 1];
-  for (let i = 0; i < timeline.length - 1; i++) {
-    if (p >= timeline[i].at && p <= timeline[i + 1].at) {
-      lower = timeline[i];
-      upper = timeline[i + 1];
-      break;
-    }
-  }
-  const span = upper.at - lower.at;
-  const t = span > 0 ? (p - lower.at) / span : 0;
-  const lerp = (a: number, b: number) => a + (b - a) * t;
-  return {
-    zoom: lerp(lower.zoom, upper.zoom),
-    offsetX: lerp(lower.x, upper.x),
-    offsetY: lerp(lower.y, upper.y)
-  };
 }
 
 async function recordCanvasToWebm(
@@ -125,7 +97,8 @@ async function recordCanvasToWebm(
       const elapsed = (performance.now() - startedAt) / 1000;
       const normalized = duration > 0 ? Math.min(1, elapsed / duration) : 1;
       const progress = Math.min(100, normalized * 100);
-      const transform = sampleTransform(scene, normalized);
+      const sampled = sampleVideoTransform(scene, normalized);
+      const transform: RenderTransform = { zoom: sampled.zoom, offsetX: sampled.x, offsetY: sampled.y };
       onProgress?.(progress);
 
       if (media instanceof HTMLVideoElement) {
