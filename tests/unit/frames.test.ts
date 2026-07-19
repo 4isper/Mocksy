@@ -16,6 +16,12 @@ describe("FRAME_SPECS", () => {
     expect(FRAME_SPECS.tablet.isOverlay).toBe(false);
   });
 
+  it("gives overlay phone skins a native aspect ratio", () => {
+    expect(FRAME_SPECS.iphone15.aspectRatio).toBe("390 / 844");
+    expect(FRAME_SPECS.iphone16pro.aspectRatio).toBe("390 / 844");
+    expect(FRAME_SPECS.iphone.aspectRatio).toBeNull();
+  });
+
   it("exposes every MockupFrame value through FRAME_ORDER", () => {
     const expected: Array<keyof typeof FRAME_SPECS> = [
       "none",

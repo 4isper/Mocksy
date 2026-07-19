@@ -11,6 +11,10 @@ test("selecting iphone16pro renders the device overlay", async ({ page }) => {
   const frameSelect = page.locator("select").first();
   await frameSelect.selectOption("iphone16pro");
   await expect(page.locator('img[src*="iphone16pro.svg"]')).toBeVisible();
+  // The overlay frame adopts its native (portrait) aspect ratio instead of
+  // stretching the skin to the scene's default 16/9.
+  const ratio = await page.locator("[data-mockup-frame]").evaluate((el) => getComputedStyle(el).aspectRatio);
+  expect(ratio).toContain("390 / 844");
 });
 
 test("templates include the 16 Pro Glass preset", async ({ page }) => {

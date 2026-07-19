@@ -10,6 +10,7 @@ Reference inspiration: [shots.so](https://shots.so/), [PostSpark device mockup](
 - Undo / redo of every edit (`⌘Z` / `⇧⌘Z`), with keyboard shortcuts
 - Background presets (transparent, solid swatches, gradient palettes)
 - Mockup frames: `none`, `iphone`, `iphone15`, `iphone16pro`, `desktop`, `tablet`, `watch` (circular)
+- Overlay phone skins (iphone15/16pro) adopt their native portrait aspect ratio so the SVG is never stretched
 - Mockup styles: default, glass (light/dark), outline — with shadows and corner radius
 - Preset templates and animation presets (zoom in/out, parallax)
 - Drag-and-drop or file picker to load image/video media; Clear media button

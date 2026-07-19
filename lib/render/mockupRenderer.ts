@@ -34,7 +34,9 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
 
   const frameStyle: CSSProperties = {
     width: "min(900px, 80%)",
-    aspectRatio: scene.aspectRatio,
+    // Overlay skins ship at a fixed device aspect ratio; adopt it so the
+    // stretched SVG and the media inside it keep their proportions.
+    aspectRatio: spec.aspectRatio ?? scene.aspectRatio,
     borderRadius: spec.isOverlay ? spec.screenRadius : scene.frame === "watch" ? "50%" : scene.borderRadius + framePadding,
     border: spec.isOverlay ? "none" : frameBorder,
     boxShadow: baseShadow,

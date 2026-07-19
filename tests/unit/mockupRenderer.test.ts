@@ -40,6 +40,16 @@ describe("buildSceneCss", () => {
     expect(css.frame.backdropFilter).toBe("none");
   });
 
+  it("adopts the overlay skin's aspect ratio for iphone15", () => {
+    const overlay = buildSceneCss(base({ frame: "iphone15", aspectRatio: "16 / 9" })).frame;
+    expect(overlay.aspectRatio).toBe("390 / 844");
+  });
+
+  it("keeps the scene aspect ratio for CSS-only frames", () => {
+    const css = buildSceneCss(base({ frame: "iphone", aspectRatio: "16 / 9" })).frame;
+    expect(css.aspectRatio).toBe("16 / 9");
+  });
+
   it("applies padding to overlay frames so media sits inside the SVG screen cutout", () => {
     const overlay = buildSceneCss(base({ frame: "iphone15" })).frame;
     const cssOnly = buildSceneCss(base({ frame: "iphone" })).frame;
