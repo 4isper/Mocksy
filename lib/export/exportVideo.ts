@@ -61,6 +61,7 @@ async function recordCanvasToWebm(
   scene: EditorScene,
   canvas: HTMLCanvasElement,
   media: HTMLVideoElement | HTMLImageElement | null,
+  frameElement: HTMLElement | null,
   onStatus?: (message: string) => void,
   onProgress?: (progress: number) => void
 ) {
@@ -73,6 +74,13 @@ async function recordCanvasToWebm(
       overlay = null;
     }
   }
+
+  // Match the PNG export: size the frame from its on-screen box so overlay
+  // skins (iphone15/16pro) keep their native aspect ratio instead of being
+  // stretched to the default 10/16 fallback in computeFrameBox.
+  const pixelRatio = 2;
+  const frameWidth = frameElement ? Math.max(1, Math.round(frameElement.offsetWidth * pixelRatio)) : undefined;
+  const frameHeight = frameElement ? Math.max(1, Math.round(frameElement.offsetHeight * pixelRatio)) : undefined;
 
   const fps = 30;
   // Attach the canvas to the DOM (off-screen) before capturing: some browsers
@@ -123,7 +131,7 @@ async function recordCanvasToWebm(
       if (media instanceof HTMLVideoElement) {
         if (media.currentTime >= end || elapsed >= duration) {
           media.pause();
-          renderMockupToCanvas(canvas, scene, media, undefined, undefined, undefined, undefined, 2, transform, undefined, overlay);
+          renderMockupToCanvas(canvas, scene, media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, undefined, overlay);
           recorder.stop();
           cancelAnimationFrame(raf);
           onProgress?.(100);
@@ -136,7 +144,7 @@ async function recordCanvasToWebm(
         return;
       }
 
-      renderMockupToCanvas(canvas, scene, media, undefined, undefined, undefined, undefined, 2, transform, undefined, overlay);
+      renderMockupToCanvas(canvas, scene, media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, undefined, overlay);
       raf = requestAnimationFrame(tick);
     };
 
@@ -185,7 +193,8 @@ export async function exportVideo(
     media = videoInPreview;
   }
 
-  const webmBlob = await recordCanvasToWebm(scene, canvas, media, onStatus, onProgress);
+  const frameElement = previewNode.querySelector<HTMLElement>("[data-mockup-frame]");
+  const webmBlob = await recordCanvasToWebm(scene, canvas, media, frameElement, onStatus, onProgress);
   if (!webmBlob || webmBlob.size === 0) {
     onError?.("Recording produced no video frames.");
     return;

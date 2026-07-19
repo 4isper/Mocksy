@@ -400,6 +400,30 @@ test("exporting an image scene triggers an MP4 download", async ({ page }) => {
   expect(size).toBeGreaterThan(0);
 });
 
+test("exporting an overlay phone frame (16 Pro) produces an MP4", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('.segmented[aria-label="Frame"] button', { hasText: "16 Pro" }).first().click();
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(page.locator('img[src*="iphone16pro.svg"]')).toBeVisible();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export MP4" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/\.mp4$/);
+  const path = await download.path();
+  expect(path).toBeTruthy();
+  const fs = await import("node:fs");
+  const size = path ? fs.statSync(path).size : 0;
+  expect(size).toBeGreaterThan(0);
+});
+
 
 
 

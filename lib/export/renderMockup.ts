@@ -148,10 +148,23 @@ export function renderMockupToCanvas(
   ctx.clearRect(0, 0, width, height);
 
   if (scene.backgroundMode === "gradient") {
-    const angle = ((RENDER.gradientAngleDeg - 90) * Math.PI) / 180;
-    const x2 = width * Math.cos(angle);
-    const y2 = height * Math.sin(angle);
-    const grad = ctx.createLinearGradient(0, 0, x2, y2);
+    // Emulate CSS linear-gradient(angleDeg, from, to): the gradient line runs
+    // through the center at `angle`, and 0%/100% stops reach the box edges so
+    // the color spread matches the preview exactly. CSS 0deg points up and the
+    // angle increases clockwise; in canvas coords (y down) the direction unit
+    // vector is (sin a, -cos a).
+    const rad = (RENDER.gradientAngleDeg * Math.PI) / 180;
+    const dx = Math.sin(rad);
+    const dy = -Math.cos(rad);
+    const lineLen = Math.abs(width * dx) + Math.abs(height * dy);
+    const cx = width / 2;
+    const cy = height / 2;
+    const grad = ctx.createLinearGradient(
+      cx - (dx * lineLen) / 2,
+      cy - (dy * lineLen) / 2,
+      cx + (dx * lineLen) / 2,
+      cy + (dy * lineLen) / 2
+    );
     grad.addColorStop(0, scene.gradientFrom);
     grad.addColorStop(1, scene.gradientTo);
     ctx.fillStyle = grad;

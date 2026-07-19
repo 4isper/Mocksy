@@ -68,6 +68,18 @@ describe("computeFrameBox geometry", () => {
     expect(box.innerRadius).toBeCloseTo((400 - 2 * (18 * 2)) / 2, 3);
   });
 
+  it("keeps the explicit frame ratio instead of the 10/16 default fallback", () => {
+    // The video export passes the on-screen frame box (offsetWidth/Height *
+    // pixelRatio). When an explicit size is given it must be honored so the
+    // iphone15/16pro skin keeps its native 390/844 ratio rather than being
+    // stretched to the 10/16 default used when height is omitted.
+    const fw = 380 * 2;
+    const fh = 824 * 2;
+    const box = computeFrameBox(scene({ frame: "iphone16pro" }), 1400, 1400, 2, fw, fh);
+    expect(box.width / box.height).toBeCloseTo(fw / fh, 5);
+    expect(box.width / box.height).not.toBeCloseTo(10 / 16, 2);
+  });
+
   it("centers the frame when no explicit position is given", () => {
     const box = computeFrameBox(scene({ frame: "none" }), 1000, 500, 1, 400, 250);
     expect(box.x).toBeCloseTo((1000 - 400) / 2, 5);
