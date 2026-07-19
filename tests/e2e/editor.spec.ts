@@ -272,6 +272,25 @@ test("panels stack and stay within the viewport on a narrow screen", async ({ pa
   expect(overflow).toBe(true);
 });
 
+test("portrait 9/16 preview fits the viewport without page scroll on desktop", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await page.locator('.segmented[aria-label="Aspect ratio"] button', { hasText: "9 / 16" }).first().click();
+  await page.waitForTimeout(200);
+  // The editor locks to the viewport, so the whole frame is visible and the
+  // page itself never scrolls (the previous bug forced 50% zoom or scrolling).
+  const fit = await page.evaluate(() => {
+    const frame = document.querySelector("[data-mockup-frame]") as HTMLElement;
+    const r = frame.getBoundingClientRect();
+    return {
+      frameInViewport: r.bottom <= window.innerHeight + 1 && r.top >= 0,
+      noPageScroll: document.body.scrollHeight <= window.innerHeight + 1
+    };
+  });
+  expect(fit.frameInViewport).toBe(true);
+  expect(fit.noPageScroll).toBe(true);
+});
+
 test("video scene shows a dual-range trim control", async ({ page }) => {
   await page.goto("/");
   await page.locator('input[type="file"]').setInputFiles("public/sample-video.mp4");

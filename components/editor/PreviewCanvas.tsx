@@ -44,6 +44,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
     }
   };
 
+  const [arW, arH] = scene.aspectRatio.split("/").map((n) => Number(n.trim()));
+
   return (
     <div
       className="panel"
@@ -54,6 +56,11 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        // Establish a size container so the canvas can size itself with
+        // container query units, fitting inside both axes without distortion.
+        containerType: "size",
+        ["--canvas-ar-w" as string]: arW,
+        ["--canvas-ar-h" as string]: arH,
         outline: isDragging ? "2px dashed #00d9ff" : "2px dashed transparent"
       }}
       onDragEnter={(e) => {
@@ -71,9 +78,11 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
       <div
         id="preview-canvas"
         style={{
-          width: "100%",
-          height: "auto",
-          maxHeight: "100%",
+          // Contain inside the size container: take the larger of the two
+          // axes that still fits the other, so the canvas keeps its aspect
+          // ratio instead of being stretched by a fixed 100% width.
+          width: "min(100cqw, calc(100cqh * var(--canvas-ar-w) / var(--canvas-ar-h)))",
+          height: "min(100cqh, calc(100cqw * var(--canvas-ar-h) / var(--canvas-ar-w)))",
           aspectRatio: scene.aspectRatio,
           position: "relative",
           borderRadius: 12,

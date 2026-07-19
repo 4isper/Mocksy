@@ -15,7 +15,7 @@ export function TemplatesPanel() {
   };
 
   return (
-    <div className="panel" style={{ padding: 16, display: "grid", gap: 10, alignContent: "start" }}>
+    <div className="panel templates-panel" style={{ padding: 16, display: "grid", gap: 10, alignContent: "start" }}>
       <h2 className="panel-title">Templates</h2>
       <div className="templates">
         {templatePresets.map((preset) => (

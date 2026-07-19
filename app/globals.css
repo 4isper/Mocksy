@@ -61,11 +61,12 @@ body::before {
 
 /* ---- App shell ---- */
 .editor-shell {
-  min-height: 100dvh;
+  height: 100dvh;
   display: grid;
+  grid-template-rows: auto 1fr;
   gap: 18px;
   padding: 22px;
-  align-items: start;
+  overflow: hidden;
   max-width: 1540px;
   margin: 0 auto;
 }
@@ -74,12 +75,21 @@ body::before {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr) 290px;
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
+  min-height: 0;
+  overflow: hidden;
 }
 
 @media (max-width: 980px) {
   .editor-grid {
     grid-template-columns: 1fr;
+    grid-auto-rows: min-content;
+    overflow: visible;
+  }
+  .editor-shell {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
   }
 }
 
@@ -93,6 +103,15 @@ body::before {
   box-shadow: var(--shadow-pop);
   /* faint top highlight for a layered, glassy feel */
   position: relative;
+  min-height: 0;
+}
+
+/* Side panels scroll internally when taller than the viewport so the page
+   itself never scrolls and the preview stays fully visible. */
+.control-panel,
+.templates-panel {
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .panel::before {

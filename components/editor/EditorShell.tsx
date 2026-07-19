@@ -127,7 +127,7 @@ export function EditorShell() {
       </div>
       <div className="editor-grid">
         <ControlPanel />
-        <section style={{ display: "grid", gridTemplateRows: "1fr auto", gap: 12 }}>
+        <section style={{ display: "grid", gridTemplateRows: "1fr auto", gap: 12, minHeight: 0, overflow: "hidden" }}>
           <PreviewCanvas scene={scene} />
           <div className="panel toolbar">
             <button type="button" className="btn" onClick={undo} disabled={pastLength === 0} title="Undo (⌘Z)">

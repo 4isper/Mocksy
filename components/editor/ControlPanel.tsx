@@ -104,7 +104,7 @@ export function ControlPanel() {
   };
 
   return (
-    <div className="panel" style={{ padding: 16, display: "grid", gap: 16 }}>
+    <div className="panel control-panel" style={{ padding: 16, display: "grid", gap: 16 }}>
       <h2 className="panel-title">Controls</h2>
       <div className="field-group">
         <div className="field">
