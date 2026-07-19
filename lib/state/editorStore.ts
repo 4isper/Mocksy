@@ -2,10 +2,12 @@
 
 import { create } from "zustand";
 import type { AnimationPreset, EditorScene, MediaType, MockupFrame, StylePreset } from "@/lib/types/editor";
+import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
 
 interface EditorStoreState {
   scene: EditorScene;
   setScene: (scene: Partial<EditorScene>) => void;
+  resetScene: () => void;
   setMedia: (mediaUrl: string | null, mediaType: MediaType, mediaName?: string | null) => void;
   setFrame: (frame: MockupFrame) => void;
   setStylePreset: (stylePreset: StylePreset) => void;
@@ -58,6 +60,10 @@ export const initialScene: EditorScene = {
 export const useEditorStore = create<EditorStoreState>((set) => ({
   scene: initialScene,
   setScene: (scene) => set(() => ({ scene: { ...initialScene, ...scene } })),
+  resetScene: () =>
+    set(() => ({
+      scene: { ...initialScene, mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME }
+    })),
   setMedia: (mediaUrl, mediaType, mediaName = null) =>
     set((s) => ({
       scene: {

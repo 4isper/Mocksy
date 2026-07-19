@@ -67,4 +67,13 @@ describe("editorStore", () => {
     // untouched fields fall back to initial values
     expect(store().scene.stylePreset).toBe(initialScene.stylePreset);
   });
+
+  it("resetScene restores defaults with demo media", () => {
+    store().setScene({ frame: "desktop", zoom: 1.2 });
+    store().resetScene();
+    expect(store().scene.frame).toBe(initialScene.frame);
+    expect(store().scene.zoom).toBe(initialScene.zoom);
+    expect(store().scene.mediaUrl).toContain("data:image/svg");
+    expect(store().scene.mediaType).toBe("image");
+  });
 });

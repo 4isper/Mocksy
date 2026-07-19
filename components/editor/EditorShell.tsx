@@ -15,7 +15,7 @@ const AUTOSAVE_KEY = "mocksy-scene";
 const AUTOSAVE_DELAY = 500;
 
 export function EditorShell() {
-  const { scene, setScene } = useEditorStore();
+  const { scene, setScene, resetScene } = useEditorStore();
   const [videoExportStatus, setVideoExportStatus] = useState<string | null>(null);
   const [videoExportProgress, setVideoExportProgress] = useState<number>(0);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -128,6 +128,15 @@ export function EditorShell() {
             }}
           >
             Copy Share URL
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              resetScene();
+              setSaved(false);
+            }}
+          >
+            Reset
           </button>
         </div>
       </section>

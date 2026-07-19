@@ -80,6 +80,14 @@ test("opens with demo media when nothing is saved", async ({ page, context }) =>
   await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
 });
 
+test("Reset restores default settings and demo media", async ({ page }) => {
+  await page.goto("/");
+  await page.locator("select").first().selectOption("tablet");
+  await page.getByRole("button", { name: "Reset" }).click();
+  await expect(page.locator("select").first()).toHaveValue("iphone");
+  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+});
+
 
 
 
