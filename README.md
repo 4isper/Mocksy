@@ -11,6 +11,7 @@ Reference inspiration: [shots.so](https://shots.so/), [PostSpark device mockup](
 - Background presets (transparent, solid swatches, gradient palettes)
 - Mockup frames: `none`, `iphone`, `iphone15`, `iphone16pro`, `desktop`, `tablet`, `watch` (circular)
 - Overlay phone skins (iphone15/16pro) adopt their native portrait aspect ratio so the SVG is never stretched
+- The preview canvas keeps the chosen scene aspect ratio (contain), so portrait ratios like 9/16 fit the viewport without stretching or page scroll
 - Mockup styles: default, glass (light/dark), outline — with shadows and corner radius
 - Preset templates and animation presets (zoom in/out, parallax)
 - Drag-and-drop or file picker to load image/video media; Clear media button
@@ -62,8 +63,11 @@ npm run test:e2e    # end-to-end tests (Playwright; needs a browser installed)
 
 ## Responsive layout
 
-The three-panel editor (controls / preview / templates) collapses to a single
-stacked column below 900px wide, so the editor stays usable on tablets and phones.
+The editor locks to the viewport height (`100dvh`) and never scrolls the page:
+the preview stays fully visible at any aspect ratio (including portrait 9/16),
+and the side panels scroll internally when they overflow. Below 980px wide the
+three-panel editor (controls / preview / templates) collapses to a single
+stacked column so it stays usable on tablets and phones.
 
 ## Keyboard shortcuts
 
