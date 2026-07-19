@@ -13,7 +13,7 @@ async function getFfmpegInstance(onStatus?: (message: string) => void) {
   if (ffmpegSingleton) return ffmpegSingleton;
 
   const ffmpeg = new FFmpeg();
-  onStatus?.("Loading encoder…");
+  onStatus?.("Preparing encoder…");
   await ffmpeg.load({
     coreURL: "/ffmpeg-core.js",
     wasmURL: "/ffmpeg-core.wasm",
@@ -148,7 +148,7 @@ async function recordCanvasToWebm(
       raf = requestAnimationFrame(tick);
     };
 
-    onStatus?.("Recording mockup frames...");
+    onStatus?.("Recording preview…");
     raf = requestAnimationFrame(tick);
   });
 
@@ -200,7 +200,7 @@ export async function exportVideo(
     return;
   }
 
-  onStatus?.("Converting to MP4...");
+  onStatus?.("Encoding MP4…");
   onProgress?.(0);
   const ffmpeg = await getFfmpegInstance(onStatus);
   const inputName = "input.webm";
@@ -225,7 +225,7 @@ export async function exportVideo(
   URL.revokeObjectURL(link.href);
   await ffmpeg.deleteFile(inputName);
   await ffmpeg.deleteFile(outputName);
-  onStatus?.("MP4 exported");
+  onStatus?.("Done");
   onProgress?.(100);
   } catch (err) {
     onError?.(err instanceof Error ? err.message : "Video export failed.");

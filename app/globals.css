@@ -437,6 +437,84 @@ body::before {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
+/* ---- Accordion toggle (collapsible control groups) ---- */
+.accordion-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.accordion-toggle:hover {
+  color: var(--accent);
+}
+
+.accordion-chevron {
+  color: var(--text-dim);
+  transition: transform 0.15s ease;
+}
+
+.accordion-toggle[aria-expanded="true"] .accordion-chevron {
+  transform: rotate(180deg);
+}
+
+.video-options {
+  padding-top: 14px;
+  border-top: 1px solid var(--panel-border);
+}
+
+/* ---- Export progress (video) ---- */
+.export-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 160px;
+}
+
+.export-status .label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.export-status .progress {
+  width: 100px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+  flex: none;
+}
+
+.export-status .progress > div {
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+  transition: width 0.2s ease;
+}
+
+.export-status .pct {
+  font-size: 12px;
+  color: var(--text-dim);
+  min-width: 32px;
+  text-align: right;
+  flex: none;
+}
+
 /* ---- Section divider / groups ---- */
 .field-group {
   display: grid;

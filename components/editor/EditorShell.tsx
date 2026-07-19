@@ -67,7 +67,7 @@ export function EditorShell() {
   const handleExportMp4 = useCallback(async () => {
     setExportError(null);
     try {
-      setVideoExportStatus("Starting...");
+      setVideoExportStatus("Exporting video…");
       setVideoExportProgress(0);
       await exportVideo(scene, setVideoExportStatus, setVideoExportProgress, setExportError);
     } finally {
@@ -149,27 +149,12 @@ export function EditorShell() {
               Export MP4
             </button>
             {videoExportStatus ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 160 }}>
-                <span style={{ flex: 1, minWidth: 0 }}>{videoExportStatus}</span>
-                <div
-                  style={{
-                    width: 100,
-                    height: 6,
-                    backgroundColor: "rgba(255,255,255,0.1)",
-                    borderRadius: 3,
-                    overflow: "hidden"
-                  }}
-                >
-                  <div
-                    style={{
-                      height: "100%",
-                      width: `${videoExportProgress}%`,
-                      backgroundColor: "var(--accent)",
-                      transition: "width 0.2s ease"
-                    }}
-                  />
+              <div className="export-status">
+                <span className="label">{videoExportStatus}</span>
+                <div className="progress">
+                  <div style={{ width: `${videoExportProgress}%` }} />
                 </div>
-                <span style={{ fontSize: 12, minWidth: 32 }}>{Math.round(videoExportProgress)}%</span>
+                <span className="pct">{Math.round(videoExportProgress)}%</span>
               </div>
             ) : null}
             {exportError ? (

@@ -15,45 +15,40 @@ export function VideoOptions() {
     setVideoCurrentTime
   } = useEditorStore();
 
-  const toggle = (label: string, checked: boolean, onChange: (value: boolean) => void) => (
-    <label>
-      {label}
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-    </label>
-  );
-
   return (
-    <div style={{ display: "grid", gap: 8, borderTop: "1px solid #27272a", paddingTop: 8 }}>
+    <div className="field-group video-options">
       <button
         type="button"
+        className="accordion-toggle"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          background: "transparent",
-          border: "none",
-          color: "#f4f4f5",
-          cursor: "pointer",
-          padding: 0,
-          fontSize: 14,
-          fontWeight: 600
-        }}
       >
         <span>Video options</span>
-        <span aria-hidden style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s ease" }}>
+        <span aria-hidden className="accordion-chevron">
           ▾
         </span>
       </button>
       {open ? (
-        <div style={{ display: "grid", gap: 12 }}>
-          {toggle("Muted", scene.videoMuted, setVideoMuted)}
-          {toggle("Loop", scene.videoLoop, setVideoLoop)}
-          {toggle("Autoplay", scene.videoAutoplay, setVideoAutoplay)}
-          <label>
-            Poster time
+        <div className="field-group">
+          <label className="toggle">
+            <input type="checkbox" checked={scene.videoMuted} onChange={(e) => setVideoMuted(e.target.checked)} />
+            <span className="track" aria-hidden="true" />
+            <span>Muted</span>
+          </label>
+          <label className="toggle">
+            <input type="checkbox" checked={scene.videoLoop} onChange={(e) => setVideoLoop(e.target.checked)} />
+            <span className="track" aria-hidden="true" />
+            <span>Loop</span>
+          </label>
+          <label className="toggle">
+            <input type="checkbox" checked={scene.videoAutoplay} onChange={(e) => setVideoAutoplay(e.target.checked)} />
+            <span className="track" aria-hidden="true" />
+            <span>Autoplay</span>
+          </label>
+          <label className="field">
+            <span>Poster time</span>
             <input
+              className="range"
               type="range"
               min={0}
               max={Math.max(scene.videoDuration, 0.1)}
@@ -62,9 +57,10 @@ export function VideoOptions() {
               onChange={(e) => setVideoPosterTime(Number(e.target.value))}
             />
           </label>
-          <label>
-            Timeline
+          <label className="field">
+            <span>Timeline</span>
             <input
+              className="range"
               type="range"
               min={0}
               max={Math.max(scene.videoDuration, 0.1)}

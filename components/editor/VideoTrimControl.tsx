@@ -37,12 +37,12 @@ export function VideoTrimControl({ duration }: VideoTrimControlProps) {
     width: `${Math.max(0, endPct - startPct)}%`,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#00d9ff"
+    backgroundColor: "var(--accent)"
   };
 
   return (
     <div style={{ display: "grid", gap: 4 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "rgba(255,255,255,0.6)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--text-dim)" }}>
         <span>Trim</span>
         <span>
           {scene.videoTrimStart.toFixed(1)}s – {(scene.videoTrimEnd || duration).toFixed(1)}s
