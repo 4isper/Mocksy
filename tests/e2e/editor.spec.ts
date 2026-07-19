@@ -1,5 +1,21 @@
 import { expect, test } from "@playwright/test";
 
+// Frame/Style/Animation/Aspect are now segmented button groups, not <select>.
+// Pick the option by its visible label inside the matching group.
+async function selectFrame(page: import("@playwright/test").Page, label: string) {
+  await page
+    .locator('.segmented[aria-label="Frame"] button', { hasText: label })
+    .first()
+    .click();
+}
+
+async function frameIsActive(page: import("@playwright/test").Page, label: string) {
+  return page
+    .locator('.segmented[aria-label="Frame"] button', { hasText: label })
+    .first()
+    .getAttribute("aria-pressed");
+}
+
 test("shows editor shell", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("Templates")).toBeVisible();
@@ -8,8 +24,7 @@ test("shows editor shell", async ({ page }) => {
 
 test("selecting iphone16pro renders the device overlay", async ({ page }) => {
   await page.goto("/");
-  const frameSelect = page.locator("select").first();
-  await frameSelect.selectOption("iphone16pro");
+  await selectFrame(page, "16 Pro");
   await expect(page.locator('img[src*="iphone16pro.svg"]')).toBeVisible();
   // The overlay frame adopts its native (portrait) aspect ratio instead of
   // stretching the skin to the scene's default 16/9.
@@ -19,8 +34,7 @@ test("selecting iphone16pro renders the device overlay", async ({ page }) => {
 
 test("iphone16pro media stays inside the device cutout, not under the bezel", async ({ page }) => {
   await page.goto("/");
-  const frameSelect = page.locator("select").first();
-  await frameSelect.selectOption("iphone16pro");
+  await selectFrame(page, "16 Pro");
   await page.locator('input[type="file"]').setInputFiles({
     name: "sample.png",
     mimeType: "image/png",
@@ -51,8 +65,7 @@ test("iphone16pro media stays inside the device cutout, not under the bezel", as
 
 test("iphone16pro shadow control drives the overlay drop-shadow", async ({ page }) => {
   await page.goto("/");
-  const frameSelect = page.locator("select").first();
-  await frameSelect.selectOption("iphone16pro");
+  await selectFrame(page, "16 Pro");
   await expect(page.locator('img[src*="iphone16pro.svg"]')).toBeVisible();
 
   const frameFilter = () =>
@@ -76,10 +89,8 @@ test("iphone16pro shadow control drives the overlay drop-shadow", async ({ page 
 
 test("iphone15 and iphone16pro overlays have a transparent screen cutout", async ({ page }) => {
   await page.goto("/");
-  const frameSelect = page.locator("select").first();
-
-  for (const frame of ["iphone15", "iphone16pro"] as const) {
-    await frameSelect.selectOption(frame);
+  for (const label of ["15", "16 Pro"]) {
+    await selectFrame(page, label);
     await page.waitForTimeout(200);
 
     // Draw the overlay skin onto a canvas and read the alpha at the screen
@@ -95,7 +106,7 @@ test("iphone15 and iphone16pro overlays have a transparent screen cutout", async
       const { data } = ctx.getImageData(canvas.width / 2, canvas.height / 2, 1, 1);
       return data[3];
     });
-    expect(centerAlpha, `${frame} screen center should be transparent`).toBe(0);
+    expect(centerAlpha, `${label} screen center should be transparent`).toBe(0);
   }
 });
 
@@ -143,17 +154,16 @@ test("exporting an image scene triggers a PNG download", async ({ page }) => {
 
 test("autosaves the scene and restores it after reload", async ({ page }) => {
   await page.goto("/");
-  await page.locator("select").first().selectOption("tablet");
+  await selectFrame(page, "Tablet");
   await expect(page.getByText("Saved")).toBeVisible();
   await page.reload();
-  await expect(page.locator("select").first()).toHaveValue("tablet");
+  await expect(await frameIsActive(page, "Tablet")).toBe("true");
 });
 
 test("watch frame renders as a circle", async ({ page }) => {
   await page.goto("/");
-  const frameSelect = page.locator("select").first();
-  await expect(frameSelect.locator("option", { hasText: "watch" })).toHaveCount(1);
-  await frameSelect.selectOption("watch");
+  await selectFrame(page, "Watch");
+  await expect(await frameIsActive(page, "Watch")).toBe("true");
   const radius = await page.locator("[data-mockup-frame]").evaluate((el) => getComputedStyle(el).borderRadius);
   expect(radius).toContain("50%");
 });
@@ -168,33 +178,31 @@ test("opens with demo media when nothing is saved", async ({ page, context }) =>
 
 test("Reset restores default settings and demo media", async ({ page }) => {
   await page.goto("/");
-  await page.locator("select").first().selectOption("tablet");
+  await selectFrame(page, "Tablet");
   await page.getByRole("button", { name: "Reset" }).click();
-  await expect(page.locator("select").first()).toHaveValue("iphone");
+  await expect(await frameIsActive(page, "iPhone")).toBe("true");
   await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
 });
 
 test("undo and redo restore a previous frame choice", async ({ page }) => {
   await page.goto("/");
-  const frameSelect = page.locator("select").first();
-  await frameSelect.selectOption("desktop");
-  await expect(frameSelect).toHaveValue("desktop");
+  await selectFrame(page, "Desktop");
+  await expect(await frameIsActive(page, "Desktop")).toBe("true");
 
   await page.getByRole("button", { name: "Undo" }).click();
-  await expect(frameSelect).toHaveValue("iphone");
+  await expect(await frameIsActive(page, "iPhone")).toBe("true");
 
   await page.getByRole("button", { name: "Redo" }).click();
-  await expect(frameSelect).toHaveValue("desktop");
+  await expect(await frameIsActive(page, "Desktop")).toBe("true");
 });
 
 test("keyboard undo reverts the last change", async ({ page }) => {
   await page.goto("/");
-  const frameSelect = page.locator("select").first();
-  await frameSelect.selectOption("tablet");
-  await expect(frameSelect).toHaveValue("tablet");
+  await selectFrame(page, "Tablet");
+  await expect(await frameIsActive(page, "Tablet")).toBe("true");
 
   await page.keyboard.press("Control+z");
-  await expect(frameSelect).toHaveValue("iphone");
+  await expect(await frameIsActive(page, "iPhone")).toBe("true");
 });
 
 test("background swatches apply a preset", async ({ page }) => {

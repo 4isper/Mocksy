@@ -14,6 +14,61 @@ const styles: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
 const animations: AnimationPreset[] = ["none", "zoomIn", "zoomOut", "parallax"];
 const aspectRatios = ["16 / 9", "4 / 3", "3 / 2", "1 / 1", "9 / 16"];
 
+const FRAME_LABELS: Record<MockupFrame, string> = {
+  none: "None",
+  iphone: "iPhone",
+  iphone15: "15",
+  iphone16pro: "16 Pro",
+  desktop: "Desktop",
+  tablet: "Tablet",
+  watch: "Watch"
+};
+
+const STYLE_LABELS: Record<StylePreset, string> = {
+  default: "Default",
+  glassLight: "Glass",
+  glassDark: "Dark glass",
+  outline: "Outline"
+};
+
+const ANIM_LABELS: Record<AnimationPreset, string> = {
+  none: "None",
+  zoomIn: "Zoom in",
+  zoomOut: "Zoom out",
+  parallax: "Parallax"
+};
+
+function Segmented<T extends string>({
+  label,
+  value,
+  options,
+  onChange
+}: {
+  label: string;
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <div className="segmented" role="group" aria-label={label}>
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            aria-pressed={value === opt.value}
+            className={value === opt.value ? "is-active" : undefined}
+            onClick={() => onChange(opt.value)}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </label>
+  );
+}
+
 export function ControlPanel() {
   const [mediaError, setMediaError] = useState<string | null>(null);
   const {
@@ -67,46 +122,30 @@ export function ControlPanel() {
       <div className="divider" />
 
       <div className="field-group">
-        <label className="field">
-          <span>Frame</span>
-          <select value={scene.frame} onChange={(e) => setFrame(e.target.value as MockupFrame)}>
-            {frames.map((frame) => (
-              <option key={frame} value={frame}>
-                {frame}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span>Aspect ratio</span>
-          <select value={scene.aspectRatio} onChange={(e) => setAspectRatio(e.target.value)}>
-            {aspectRatios.map((ratio) => (
-              <option key={ratio} value={ratio}>
-                {ratio}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span>Style</span>
-          <select value={scene.stylePreset} onChange={(e) => setStylePreset(e.target.value as StylePreset)}>
-            {styles.map((style) => (
-              <option key={style} value={style}>
-                {style}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span>Animation</span>
-          <select value={scene.animationPreset} onChange={(e) => setAnimationPreset(e.target.value as AnimationPreset)}>
-            {animations.map((anim) => (
-              <option key={anim} value={anim}>
-                {anim}
-              </option>
-            ))}
-          </select>
-        </label>
+        <Segmented
+          label="Frame"
+          value={scene.frame}
+          options={frames.map((f) => ({ value: f, label: FRAME_LABELS[f] }))}
+          onChange={setFrame}
+        />
+        <Segmented
+          label="Aspect ratio"
+          value={scene.aspectRatio}
+          options={aspectRatios.map((r) => ({ value: r, label: r }))}
+          onChange={setAspectRatio}
+        />
+        <Segmented
+          label="Style"
+          value={scene.stylePreset}
+          options={styles.map((s) => ({ value: s, label: STYLE_LABELS[s] }))}
+          onChange={setStylePreset}
+        />
+        <Segmented
+          label="Animation"
+          value={scene.animationPreset}
+          options={animations.map((a) => ({ value: a, label: ANIM_LABELS[a] }))}
+          onChange={setAnimationPreset}
+        />
       </div>
 
       <div className="divider" />
@@ -114,11 +153,12 @@ export function ControlPanel() {
       <div className="field-group">
         <label className="field">
           <span>Zoom</span>
-          <input type="range" min={0.8} max={1.5} step={0.01} value={scene.zoom} onChange={(e) => setZoom(Number(e.target.value))} />
+          <input className="range" type="range" min={0.8} max={1.5} step={0.01} value={scene.zoom} onChange={(e) => setZoom(Number(e.target.value))} />
         </label>
         <label className="field">
           <span>Shadow</span>
           <input
+            className="range"
             type="range"
             min={0}
             max={1}
@@ -129,7 +169,7 @@ export function ControlPanel() {
         </label>
         <label className="field">
           <span>Radius</span>
-          <input type="range" min={0} max={48} step={1} value={scene.borderRadius} onChange={(e) => setBorderRadius(Number(e.target.value))} />
+          <input className="range" type="range" min={0} max={48} step={1} value={scene.borderRadius} onChange={(e) => setBorderRadius(Number(e.target.value))} />
         </label>
       </div>
 
@@ -180,8 +220,13 @@ export function ControlPanel() {
       <div className="divider" />
 
       <div className="field-group">
-        <label className="field" style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <input type="checkbox" checked={scene.watermarkEnabled} onChange={(e) => toggleWatermark(e.target.checked)} />
+        <label className="toggle">
+          <input
+            type="checkbox"
+            checked={scene.watermarkEnabled}
+            onChange={(e) => toggleWatermark(e.target.checked)}
+          />
+          <span className="track" aria-hidden="true" />
           <span>Watermark</span>
         </label>
         <label className="field">

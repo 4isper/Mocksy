@@ -121,31 +121,14 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             />
           )}
         </div>
-        {scene.watermarkEnabled && (
-          <span style={{ position: "absolute", right: 16, bottom: 16, color: "rgba(255,255,255,0.8)" }}>
-            {scene.watermarkText}
-          </span>
-        )}
+        {scene.watermarkEnabled && <span className="preview-watermark">{scene.watermarkText}</span>}
         {scene.mediaUrl && (
           <button type="button" className="preview-chip" onClick={() => setMedia(null, "none")}>
             Clear media
           </button>
         )}
         {dropError ? (
-          <div
-            role="alert"
-            style={{
-              position: "absolute",
-              left: 12,
-              bottom: 12,
-              right: 12,
-              padding: "8px 12px",
-              borderRadius: 8,
-              background: "rgba(127,29,29,0.85)",
-              color: "#fecaca",
-              fontSize: 13
-            }}
-          >
+          <div role="alert" className="preview-error">
             {dropError}
           </div>
         ) : null}

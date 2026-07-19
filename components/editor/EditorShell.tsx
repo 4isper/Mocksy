@@ -121,6 +121,7 @@ export function EditorShell() {
   return (
     <main className="editor-shell">
       <div className="brand">
+        <span className="brand-mark" aria-hidden="true" />
         <h1>Mocksy</h1>
         <span className="tag">Free mockup editor — no subscriptions</span>
       </div>
