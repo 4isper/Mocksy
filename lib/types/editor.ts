@@ -1,0 +1,32 @@
+export type BackgroundMode = "transparent" | "solid" | "gradient";
+export type MockupFrame = "none" | "iphone" | "desktop" | "tablet";
+export type StylePreset = "default" | "glassLight" | "glassDark" | "outline";
+export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax";
+export type MediaType = "none" | "image" | "video";
+
+export interface EditorScene {
+  mediaUrl: string | null;
+  mediaType: MediaType;
+  mediaName: string | null;
+  frame: MockupFrame;
+  stylePreset: StylePreset;
+  animationPreset: AnimationPreset;
+  zoom: number;
+  shadowOpacity: number;
+  borderRadius: number;
+  backgroundMode: BackgroundMode;
+  backgroundColor: string;
+  gradientFrom: string;
+  gradientTo: string;
+  watermarkText: string;
+  watermarkEnabled: boolean;
+  aspectRatio: string;
+  videoMuted: boolean;
+  videoLoop: boolean;
+  videoAutoplay: boolean;
+  videoPosterTime: number;
+  videoDuration: number;
+  videoCurrentTime: number;
+  videoTrimStart: number;
+  videoTrimEnd: number;
+}
