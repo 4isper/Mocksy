@@ -48,9 +48,7 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
           : "rgba(255,255,255,0.06)"
   };
 
-  if (!spec.isOverlay) {
-    frameStyle.padding = framePadding;
-  }
+  frameStyle.padding = framePadding;
 
   return {
     container: {
