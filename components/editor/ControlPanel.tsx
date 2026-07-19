@@ -1,10 +1,11 @@
 "use client";
 
 import type { ChangeEvent } from "react";
+import { useState } from "react";
 import { useEditorStore } from "@/lib/state/editorStore";
 import type { AnimationPreset, MockupFrame, StylePreset } from "@/lib/types/editor";
 import { FRAME_ORDER } from "@/lib/render/frames";
-import { loadMediaFromFile } from "@/lib/media/loadFile";
+import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { backgroundPresets } from "@/lib/presets/presets";
 import { VideoTrimControl } from "@/components/editor/VideoTrimControl";
 
@@ -14,6 +15,7 @@ const animations: AnimationPreset[] = ["none", "zoomIn", "zoomOut", "parallax"];
 const aspectRatios = ["16 / 9", "4 / 3", "3 / 2", "1 / 1", "9 / 16"];
 
 export function ControlPanel() {
+  const [mediaError, setMediaError] = useState<string | null>(null);
   const {
     scene,
     setMedia,
@@ -39,8 +41,16 @@ export function ControlPanel() {
   const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const { url, mediaType, mediaName } = loadMediaFromFile(file);
-    setMedia(url, mediaType, mediaName);
+    try {
+      const { url, mediaType, mediaName } = loadMediaFromFile(file);
+      setMediaError(null);
+      setMedia(url, mediaType, mediaName);
+    } catch (err) {
+      if (err instanceof UnsupportedMediaError) setMediaError(err.message);
+      else setMediaError("Could not load that file.");
+    } finally {
+      event.target.value = "";
+    }
   };
 
   return (
@@ -49,6 +59,11 @@ export function ControlPanel() {
         Media
         <input type="file" accept="image/*,video/*" onChange={handleFile} />
       </label>
+      {mediaError ? (
+        <span role="alert" style={{ color: "#f87171", fontSize: 13 }}>
+          {mediaError}
+        </span>
+      ) : null}
       {scene.mediaType === "video" && (
         <>
           <label>

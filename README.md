@@ -13,6 +13,7 @@ Reference inspiration: [shots.so](https://shots.so/), [PostSpark device mockup](
 - Mockup styles: default, glass (light/dark), outline — with shadows and corner radius
 - Preset templates and animation presets (zoom in/out, parallax)
 - Drag-and-drop or file picker to load image/video media; Clear media button
+- Unsupported file types are rejected with an inline error instead of a blank canvas
 - Video trim shown as a single dual-range control with a visible selected window
 - PNG export (matches the on-screen preview pixel-for-pixel)
 - MP4 export via in-browser recording (MediaRecorder) + FFmpeg (WebM → MP4)

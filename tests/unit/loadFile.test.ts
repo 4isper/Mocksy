@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectMediaType, loadMediaFromFile } from "@/lib/media/loadFile";
+import { detectMediaType, isSupportedMedia, loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 
 const file = (name: string, type: string): File =>
   new File([new Uint8Array([1, 2, 3])], name, { type });
@@ -25,5 +25,22 @@ describe("loadFile", () => {
     expect(result.mediaType).toBe("video");
     expect(result.mediaName).toBe("demo.mp4");
     expect(result.url).toMatch(/^blob:/);
+  });
+
+  it("accepts common image and video formats", () => {
+    expect(isSupportedMedia(file("shot.png", "image/png"))).toBe(true);
+    expect(isSupportedMedia(file("shot.webp", ""))).toBe(true);
+    expect(isSupportedMedia(file("clip.mp4", "video/mp4"))).toBe(true);
+    expect(isSupportedMedia(file("clip.mov", ""))).toBe(true);
+  });
+
+  it("rejects unsupported document formats", () => {
+    expect(isSupportedMedia(file("notes.pdf", "application/pdf"))).toBe(false);
+    expect(isSupportedMedia(file("data.csv", "text/csv"))).toBe(false);
+  });
+
+  it("loadMediaFromFile throws UnsupportedMediaError on bad files", () => {
+    expect(() => loadMediaFromFile(file("notes.pdf", "application/pdf"))).toThrow(UnsupportedMediaError);
+    expect(() => loadMediaFromFile(file("notes.pdf", "application/pdf"))).toThrow(/"notes.pdf" is not a supported/);
   });
 });

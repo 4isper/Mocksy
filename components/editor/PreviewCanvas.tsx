@@ -5,7 +5,7 @@ import type { DragEvent } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
 import { isVideoScene } from "@/lib/render/mediaKind";
-import { loadMediaFromFile } from "@/lib/media/loadFile";
+import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { useEditorStore } from "@/lib/state/editorStore";
 
 interface PreviewCanvasProps {
@@ -17,6 +17,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const dragDepth = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [dropError, setDropError] = useState<string | null>(null);
   const { setMedia, setVideoDuration, setVideoCurrentTime } = useEditorStore();
   const useVideo = isVideoScene(scene);
 
@@ -34,8 +35,13 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
     setIsDragging(false);
     const file = event.dataTransfer.files?.[0];
     if (!file) return;
-    const { url, mediaType, mediaName } = loadMediaFromFile(file);
-    setMedia(url, mediaType, mediaName);
+    try {
+      const { url, mediaType, mediaName } = loadMediaFromFile(file);
+      setDropError(null);
+      setMedia(url, mediaType, mediaName);
+    } catch (err) {
+      setDropError(err instanceof UnsupportedMediaError ? err.message : "Could not load that file.");
+    }
   };
 
   return (
@@ -163,6 +169,24 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             Clear media
           </button>
         )}
+        {dropError ? (
+          <div
+            role="alert"
+            style={{
+              position: "absolute",
+              left: 12,
+              bottom: 12,
+              right: 12,
+              padding: "8px 12px",
+              borderRadius: 8,
+              background: "rgba(127,29,29,0.85)",
+              color: "#fecaca",
+              fontSize: 13
+            }}
+          >
+            {dropError}
+          </div>
+        ) : null}
       </div>
     </div>
   );

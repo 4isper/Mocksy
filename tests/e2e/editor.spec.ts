@@ -162,6 +162,21 @@ test("video scene shows a dual-range trim control", async ({ page }) => {
   await expect(trimLabel).toBeVisible();
 });
 
+test("rejects unsupported file types with an inline error", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "notes.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4 fake")
+  });
+  await expect(page.getByText(/is not a supported image or video/)).toBeVisible();
+  // The default demo media stays put; the rejected PDF is not loaded.
+  const media = page.locator('img[alt="Uploaded media"]');
+  await expect(media).toHaveCount(1);
+  await expect(media).toHaveAttribute("src", /data:image\/svg/);
+  await expect(page.getByText("Drop image or video to start")).toHaveCount(0);
+});
+
 
 
 
