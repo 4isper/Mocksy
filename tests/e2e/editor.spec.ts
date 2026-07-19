@@ -37,4 +37,23 @@ test("uploading media reveals a Clear button that resets it", async ({ page }) =
   await expect(page.getByText("Drop image or video to start")).toBeVisible();
 });
 
+test("exporting an image scene triggers a PNG download", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export PNG" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/mocksy-export\.png$/);
+});
+
+
 
