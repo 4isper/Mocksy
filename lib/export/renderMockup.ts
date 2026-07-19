@@ -24,6 +24,57 @@ export interface RenderTransform {
   offsetY: number;
 }
 
+export interface FrameBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  pad: number;
+  outerRadius: number;
+  innerX: number;
+  innerY: number;
+  innerW: number;
+  innerH: number;
+  innerRadius: number;
+}
+
+/**
+ * Computes the canvas-space geometry for a frame. All values are in device px.
+ * `frameWidth`/`frameHeight` arrive in device px (callers multiply offset sizes
+ * by pixelRatio); keeping them in device px makes pad/radius/shadow scale
+ * together and the media inset ratio match the CSS preview (spec.padding / frameWidth).
+ */
+export function computeFrameBox(
+  scene: EditorScene,
+  canvasWidth: number,
+  canvasHeight: number,
+  pixelRatio: number,
+  frameWidth?: number,
+  frameHeight?: number,
+  transform?: RenderTransform,
+  frameX?: number,
+  frameY?: number
+): FrameBox {
+  const spec = getFrameSpec(scene.frame);
+  const dpiScale = pixelRatio;
+  const actualZoom = Math.max(0.01, transform?.zoom ?? scene.zoom);
+  const defaultFrameW = Math.min(900, (canvasWidth / dpiScale) * 0.8) * dpiScale;
+  const frameW = (typeof frameWidth === "number" && frameWidth > 0 ? frameWidth : defaultFrameW) * actualZoom;
+  const frameH = (typeof frameHeight === "number" && frameHeight > 0 ? frameHeight : frameW * (10 / 16)) * actualZoom;
+  const offsetX = (transform?.offsetX ?? 0) * dpiScale * actualZoom;
+  const offsetY = (transform?.offsetY ?? 0) * dpiScale * actualZoom;
+  const x = (typeof frameX === "number" ? frameX : (canvasWidth - frameW) / 2) + offsetX;
+  const y = (typeof frameY === "number" ? frameY : (canvasHeight - frameH) / 2) + offsetY;
+  const pad = spec.padding * dpiScale * actualZoom;
+  const outerRadius = (spec.isOverlay ? spec.screenRadius : scene.borderRadius + spec.padding) * dpiScale * actualZoom;
+  const innerX = x + pad;
+  const innerY = y + pad;
+  const innerW = frameW - pad * 2;
+  const innerH = frameH - pad * 2;
+  const innerRadius = Math.max(0, spec.screenRadius * dpiScale * actualZoom);
+  return { x, y, width: frameW, height: frameH, pad, outerRadius, innerX, innerY, innerW, innerH, innerRadius };
+}
+
 /**
  * Renders the mockup onto a 2D canvas. For overlay frames (SVG device skins)
  * the caller should pass `frameOverlay` so the skin is drawn above the media.
@@ -67,26 +118,18 @@ export function renderMockupToCanvas(
   }
   ctx.fillRect(0, 0, width, height);
 
+  const { x, y, width: frameW, height: frameH, pad, outerRadius, innerX, innerY, innerW, innerH, innerRadius } = computeFrameBox(
+    scene,
+    width,
+    height,
+    pixelRatio,
+    frameWidth,
+    frameHeight,
+    transform,
+    frameX,
+    frameY
+  );
   const actualZoom = Math.max(0.01, transform?.zoom ?? scene.zoom);
-  const baseFrameW = typeof frameWidth === "number" && frameWidth > 0
-    ? frameWidth
-    : Math.min(900, width / dpiScale * 0.8) * dpiScale;
-  const baseFrameH = typeof frameHeight === "number" && frameHeight > 0
-    ? frameHeight
-    : baseFrameW * (10 / 16);
-  const frameW = baseFrameW * actualZoom;
-  const frameH = baseFrameH * actualZoom;
-  const offsetX = (transform?.offsetX ?? 0) * dpiScale * actualZoom;
-  const offsetY = (transform?.offsetY ?? 0) * dpiScale * actualZoom;
-  const x = (typeof frameX === "number" ? frameX : (width - frameW) / 2) + offsetX;
-  const y = (typeof frameY === "number" ? frameY : (height - frameH) / 2) + offsetY;
-  const pad = spec.padding * dpiScale * actualZoom;
-  const outerRadius = (spec.isOverlay ? spec.screenRadius : scene.borderRadius + spec.padding) * dpiScale * actualZoom;
-  const innerX = x + pad;
-  const innerY = y + pad;
-  const innerW = frameW - pad * 2;
-  const innerH = frameH - pad * 2;
-  const innerRadius = Math.max(0, spec.screenRadius * dpiScale * actualZoom);
 
   // Draw shadow (matches HTML box-shadow: 0 28px 70px), scaled with transform and DPI
   if (!spec.isOverlay) {

@@ -1,0 +1,67 @@
+import { describe, expect, it } from "vitest";
+import { computeFrameBox } from "@/lib/export/renderMockup";
+import { getFrameSpec } from "@/lib/render/frames";
+import { initialScene } from "@/lib/state/editorStore";
+import type { EditorScene } from "@/lib/types/editor";
+
+const scene = (overrides: Partial<EditorScene> = {}): EditorScene => ({
+  ...initialScene,
+  ...overrides
+});
+
+// In the CSS preview the media is inset by `frameStyle.padding` (CSS px) inside
+// a frame of `offsetWidth` (CSS px). The exported canvas gets frameWidth in
+// device px (offsetWidth * pixelRatio), so the inset ratio must stay
+// spec.padding / offsetWidth regardless of pixelRatio.
+describe("computeFrameBox geometry", () => {
+  it("keeps the media inset ratio independent of pixelRatio", () => {
+    const cssWidth = 700;
+    const spec = getFrameSpec("iphone15");
+
+    const atDpr = (dpr: number) =>
+      computeFrameBox(scene({ frame: "iphone15" }), 1400, 1400, dpr, cssWidth * dpr, cssWidth * dpr * (10 / 16));
+
+    const low = atDpr(1);
+    const high = atDpr(3);
+
+    const ratioLow = low.pad / low.width;
+    const ratioHigh = high.pad / high.width;
+
+    expect(ratioLow).toBeCloseTo(spec.padding / cssWidth, 5);
+    expect(ratioHigh).toBeCloseTo(spec.padding / cssWidth, 5);
+    expect(ratioHigh).toBeCloseTo(ratioLow, 5);
+  });
+
+  it("matches the CSS preview inset ratio for a CSS-only frame", () => {
+    const cssWidth = 640;
+    const spec = getFrameSpec("iphone");
+    const box = computeFrameBox(scene({ frame: "iphone" }), 1280, 1280, 2, cssWidth * 2, cssWidth * 2 * (10 / 16));
+    expect(box.pad / box.width).toBeCloseTo(spec.padding / cssWidth, 5);
+  });
+
+  it("applies zoom to the frame size but preserves the inset ratio", () => {
+    const cssWidth = 600;
+    const base = computeFrameBox(scene({ frame: "desktop" }), 1200, 1200, 2, cssWidth * 2, cssWidth * 2 * (10 / 16), undefined, undefined, undefined);
+    const zoomed = computeFrameBox(
+      scene({ frame: "desktop", zoom: 1.5 }),
+      1200,
+      1200,
+      2,
+      cssWidth * 2,
+      cssWidth * 2 * (10 / 16)
+    );
+    expect(zoomed.width).toBeCloseTo(base.width * 1.5, 3);
+    expect(zoomed.pad / zoomed.width).toBeCloseTo(base.pad / base.width, 5);
+  });
+
+  it("derives frameH from frameW with a 16:10 ratio when height is omitted", () => {
+    const box = computeFrameBox(scene({ frame: "none" }), 2000, 2000, 2, 1000);
+    expect(box.height).toBeCloseTo(box.width * (10 / 16), 5);
+  });
+
+  it("centers the frame when no explicit position is given", () => {
+    const box = computeFrameBox(scene({ frame: "none" }), 1000, 500, 1, 400, 250);
+    expect(box.x).toBeCloseTo((1000 - 400) / 2, 5);
+    expect(box.y).toBeCloseTo((500 - 250) / 2, 5);
+  });
+});
