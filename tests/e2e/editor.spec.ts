@@ -55,5 +55,14 @@ test("exporting an image scene triggers a PNG download", async ({ page }) => {
   expect(download.suggestedFilename()).toMatch(/mocksy-export\.png$/);
 });
 
+test("autosaves the scene and restores it after reload", async ({ page }) => {
+  await page.goto("/");
+  await page.locator("select").first().selectOption("tablet");
+  await expect(page.getByText("Saved")).toBeVisible();
+  await page.reload();
+  await expect(page.locator("select").first()).toHaveValue("tablet");
+});
+
+
 
 

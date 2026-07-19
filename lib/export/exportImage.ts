@@ -21,65 +21,89 @@ function waitForImage(img: HTMLImageElement) {
   });
 }
 
-export async function exportImage(scene: EditorScene, containerId: string, filename: string) {
-  const node = document.getElementById(containerId);
-  if (!node) return;
-
-  const video = node.querySelector("video");
-  const img = node.querySelector("img");
-  const frameElement = node.querySelector<HTMLElement>("[data-mockup-frame]");
-  let media: CanvasImageSource | null = null;
-
-  if (video instanceof HTMLVideoElement && video.readyState >= 2) {
-    media = video;
-  } else if (img instanceof HTMLImageElement) {
-    await waitForImage(img);
-    media = img;
-  }
-
-  if (!frameElement) return;
-
-  const baseFrameWidth = frameElement.offsetWidth;
-  const baseFrameHeight = frameElement.offsetHeight;
-  if (!baseFrameWidth || !baseFrameHeight) return;
-
-  const containerWidth = node.clientWidth;
-  const containerHeight = node.clientHeight;
-  if (!containerWidth || !containerHeight) return;
-
-  const spec = getFrameSpec(scene.frame);
-  let overlay: HTMLImageElement | null = null;
-  if (spec.isOverlay && spec.asset) {
-    try {
-      overlay = await loadImage(spec.asset);
-    } catch {
-      overlay = null;
+export async function exportImage(
+  scene: EditorScene,
+  containerId: string,
+  filename: string,
+  onError?: (message: string) => void
+) {
+  try {
+    const node = document.getElementById(containerId);
+    if (!node) {
+      onError?.("Preview area not found.");
+      return;
     }
+
+    const video = node.querySelector("video");
+    const img = node.querySelector("img");
+    const frameElement = node.querySelector<HTMLElement>("[data-mockup-frame]");
+    let media: CanvasImageSource | null = null;
+
+    if (video instanceof HTMLVideoElement && video.readyState >= 2) {
+      media = video;
+    } else if (img instanceof HTMLImageElement) {
+      await waitForImage(img);
+      media = img;
+    }
+
+    if (!frameElement) {
+      onError?.("Frame element not found.");
+      return;
+    }
+
+    const baseFrameWidth = frameElement.offsetWidth;
+    const baseFrameHeight = frameElement.offsetHeight;
+    if (!baseFrameWidth || !baseFrameHeight) {
+      onError?.("Frame has no measurable size.");
+      return;
+    }
+
+    const containerWidth = node.clientWidth;
+    const containerHeight = node.clientHeight;
+    if (!containerWidth || !containerHeight) {
+      onError?.("Preview has no measurable size.");
+      return;
+    }
+
+    const spec = getFrameSpec(scene.frame);
+    let overlay: HTMLImageElement | null = null;
+    if (spec.isOverlay && spec.asset) {
+      try {
+        overlay = await loadImage(spec.asset);
+      } catch {
+        overlay = null;
+      }
+    }
+
+    const pixelRatio = Math.max(2, window.devicePixelRatio || 1);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(containerWidth * pixelRatio));
+    canvas.height = Math.max(1, Math.round(containerHeight * pixelRatio));
+
+    const frameWidth = Math.max(1, Math.round(baseFrameWidth * pixelRatio));
+    const frameHeight = Math.max(1, Math.round(baseFrameHeight * pixelRatio));
+
+    renderMockupToCanvas(
+      canvas,
+      scene,
+      media,
+      undefined,
+      undefined,
+      frameWidth,
+      frameHeight,
+      pixelRatio,
+      { zoom: scene.zoom, offsetX: 0, offsetY: 0 },
+      undefined,
+      overlay
+    );
+
+    const pngBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
+    if (!pngBlob) {
+      onError?.("Failed to render PNG.");
+      return;
+    }
+    downloadBlob(pngBlob, `${filename}.png`);
+  } catch (err) {
+    onError?.(err instanceof Error ? err.message : "Image export failed.");
   }
-
-  const pixelRatio = Math.max(2, window.devicePixelRatio || 1);
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(containerWidth * pixelRatio));
-  canvas.height = Math.max(1, Math.round(containerHeight * pixelRatio));
-
-  const frameWidth = Math.max(1, Math.round(baseFrameWidth * pixelRatio));
-  const frameHeight = Math.max(1, Math.round(baseFrameHeight * pixelRatio));
-
-  renderMockupToCanvas(
-    canvas,
-    scene,
-    media,
-    undefined,
-    undefined,
-    frameWidth,
-    frameHeight,
-    pixelRatio,
-    { zoom: scene.zoom, offsetX: 0, offsetY: 0 },
-    undefined,
-    overlay
-  );
-
-  const pngBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
-  if (!pngBlob) return;
-  downloadBlob(pngBlob, `${filename}.png`);
 }

@@ -137,10 +137,15 @@ async function recordCanvasToWebm(
 export async function exportVideo(
   scene: EditorScene,
   onStatus?: (message: string) => void,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
+  onError?: (message: string) => void
 ) {
-  const previewNode = document.getElementById("preview-canvas");
-  if (!previewNode) return;
+  try {
+    const previewNode = document.getElementById("preview-canvas");
+    if (!previewNode) {
+      onError?.("Preview area not found.");
+      return;
+    }
 
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(640, previewNode.clientWidth * 2);
@@ -167,6 +172,10 @@ export async function exportVideo(
   }
 
   const webmBlob = await recordCanvasToWebm(scene, canvas, media, onStatus, onProgress);
+  if (!webmBlob || webmBlob.size === 0) {
+    onError?.("Recording produced no video frames.");
+    return;
+  }
 
   onStatus?.("Converting to MP4...");
   onProgress?.(0);
@@ -195,4 +204,7 @@ export async function exportVideo(
   await ffmpeg.deleteFile(outputName);
   onStatus?.("MP4 exported");
   onProgress?.(100);
+  } catch (err) {
+    onError?.(err instanceof Error ? err.message : "Video export failed.");
+  }
 }
