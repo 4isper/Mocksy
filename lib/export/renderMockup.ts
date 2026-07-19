@@ -24,6 +24,34 @@ export interface RenderTransform {
   offsetY: number;
 }
 
+// Canvas render tuning. Values mirror the CSS preview (box-shadow, aspect, glass
+// fills) so the exported PNG matches what the user sees on screen.
+const RENDER = {
+  /** Default frame width (px) when callers don't pass an explicit size. */
+  defaultFrameWidth: 900,
+  /** Fraction of the canvas the default frame should occupy. */
+  defaultFrameFill: 0.8,
+  /** Default frame aspect ratio (width / height) when height is omitted. */
+  defaultAspect: 10 / 16,
+  /** Box-shadow blur radius (px) and vertical offset (px), matching CSS 0 28px 70px. */
+  shadowBlur: 70,
+  shadowOffsetY: 28,
+  /** Border stroke widths (px) for outline vs glass presets. */
+  outlineStroke: 2,
+  glassStroke: 1,
+  /** Glass frame fills and stroke colors. */
+  glassDarkFill: "rgba(7,7,9,0.35)",
+  glassLightFill: "rgba(255,255,255,0.06)",
+  glassDarkStroke: "rgba(255,255,255,0.2)",
+  glassLightStroke: "rgba(255,255,255,0.45)",
+  /** Background of the media placeholder when no media is loaded. */
+  emptyMediaFill: "rgba(255,255,255,0.04)",
+  /** Watermark font size (px) at pixelRatio 1; scaled by DPI on render. */
+  watermarkFontSize: 24,
+  /** Gradient angle in degrees (120deg in CSS). */
+  gradientAngleDeg: 120
+} as const;
+
 export interface FrameBox {
   x: number;
   y: number;
@@ -58,9 +86,9 @@ export function computeFrameBox(
   const spec = getFrameSpec(scene.frame);
   const dpiScale = pixelRatio;
   const actualZoom = Math.max(0.01, transform?.zoom ?? scene.zoom);
-  const defaultFrameW = Math.min(900, (canvasWidth / dpiScale) * 0.8) * dpiScale;
+  const defaultFrameW = Math.min(RENDER.defaultFrameWidth, (canvasWidth / dpiScale) * RENDER.defaultFrameFill) * dpiScale;
   const frameW = (typeof frameWidth === "number" && frameWidth > 0 ? frameWidth : defaultFrameW) * actualZoom;
-  const frameH = (typeof frameHeight === "number" && frameHeight > 0 ? frameHeight : frameW * (10 / 16)) * actualZoom;
+  const frameH = (typeof frameHeight === "number" && frameHeight > 0 ? frameHeight : frameW * RENDER.defaultAspect) * actualZoom;
   const offsetX = (transform?.offsetX ?? 0) * dpiScale * actualZoom;
   const offsetY = (transform?.offsetY ?? 0) * dpiScale * actualZoom;
   const x = (typeof frameX === "number" ? frameX : (canvasWidth - frameW) / 2) + offsetX;
@@ -106,7 +134,7 @@ export function renderMockupToCanvas(
   ctx.clearRect(0, 0, width, height);
 
   if (scene.backgroundMode === "gradient") {
-    const angle = ((120 - 90) * Math.PI) / 180;
+    const angle = ((RENDER.gradientAngleDeg - 90) * Math.PI) / 180;
     const x2 = width * Math.cos(angle);
     const y2 = height * Math.sin(angle);
     const grad = ctx.createLinearGradient(0, 0, x2, y2);
@@ -139,19 +167,19 @@ export function renderMockupToCanvas(
   if (!spec.isOverlay) {
     ctx.save();
     ctx.shadowColor = `rgba(0,0,0,${Math.max(0, Math.min(1, scene.shadowOpacity))})`;
-    ctx.shadowBlur = 70 * dpiScale * actualZoom;
+    ctx.shadowBlur = RENDER.shadowBlur * dpiScale * actualZoom;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 28 * dpiScale * actualZoom;
+    ctx.shadowOffsetY = RENDER.shadowOffsetY * dpiScale * actualZoom;
     roundedRectPath(ctx, x, y, frameW, frameH, outerRadius);
-    ctx.fillStyle = scene.stylePreset === "glassDark" ? "rgba(7,7,9,0.35)" : "rgba(255,255,255,0.06)";
+    ctx.fillStyle = scene.stylePreset === "glassDark" ? RENDER.glassDarkFill : RENDER.glassLightFill;
     ctx.fill();
     ctx.restore();
 
     if (scene.stylePreset === "outline" || scene.stylePreset.startsWith("glass")) {
       ctx.save();
       roundedRectPath(ctx, x, y, frameW, frameH, outerRadius);
-      ctx.lineWidth = (scene.stylePreset === "outline" ? 2 : 1) * dpiScale * actualZoom;
-      ctx.strokeStyle = scene.stylePreset === "glassDark" ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.45)";
+      ctx.lineWidth = (scene.stylePreset === "outline" ? RENDER.outlineStroke : RENDER.glassStroke) * dpiScale * actualZoom;
+      ctx.strokeStyle = scene.stylePreset === "glassDark" ? RENDER.glassDarkStroke : RENDER.glassLightStroke;
       ctx.stroke();
       ctx.restore();
     }
@@ -179,7 +207,7 @@ export function renderMockupToCanvas(
     const dy = innerY + (innerH - dh) / 2;
     ctx.drawImage(media, dx, dy, dw, dh);
   } else {
-    ctx.fillStyle = "rgba(255,255,255,0.04)";
+    ctx.fillStyle = RENDER.emptyMediaFill;
     ctx.fillRect(innerX, innerY, innerW, innerH);
   }
   ctx.restore();
@@ -189,7 +217,7 @@ export function renderMockupToCanvas(
   }
 
   if (scene.watermarkEnabled && scene.watermarkText) {
-    const watermarkSize = 24 * dpiScale;
+    const watermarkSize = RENDER.watermarkFontSize * dpiScale;
     ctx.fillStyle = "rgba(255,255,255,0.85)";
     ctx.font = `${watermarkSize}px Inter, system-ui, sans-serif`;
     ctx.textAlign = "right";
