@@ -18,6 +18,7 @@ Reference inspiration: [shots.so](https://shots.so/), [PostSpark device mockup](
 - PNG export (matches the on-screen preview pixel-for-pixel)
 - MP4 export via in-browser recording (MediaRecorder) + FFmpeg (WebM → MP4)
 - Animated still-image exports run for a visible 3s (zoom/parallax) instead of a 0.2s blink
+- MP4 export attaches the canvas to the DOM while recording so headless/background tabs capture frames reliably
 - Opens with an offline demo image so the canvas is never empty
 - Autosave to localStorage (with a Saved indicator) plus explicit Save and Reset
 - Share URL that encodes the full scene; invalid/old payloads are normalized, not trusted blindly

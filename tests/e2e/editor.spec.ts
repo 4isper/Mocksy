@@ -177,6 +177,30 @@ test("rejects unsupported file types with an inline error", async ({ page }) => 
   await expect(page.getByText("Drop image or video to start")).toHaveCount(0);
 });
 
+test("exporting an image scene triggers an MP4 download", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export MP4" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/\.mp4$/);
+
+  const path = await download.path();
+  expect(path).toBeTruthy();
+  const fs = await import("node:fs");
+  const size = path ? fs.statSync(path).size : 0;
+  expect(size).toBeGreaterThan(0);
+});
+
 
 
 

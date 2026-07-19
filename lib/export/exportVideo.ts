@@ -75,6 +75,16 @@ async function recordCanvasToWebm(
   }
 
   const fps = 30;
+  // Attach the canvas to the DOM (off-screen) before capturing: some browsers
+  // won't deliver frames from captureStream() on a detached canvas, which
+  // yields an empty recording.
+  canvas.style.position = "fixed";
+  canvas.style.left = "-9999px";
+  canvas.style.top = "0";
+  canvas.style.opacity = "0";
+  canvas.style.pointerEvents = "none";
+  document.body.appendChild(canvas);
+
   const stream = canvas.captureStream(fps);
   const chunks: BlobPart[] = [];
   const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
@@ -134,6 +144,7 @@ async function recordCanvasToWebm(
     raf = requestAnimationFrame(tick);
   });
 
+  canvas.remove();
   return new Blob(chunks, { type: "video/webm" });
 }
 
