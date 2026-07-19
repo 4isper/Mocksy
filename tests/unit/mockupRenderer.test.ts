@@ -61,8 +61,13 @@ describe("buildSceneCss", () => {
     expect(overlay.aspectRatio).toBe("390 / 844");
   });
 
-  it("keeps the scene aspect ratio for CSS-only frames", () => {
+  it("keeps its own device aspect ratio for CSS-only frames, ignoring the scene", () => {
     const css = buildSceneCss(base({ frame: "iphone", aspectRatio: "16 / 9" })).frame;
+    expect(css.aspectRatio).toBe("390 / 844");
+  });
+
+  it("still follows the scene aspect ratio for the 'none' frame", () => {
+    const css = buildSceneCss(base({ frame: "none", aspectRatio: "16 / 9" })).frame;
     expect(css.aspectRatio).toBe("16 / 9");
   });
 

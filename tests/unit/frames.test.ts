@@ -16,10 +16,15 @@ describe("FRAME_SPECS", () => {
     expect(FRAME_SPECS.tablet.isOverlay).toBe(false);
   });
 
-  it("gives overlay phone skins a native aspect ratio", () => {
+  it("gives each device frame its own native aspect ratio", () => {
     expect(FRAME_SPECS.iphone15.aspectRatio).toBe("390 / 844");
     expect(FRAME_SPECS.iphone16pro.aspectRatio).toBe("390 / 844");
-    expect(FRAME_SPECS.iphone.aspectRatio).toBeNull();
+    expect(FRAME_SPECS.iphone.aspectRatio).toBe("390 / 844");
+    expect(FRAME_SPECS.desktop.aspectRatio).toBe("16 / 10");
+    expect(FRAME_SPECS.tablet.aspectRatio).toBe("4 / 3");
+    expect(FRAME_SPECS.watch.aspectRatio).toBe("1 / 1");
+    // "none" has no device shape, so it follows the scene aspect ratio.
+    expect(FRAME_SPECS.none.aspectRatio).toBeNull();
   });
 
   it("exposes every MockupFrame value through FRAME_ORDER", () => {

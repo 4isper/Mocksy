@@ -156,16 +156,43 @@ test("autosaves the scene and restores it after reload", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "Tablet");
   await expect(page.getByText("Saved")).toBeVisible();
+  // Give the debounced autosave a moment to flush to localStorage before we
+  // tear the page down with a reload.
+  await page.waitForTimeout(300);
   await page.reload();
-  await expect(await frameIsActive(page, "Tablet")).toBe("true");
+  // The restored scene is applied in a post-mount effect, so poll until the
+  // persisted Tablet frame becomes active again.
+  await expect.poll(() => frameIsActive(page, "Tablet")).toBe("true");
 });
 
 test("watch frame renders as a circle", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "Watch");
-  await expect(await frameIsActive(page, "Watch")).toBe("true");
+  await expect.poll(() => frameIsActive(page, "Watch")).toBe("true");
   const radius = await page.locator("[data-mockup-frame]").evaluate((el) => getComputedStyle(el).borderRadius);
   expect(radius).toContain("50%");
+});
+
+test("changing aspect ratio resizes the canvas but not the device frame", async ({ page }) => {
+  await page.goto("/");
+  // Desktop frame keeps its own 16/10 device shape regardless of scene ratio.
+  await selectFrame(page, "Desktop");
+  await expect.poll(() => frameIsActive(page, "Desktop")).toBe("true");
+
+  const frameRatio = () =>
+    page.locator("[data-mockup-frame]").evaluate((el) => getComputedStyle(el).aspectRatio);
+  const canvasRatio = () =>
+    page.locator("#preview-canvas").evaluate((el) => getComputedStyle(el).aspectRatio);
+
+  // Default scene aspect ratio is 16/9; the frame must stay at its device ratio.
+  expect(await frameRatio()).toContain("16 / 10");
+  expect(await canvasRatio()).toContain("16 / 9");
+
+  // Switch the scene to 1/1; the canvas follows, the desktop frame does not.
+  await page.locator('.segmented[aria-label="Aspect ratio"] button', { hasText: "1 / 1" }).first().click();
+  await page.waitForTimeout(150);
+  expect(await canvasRatio()).toContain("1 / 1");
+  expect(await frameRatio()).toContain("16 / 10");
 });
 
 test("opens with demo media when nothing is saved", async ({ page, context }) => {
@@ -180,29 +207,29 @@ test("Reset restores default settings and demo media", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "Tablet");
   await page.getByRole("button", { name: "Reset" }).click();
-  await expect(await frameIsActive(page, "iPhone")).toBe("true");
+  await expect.poll(() => frameIsActive(page, "iPhone")).toBe("true");
   await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
 });
 
 test("undo and redo restore a previous frame choice", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "Desktop");
-  await expect(await frameIsActive(page, "Desktop")).toBe("true");
+  await expect.poll(() => frameIsActive(page, "Desktop")).toBe("true");
 
   await page.getByRole("button", { name: "Undo" }).click();
-  await expect(await frameIsActive(page, "iPhone")).toBe("true");
+  await expect.poll(() => frameIsActive(page, "iPhone")).toBe("true");
 
   await page.getByRole("button", { name: "Redo" }).click();
-  await expect(await frameIsActive(page, "Desktop")).toBe("true");
+  await expect.poll(() => frameIsActive(page, "Desktop")).toBe("true");
 });
 
 test("keyboard undo reverts the last change", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "Tablet");
-  await expect(await frameIsActive(page, "Tablet")).toBe("true");
+  await expect.poll(() => frameIsActive(page, "Tablet")).toBe("true");
 
   await page.keyboard.press("Control+z");
-  await expect(await frameIsActive(page, "iPhone")).toBe("true");
+  await expect.poll(() => frameIsActive(page, "iPhone")).toBe("true");
 });
 
 test("background swatches apply a preset", async ({ page }) => {

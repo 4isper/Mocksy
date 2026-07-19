@@ -18,7 +18,7 @@ export interface FrameSpec {
 
 export const FRAME_SPECS: Record<MockupFrame, FrameSpec> = {
   none: { asset: null, padding: 0, screenRadius: 20, isOverlay: false, aspectRatio: null, cutout: null },
-  iphone: { asset: null, padding: 18, screenRadius: 36, isOverlay: false, aspectRatio: null, cutout: null },
+  iphone: { asset: null, padding: 18, screenRadius: 36, isOverlay: false, aspectRatio: "390 / 844", cutout: null },
   iphone15: {
     asset: "/devices/iphone15.svg",
     padding: 14,
@@ -37,9 +37,9 @@ export const FRAME_SPECS: Record<MockupFrame, FrameSpec> = {
     // viewBox 390x844; screen rect x14 y14 w362 h816 rx48
     cutout: { x: 14, y: 14, w: 362, h: 816, rx: 48 }
   },
-  desktop: { asset: null, padding: 10, screenRadius: 8, isOverlay: false, aspectRatio: null, cutout: null },
-  tablet: { asset: null, padding: 14, screenRadius: 24, isOverlay: false, aspectRatio: null, cutout: null },
-  watch: { asset: null, padding: 18, screenRadius: 999, isOverlay: false, aspectRatio: null, cutout: null }
+  desktop: { asset: null, padding: 10, screenRadius: 8, isOverlay: false, aspectRatio: "16 / 10", cutout: null },
+  tablet: { asset: null, padding: 14, screenRadius: 24, isOverlay: false, aspectRatio: "4 / 3", cutout: null },
+  watch: { asset: null, padding: 18, screenRadius: 999, isOverlay: false, aspectRatio: "1 / 1", cutout: null }
 };
 
 export function getFrameSpec(frame: MockupFrame): FrameSpec {
