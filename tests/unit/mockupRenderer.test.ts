@@ -40,6 +40,15 @@ describe("buildSceneCss", () => {
     expect(css.frame.backdropFilter).toBe("none");
   });
 
+  it("drops the rectangular CSS shadow for overlay frames (skin carries its own)", () => {
+    const overlay = buildSceneCss(base({ frame: "iphone15" }));
+    const cssOnly = buildSceneCss(base({ frame: "iphone" }));
+    expect(overlay.frame.boxShadow).toBe("none");
+    expect(overlay.frame.borderRadius).toBe(0);
+    expect(cssOnly.frame.boxShadow).toContain("70px");
+    expect(overlay.overlayStyle.filter).toContain("drop-shadow");
+  });
+
   it("adopts the overlay skin's aspect ratio for iphone15", () => {
     const overlay = buildSceneCss(base({ frame: "iphone15", aspectRatio: "16 / 9" })).frame;
     expect(overlay.aspectRatio).toBe("390 / 844");

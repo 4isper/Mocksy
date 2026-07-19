@@ -213,7 +213,16 @@ export function renderMockupToCanvas(
   ctx.restore();
 
   if (frameOverlay) {
+    // Match the on-screen drop-shadow: a CSS box-shadow would paint a second
+    // rectangle, so the preview uses a body-shaped drop-shadow on the overlay
+    // image. Replicate it here with a canvas shadow before drawing the skin.
+    ctx.save();
+    ctx.shadowColor = `rgba(0,0,0,${Math.max(0, Math.min(1, scene.shadowOpacity))})`;
+    ctx.shadowBlur = RENDER.shadowBlur * dpiScale * actualZoom;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = RENDER.shadowOffsetY * dpiScale * actualZoom;
     ctx.drawImage(frameOverlay, x, y, frameW, frameH);
+    ctx.restore();
   }
 
   if (scene.watermarkEnabled && scene.watermarkText) {

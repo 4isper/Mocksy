@@ -7,6 +7,8 @@ interface SceneCss {
   frame: CSSProperties;
   /** When set, the frame is an SVG overlay drawn above the media. */
   frameOverlay: string | null;
+  /** Style for the overlay SVG image (e.g. a body-shaped drop shadow). */
+  overlayStyle: CSSProperties;
   /** Corner radius (px) for the media inside the frame. */
   screenRadius: number;
   /** Style for the media (image/video) element, inset to the frame's screen area. */
@@ -41,9 +43,12 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
     // Overlay skins ship at a fixed device aspect ratio; adopt it so the
     // stretched SVG and the media inside it keep their proportions.
     aspectRatio: spec.aspectRatio ?? scene.aspectRatio,
-    borderRadius: spec.isOverlay ? spec.screenRadius : scene.frame === "watch" ? "50%" : scene.borderRadius + framePadding,
+    borderRadius: spec.isOverlay ? 0 : scene.frame === "watch" ? "50%" : scene.borderRadius + framePadding,
     border: spec.isOverlay ? "none" : frameBorder,
-    boxShadow: baseShadow,
+    // The SVG skin already paints the bezel; a CSS box-shadow/border on the
+    // rectangular frame div would draw a second, mismatched rectangle around
+    // the phone. Overlay frames carry their own body + drop-shadow instead.
+    boxShadow: spec.isOverlay ? "none" : baseShadow,
     transform: `scale(${scene.zoom})`,
     backdropFilter: !spec.isOverlay && scene.stylePreset.startsWith("glass") ? "blur(10px)" : "none",
     background:
@@ -103,6 +108,13 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
         background: "rgba(255,255,255,0.03)"
       };
 
+  const overlayStyle: CSSProperties = {
+    // Drop-shadow follows the SVG body outline (including the screen cutout),
+    // unlike a CSS box-shadow on the rectangular frame which drew a second
+    // mismatched rectangle around the phone.
+    filter: spec.isOverlay ? `drop-shadow(0 28px 70px rgba(0,0,0,${scene.shadowOpacity}))` : "none"
+  };
+
   return {
     container: {
       position: "relative",
@@ -112,6 +124,7 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
     },
     frame: frameStyle,
     frameOverlay: spec.isOverlay ? spec.asset : null,
+    overlayStyle,
     screenRadius: spec.screenRadius,
     mediaStyle,
     emptyMediaStyle
