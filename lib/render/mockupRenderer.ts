@@ -47,8 +47,11 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
     border: spec.isOverlay ? "none" : frameBorder,
     // The SVG skin already paints the bezel; a CSS box-shadow/border on the
     // rectangular frame div would draw a second, mismatched rectangle around
-    // the phone. Overlay frames carry their own body + drop-shadow instead.
+    // the phone. For overlay frames use a body-shaped drop-shadow on the frame
+    // group (it follows the SVG outline, not a rectangle) and the shadow
+    // opacity is driven by the Shadow control.
     boxShadow: spec.isOverlay ? "none" : baseShadow,
+    filter: spec.isOverlay ? `drop-shadow(0 28px 70px rgba(0,0,0,${scene.shadowOpacity}))` : "none",
     transform: `scale(${scene.zoom})`,
     backdropFilter: !spec.isOverlay && scene.stylePreset.startsWith("glass") ? "blur(10px)" : "none",
     background:
@@ -110,10 +113,8 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
       };
 
   const overlayStyle: CSSProperties = {
-    // Drop-shadow follows the SVG body outline (including the screen cutout),
-    // unlike a CSS box-shadow on the rectangular frame which drew a second
-    // mismatched rectangle around the phone.
-    filter: spec.isOverlay ? `drop-shadow(0 28px 70px rgba(0,0,0,${scene.shadowOpacity}))` : "none"
+    // The body-shaped shadow lives on the frame group (frameStyle.filter) so
+    // it follows the SVG outline and reacts to the Shadow control.
   };
 
   return {

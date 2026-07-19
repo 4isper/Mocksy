@@ -49,6 +49,31 @@ test("iphone16pro media stays inside the device cutout, not under the bezel", as
   expect(inside).toBe(true);
 });
 
+test("iphone16pro shadow control drives the overlay drop-shadow", async ({ page }) => {
+  await page.goto("/");
+  const frameSelect = page.locator("select").first();
+  await frameSelect.selectOption("iphone16pro");
+  await expect(page.locator('img[src*="iphone16pro.svg"]')).toBeVisible();
+
+  const frameFilter = () =>
+    page.evaluate(() => getComputedStyle(document.querySelector("[data-mockup-frame]") as HTMLElement).filter);
+
+  const shadow = page.locator('label:has-text("Shadow") input[type="range"]');
+  await shadow.fill("0");
+  await page.waitForTimeout(150);
+  const atZero = await frameFilter();
+
+  await shadow.fill("1");
+  await page.waitForTimeout(150);
+  const atMax = await frameFilter();
+
+  // At 0 opacity the drop-shadow alpha is 0; at 1 it is fully opaque. The
+  // Shadow control must affect overlay frames (it used to be a no-op there).
+  expect(atZero).toContain("rgba(0, 0, 0, 0)");
+  expect(atMax).toContain("rgb(0, 0, 0)");
+  expect(atZero).not.toBe(atMax);
+});
+
 test("iphone15 and iphone16pro overlays have a transparent screen cutout", async ({ page }) => {
   await page.goto("/");
   const frameSelect = page.locator("select").first();

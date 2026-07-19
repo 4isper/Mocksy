@@ -46,8 +46,15 @@ describe("buildSceneCss", () => {
     expect(overlay.frame.boxShadow).toBe("none");
     expect(overlay.frame.borderRadius).toBe(0);
     expect(cssOnly.frame.boxShadow).toContain("70px");
-    expect(overlay.overlayStyle.filter).toContain("drop-shadow");
+    // The body-shaped shadow lives on the frame group via filter, driven by
+    // the Shadow control (scene.shadowOpacity).
+    expect(overlay.frame.filter).toContain("drop-shadow");
+    expect(overlay.frame.filter).toContain(String(overlayShadowOpacity()));
   });
+
+  function overlayShadowOpacity() {
+    return base({ frame: "iphone15" }).shadowOpacity;
+  }
 
   it("adopts the overlay skin's aspect ratio for iphone15", () => {
     const overlay = buildSceneCss(base({ frame: "iphone15", aspectRatio: "16 / 9" })).frame;
