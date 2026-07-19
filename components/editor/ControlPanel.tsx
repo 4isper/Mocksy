@@ -109,7 +109,10 @@ export function ControlPanel() {
       <div className="field-group">
         <div className="field">
           <span>Media</span>
-          <input type="file" accept="image/*,video/*" onChange={handleFile} />
+          <label className="file-trigger">
+            Upload image or video
+            <input type="file" accept="image/*,video/*" onChange={handleFile} />
+          </label>
         </div>
         {mediaError ? (
           <span role="alert" style={{ color: "var(--danger)", fontSize: 13 }}>
