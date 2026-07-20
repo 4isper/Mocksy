@@ -71,10 +71,19 @@ stacked column so it stays usable on tablets and phones.
 
 ## Keyboard shortcuts
 
-| Shortcut         | Action                                              |
-| ---------------- | --------------------------------------------------- |
-| `⌘Z` / `Ctrl+Z`  | Undo                                                |
-| `⇧⌘Z` / `Ctrl+Y` | Redo                                                |
-| `⌘S` / `Ctrl+S`  | Save to localStorage                                |
-| `⌘E` / `Ctrl+E`  | Export PNG                                          |
-| `R`              | Reset to defaults (ignored while typing in a field) |
+Press `?` (or the **Shortcuts** button) for an in-app cheat sheet. `⌘`
+is Cmd on macOS and Ctrl on Windows/Linux.
+
+| Shortcut          | Action                                              |
+| ----------------- | --------------------------------------------------- |
+| `⌘Z` / `Ctrl+Z`   | Undo                                                |
+| `⇧⌘Z` / `Ctrl+Y`  | Redo                                                |
+| `⌘S` / `Ctrl+S`   | Save to localStorage                                |
+| `⌘E` / `Ctrl+E`   | Export PNG                                          |
+| `⇧⌘C` / `Ctrl+⇧C` | Copy PNG to clipboard                               |
+| `⇧⌘E` / `Ctrl+⇧E` | Export MP4                                          |
+| `⇧⌘G` / `Ctrl+⇧G` | Export GIF                                          |
+| `⌘D` / `Ctrl+D`   | Duplicate active layer (ignored while typing)       |
+| `⌘↑` / `⌘↓`       | Move active layer up / down (ignored while typing)  |
+| `⌘[` / `⌘]`       | Select previous / next layer (ignored while typing) |
+| `R`               | Reset to defaults (ignored while typing in a field) |

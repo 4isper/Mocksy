@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ControlPanel } from "@/components/editor/ControlPanel";
 import { ExportDialog } from "@/components/editor/ExportDialog";
+import { ShortcutsDialog } from "@/components/editor/ShortcutsDialog";
 import { PreviewCanvas } from "@/components/editor/PreviewCanvas";
 import { TemplatesPanel } from "@/components/editor/TemplatesPanel";
 import { LayersPanel } from "@/components/editor/LayersPanel";
@@ -35,6 +36,7 @@ export function EditorShell() {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -151,6 +153,18 @@ export function EditorShell() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const modifier = event.metaKey || event.ctrlKey;
+      // ? opens the keyboard-shortcuts cheat sheet. Skip while typing so it
+      // doesn't interfere with "?" typed into a text field. Match on the
+      // physical key (code "Slash" + Shift) so it's layout-independent
+      // and robust to how the "?" character is delivered (event.key).
+      const target = event.target as HTMLElement | null;
+      const typing =
+        !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT");
+      if ((event.key === "?" || (event.code === "Slash" && event.shiftKey)) && !typing) {
+        event.preventDefault();
+        setShortcutsOpen(true);
+        return;
+      }
       if (modifier && event.key.toLowerCase() === "z") {
         event.preventDefault();
         if (event.shiftKey) redo();
@@ -193,9 +207,6 @@ export function EditorShell() {
       }
       // Layer shortcuts: ⌘D duplicates the active layer, ⌘↑/⌘↓ move it.
       // Skip while typing in a field so they don't hijack text editing.
-      const target = event.target as HTMLElement | null;
-      const typing =
-        !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT");
       if (modifier && !typing && event.key.toLowerCase() === "d") {
         event.preventDefault();
         const st = useEditorStore.getState();
@@ -232,15 +243,14 @@ export function EditorShell() {
         return;
       }
       if (event.key.toLowerCase() === "r" && !modifier) {
-        const target = event.target as HTMLElement | null;
-        if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT")) return;
+        if (typing) return;
         event.preventDefault();
         handleReset();
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [undo, redo, saveNow, handleReset, handleExportPng, handleExportMp4, handleExportGif, handleCopyPng]);
+  }, [undo, redo, saveNow, handleReset, handleExportPng, handleExportMp4, handleExportGif, handleCopyPng, setShortcutsOpen]);
 
   return (
     <main className="editor-shell">
@@ -303,6 +313,14 @@ export function EditorShell() {
             <button type="button" className="btn" onClick={copyShareUrl} title="Copy Share URL">
               Share
             </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => setShortcutsOpen(true)}
+              title="Keyboard shortcuts (?)"
+            >
+              Shortcuts
+            </button>
             <button type="button" className="btn" onClick={handleReset} title="Reset (R)">
               Reset
             </button>
@@ -345,6 +363,7 @@ export function EditorShell() {
         onCopy={handleCopyFromDialog}
         busy={isExporting}
       />
+      <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </main>
   );
 }

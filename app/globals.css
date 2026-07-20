@@ -894,3 +894,68 @@ body::before {
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* Keyboard-shortcuts cheat sheet */
+.modal.shortcuts {
+  max-width: 520px;
+}
+
+.shortcut-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 4px 0 16px;
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.shortcut-group h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #71717a;
+}
+
+.shortcut-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shortcut-keys {
+  display: inline-flex;
+  gap: 4px;
+  min-width: 132px;
+}
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  font-family: inherit;
+  font-size: 12px;
+  color: #e4e4e7;
+  background: #23232b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+}
+
+.shortcut-label {
+  font-size: 14px;
+  color: #d4d4d8;
+}

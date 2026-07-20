@@ -785,6 +785,37 @@ test("export dialog Size selector sets the chosen resolution", async ({ page }) 
   await expect(sizeButton("4×")).toHaveAttribute("aria-pressed", "true");
 });
 
+test("keyboard shortcuts cheat sheet lists every shortcut", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForTimeout(300);
+
+  // Opens from the toolbar button (also reachable via "?").
+  await page.getByRole("button", { name: "Shortcuts", exact: true }).click();
+  await expect(page.locator(".modal[role='dialog']")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Keyboard shortcuts" })).toBeVisible();
+
+  // Every registered shortcut appears, grouped by area.
+  await expect(page.getByText("Export PNG")).toBeVisible();
+  await expect(page.getByText("Copy PNG to clipboard")).toBeVisible();
+  await expect(page.getByText("Export MP4")).toBeVisible();
+  await expect(page.getByText("Export GIF")).toBeVisible();
+  await expect(page.getByText("Duplicate active layer")).toBeVisible();
+  await expect(page.getByText("Reset to defaults")).toBeVisible();
+
+  // Esc (or backdrop click) closes it.
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".modal[role='dialog']")).toHaveCount(0);
+});
+
+test("? key opens the keyboard shortcuts cheat sheet", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForTimeout(300);
+  await page.keyboard.press("Shift+Slash");
+  await expect(page.getByRole("heading", { name: "Keyboard shortcuts" })).toBeVisible();
+  await page.locator(".modal-backdrop").click({ position: { x: 4, y: 4 } });
+  await expect(page.locator(".modal[role='dialog']")).toHaveCount(0);
+});
+
 
 
 
