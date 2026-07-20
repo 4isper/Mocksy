@@ -296,3 +296,38 @@ describe("annotations", () => {
     expect(store().selectedAnnotationId).toBeNull();
   });
 });
+
+describe("media fit + PNG export scale", () => {
+  function reset() {
+    useEditorStore.setState({
+      past: [],
+      future: [],
+      scene: { ...initialScene },
+      selectedAnnotationId: null,
+      lastHistoryKey: null,
+      lastHistoryAt: 0
+    });
+  }
+
+  it("defaults the active layer to cover (fill/crop)", () => {
+    expect(store().scene.layers[0]!.mediaFit).toBe("cover");
+  });
+
+  it("setMediaFit switches the active layer between cover and contain", () => {
+    reset();
+    store().setMediaFit("contain");
+    expect(store().scene.layers[0]!.mediaFit).toBe("contain");
+    store().setMediaFit("cover");
+    expect(store().scene.layers[0]!.mediaFit).toBe("cover");
+    // the change is recorded so it can be undone
+    expect(store().past.length).toBe(1);
+  });
+
+  it("defaults PNG export scale to 2× and updates via setter", () => {
+    expect(store().pngExportScale).toBe(2);
+    store().setPngExportScale(4);
+    expect(store().pngExportScale).toBe(4);
+    store().setPngExportScale(1);
+    expect(store().pngExportScale).toBe(1);
+  });
+});

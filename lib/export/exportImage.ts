@@ -55,7 +55,10 @@ export function waitForImage(img: HTMLImageElement, timeoutMs = 10000) {
 export async function renderSceneToPngBlob(
   scene: EditorScene,
   containerId: string,
-  onError?: (message: string) => void
+  onError?: (message: string) => void,
+  /** Pixel ratio for the export. Defaults to `Math.max(2, devicePixelRatio)`
+   *  when omitted so existing callers keep 2× output on standard displays. */
+  scale?: number
 ): Promise<Blob | null> {
   try {
     const node = document.getElementById(containerId);
@@ -109,7 +112,7 @@ export async function renderSceneToPngBlob(
       }
     }
 
-    const pixelRatio = Math.max(2, window.devicePixelRatio || 1);
+    const pixelRatio = typeof scale === "number" && scale > 0 ? scale : Math.max(2, window.devicePixelRatio || 1);
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(containerWidth * pixelRatio));
     canvas.height = Math.max(1, Math.round(containerHeight * pixelRatio));
@@ -159,9 +162,11 @@ export async function exportImage(
   scene: EditorScene,
   containerId: string,
   filename: string,
-  onError?: (message: string) => void
+  onError?: (message: string) => void,
+  /** Export pixel ratio (1×/2×/4×), read from the editor's PNG scale control. */
+  scale?: number
 ) {
-  const blob = await renderSceneToPngBlob(scene, containerId, onError);
+  const blob = await renderSceneToPngBlob(scene, containerId, onError, scale);
   if (blob) downloadBlob(blob, `${filename}.png`);
 }
 
@@ -175,14 +180,16 @@ export async function copyPngToClipboard(
   scene: EditorScene,
   containerId: string,
   onError?: (message: string) => void,
-  onStatus?: (message: string) => void
+  onStatus?: (message: string) => void,
+  /** Export pixel ratio (1×/2×/4×), read from the editor's PNG scale control. */
+  scale?: number
 ) {
   try {
     if (typeof navigator === "undefined" || !navigator.clipboard || typeof ClipboardItem === "undefined") {
       onError?.("Clipboard isn't available here (open over https or localhost).");
       return;
     }
-    const blob = await renderSceneToPngBlob(scene, containerId, onError);
+    const blob = await renderSceneToPngBlob(scene, containerId, onError, scale);
     if (!blob) return;
     await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
     onStatus?.("Copied PNG to clipboard");

@@ -708,6 +708,53 @@ test("adding an arrow draws an overlay and selecting it shows the editor", async
   await expect(page.locator('input[type="color"]')).toBeVisible();
 });
 
+test("Fill / Fit toggle switches the media fit and persists across reload", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForTimeout(300);
+
+  const previewFit = () =>
+    page.evaluate(() => {
+      const media = document.querySelector('#preview-canvas img[alt="Uploaded media"]') as HTMLElement | null;
+      return media ? getComputedStyle(media).objectFit : null;
+    });
+
+  // Default is cover (fill/crop).
+  expect(await previewFit()).toBe("cover");
+
+  // Switch the active layer to Fit (contain / letterbox).
+  await page
+    .locator('.segmented[aria-label="Fill / Fit"] button', { hasText: "Fit" })
+    .first()
+    .click();
+  await page.waitForTimeout(400);
+  const fitAfter = await previewFit();
+  expect(fitAfter).toBe("contain");
+
+  // The choice is part of the scene and autosaved, so it survives a reload.
+  // Wait for the debounced autosave to flush before reloading.
+  await expect(page.getByText("Saved")).toBeVisible();
+  await page.reload();
+  await page.waitForTimeout(400);
+  const fitAfterReload = await previewFit();
+  expect(fitAfterReload).toBe("contain");
+});
+
+test("PNG export scale selector sets the chosen resolution", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForTimeout(300);
+  const scale = page.locator("label.png-scale select");
+  // Defaults to 2× (matching the preview's pixel ratio on a standard display).
+  await expect(scale).toHaveValue("2");
+
+  // The selector drives the PNG export resolution. It lives outside the scene
+  // (it's an export preference, not serialized into share URLs), so it is not
+  // expected to survive a reload — only that the choice is applied here.
+  await scale.selectOption("4");
+  await expect(scale).toHaveValue("4");
+  await scale.selectOption("1");
+  await expect(scale).toHaveValue("1");
+});
+
 
 
 

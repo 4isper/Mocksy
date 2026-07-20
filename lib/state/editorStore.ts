@@ -61,6 +61,7 @@ function makeDemoLayer(): MediaLayer {
     zoom: 1,
     mediaOffsetX: 0,
     mediaOffsetY: 0,
+    mediaFit: "cover",
     animationPreset: "none",
     videoMuted: true,
     videoLoop: true,
@@ -83,6 +84,9 @@ export interface EditorStoreState {
   /** Id of the annotation currently selected for editing; kept out of `scene`
    *  so selecting doesn't churn undo history or serialize into share URLs. */
   selectedAnnotationId: string | null;
+  /** Pixel multiplier used when exporting/copying PNG (1×/2×/4×). Kept out of
+   *  `scene` so it doesn't churn undo history or serialize into share URLs. */
+  pngExportScale: 1 | 2 | 4;
   /** Groups rapid same-field edits (e.g. slider drags) into one undo step. */
   lastHistoryKey: string | null;
   lastHistoryAt: number;
@@ -95,6 +99,7 @@ export interface EditorStoreState {
   setScene: (scene: Partial<EditorScene>, recordHistory?: boolean) => void;
   setMediaLoading: (loading: boolean) => void;
   setScenePalette: (palette: string[] | null) => void;
+  setPngExportScale: (scale: 1 | 2 | 4) => void;
   resetScene: () => void;
   undo: () => void;
   redo: () => void;
@@ -118,6 +123,7 @@ export interface EditorStoreState {
   setZoom: (zoom: number) => void;
   setMediaOffsetX: (offset: number) => void;
   setMediaOffsetY: (offset: number) => void;
+  setMediaFit: (fit: "cover" | "contain") => void;
   setShadowOpacity: (shadowOpacity: number) => void;
   setBorderRadius: (radius: number) => void;
   setBackgroundSolid: (color: string) => void;
@@ -233,6 +239,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   lastHistoryAt: 0,
   isMediaLoading: false,
   scenePalette: null,
+  pngExportScale: 2,
   setScene: (scene, recordHistory = true) =>
     set((s) => {
       const next = { ...s.scene, ...scene };
@@ -348,12 +355,14 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
     }),
   setMediaLoading: (loading) => set({ isMediaLoading: loading }),
   setScenePalette: (palette) => set({ scenePalette: palette }),
+  setPngExportScale: (pngExportScale) => set({ pngExportScale }),
   setFrame: (frame) => set((s) => pushHistory(s, { ...s.scene, frame })),
   setStylePreset: (stylePreset) => set((s) => pushHistory(s, { ...s.scene, stylePreset })),
   setAnimationPreset: (animationPreset) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationPreset }) }, "animation")),
   setZoom: (zoom) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { zoom }) }, "zoom")),
   setMediaOffsetX: (mediaOffsetX) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetX }) }, "mediaOffsetX")),
   setMediaOffsetY: (mediaOffsetY) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetY }) }, "mediaOffsetY")),
+  setMediaFit: (mediaFit) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaFit }) }, "mediaFit")),
   setShadowOpacity: (shadowOpacity) => set((s) => pushHistory(s, { ...s.scene, shadowOpacity }, "shadow")),
   setBorderRadius: (borderRadius) => set((s) => pushHistory(s, { ...s.scene, borderRadius }, "radius")),
   setBackgroundSolid: (backgroundColor) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "solid", backgroundColor })),

@@ -15,6 +15,7 @@ const FRAMES = Object.keys(FRAME_SPECS) as MockupFrame[];
 const STYLE_PRESETS: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
 const BACKGROUND_MODES: BackgroundMode[] = ["transparent", "solid", "gradient", "image"];
 const MEDIA_TYPES: MediaType[] = ["none", "image", "video"];
+const MEDIA_FITS = ["cover", "contain"] as const;
 const ANIMATIONS = ANIMATION_PRESETS;
 const ANNOTATION_TYPES: AnnotationType[] = ["text", "arrow", "rect"];
 
@@ -77,6 +78,7 @@ function normalizeLayer(raw: unknown, fallback: MediaLayer): MediaLayer {
     zoom: num(r.zoom, fallback.zoom, 0.1, 3),
     mediaOffsetX: num(r.mediaOffsetX, fallback.mediaOffsetX, -1, 1),
     mediaOffsetY: num(r.mediaOffsetY, fallback.mediaOffsetY, -1, 1),
+    mediaFit: pick(r.mediaFit, MEDIA_FITS, fallback.mediaFit),
     animationPreset: pick(r.animationPreset, ANIMATIONS, fallback.animationPreset),
     videoMuted: r.videoMuted !== false,
     videoLoop: r.videoLoop !== false,

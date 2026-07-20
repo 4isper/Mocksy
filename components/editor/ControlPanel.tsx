@@ -83,6 +83,7 @@ export function ControlPanel() {
     setZoom,
     setMediaOffsetX,
     setMediaOffsetY,
+    setMediaFit,
     setShadowOpacity,
     setBorderRadius,
     setBackgroundSolid,
@@ -193,6 +194,15 @@ export function ControlPanel() {
       <div className="divider" />
 
       <div className="field-group">
+        <Segmented
+          label="Fill / Fit"
+          value={activeLayer?.mediaFit ?? "cover"}
+          options={[
+            { value: "cover", label: "Fill" },
+            { value: "contain", label: "Fit" }
+          ]}
+          onChange={setMediaFit}
+        />
         <label className="field">
           <span>Zoom</span>
           <input

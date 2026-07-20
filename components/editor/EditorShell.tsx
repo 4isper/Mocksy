@@ -28,6 +28,8 @@ export function EditorShell() {
   const [gifExportProgress, setGifExportProgress] = useState<number>(0);
   const isExporting = videoExportStatus !== null || gifExportStatus !== null;
   const [exportError, setExportError] = useState<string | null>(null);
+  const pngExportScale = useEditorStore((s) => s.pngExportScale);
+  const setPngExportScale = useEditorStore((s) => s.setPngExportScale);
   const [saved, setSaved] = useState(false);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
@@ -76,13 +78,13 @@ export function EditorShell() {
 
   const handleExportPng = useCallback(() => {
     setExportError(null);
-    exportImage(scene, "preview-canvas", "mocksy-export", setExportError);
-  }, [scene]);
+    exportImage(scene, "preview-canvas", "mocksy-export", setExportError, pngExportScale);
+  }, [scene, pngExportScale]);
 
   const handleCopyPng = useCallback(async () => {
     setExportError(null);
-    await copyPngToClipboard(scene, "preview-canvas", setExportError, setCopyStatus);
-  }, [scene]);
+    await copyPngToClipboard(scene, "preview-canvas", setExportError, setCopyStatus, pngExportScale);
+  }, [scene, pngExportScale]);
 
   const handleExportMp4 = useCallback(async () => {
     setExportError(null);
@@ -253,6 +255,19 @@ export function EditorShell() {
             >
               Copy PNG
             </button>
+            <label className="field png-scale" title="PNG export resolution (1× / 2× / 4×)">
+              <span>PNG</span>
+              <select
+                className="select"
+                value={pngExportScale}
+                disabled={isExporting}
+                onChange={(e) => setPngExportScale(Number(e.target.value) as 1 | 2 | 4)}
+              >
+                <option value={1}>1×</option>
+                <option value={2}>2×</option>
+                <option value={4}>4×</option>
+              </select>
+            </label>
             <button
               type="button"
               className="btn"

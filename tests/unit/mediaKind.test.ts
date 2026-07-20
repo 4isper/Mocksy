@@ -13,6 +13,7 @@ function layer(overrides: Partial<MediaLayer> = {}): MediaLayer {
     zoom: 1,
     mediaOffsetX: 0,
     mediaOffsetY: 0,
+    mediaFit: "cover",
     videoMuted: true,
     videoLoop: true,
     videoAutoplay: true,

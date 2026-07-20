@@ -119,7 +119,7 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
         top: `${(spec.cutout.y / SVG_VIEWBOX_HEIGHT) * 100}%`,
         width: `${(spec.cutout.w / SVG_VIEWBOX_WIDTH) * 100}%`,
         height: `${(spec.cutout.h / SVG_VIEWBOX_HEIGHT) * 100}%`,
-        objectFit: "cover",
+        objectFit: activeLayerForCss?.mediaFit ?? "cover",
         objectPosition: `${mediaPosX}% ${mediaPosY}%`,
         borderRadius: `${(spec.cutout.rx / spec.cutout.w) * 100}% / ${(spec.cutout.rx / spec.cutout.h) * 100}%`,
         background: "#0a0a0a"
@@ -127,7 +127,7 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
     : {
         width: "100%",
         height: "100%",
-        objectFit: "cover",
+        objectFit: activeLayerForCss?.mediaFit ?? "cover",
         objectPosition: `${mediaPosX}% ${mediaPosY}%`,
         borderRadius: spec.screenRadius,
         background: "#0a0a0a"

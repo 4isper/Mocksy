@@ -96,4 +96,11 @@ describe("normalizeScene", () => {
     const s = normalizeScene({ annotations: "nope" });
     expect(s.annotations).toEqual([]);
   });
+
+  it("normalizes mediaFit into cover/contain and falls back for invalid", () => {
+    const contain = normalizeScene({ layers: [{ mediaFit: "contain" }] });
+    expect(contain.layers[0]!.mediaFit).toBe("contain");
+    const bad = normalizeScene({ layers: [{ mediaFit: "stretch" }] });
+    expect(bad.layers[0]!.mediaFit).toBe(initialScene.layers[0]!.mediaFit);
+  });
 });

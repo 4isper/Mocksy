@@ -39,6 +39,8 @@ export interface MediaLayer {
   /** Media pan inside the frame, as a fraction of half the frame size. Range [-1, 1]. */
   mediaOffsetX: number;
   mediaOffsetY: number;
+  /** How the media fills the frame: cover (fill/crop) or contain (fit/letterbox). */
+  mediaFit: "cover" | "contain";
   animationPreset: AnimationPreset;
   videoMuted: boolean;
   videoLoop: boolean;

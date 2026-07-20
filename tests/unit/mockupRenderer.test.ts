@@ -157,4 +157,11 @@ describe("buildSceneCss", () => {
     const gradient = buildSceneCss(base({ backgroundMode: "gradient" }));
     expect(gradient.backgroundImage).toBeNull();
   });
+
+  it("uses object-fit cover by default and contain when set", () => {
+    const cover = buildSceneCss(base({ layer: { mediaFit: "cover" } })).mediaStyle.objectFit;
+    expect(cover).toBe("cover");
+    const contain = buildSceneCss(base({ layer: { mediaFit: "contain" } })).mediaStyle.objectFit;
+    expect(contain).toBe("contain");
+  });
 });

@@ -252,7 +252,11 @@ export function renderMockupToCanvas(
     // matching the preview where the transform is applied to the frame.
     const mw = m.videoWidth || m.naturalWidth || m.width || innerW;
     const mh = m.videoHeight || m.naturalHeight || m.height || innerH;
-    const scale = Math.max(innerW / mw, innerH / mh);
+    // cover fills the frame and crops the overflow; contain fits the whole
+    // media inside the frame and letterboxes the gaps. Both share the same
+    // centering/pan math below, so only the scale choice differs.
+    const fit = activeLayerForRender?.mediaFit ?? "cover";
+    const scale = fit === "contain" ? Math.min(innerW / mw, innerH / mh) : Math.max(innerW / mw, innerH / mh);
     const dw = mw * scale;
     const dh = mh * scale;
     // Pan the media inside the screen cutout. Using `(innerW - dw) / 2` exactly
