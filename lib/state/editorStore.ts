@@ -15,7 +15,10 @@ export interface EditorStoreState {
   /** Groups rapid same-field edits (e.g. slider drags) into one undo step. */
   lastHistoryKey: string | null;
   lastHistoryAt: number;
+  /** True while uploaded media is decoding (between setMedia and onLoad). */
+  isMediaLoading: boolean;
   setScene: (scene: Partial<EditorScene>, recordHistory?: boolean) => void;
+  setMediaLoading: (loading: boolean) => void;
   resetScene: () => void;
   undo: () => void;
   redo: () => void;
@@ -122,6 +125,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   videoCurrentTime: 0,
   lastHistoryKey: null,
   lastHistoryAt: 0,
+  isMediaLoading: false,
   setScene: (scene, recordHistory = true) =>
     set((s) => {
       const next = { ...s.scene, ...scene };
@@ -160,8 +164,11 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
         videoTrimStart: 0,
         videoTrimEnd: 0
       }),
-      videoCurrentTime: 0
+      videoCurrentTime: 0,
+      // A real upload decodes asynchronously; clear media stops loading.
+      isMediaLoading: mediaUrl != null
     })),
+  setMediaLoading: (loading) => set({ isMediaLoading: loading }),
   setFrame: (frame) => set((s) => pushHistory(s, { ...s.scene, frame })),
   setStylePreset: (stylePreset) => set((s) => pushHistory(s, { ...s.scene, stylePreset })),
   setAnimationPreset: (animationPreset) => set((s) => pushHistory(s, { ...s.scene, animationPreset })),

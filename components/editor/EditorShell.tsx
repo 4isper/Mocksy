@@ -25,6 +25,7 @@ export function EditorShell() {
   const [videoExportProgress, setVideoExportProgress] = useState<number>(0);
   const [exportError, setExportError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -96,9 +97,16 @@ export function EditorShell() {
   }, [scene]);
 
   const handleReset = useCallback(() => {
+    setConfirmResetOpen(true);
+  }, []);
+
+  const confirmReset = useCallback(() => {
     resetScene();
     setSaved(false);
+    setConfirmResetOpen(false);
   }, [resetScene]);
+
+  const cancelReset = useCallback(() => setConfirmResetOpen(false), []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -190,6 +198,29 @@ export function EditorShell() {
         </section>
         <TemplatesPanel />
       </div>
+      {confirmResetOpen ? (
+        <div className="modal-backdrop" role="presentation" onClick={cancelReset}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reset-title"
+            aria-describedby="reset-desc"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="reset-title">Reset editor?</h3>
+            <p id="reset-desc">This clears the current mockup and returns to the default scene. You can undo afterwards.</p>
+            <div className="modal-actions">
+              <button type="button" className="btn" onClick={cancelReset} autoFocus>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-primary" onClick={confirmReset}>
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

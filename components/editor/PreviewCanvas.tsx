@@ -79,6 +79,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const setVideoDuration = useEditorStore((s) => s.setVideoDuration);
   const setVideoCurrentTime = useEditorStore((s) => s.setVideoCurrentTime);
   const videoCurrentTime = useEditorStore((s) => s.videoCurrentTime);
+  const isMediaLoading = useEditorStore((s) => s.isMediaLoading);
+  const setMediaLoading = useEditorStore((s) => s.setMediaLoading);
   const useVideo = isVideoScene(scene);
 
   useEffect(() => {
@@ -175,12 +177,18 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
                   const t = e.currentTarget.currentTime;
                   if (Math.abs(t - videoCurrentTime) >= 0.1) setVideoCurrentTime(t);
                 }}
+                onLoadedData={() => setMediaLoading(false)}
                 style={sceneCss.mediaStyle}
               />
             ) : (
               // Local blob/object URLs can't be optimized by next/image.
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={scene.mediaUrl} alt="Uploaded media" style={sceneCss.mediaStyle} />
+              <img
+                src={scene.mediaUrl}
+                alt="Uploaded media"
+                style={sceneCss.mediaStyle}
+                onLoad={() => setMediaLoading(false)}
+              />
             )
           ) : (
             <div style={sceneCss.emptyMediaStyle}>Drop image or video to start</div>
@@ -204,6 +212,11 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
               }}
             />
           )}
+          {isMediaLoading ? (
+            <div className="media-loading" role="status" aria-busy="true" aria-label="Loading media">
+              <span className="spinner" />
+            </div>
+          ) : null}
           </div>
         </AnimationLayer>
         {scene.watermarkEnabled && (

@@ -218,4 +218,11 @@ describe("editorStore", () => {
     store().setShadowOpacity(0.6);
     expect(store().past.length).toBe(2);
   });
+
+  it("setMedia marks media as loading and clears it on removal", () => {
+    store().setMedia("blob:abc", "image", "shot.png");
+    expect(store().isMediaLoading).toBe(true);
+    store().setMedia(null, "none", null);
+    expect(store().isMediaLoading).toBe(false);
+  });
 });
