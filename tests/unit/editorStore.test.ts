@@ -225,4 +225,20 @@ describe("editorStore", () => {
     store().setMedia(null, "none", null);
     expect(store().isMediaLoading).toBe(false);
   });
+
+  it("undo/redo re-sync the playback position to the restored poster time", () => {
+    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene }, videoCurrentTime: 0 });
+    store().setVideoPosterTime(3);
+    store().setFrame("desktop");
+    // simulate playback scrubbing ahead of the poster
+    useEditorStore.setState({ videoCurrentTime: 7 });
+    store().undo();
+    // playback returns to the restored scene's poster time (3), not the
+    // scrubbed position (7)
+    expect(store().scene.frame).toBe(initialScene.frame);
+    expect(store().videoCurrentTime).toBe(3);
+    store().redo();
+    expect(store().scene.frame).toBe("desktop");
+    expect(store().videoCurrentTime).toBe(3);
+  });
 });

@@ -145,13 +145,16 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
     set((s) => {
       if (s.past.length === 0) return {};
       const previous = s.past[s.past.length - 1];
-      return { scene: previous, past: s.past.slice(0, -1), future: [s.scene, ...s.future] };
+      // Playback position lives outside the scene, so re-sync it to the
+      // restored scene's poster time instead of leaving the timeline slider
+      // pointing at a moment that no longer matches the video.
+      return { scene: previous, past: s.past.slice(0, -1), future: [s.scene, ...s.future], videoCurrentTime: previous?.videoPosterTime ?? 0 };
     }),
   redo: () =>
     set((s) => {
       if (s.future.length === 0) return {};
       const next = s.future[0];
-      return { scene: next, past: [...s.past, s.scene], future: s.future.slice(1) };
+      return { scene: next, past: [...s.past, s.scene], future: s.future.slice(1), videoCurrentTime: next?.videoPosterTime ?? 0 };
     }),
   setMedia: (mediaUrl, mediaType, mediaName = null) =>
     set((s) => ({
