@@ -26,6 +26,7 @@ function makeDemoLayer(): MediaLayer {
     mediaUrl: DEMO_MEDIA_URL,
     mediaType: "image",
     mediaName: DEMO_MEDIA_NAME,
+    hidden: false,
     zoom: 1,
     mediaOffsetX: 0,
     mediaOffsetY: 0,
@@ -70,6 +71,9 @@ export interface EditorStoreState {
    *  layer with a fresh id. Shares the source's blob: URL, which the
    *  orphan-revocation logic keeps alive while either layer references it. */
   duplicateLayer: (id: string) => void;
+  /** Toggles a layer's visibility (hidden layers are skipped by the preview
+   *  and export, but remain in the scene and undo history). */
+  toggleLayerHidden: (id: string) => void;
   removeLayer: (id: string) => void;
   selectLayer: (id: string) => void;
   reorderLayers: (orderedIds: string[]) => void;
@@ -291,6 +295,11 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
         videoCurrentTime: 0,
         isMediaLoading: false
       };
+    }),
+  toggleLayerHidden: (id) =>
+    set((s) => {
+      const layers = s.scene.layers.map((l) => (l.id === id ? { ...l, hidden: !l.hidden } : l));
+      return pushHistory(s, { ...s.scene, layers });
     }),
   removeLayer: (id) =>
     set((s) => {

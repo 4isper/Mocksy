@@ -61,13 +61,17 @@ export async function exportImage(
     const video = node.querySelector("video");
     const img = node.querySelector("img");
     const frameElement = node.querySelector<HTMLElement>("[data-mockup-frame]");
+    const active = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
     let media: CanvasImageSource | null = null;
 
-    if (video instanceof HTMLVideoElement && video.readyState >= 2) {
-      media = video;
-    } else if (img instanceof HTMLImageElement) {
-      await waitForImage(img);
-      media = img;
+    // A hidden active layer renders nothing, matching the preview.
+    if (!active?.hidden) {
+      if (video instanceof HTMLVideoElement && video.readyState >= 2) {
+        media = video;
+      } else if (img instanceof HTMLImageElement) {
+        await waitForImage(img);
+        media = img;
+      }
     }
 
     if (!frameElement) {

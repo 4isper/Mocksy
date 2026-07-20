@@ -127,7 +127,7 @@ test("uploading media reveals a Clear button that resets it", async ({ page }) =
     )
   });
   await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
-  const clear = page.getByRole("button", { name: "Clear media" });
+  const clear = page.locator("#preview-canvas").getByRole("button", { name: "Clear media" });
   await expect(clear).toBeVisible();
   await clear.click();
   await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(0);
@@ -368,6 +368,28 @@ test("keyboard switches between layers", async ({ page }) => {
   // ⌘] selects the next (bottom) layer again.
   await page.keyboard.press("Control+]");
   await expect(page.locator(".layer-item").last()).toHaveClass(/is-active/);
+});
+
+test("toggling layer visibility hides and shows it in the preview", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+
+  // Hide the active layer via the eye toggle in the layers panel; the preview
+  // drops its media without deleting the layer.
+  await page.locator(".layer-item.is-active").getByTitle("Hide layer").click();
+  await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(0);
+
+  // Show it again; the media returns to the preview.
+  await page.locator(".layer-item.is-active").getByTitle("Show layer").click();
+  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
 });
 
 test("undo and redo restore a previous frame choice", async ({ page }) => {

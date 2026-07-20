@@ -7,6 +7,7 @@ const layer: MediaLayer = {
   mediaUrl: null,
   mediaType: "none",
   mediaName: null,
+  hidden: false,
   animationPreset: "zoomIn",
   zoom: 1,
   mediaOffsetX: 0,

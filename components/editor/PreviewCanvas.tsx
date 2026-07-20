@@ -221,7 +221,9 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         }}
       >
         <div ref={frameRef} style={sceneCss.frame} data-mockup-frame>
-          {scene.layers.map((layer) =>
+          {scene.layers
+            .filter((layer) => !layer.hidden)
+            .map((layer) =>
             layer.mediaUrl ? (
               isVideoLayer(layer) ? (
                   <video

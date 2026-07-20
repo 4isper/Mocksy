@@ -13,6 +13,7 @@ export function LayersPanel() {
   const selectLayer = useEditorStore((s) => s.selectLayer);
   const reorderLayers = useEditorStore((s) => s.reorderLayers);
   const duplicateLayer = useEditorStore((s) => s.duplicateLayer);
+  const toggleLayerHidden = useEditorStore((s) => s.toggleLayerHidden);
   const setMedia = useEditorStore((s) => s.setMedia);
   const [error, setError] = useState<string | null>(null);
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
@@ -72,7 +73,8 @@ export function LayersPanel() {
                 borderRadius: 8,
                 border: active ? "2px solid var(--accent)" : "1px solid var(--panel-border)",
                 background: active ? "rgba(0,217,255,0.08)" : "transparent",
-                cursor: "pointer"
+                cursor: "pointer",
+                opacity: layer.hidden ? 0.5 : 1
               }}
               onClick={() => selectLayer(layer.id)}
             >
@@ -116,6 +118,18 @@ export function LayersPanel() {
                 {label}
                 {isVideoLayer(layer) ? " 🎬" : ""}
               </span>
+              <button
+                type="button"
+                className="btn btn-sm"
+                aria-label={layer.hidden ? `Show ${label}` : `Hide ${label}`}
+                title={layer.hidden ? "Show layer" : "Hide layer"}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleLayerHidden(layer.id);
+                }}
+              >
+                {layer.hidden ? "🚫" : "👁"}
+              </button>
               <button
                 type="button"
                 className="btn btn-sm"

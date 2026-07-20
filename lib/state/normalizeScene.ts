@@ -44,6 +44,7 @@ function normalizeLayer(raw: unknown, fallback: MediaLayer): MediaLayer {
     mediaUrl: str(r.mediaUrl, fallback.mediaUrl),
     mediaType: pick(r.mediaType, MEDIA_TYPES, fallback.mediaType),
     mediaName: str(r.mediaName, fallback.mediaName),
+    hidden: r.hidden === true,
     zoom: num(r.zoom, fallback.zoom, 0.1, 3),
     mediaOffsetX: num(r.mediaOffsetX, fallback.mediaOffsetX, -1, 1),
     mediaOffsetY: num(r.mediaOffsetY, fallback.mediaOffsetY, -1, 1),

@@ -175,7 +175,7 @@ async function recordCanvasToWebm(
       if (media instanceof HTMLVideoElement) {
         if (media.currentTime >= end || elapsed >= duration) {
           media.pause();
-          renderMockupToCanvas(canvas, scene, media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay);
+          renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay);
           recorder.stop();
           cancelAnimationFrame(raf);
           onProgress?.(100);
@@ -188,7 +188,7 @@ async function recordCanvasToWebm(
         return;
       }
 
-      renderMockupToCanvas(canvas, scene, media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay);
+      renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay);
       raf = requestAnimationFrame(tick);
     };
 

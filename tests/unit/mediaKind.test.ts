@@ -8,6 +8,7 @@ function layer(overrides: Partial<MediaLayer> = {}): MediaLayer {
     mediaUrl: null,
     mediaType: "image",
     mediaName: null,
+    hidden: false,
     animationPreset: "none",
     zoom: 1,
     mediaOffsetX: 0,

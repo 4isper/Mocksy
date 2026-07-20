@@ -13,6 +13,8 @@ export interface MediaLayer {
   mediaUrl: string | null;
   mediaType: MediaType;
   mediaName: string | null;
+  /** When true the layer is omitted from the preview and export. */
+  hidden: boolean;
   /** Base scale of this layer (frame-wide zoom is applied on top in preview). */
   zoom: number;
   /** Media pan inside the frame, as a fraction of half the frame size. Range [-1, 1]. */
