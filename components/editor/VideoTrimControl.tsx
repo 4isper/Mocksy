@@ -58,6 +58,7 @@ export function VideoTrimControl({ duration }: VideoTrimControlProps) {
           step={0.01}
           value={scene.videoTrimStart}
           aria-label="Trim start"
+          aria-valuetext={`${scene.videoTrimStart.toFixed(1)} seconds`}
           className="trim-range"
           onChange={(e) => setVideoTrimStart(Number(e.target.value))}
           style={{ zIndex: 3 }}
@@ -69,6 +70,7 @@ export function VideoTrimControl({ duration }: VideoTrimControlProps) {
           step={0.01}
           value={scene.videoTrimEnd}
           aria-label="Trim end"
+          aria-valuetext={`${scene.videoTrimEnd.toFixed(1)} seconds`}
           className="trim-range"
           onChange={(e) => setVideoTrimEnd(Number(e.target.value))}
           style={{ zIndex: 4 }}

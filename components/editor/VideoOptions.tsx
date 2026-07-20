@@ -57,6 +57,8 @@ export function VideoOptions() {
               max={Math.max(scene.videoDuration, 0.1)}
               step={0.1}
               value={scene.videoPosterTime}
+              aria-label="Poster time"
+              aria-valuetext={`${scene.videoPosterTime.toFixed(1)} seconds`}
               onChange={(e) => setVideoPosterTime(Number(e.target.value))}
             />
           </label>
@@ -69,6 +71,8 @@ export function VideoOptions() {
               max={Math.max(scene.videoDuration, 0.1)}
               step={0.01}
               value={videoCurrentTime}
+              aria-label="Playback position"
+              aria-valuetext={`${videoCurrentTime.toFixed(2)} seconds`}
               onChange={(e) => setVideoCurrentTime(Number(e.target.value))}
             />
           </label>

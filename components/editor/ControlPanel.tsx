@@ -158,7 +158,17 @@ export function ControlPanel() {
       <div className="field-group">
         <label className="field">
           <span>Zoom</span>
-          <input className="range" type="range" min={0.8} max={1.5} step={0.01} value={scene.zoom} onChange={(e) => setZoom(Number(e.target.value))} />
+          <input
+            className="range"
+            type="range"
+            min={0.8}
+            max={1.5}
+            step={0.01}
+            value={scene.zoom}
+            aria-label="Zoom"
+            aria-valuetext={`${Math.round(scene.zoom * 100)}%`}
+            onChange={(e) => setZoom(Number(e.target.value))}
+          />
         </label>
         <label className="field">
           <span>Shadow</span>
@@ -169,12 +179,24 @@ export function ControlPanel() {
             max={1}
             step={0.01}
             value={scene.shadowOpacity}
+            aria-label="Shadow opacity"
+            aria-valuetext={`${Math.round(scene.shadowOpacity * 100)}%`}
             onChange={(e) => setShadowOpacity(Number(e.target.value))}
           />
         </label>
         <label className="field">
           <span>Radius</span>
-          <input className="range" type="range" min={0} max={48} step={1} value={scene.borderRadius} onChange={(e) => setBorderRadius(Number(e.target.value))} />
+          <input
+            className="range"
+            type="range"
+            min={0}
+            max={48}
+            step={1}
+            value={scene.borderRadius}
+            aria-label="Corner radius"
+            aria-valuetext={`${scene.borderRadius} pixels`}
+            onChange={(e) => setBorderRadius(Number(e.target.value))}
+          />
         </label>
       </div>
 
@@ -260,6 +282,8 @@ export function ControlPanel() {
             max={64}
             step={1}
             value={scene.watermarkSize}
+            aria-label="Watermark size"
+            aria-valuetext={`${scene.watermarkSize} pixels`}
             onChange={(e) => setWatermarkSize(Number(e.target.value))}
           />
         </label>
