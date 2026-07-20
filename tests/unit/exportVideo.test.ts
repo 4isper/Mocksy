@@ -10,18 +10,21 @@ vi.mock("@/lib/export/renderMockup", () => ({
 }));
 
 // FFmpeg WASM can't run in node; stub the heavy lifetime.
-const ffmpegHarness = vi.hoisted(() => ({ execCode: 0 }));
+const ffmpegHarness = vi.hoisted(() => ({ execCode: 0, loadCalls: 0 }));
 vi.mock("@ffmpeg/ffmpeg", () => ({
   FFmpeg: class {
     writeFile = vi.fn().mockResolvedValue(undefined);
     deleteFile = vi.fn().mockResolvedValue(undefined);
     exec = vi.fn().mockImplementation(() => Promise.resolve(ffmpegHarness.execCode));
     readFile = vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3, 4]));
-    load = vi.fn().mockResolvedValue(undefined);
+    load = vi.fn().mockImplementation(() => {
+      ffmpegHarness.loadCalls += 1;
+      return Promise.resolve(undefined);
+    });
   }
 }));
 
-import { exportVideo, sanitizeFilename, resolvePixelRatio, computeCaptureDuration, chooseWebmMimeType } from "@/lib/export/exportVideo";
+import { exportVideo, sanitizeFilename, resolvePixelRatio, computeCaptureDuration, chooseWebmMimeType, terminateFfmpeg } from "@/lib/export/exportVideo";
 
 const ORIGINAL_WINDOW = globalThis.window;
 
@@ -214,5 +217,20 @@ describe("exportVideo orchestration", () => {
     await exportVideo({ ...initialScene, mediaUrl: null, mediaType: "none" }, undefined, undefined, (m) => errors.push(m));
     expect(errors).toContain("Video encoding failed.");
     ffmpegHarness.execCode = 0;
+  });
+
+  it("reloads FFmpeg after terminateFfmpeg releases the cached instance", async () => {
+    terminateFfmpeg();
+    const before = ffmpegHarness.loadCalls;
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+    await exportVideo({ ...initialScene, mediaUrl: null, mediaType: "none" });
+    expect(ffmpegHarness.loadCalls).toBe(before + 1);
+
+    terminateFfmpeg();
+    await exportVideo({ ...initialScene, mediaUrl: null, mediaType: "none" });
+    expect(ffmpegHarness.loadCalls).toBe(before + 2);
   });
 });

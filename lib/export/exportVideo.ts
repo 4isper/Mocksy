@@ -22,6 +22,15 @@ async function getFfmpegInstance(onStatus?: (message: string) => void) {
   return ffmpeg;
 }
 
+/** Releases the cached FFmpeg instance and its WASM worker. Call when the
+ *  editor is torn down or memory is tight; the next export will re-load it. */
+export function terminateFfmpeg() {
+  if (!ffmpegSingleton) return;
+  // terminate() exists on the real FFmpeg class; guard for test stubs.
+  (ffmpegSingleton as unknown as { terminate?: () => void }).terminate?.();
+  ffmpegSingleton = null;
+}
+
 /** Duration of an animated still-image export, in seconds. */
 const ANIMATION_DURATION_SEC = 3;
 
