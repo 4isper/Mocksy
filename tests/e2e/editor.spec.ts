@@ -316,6 +316,33 @@ test("Control panel clears the active layer's media", async ({ page }) => {
   await expect(page.getByText("Drop image or video to start")).toBeVisible();
 });
 
+test("keyboard duplicates and reorders the active layer", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  await expect(page.locator(".layer-item")).toHaveCount(1);
+
+  // ⌘D duplicates the active layer; the clone is appended and becomes active.
+  await page.keyboard.press("Control+d");
+  await expect(page.locator(".layer-item")).toHaveCount(2);
+  await expect(page.locator(".layer-item").last()).toHaveClass(/is-active/);
+
+  // ⌘↑ moves the active clone to the top of the stack.
+  await page.keyboard.press("Control+ArrowUp");
+  await expect(page.locator(".layer-item").first()).toHaveClass(/is-active/);
+
+  // ⌘↓ moves it back to the bottom.
+  await page.keyboard.press("Control+ArrowDown");
+  await expect(page.locator(".layer-item").last()).toHaveClass(/is-active/);
+});
+
 test("undo and redo restore a previous frame choice", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "Desktop");

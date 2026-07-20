@@ -139,6 +139,34 @@ export function EditorShell() {
         handleExportPng();
         return;
       }
+      // Layer shortcuts: ⌘D duplicates the active layer, ⌘↑/⌘↓ move it.
+      // Skip while typing in a field so they don't hijack text editing.
+      const target = event.target as HTMLElement | null;
+      const typing =
+        !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT");
+      if (modifier && !typing && event.key.toLowerCase() === "d") {
+        event.preventDefault();
+        const st = useEditorStore.getState();
+        const id = st.scene.activeLayerId ?? st.scene.layers[0]?.id;
+        if (id) st.duplicateLayer(id);
+        return;
+      }
+      if (modifier && !typing && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+        event.preventDefault();
+        const st = useEditorStore.getState();
+        const ids = st.scene.layers.map((l) => l.id);
+        const idx = ids.indexOf(st.scene.activeLayerId ?? st.scene.layers[0]?.id ?? "");
+        const dir = event.key === "ArrowUp" ? -1 : 1;
+        const next = idx + dir;
+        if (idx < 0 || next < 0 || next >= ids.length) return;
+        const a = ids[idx];
+        const b = ids[next];
+        if (a === undefined || b === undefined) return;
+        ids[idx] = b;
+        ids[next] = a;
+        st.reorderLayers(ids);
+        return;
+      }
       if (event.key.toLowerCase() === "r" && !modifier) {
         const target = event.target as HTMLElement | null;
         if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT")) return;
