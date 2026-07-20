@@ -23,6 +23,7 @@ export function ProjectsPanel() {
   const createProject = useProjectsStore((s) => s.createProject);
   const switchProject = useProjectsStore((s) => s.switchProject);
   const renameProject = useProjectsStore((s) => s.renameProject);
+  const duplicateProject = useProjectsStore((s) => s.duplicateProject);
   const deleteProject = useProjectsStore((s) => s.deleteProject);
   const importProject = useProjectsStore((s) => s.importProject);
   const currentScene = useEditorStore((s) => s.scene);
@@ -137,6 +138,17 @@ export function ProjectsPanel() {
                 }}
               >
                 ✎
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm"
+                aria-label={`Duplicate ${project.name}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  duplicateProject(project.id);
+                }}
+              >
+                ⧉
               </button>
               <button
                 type="button"
