@@ -45,17 +45,23 @@ export function waitForImage(img: HTMLImageElement, timeoutMs = 10000) {
   });
 }
 
-export async function exportImage(
+/**
+ * Renders the current scene to a PNG `Blob` at the preview's pixel ratio,
+ * reusing the exact geometry the preview uses (frame box, zoom/animation
+ * transform, overlay skin, transparent background). Returns null (and routes the
+ * reason through `onError`) when the preview can't be measured or the canvas
+ * can't be read. Shared by `exportImage` (download) and `copyPngToClipboard`.
+ */
+export async function renderSceneToPngBlob(
   scene: EditorScene,
   containerId: string,
-  filename: string,
   onError?: (message: string) => void
-) {
+): Promise<Blob | null> {
   try {
     const node = document.getElementById(containerId);
     if (!node) {
       onError?.("Preview area not found.");
-      return;
+      return null;
     }
 
     const video = node.querySelector("video");
@@ -76,21 +82,21 @@ export async function exportImage(
 
     if (!frameElement) {
       onError?.("Frame element not found.");
-      return;
+      return null;
     }
 
     const baseFrameWidth = frameElement.offsetWidth;
     const baseFrameHeight = frameElement.offsetHeight;
     if (!baseFrameWidth || !baseFrameHeight) {
       onError?.("Frame has no measurable size.");
-      return;
+      return null;
     }
 
     const containerWidth = node.clientWidth;
     const containerHeight = node.clientHeight;
     if (!containerWidth || !containerHeight) {
       onError?.("Preview has no measurable size.");
-      return;
+      return null;
     }
 
     const spec = getFrameSpec(scene.frame);
@@ -130,10 +136,47 @@ export async function exportImage(
     const pngBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
     if (!pngBlob) {
       onError?.("Failed to render PNG.");
-      return;
+      return null;
     }
-    downloadBlob(pngBlob, `${filename}.png`);
+    return pngBlob;
   } catch (err) {
     onError?.(err instanceof Error ? err.message : "Image export failed.");
+    return null;
+  }
+}
+
+export async function exportImage(
+  scene: EditorScene,
+  containerId: string,
+  filename: string,
+  onError?: (message: string) => void
+) {
+  const blob = await renderSceneToPngBlob(scene, containerId, onError);
+  if (blob) downloadBlob(blob, `${filename}.png`);
+}
+
+/**
+ * Copies a PNG snapshot of the scene to the system clipboard. Handy for pasting
+ * a mockup straight into Slack/Notion without a file download. Needs a secure
+ * context (https or localhost) and the Clipboard Image write permission; falls
+ * back through `onError` when unavailable.
+ */
+export async function copyPngToClipboard(
+  scene: EditorScene,
+  containerId: string,
+  onError?: (message: string) => void,
+  onStatus?: (message: string) => void
+) {
+  try {
+    if (typeof navigator === "undefined" || !navigator.clipboard || typeof ClipboardItem === "undefined") {
+      onError?.("Clipboard isn't available here (open over https or localhost).");
+      return;
+    }
+    const blob = await renderSceneToPngBlob(scene, containerId, onError);
+    if (!blob) return;
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    onStatus?.("Copied PNG to clipboard");
+  } catch (err) {
+    onError?.(err instanceof Error ? err.message : "Could not copy the image.");
   }
 }

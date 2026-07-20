@@ -6,8 +6,7 @@ import { PreviewCanvas } from "@/components/editor/PreviewCanvas";
 import { TemplatesPanel } from "@/components/editor/TemplatesPanel";
 import { LayersPanel } from "@/components/editor/LayersPanel";
 import { useEditorStore } from "@/lib/state/editorStore";
-import { exportImage } from "@/lib/export/exportImage";
-import { exportGif } from "@/lib/export/exportVideo";
+import { exportImage, copyPngToClipboard } from "@/lib/export/exportImage";
 import { sceneToShareUrl } from "@/lib/state/shareState";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { ProjectsPanel } from "@/components/editor/ProjectsPanel";
@@ -29,6 +28,7 @@ export function EditorShell() {
   const isExporting = videoExportStatus !== null || gifExportStatus !== null;
   const [exportError, setExportError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -60,6 +60,14 @@ export function EditorShell() {
     setSaved(true);
   }, [scene]);
 
+  // Clear the transient "Copied" status after a moment so it doesn't
+  // linger in the toolbar like the persistent Saved indicator.
+  useEffect(() => {
+    if (!copyStatus) return;
+    const t = setTimeout(() => setCopyStatus(null), 1500);
+    return () => clearTimeout(t);
+  }, [copyStatus]);
+
   const copyShareUrl = useCallback(async () => {
     const url = sceneToShareUrl(scene);
     await navigator.clipboard.writeText(url);
@@ -68,6 +76,11 @@ export function EditorShell() {
   const handleExportPng = useCallback(() => {
     setExportError(null);
     exportImage(scene, "preview-canvas", "mocksy-export", setExportError);
+  }, [scene]);
+
+  const handleCopyPng = useCallback(async () => {
+    setExportError(null);
+    await copyPngToClipboard(scene, "preview-canvas", setExportError, setCopyStatus);
   }, [scene]);
 
   const handleExportMp4 = useCallback(async () => {
@@ -134,9 +147,28 @@ export function EditorShell() {
         saveNow();
         return;
       }
-      if (modifier && event.key.toLowerCase() === "e") {
+      if (modifier && !event.shiftKey && event.key.toLowerCase() === "e") {
         event.preventDefault();
         handleExportPng();
+        return;
+      }
+      // ⌘⇧E exports MP4, ⌘⇧G exports GIF (the GIF module is
+      // still loaded lazily, via the same dynamic import as MP4).
+      if (modifier && event.shiftKey && event.key.toLowerCase() === "e") {
+        event.preventDefault();
+        handleExportMp4();
+        return;
+      }
+      if (modifier && event.shiftKey && event.key.toLowerCase() === "g") {
+        event.preventDefault();
+        handleExportGif();
+        return;
+      }
+      // ⌘⇧C copies a PNG snapshot to the clipboard (⌘C alone stays
+      // free for normal text copy while typing in a field).
+      if (modifier && event.shiftKey && event.key.toLowerCase() === "c") {
+        event.preventDefault();
+        handleCopyPng();
         return;
       }
       // Layer shortcuts: ⌘D duplicates the active layer, ⌘↑/⌘↓ move it.
@@ -188,7 +220,7 @@ export function EditorShell() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [undo, redo, saveNow, handleReset]);
+  }, [undo, redo, saveNow, handleReset, handleExportPng, handleExportMp4, handleExportGif, handleCopyPng]);
 
   return (
     <main className="editor-shell">
@@ -208,15 +240,24 @@ export function EditorShell() {
             <button type="button" className="btn" onClick={redo} disabled={futureLength === 0} title="Redo (⇧⌘Z)">
               Redo
             </button>
-            <button type="button" className="btn btn-primary" onClick={handleExportPng} title="Export PNG">
+            <button type="button" className="btn btn-primary" onClick={handleExportPng} title="Export PNG (⌘E)">
               Export PNG
             </button>
             <button
               type="button"
               className="btn"
               disabled={isExporting}
+              onClick={handleCopyPng}
+              title="Copy PNG to clipboard (⌘⇧C)"
+            >
+              Copy PNG
+            </button>
+            <button
+              type="button"
+              className="btn"
+              disabled={isExporting}
               onClick={handleExportMp4}
-              title="Export MP4"
+              title="Export MP4 (⌘⇧E)"
             >
               Export MP4
             </button>
@@ -225,7 +266,7 @@ export function EditorShell() {
               className="btn"
               disabled={isExporting}
               onClick={handleExportGif}
-              title="Export GIF"
+              title="Export GIF (⌘⇧G)"
             >
               Export GIF
             </button>
@@ -247,7 +288,9 @@ export function EditorShell() {
                 <span className="pct">{Math.round(gifExportProgress)}%</span>
               </div>
             ) : null}
-            {exportError ? (
+            {copyStatus ? (
+              <span className="status saved">{copyStatus}</span>
+            ) : exportError ? (
               <span className="error" role="alert">
                 {exportError}
               </span>

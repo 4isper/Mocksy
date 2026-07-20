@@ -153,6 +153,43 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
     if (e.touches.length < 2) pinchStart.current = null;
   };
 
+  // Drag-to-pan the active media inside the frame, mirroring the Position
+  // X/Y sliders. Pointer events cover mouse and single-finger touch; a
+  // two-finger touch is claimed by the pinch-zoom handler instead. The
+  // frame's offsetWidth is its untransformed layout size, so the delta
+  // maps cleanly onto the CSS object-position basis the sliders drive.
+  const panState = useRef<{ x: number; y: number; offX: number; offY: number } | null>(null);
+  const canPan = !!activeLayer?.mediaUrl;
+  const onPanDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    // Let the Clear button and watermark keep their own click behavior.
+    if (target.closest("button") || target.closest(".preview-watermark")) return;
+    if (!activeLayer?.mediaUrl) return;
+    panState.current = {
+      x: e.clientX,
+      y: e.clientY,
+      offX: activeLayer.mediaOffsetX,
+      offY: activeLayer.mediaOffsetY
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onPanMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const s = panState.current;
+    const el = frameRef.current;
+    if (!s || !el) return;
+    const w = el.offsetWidth || 1;
+    const h = el.offsetHeight || 1;
+    const nx = Math.max(-1, Math.min(1, s.offX + ((e.clientX - s.x) / w) * 2));
+    const ny = Math.max(-1, Math.min(1, s.offY + ((e.clientY - s.y) / h) * 2));
+    const st = useEditorStore.getState();
+    st.setMediaOffsetX(nx);
+    st.setMediaOffsetY(ny);
+  };
+  const onPanUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    panState.current = null;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+  };
+
   const handleDrop = async (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     dragDepth.current = 0;
@@ -220,7 +257,15 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           ...sceneCss.container
         }}
       >
-        <div ref={frameRef} style={sceneCss.frame} data-mockup-frame>
+        <div
+          ref={frameRef}
+          style={{ ...sceneCss.frame, cursor: canPan ? "grab" : undefined, touchAction: canPan ? "none" : undefined }}
+          data-mockup-frame
+          onPointerDown={onPanDown}
+          onPointerMove={onPanMove}
+          onPointerUp={onPanUp}
+          onPointerCancel={onPanUp}
+        >
           {scene.layers
             .filter((layer) => !layer.hidden)
             .map((layer) =>

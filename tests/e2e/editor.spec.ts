@@ -592,6 +592,95 @@ test("Auto from media builds a gradient from the uploaded image palette", async 
   await expect(page.getByRole("button", { name: "Blue → Violet", exact: true })).toHaveAttribute("aria-pressed", "false");
 });
 
+test("copy PNG button writes the mockup image to the clipboard", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+
+  await page.getByRole("button", { name: "Copy PNG" }).click();
+  await expect(page.getByText("Copied PNG to clipboard")).toBeVisible();
+
+  // The clipboard must actually hold a PNG, not just claim success.
+  const type = await page.evaluate(async () => {
+    const items = await navigator.clipboard.read();
+    return items[0]?.types[0] ?? "";
+  });
+  expect(type).toBe("image/png");
+});
+
+test("exporting an MP4 via keyboard shortcut triggers a download", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.keyboard.press("Control+Shift+e");
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/\.mp4$/);
+});
+
+test("exporting a GIF via keyboard shortcut triggers a download", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.keyboard.press("Control+Shift+g");
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/\.gif$/);
+});
+
+test("dragging the media pans it inside the frame", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  const media = page.locator('img[alt="Uploaded media"]');
+  await expect(media).toBeVisible();
+
+  // Position X starts at 0; dragging the media right must move it.
+  const slider = page.locator('[aria-label="Media horizontal position"]');
+  expect(await slider.inputValue()).toBe("0");
+
+  const box = await media.boundingBox();
+  if (!box) throw new Error("media has no box");
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  await page.mouse.move(cx + 80, cy, { steps: 5 });
+  await page.mouse.up();
+
+  expect(await slider.inputValue()).not.toBe("0");
+});
+
 
 
 
