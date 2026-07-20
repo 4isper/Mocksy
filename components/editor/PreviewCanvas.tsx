@@ -21,13 +21,17 @@ const ANIMATION_DURATION_MS = 3000;
  */
 function LayerAnimation({ layer, children }: { layer: MediaLayer; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
+  // Keep the latest layer in a ref so the rAF loop always samples fresh zoom/
+  // pan values without re-seeding the loop on every slider tick.
+  const layerRef = useRef(layer);
+  layerRef.current = layer;
   const animates = layer.animationPreset !== "none";
 
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
     if (!animates) {
-      const base = sampleVideoTransform(layer, 0);
+      const base = sampleVideoTransform(layerRef.current, 0);
       node.style.transform = `scale(${base.zoom}) translate(${base.x * 2}px, ${base.y * 2}px)`;
       return;
     }
@@ -35,17 +39,15 @@ function LayerAnimation({ layer, children }: { layer: MediaLayer; children: Reac
     const start = performance.now();
     const tick = () => {
       const progress = ((performance.now() - start) % ANIMATION_DURATION_MS) / ANIMATION_DURATION_MS;
-      const { zoom, x, y } = sampleVideoTransform(layer, progress);
+      const { zoom, x, y } = sampleVideoTransform(layerRef.current, progress);
       node.style.transform = `scale(${zoom}) translate(${x * 2}px, ${y * 2}px)`;
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-    // Restart only when the animation preset itself changes, not on every
-    // scene edit (e.g. dragging the zoom slider) — timeline is recomputed
-    // inside the effect regardless.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [animates, layer.animationPreset]);
+    // Re-seed the loop when the preset, zoom, or pan actually changes so the
+    // static (non-animated) branch re-applies its transform to the DOM.
+  }, [animates, layer.animationPreset, layer.zoom, layer.mediaOffsetX, layer.mediaOffsetY]);
 
   return (
     <div
