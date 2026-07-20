@@ -44,8 +44,8 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
   const ratioSrc = spec.aspectRatio ?? (scene.frame === "none" ? scene.aspectRatio : "1 / 1");
   const [ratioW, ratioH] = ratioSrc.split("/").map((n) => Number(n.trim()));
   const [canvasW, canvasH] = scene.aspectRatio.split("/").map((n) => Number(n.trim()));
-  const frameAr = ratioW / ratioH;
-  const canvasAr = canvasW / canvasH;
+  const frameAr = (ratioW ?? 1) / (ratioH ?? 1);
+  const canvasAr = (canvasW ?? 1) / (canvasH ?? 1);
   // Contain the frame inside the canvas: pick the limiting axis so the cross-
   // axis max constraint never clamps and breaks the aspect ratio. A fixed
   // width + maxHeight (the old code) let maxHeight clamp the height while the

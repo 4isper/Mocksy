@@ -46,15 +46,21 @@ export function sampleVideoTransform(scene: EditorScene, progress: number): Samp
   if (timeline.length === 0) return { zoom: scene.zoom, x: 0, y: 0 };
   if (timeline.length === 1) {
     const k = timeline[0];
+    if (!k) return { zoom: scene.zoom, x: 0, y: 0 };
     return { zoom: k.zoom, x: k.x, y: k.y };
   }
   const p = Math.max(0, Math.min(1, progress));
-  let lower = timeline[0];
-  let upper = timeline[timeline.length - 1];
+  const first = timeline[0];
+  const last = timeline[timeline.length - 1];
+  if (!first || !last) return { zoom: scene.zoom, x: 0, y: 0 };
+  let lower = first;
+  let upper = last;
   for (let i = 0; i < timeline.length - 1; i++) {
-    if (p >= timeline[i].at && p <= timeline[i + 1].at) {
-      lower = timeline[i];
-      upper = timeline[i + 1];
+    const curr = timeline[i];
+    const next = timeline[i + 1];
+    if (curr && next && p >= curr.at && p <= next.at) {
+      lower = curr;
+      upper = next;
       break;
     }
   }
