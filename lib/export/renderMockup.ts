@@ -1,6 +1,6 @@
 "use client";
 
-import type { EditorScene } from "@/lib/types/editor";
+import type { Annotation, EditorScene } from "@/lib/types/editor";
 import { getFrameSpec, SVG_VIEWBOX_HEIGHT, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
 
 function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -133,7 +133,8 @@ export function renderMockupToCanvas(
   pixelRatio = 2,
   transform?: RenderTransform,
   backgroundFill?: string,
-  frameOverlay?: CanvasImageSource | null
+  frameOverlay?: CanvasImageSource | null,
+  backgroundImage?: CanvasImageSource | null
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -145,7 +146,25 @@ export function renderMockupToCanvas(
   const activeLayerForRender = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   ctx.clearRect(0, 0, width, height);
 
-  if (scene.backgroundMode === "gradient") {
+  if (scene.backgroundMode === "image" && backgroundImage) {
+    // Draw the uploaded background image to cover the canvas, then blur it. The
+    // draw rect is expanded by twice the blur radius so the soft edges never
+    // reveal transparency at the canvas border (matching the preview's
+    // expanded background layer). Blur radius scales with DPI so the exported
+    // PNG matches the on-screen blur in CSS px.
+    const img = backgroundImage as { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number };
+    const iw = img.naturalWidth || img.width || width;
+    const ih = img.naturalHeight || img.height || height;
+    const scale = Math.max(width / iw, height / ih);
+    const dw = iw * scale;
+    const dh = ih * scale;
+    const blur = scene.backgroundBlur * dpiScale;
+    const pad = blur * 2;
+    ctx.save();
+    if (blur > 0) ctx.filter = `blur(${blur}px)`;
+    ctx.drawImage(backgroundImage, (width - dw) / 2 - pad, (height - dh) / 2 - pad, dw + pad * 2, dh + pad * 2);
+    ctx.restore();
+  } else if (scene.backgroundMode === "gradient") {
     // Emulate CSS linear-gradient(angleDeg, from, to): the gradient line runs
     // through the center at `angle`, and 0%/100% stops reach the box edges so
     // the color spread matches the preview exactly. CSS 0deg points up and the
@@ -166,14 +185,18 @@ export function renderMockupToCanvas(
     grad.addColorStop(0, scene.gradientFrom);
     grad.addColorStop(1, scene.gradientTo);
     ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
   } else if (scene.backgroundMode === "solid") {
     ctx.fillStyle = scene.backgroundColor;
+    ctx.fillRect(0, 0, width, height);
   } else if (scene.backgroundMode === "transparent" && backgroundFill) {
     ctx.fillStyle = backgroundFill;
+    ctx.fillRect(0, 0, width, height);
   } else {
+    // Fallback for image mode without a loaded image, or unknown modes.
     ctx.fillStyle = "rgba(0,0,0,0)";
+    ctx.fillRect(0, 0, width, height);
   }
-  ctx.fillRect(0, 0, width, height);
 
   const { x, y, width: frameW, height: frameH, outerRadius, innerX, innerY, innerW, innerH, innerRadius } = computeFrameBox(
     scene,
@@ -280,6 +303,74 @@ export function renderMockupToCanvas(
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 1 * dpiScale;
     ctx.fillText(scene.watermarkText, textX, textY);
+    ctx.restore();
+  }
+
+  if (scene.annotations.length > 0) {
+    drawAnnotations(ctx, scene.annotations, width, height, dpiScale);
+  }
+}
+
+/**
+ * Draws non-media overlays (text, arrows, rectangles) onto the canvas. All
+ * positions are fractions of the canvas and scaled by `dpiScale` so the export
+ * matches the preview pixel-for-pixel. Drawn last, above the frame and
+ * watermark, so callouts sit on top of the mockup.
+ */
+function drawAnnotations(
+  ctx: CanvasRenderingContext2D,
+  annotations: Annotation[],
+  width: number,
+  height: number,
+  dpiScale: number
+) {
+  for (const a of annotations) {
+    const bx = Math.min(a.x, a.x + a.w) * width;
+    const by = Math.min(a.y, a.y + a.h) * height;
+    const bw = Math.abs(a.w) * width;
+    const bh = Math.abs(a.h) * height;
+    ctx.save();
+    if (a.type === "text") {
+      const fontSize = a.fontSize * dpiScale;
+      ctx.fillStyle = a.color;
+      ctx.font = `600 ${fontSize}px Inter, system-ui, sans-serif`;
+      ctx.textBaseline = "top";
+      ctx.textAlign = "left";
+      ctx.shadowColor = "rgba(0,0,0,0.5)";
+      ctx.shadowBlur = 3 * dpiScale;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 1 * dpiScale;
+      const lines = a.text.split("\n");
+      const lineHeight = fontSize * 1.2;
+      lines.forEach((line, i) => ctx.fillText(line, bx, by + i * lineHeight));
+    } else if (a.type === "rect") {
+      ctx.strokeStyle = a.color;
+      ctx.lineWidth = Math.max(1, a.strokeWidth * dpiScale);
+      ctx.strokeRect(bx, by, bw, bh);
+    } else {
+      const startX = a.x * width;
+      const startY = a.y * height;
+      const endX = (a.x + a.w) * width;
+      const endY = (a.y + a.h) * height;
+      ctx.strokeStyle = a.color;
+      ctx.fillStyle = a.color;
+      ctx.lineWidth = Math.max(1, a.strokeWidth * dpiScale);
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+      const angle = Math.atan2(endY - startY, endX - startX);
+      const head = 14 * dpiScale;
+      const a1 = angle + Math.PI - 0.45;
+      const a2 = angle + Math.PI + 0.45;
+      ctx.beginPath();
+      ctx.moveTo(endX, endY);
+      ctx.lineTo(endX + head * Math.cos(a1), endY + head * Math.sin(a1));
+      ctx.lineTo(endX + head * Math.cos(a2), endY + head * Math.sin(a2));
+      ctx.closePath();
+      ctx.fill();
+    }
     ctx.restore();
   }
 }

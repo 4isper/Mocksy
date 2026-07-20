@@ -88,6 +88,8 @@ export function ControlPanel() {
     setBackgroundSolid,
     setBackgroundGradient,
     setBackgroundTransparent,
+    setBackgroundImage,
+    setBackgroundBlur,
     setScenePalette,
     toggleWatermark,
     setWatermarkText,
@@ -115,6 +117,20 @@ export function ControlPanel() {
   };
 
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+
+  const handleBgFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const { url } = await loadMediaFromFile(file);
+      setBackgroundImage(url);
+    } catch {
+      // Background images are images only; ignore unsupported files silently
+      // rather than surfacing the media-error banner here.
+    } finally {
+      event.target.value = "";
+    }
+  };
 
   return (
     <div className="panel control-panel" style={{ padding: 16, display: "grid", gap: 16 }}>
@@ -308,6 +324,31 @@ export function ControlPanel() {
             );
           })}
         </div>
+        <label className="file-trigger">
+          Upload background image
+          <input type="file" accept="image/*" onChange={handleBgFile} />
+        </label>
+        {scene.backgroundMode === "image" ? (
+          <>
+            <label className="field">
+              <span>Background blur ({scene.backgroundBlur}px)</span>
+              <input
+                className="range"
+                type="range"
+                min={0}
+                max={40}
+                step={1}
+                value={scene.backgroundBlur}
+                aria-label="Background blur"
+                aria-valuetext={`${scene.backgroundBlur} pixels`}
+                onChange={(e) => setBackgroundBlur(Number(e.target.value))}
+              />
+            </label>
+            <button type="button" className="btn btn-sm" onClick={() => setBackgroundTransparent()}>
+              Remove background image
+            </button>
+          </>
+        ) : null}
       </div>
 
       <div className="divider" />

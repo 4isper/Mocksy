@@ -140,4 +140,21 @@ describe("buildSceneCss", () => {
     const { frame } = buildSceneCss(base({ frame: "watch" }));
     expect(frame.borderRadius).toBe("50%");
   });
+
+  it("exposes the background image url and blur for image mode", () => {
+    const css = buildSceneCss(
+      base({ backgroundMode: "image", backgroundImageUrl: "data:image/png;base64,AAA", backgroundBlur: 12 })
+    );
+    expect(css.backgroundImage).toBe("data:image/png;base64,AAA");
+    expect(css.backgroundBlur).toBe(12);
+    // the container shows a neutral fallback so blurred edges have backing
+    expect(css.container.background).toBe("#0a0a0f");
+  });
+
+  it("keeps backgroundImage null for non-image modes", () => {
+    const solid = buildSceneCss(base({ backgroundMode: "solid", backgroundColor: "#09090b" }));
+    expect(solid.backgroundImage).toBeNull();
+    const gradient = buildSceneCss(base({ backgroundMode: "gradient" }));
+    expect(gradient.backgroundImage).toBeNull();
+  });
 });

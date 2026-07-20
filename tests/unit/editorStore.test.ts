@@ -204,3 +204,95 @@ describe("editorStore", () => {
     expect(store().videoCurrentTime).toBe(3);
   });
 });
+
+describe("background image + blur", () => {
+  function reset() {
+    useEditorStore.setState({
+      past: [],
+      future: [],
+      scene: { ...initialScene },
+      selectedAnnotationId: null,
+      lastHistoryKey: null,
+      lastHistoryAt: 0
+    });
+  }
+
+  it("setBackgroundImage switches to image mode and stores the url", () => {
+    reset();
+    store().setBackgroundImage("data:image/png;base64,AAA");
+    expect(store().scene.backgroundMode).toBe("image");
+    expect(store().scene.backgroundImageUrl).toBe("data:image/png;base64,AAA");
+  });
+
+  it("setBackgroundBlur clamps to [0, 40]", () => {
+    reset();
+    store().setBackgroundBlur(99);
+    expect(store().scene.backgroundBlur).toBe(40);
+    store().setBackgroundBlur(-5);
+    expect(store().scene.backgroundBlur).toBe(0);
+    store().setBackgroundBlur(12);
+    expect(store().scene.backgroundBlur).toBe(12);
+  });
+});
+
+describe("annotations", () => {
+  function reset() {
+    useEditorStore.setState({
+      past: [],
+      future: [],
+      scene: { ...initialScene },
+      selectedAnnotationId: null,
+      lastHistoryKey: null,
+      lastHistoryAt: 0
+    });
+  }
+
+  it("addAnnotation appends and auto-selects the new annotation", () => {
+    reset();
+    store().addAnnotation("text");
+    const scene = store().scene;
+    expect(scene.annotations.length).toBe(1);
+    expect(scene.annotations[0]!.type).toBe("text");
+    expect(store().selectedAnnotationId).toBe(scene.annotations[0]!.id);
+  });
+
+  it("updateAnnotation patches only the targeted annotation", () => {
+    reset();
+    store().addAnnotation("arrow");
+    const id = store().selectedAnnotationId!;
+    store().updateAnnotation(id, { color: "#ff0000", strokeWidth: 8 });
+    const a = store().scene.annotations[0]!;
+    expect(a.color).toBe("#ff0000");
+    expect(a.strokeWidth).toBe(8);
+    expect(a.type).toBe("arrow");
+  });
+
+  it("removeAnnotation drops the annotation and clears selection", () => {
+    reset();
+    store().addAnnotation("rect");
+    const id = store().selectedAnnotationId!;
+    store().selectAnnotation(id);
+    store().removeAnnotation(id);
+    expect(store().scene.annotations.length).toBe(0);
+    expect(store().selectedAnnotationId).toBeNull();
+  });
+
+  it("selectAnnotation only changes selection, not history", () => {
+    reset();
+    store().addAnnotation("text");
+    const id = store().selectedAnnotationId!;
+    const pastBefore = store().past.length;
+    store().selectAnnotation(null);
+    store().selectAnnotation(id);
+    expect(store().past.length).toBe(pastBefore);
+  });
+
+  it("clearAnnotations empties the list and selection", () => {
+    reset();
+    store().addAnnotation("text");
+    store().addAnnotation("arrow");
+    store().clearAnnotations();
+    expect(store().scene.annotations.length).toBe(0);
+    expect(store().selectedAnnotationId).toBeNull();
+  });
+});

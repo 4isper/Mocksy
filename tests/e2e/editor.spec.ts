@@ -681,6 +681,33 @@ test("dragging the media pans it inside the frame", async ({ page }) => {
   expect(await slider.inputValue()).not.toBe("0");
 });
 
+test("adding a text annotation renders it on the canvas and can be deleted", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('.segmented[aria-label="Add annotation"] button', { hasText: "+ Text" }).click();
+  // The overlay text shows in the preview and a panel row appears.
+  await expect(page.locator("#preview-canvas").getByText("Label")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Text 1/ })).toBeVisible();
+
+  // Editing the text updates the overlay.
+  await page.locator("textarea").fill("Hello");
+  await expect(page.locator("#preview-canvas").getByText("Hello")).toBeVisible();
+
+  // Delete removes it from the preview and the panel.
+  await page.locator(".annotations-panel").getByRole("button", { name: "Delete" }).click();
+  await expect(page.locator("#preview-canvas").getByText("Hello")).toHaveCount(0);
+});
+
+test("adding an arrow draws an overlay and selecting it shows the editor", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('.segmented[aria-label="Add annotation"] button', { hasText: "+ Arrow" }).click();
+  // The arrow is an SVG drawn on the canvas.
+  await expect(page.locator("#preview-canvas svg").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /Arrow 1/ })).toBeVisible();
+
+  // The selected annotation exposes a color and stroke editor.
+  await expect(page.locator('input[type="color"]')).toBeVisible();
+});
+
 
 
 

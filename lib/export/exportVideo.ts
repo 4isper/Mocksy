@@ -102,6 +102,17 @@ async function recordCanvasToWebm(
     }
   }
 
+  // Annotations are drawn from the scene automatically; the background image
+  // must be preloaded and passed in (the canvas renderer is synchronous).
+  let backgroundImage: CanvasImageSource | null = null;
+  if (scene.backgroundMode === "image" && scene.backgroundImageUrl) {
+    try {
+      backgroundImage = await loadImage(scene.backgroundImageUrl);
+    } catch {
+      backgroundImage = null;
+    }
+  }
+
   // Match the PNG export: size the frame from its on-screen box so overlay
   // skins (iphone15/16pro) keep their native aspect ratio instead of being
   // stretched to the default 10/16 fallback in computeFrameBox.
@@ -188,7 +199,7 @@ async function recordCanvasToWebm(
         return;
       }
 
-      renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay);
+      renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage);
       raf = requestAnimationFrame(tick);
     };
 

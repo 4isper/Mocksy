@@ -117,6 +117,15 @@ export async function renderSceneToPngBlob(
     const frameWidth = Math.max(1, Math.round(baseFrameWidth * pixelRatio));
     const frameHeight = Math.max(1, Math.round(baseFrameHeight * pixelRatio));
 
+    let backgroundImage: HTMLImageElement | null = null;
+    if (scene.backgroundMode === "image" && scene.backgroundImageUrl) {
+      try {
+        backgroundImage = await loadImage(scene.backgroundImageUrl);
+      } catch {
+        backgroundImage = null;
+      }
+    }
+
     const transform = resolveExportTransform(scene);
 
     renderMockupToCanvas(
@@ -130,7 +139,8 @@ export async function renderSceneToPngBlob(
       pixelRatio,
       transform,
       undefined,
-      overlay
+      overlay,
+      backgroundImage
     );
 
     const pngBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));

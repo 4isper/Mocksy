@@ -5,6 +5,7 @@ import { ControlPanel } from "@/components/editor/ControlPanel";
 import { PreviewCanvas } from "@/components/editor/PreviewCanvas";
 import { TemplatesPanel } from "@/components/editor/TemplatesPanel";
 import { LayersPanel } from "@/components/editor/LayersPanel";
+import { AnnotationsPanel } from "@/components/editor/AnnotationsPanel";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { exportImage, copyPngToClipboard } from "@/lib/export/exportImage";
 import { sceneToShareUrl } from "@/lib/state/shareState";
@@ -312,6 +313,7 @@ export function EditorShell() {
         <TemplatesPanel />
         <ProjectsPanel />
         <LayersPanel />
+        <AnnotationsPanel />
       </div>
       {confirmResetOpen ? (
         <div className="modal-backdrop" role="presentation" onClick={cancelReset}>

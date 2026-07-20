@@ -2,6 +2,8 @@
 
 import { create } from "zustand";
 import type {
+  Annotation,
+  AnnotationType,
   AnimationPreset,
   EditorScene,
   MediaLayer,
@@ -18,6 +20,35 @@ let layerSeq = 0;
 function nextLayerId(): string {
   layerSeq += 1;
   return `layer-${layerSeq}-${Date.now().toString(36)}`;
+}
+
+let annotationSeq = 0;
+function nextAnnotationId(): string {
+  annotationSeq += 1;
+  return `anno-${annotationSeq}-${Date.now().toString(36)}`;
+}
+
+const ANNOTATION_COLORS = ["#00d9ff", "#f87171", "#fbbf24", "#4ade80", "#c084fc", "#ffffff"];
+
+function makeAnnotation(type: AnnotationType): Annotation {
+  const color = ANNOTATION_COLORS[annotationSeq % ANNOTATION_COLORS.length] ?? "#00d9ff";
+  const base = {
+    id: nextAnnotationId(),
+    type,
+    color,
+    strokeWidth: type === "text" ? 0 : 4,
+    // Anchored near the center so a freshly added overlay is visible and
+    // easy to grab, regardless of the current canvas aspect ratio.
+    x: 0.32,
+    y: 0.32
+  };
+  if (type === "text") {
+    return { ...base, w: 0.36, h: 0, text: "Label", fontSize: 48 };
+  }
+  if (type === "arrow") {
+    return { ...base, w: 0.32, h: 0.2, text: "", fontSize: 0 };
+  }
+  return { ...base, w: 0.28, h: 0.2, text: "", fontSize: 0 };
 }
 
 function makeDemoLayer(): MediaLayer {
@@ -49,6 +80,9 @@ export interface EditorStoreState {
   /** Playback scrubber position; kept out of scene so playback doesn't
    *  churn history or re-render scene subscribers every frame. */
   videoCurrentTime: number;
+  /** Id of the annotation currently selected for editing; kept out of `scene`
+   *  so selecting doesn't churn undo history or serialize into share URLs. */
+  selectedAnnotationId: string | null;
   /** Groups rapid same-field edits (e.g. slider drags) into one undo step. */
   lastHistoryKey: string | null;
   lastHistoryAt: number;
@@ -89,11 +123,18 @@ export interface EditorStoreState {
   setBackgroundSolid: (color: string) => void;
   setBackgroundGradient: (from: string, to: string) => void;
   setBackgroundTransparent: () => void;
+  setBackgroundImage: (url: string) => void;
+  setBackgroundBlur: (blur: number) => void;
   toggleWatermark: (enabled: boolean) => void;
   setWatermarkText: (text: string) => void;
   setWatermarkPosition: (position: WatermarkPosition) => void;
   setWatermarkSize: (size: number) => void;
   setAspectRatio: (aspectRatio: string) => void;
+  addAnnotation: (type: AnnotationType) => void;
+  updateAnnotation: (id: string, patch: Partial<Annotation>) => void;
+  removeAnnotation: (id: string) => void;
+  selectAnnotation: (id: string | null) => void;
+  clearAnnotations: () => void;
   setVideoMuted: (muted: boolean) => void;
   setVideoLoop: (loop: boolean) => void;
   setVideoAutoplay: (autoplay: boolean) => void;
@@ -116,6 +157,9 @@ export const initialScene: EditorScene = {
   backgroundColor: "#111827",
   gradientFrom: "#1d4ed8",
   gradientTo: "#7c3aed",
+  backgroundImageUrl: null,
+  backgroundBlur: 0,
+  annotations: [],
   watermarkText: "Mocksy",
   watermarkEnabled: false,
   watermarkPosition: "bottom-right",
@@ -144,7 +188,10 @@ export function makeDemoScene(): EditorScene {
     watermarkEnabled: initialScene.watermarkEnabled,
     watermarkPosition: initialScene.watermarkPosition,
     watermarkSize: initialScene.watermarkSize,
-    aspectRatio: initialScene.aspectRatio
+    aspectRatio: initialScene.aspectRatio,
+    backgroundImageUrl: initialScene.backgroundImageUrl,
+    backgroundBlur: initialScene.backgroundBlur,
+    annotations: []
   };
 }
 
@@ -181,6 +228,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   past: [],
   future: [],
   videoCurrentTime: 0,
+  selectedAnnotationId: null,
   lastHistoryKey: null,
   lastHistoryAt: 0,
   isMediaLoading: false,
@@ -311,11 +359,42 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   setBackgroundSolid: (backgroundColor) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "solid", backgroundColor })),
   setBackgroundGradient: (gradientFrom, gradientTo) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "gradient", gradientFrom, gradientTo })),
   setBackgroundTransparent: () => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "transparent" })),
+  setBackgroundImage: (backgroundImageUrl) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "image", backgroundImageUrl })),
+  setBackgroundBlur: (backgroundBlur) => set((s) => pushHistory(s, { ...s.scene, backgroundBlur: Math.max(0, Math.min(40, Math.round(backgroundBlur))) }, "bgBlur")),
   toggleWatermark: (watermarkEnabled) => set((s) => pushHistory(s, { ...s.scene, watermarkEnabled })),
   setWatermarkText: (watermarkText) => set((s) => pushHistory(s, { ...s.scene, watermarkText })),
   setWatermarkPosition: (watermarkPosition) => set((s) => pushHistory(s, { ...s.scene, watermarkPosition })),
   setWatermarkSize: (watermarkSize) => set((s) => pushHistory(s, { ...s.scene, watermarkSize: Math.max(8, Math.min(64, Math.round(watermarkSize))) }, "watermarkSize")),
   setAspectRatio: (aspectRatio) => set((s) => pushHistory(s, { ...s.scene, aspectRatio })),
+  addAnnotation: (type) =>
+    set((s) => {
+      const annotation = makeAnnotation(type);
+      return {
+        ...pushHistory(s, { ...s.scene, annotations: [...s.scene.annotations, annotation] }),
+        selectedAnnotationId: annotation.id
+      };
+    }),
+  updateAnnotation: (id, patch) =>
+    set((s) =>
+      pushHistory(
+        s,
+        {
+          ...s.scene,
+          annotations: s.scene.annotations.map((a) => (a.id === id ? { ...a, ...patch } : a))
+        },
+        "annotation"
+      )
+    ),
+  removeAnnotation: (id) =>
+    set((s) => {
+      const annotations = s.scene.annotations.filter((a) => a.id !== id);
+      return {
+        ...pushHistory(s, { ...s.scene, annotations }),
+        selectedAnnotationId: s.selectedAnnotationId === id ? null : s.selectedAnnotationId
+      };
+    }),
+  selectAnnotation: (id) => set({ selectedAnnotationId: id }),
+  clearAnnotations: () => set((s) => ({ ...pushHistory(s, { ...s.scene, annotations: [] }), selectedAnnotationId: null })),
   setVideoMuted: (videoMuted) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoMuted }) })),
   setVideoLoop: (videoLoop) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoLoop }) })),
   setVideoAutoplay: (videoAutoplay) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoAutoplay }) })),

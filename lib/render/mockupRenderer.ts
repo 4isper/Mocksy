@@ -15,6 +15,10 @@ interface SceneCss {
   mediaStyle: CSSProperties;
   /** Style for the empty-media placeholder when no media is loaded. */
   emptyMediaStyle: CSSProperties;
+  /** data: URL of an uploaded background image, or null when not in image mode. */
+  backgroundImage: string | null;
+  /** Blur radius (px) applied to the background image. */
+  backgroundBlur: number;
 }
 
 export function buildSceneCss(scene: EditorScene): SceneCss {
@@ -27,7 +31,9 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
       ? scene.backgroundColor
       : scene.backgroundMode === "gradient"
         ? `linear-gradient(120deg, ${scene.gradientFrom}, ${scene.gradientTo})`
-        : "transparent";
+        : scene.backgroundMode === "image"
+          ? "#0a0a0f"
+          : "transparent";
 
   const frameBorder =
     scene.stylePreset === "outline"
@@ -168,6 +174,8 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
     overlayStyle,
     screenRadius: spec.screenRadius,
     mediaStyle,
-    emptyMediaStyle
+    emptyMediaStyle,
+    backgroundImage: scene.backgroundMode === "image" ? scene.backgroundImageUrl : null,
+    backgroundBlur: scene.backgroundBlur
   };
 }

@@ -1,4 +1,6 @@
 import type {
+  Annotation,
+  AnnotationType,
   BackgroundMode,
   EditorScene,
   MediaLayer,
@@ -11,9 +13,10 @@ import { initialScene } from "@/lib/state/editorStore";
 
 const FRAMES = Object.keys(FRAME_SPECS) as MockupFrame[];
 const STYLE_PRESETS: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
-const BACKGROUND_MODES: BackgroundMode[] = ["transparent", "solid", "gradient"];
+const BACKGROUND_MODES: BackgroundMode[] = ["transparent", "solid", "gradient", "image"];
 const MEDIA_TYPES: MediaType[] = ["none", "image", "video"];
 const ANIMATIONS = ANIMATION_PRESETS;
+const ANNOTATION_TYPES: AnnotationType[] = ["text", "arrow", "rect"];
 
 function pick<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
   return allowed.includes(value as T) ? (value as T) : fallback;
@@ -33,6 +36,32 @@ let layerSeq = 0;
 function nextLayerId(): string {
   layerSeq += 1;
   return `layer-${layerSeq}-${Date.now().toString(36)}`;
+}
+
+let annotationSeq = 0;
+function nextAnnotationId(): string {
+  annotationSeq += 1;
+  return `anno-${annotationSeq}-${Date.now().toString(36)}`;
+}
+
+/** Normalizes one raw annotation-shaped object into a valid Annotation. */
+function normalizeAnnotation(raw: unknown, fallback: Annotation): Annotation {
+  if (!raw || typeof raw !== "object") return fallback;
+  const r = raw as Record<string, unknown>;
+  return {
+    id: typeof r.id === "string" && r.id.length > 0 ? r.id : nextAnnotationId(),
+    // Clamp coordinates to a forgiving range so an out-of-bounds or NaN
+    // payload can't push an overlay far off-canvas and break layout.
+    type: pick(r.type, ANNOTATION_TYPES, fallback.type),
+    x: num(r.x, fallback.x, -1, 2),
+    y: num(r.y, fallback.y, -1, 2),
+    w: num(r.w, fallback.w, -2, 2),
+    h: num(r.h, fallback.h, -2, 2),
+    text: str(r.text, fallback.text) ?? "",
+    color: str(r.color, fallback.color) ?? fallback.color,
+    strokeWidth: num(r.strokeWidth, fallback.strokeWidth, 0, 40),
+    fontSize: num(r.fontSize, fallback.fontSize, 8, 200)
+  };
 }
 
 /** Normalizes one raw layer-shaped object (or a legacy single-media payload). */
@@ -88,10 +117,28 @@ export function normalizeScene(raw: unknown): EditorScene {
     backgroundColor: str(r.backgroundColor, initialScene.backgroundColor) ?? initialScene.backgroundColor,
     gradientFrom: str(r.gradientFrom, initialScene.gradientFrom) ?? initialScene.gradientFrom,
     gradientTo: str(r.gradientTo, initialScene.gradientTo) ?? initialScene.gradientTo,
+    backgroundImageUrl: str(r.backgroundImageUrl, initialScene.backgroundImageUrl),
+    backgroundBlur: num(r.backgroundBlur, initialScene.backgroundBlur, 0, 40),
     watermarkText: str(r.watermarkText, initialScene.watermarkText) ?? initialScene.watermarkText,
     watermarkEnabled: r.watermarkEnabled === true,
     aspectRatio: str(r.aspectRatio, initialScene.aspectRatio) ?? initialScene.aspectRatio,
     watermarkPosition: pick(r.watermarkPosition, ["bottom-right", "bottom-left", "top-right", "top-left"], initialScene.watermarkPosition),
-    watermarkSize: num(r.watermarkSize, initialScene.watermarkSize, 8, 64)
+    watermarkSize: num(r.watermarkSize, initialScene.watermarkSize, 8, 64),
+    annotations: Array.isArray(r.annotations)
+      ? r.annotations.map((a) =>
+          normalizeAnnotation(a, {
+            id: nextAnnotationId(),
+            type: "rect",
+            x: 0,
+            y: 0,
+            w: 0.2,
+            h: 0.2,
+            text: "",
+            color: "#00d9ff",
+            strokeWidth: 4,
+            fontSize: 48
+          })
+        )
+      : []
   };
 }

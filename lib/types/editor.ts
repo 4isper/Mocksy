@@ -1,4 +1,23 @@
-export type BackgroundMode = "transparent" | "solid" | "gradient";
+export type BackgroundMode = "transparent" | "solid" | "gradient" | "image";
+
+export type AnnotationType = "text" | "arrow" | "rect";
+
+/** A non-media overlay drawn on top of the mockup (text, arrow, rectangle).
+ *  Position and size are fractions (0..1) of the canvas so they scale with the
+ *  preview and the exported PNG/video at any pixel ratio. For arrows, (x, y) is
+ *  the start point and (x + w, y + h) the end, so negative w/h flip direction. */
+export interface Annotation {
+  id: string;
+  type: AnnotationType;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  text: string;
+  color: string;
+  strokeWidth: number;
+  fontSize: number;
+}
 export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "desktop" | "tablet" | "watch";
 export type StylePreset = "default" | "glassLight" | "glassDark" | "outline";
 export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax";
@@ -43,11 +62,17 @@ export interface EditorScene {
   backgroundColor: string;
   gradientFrom: string;
   gradientTo: string;
+  /** data: URL of an uploaded background image, or null when none. */
+  backgroundImageUrl: string | null;
+  /** Blur radius (px) applied to the background image. Range [0, 40]. */
+  backgroundBlur: number;
   watermarkText: string;
   watermarkEnabled: boolean;
   watermarkPosition: WatermarkPosition;
   watermarkSize: number;
   aspectRatio: string;
+  /** Non-media overlays (text, arrows, rectangles) drawn above the mockup. */
+  annotations: Annotation[];
 }
 
 /** A named set of scene-appearance settings (frame, frame style, background,
