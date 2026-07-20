@@ -25,6 +25,42 @@ async function getFfmpegInstance(onStatus?: (message: string) => void) {
 /** Duration of an animated still-image export, in seconds. */
 const ANIMATION_DURATION_SEC = 3;
 
+export function sanitizeFilename(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, "_");
+}
+
+/**
+ * Capture pixel ratio for a quality tier. Higher tiers keep more of the
+ * device's native ratio; lower tiers downscale to shrink the output file.
+ * The 2x floor keeps overlays readable; reads window.devicePixelRatio so it
+ * can be stubbed in tests.
+ */
+export function resolvePixelRatio(videoQuality: EditorScene["videoQuality"]): number {
+  const quality = QUALITY[videoQuality] ?? QUALITY.medium;
+  const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+  return Math.max(2, dpr) * quality.scale;
+}
+
+/**
+ * Records video scenes for their trimmed length; still-image scenes play the
+ * fixed animation loop. Returns seconds.
+ */
+export function computeCaptureDuration(scene: EditorScene): number {
+  const isVideo = isVideoScene(scene) && scene.mediaUrl != null;
+  if (!isVideo) return ANIMATION_DURATION_SEC;
+  const start = Math.max(0, scene.videoTrimStart || 0);
+  const end = scene.videoTrimEnd > start ? scene.videoTrimEnd : scene.videoDuration;
+  return Math.max(0.2, end - start);
+}
+
+/** Picks the best WebM codec the browser can record. */
+export function chooseWebmMimeType(): string {
+  if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
+    return "video/webm;codecs=vp9";
+  }
+  return "video/webm;codecs=vp8";
+}
+
 /**
  * Per-quality export tuning. fps and the VPX/webm capture rate stay fixed; the
  * MP4 encode quality (mpeg4 has no real bitrate control, so we use -q:v, lower
@@ -36,10 +72,6 @@ const QUALITY: Record<EditorScene["videoQuality"], { qscale: number; scale: numb
   medium: { qscale: 5, scale: 0.75 },
   high: { qscale: 2, scale: 1 }
 };
-
-function sanitizeFilename(name: string) {
-  return name.replace(/[^a-zA-Z0-9._-]/g, "_");
-}
 
 async function recordCanvasToWebm(
   scene: EditorScene,
@@ -91,9 +123,7 @@ async function recordCanvasToWebm(
     throw err;
   }
   const chunks: BlobPart[] = [];
-  const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-    ? "video/webm;codecs=vp9"
-    : "video/webm;codecs=vp8";
+  const mimeType = chooseWebmMimeType();
   const recorder = new MediaRecorder(stream, { mimeType });
   recorder.ondataavailable = (e) => {
     if (e.data.size > 0) chunks.push(e.data);
@@ -102,7 +132,7 @@ async function recordCanvasToWebm(
   const start = Math.max(0, scene.videoTrimStart || 0);
   const end = scene.videoTrimEnd > start ? scene.videoTrimEnd : scene.videoDuration;
   const isVideo = media instanceof HTMLVideoElement;
-  const duration = isVideo ? Math.max(0.2, end - start) : ANIMATION_DURATION_SEC;
+  const duration = computeCaptureDuration(scene);
 
   await new Promise<void>((resolve, reject) => {
     recorder.onstop = () => resolve();
@@ -173,7 +203,7 @@ export async function exportVideo(
   // and frame sizing instead of the video path hard-coding 2x. Lower quality
   // tiers downscale the capture to shrink the output file.
   const quality = QUALITY[scene.videoQuality] ?? QUALITY.medium;
-  const pixelRatio = Math.max(2, window.devicePixelRatio || 1) * quality.scale;
+  const pixelRatio = resolvePixelRatio(scene.videoQuality);
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(640, Math.round(previewNode.clientWidth * pixelRatio));
   canvas.height = Math.max(360, Math.round(previewNode.clientHeight * pixelRatio));
