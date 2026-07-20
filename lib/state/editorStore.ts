@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import type { AnimationPreset, EditorScene, MediaType, MockupFrame, StylePreset, VideoQuality, WatermarkPosition } from "@/lib/types/editor";
 import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
+import { ASPECT_RATIOS } from "@/lib/render/frames";
 
 export interface EditorStoreState {
   scene: EditorScene;
@@ -59,7 +60,7 @@ export const initialScene: EditorScene = {
   watermarkEnabled: false,
   watermarkPosition: "bottom-right",
   watermarkSize: 13,
-  aspectRatio: "16 / 9",
+  aspectRatio: ASPECT_RATIOS[0] ?? "16 / 9",
   videoMuted: true,
   videoLoop: true,
   videoAutoplay: true,

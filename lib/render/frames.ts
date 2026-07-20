@@ -64,3 +64,7 @@ export const FRAME_ORDER: MockupFrame[] = [
 ];
 
 export const ANIMATION_PRESETS: AnimationPreset[] = ["none", "zoomIn", "zoomOut", "parallax"];
+
+/** Aspect ratios selectable for the scene canvas. Kept here so the ControlPanel
+ *  select and any preset/normalization code share a single source of truth. */
+export const ASPECT_RATIOS = ["16 / 9", "4 / 3", "3 / 2", "1 / 1", "9 / 16"];
