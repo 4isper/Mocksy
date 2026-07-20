@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { initialScene } from "@/lib/state/editorStore";
 import { readSceneFromUrl, sceneToShareUrl } from "@/lib/state/shareState";
+import { DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
 import type { EditorScene } from "@/lib/types/editor";
 
 const ORIGINAL_WINDOW = globalThis.window;
@@ -48,5 +49,26 @@ describe("shareState", () => {
   it("returns null for malformed scene param", () => {
     stubLocation("https://mocksy.test/?scene=not-json");
     expect(readSceneFromUrl()).toBeNull();
+  });
+
+  it("omits the demo data: media from the share URL but restores it on read", () => {
+    const scene: EditorScene = { ...initialScene, mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: "mocksy-demo.svg", frame: "desktop" };
+    const url = sceneToShareUrl(scene);
+    const raw = decodeURIComponent(new URL(url).searchParams.get("scene") ?? "");
+    expect(raw).not.toContain(DEMO_MEDIA_URL);
+    stubLocation(url);
+    const restored = readSceneFromUrl();
+    expect(restored?.mediaUrl).toBe(DEMO_MEDIA_URL);
+    expect(restored?.frame).toBe("desktop");
+  });
+
+  it("keeps a non-demo media URL in the share link", () => {
+    const scene: EditorScene = { ...initialScene, mediaUrl: "blob:abc", mediaType: "image", mediaName: "shot.png" };
+    const url = sceneToShareUrl(scene);
+    const raw = decodeURIComponent(new URL(url).searchParams.get("scene") ?? "");
+    expect(raw).toContain("blob:abc");
+    stubLocation(url);
+    const restored = readSceneFromUrl();
+    expect(restored?.mediaUrl).toBe("blob:abc");
   });
 });
