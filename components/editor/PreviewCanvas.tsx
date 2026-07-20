@@ -206,7 +206,22 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           )}
           </div>
         </AnimationLayer>
-        {scene.watermarkEnabled && <span className="preview-watermark">{scene.watermarkText}</span>}
+        {scene.watermarkEnabled && (
+          <span
+            className="preview-watermark"
+            style={{
+              ...(scene.watermarkPosition === "bottom-left" || scene.watermarkPosition === "top-left"
+                ? { left: 16 }
+                : { right: 16 }),
+              ...(scene.watermarkPosition === "top-left" || scene.watermarkPosition === "top-right"
+                ? { top: 16 }
+                : { bottom: 16 }),
+              fontSize: scene.watermarkSize
+            }}
+          >
+            {scene.watermarkText}
+          </span>
+        )}
         {scene.mediaUrl && (
           <button type="button" className="preview-chip" onClick={() => setMedia(null, "none")}>
             Clear media

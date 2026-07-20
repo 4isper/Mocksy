@@ -46,9 +46,6 @@ const RENDER = {
   glassLightStroke: "rgba(255,255,255,0.45)",
   /** Background of the media placeholder when no media is loaded. */
   emptyMediaFill: "rgba(255,255,255,0.04)",
-  /** Watermark font size (px) at pixelRatio 1; scaled by DPI on render.
-   *  Kept in sync with .preview-watermark (13px) in globals.css. */
-  watermarkFontSize: 13,
   /** Gradient angle in degrees (120deg in CSS). */
   gradientAngleDeg: 120
 } as const;
@@ -250,20 +247,26 @@ export function renderMockupToCanvas(
   }
 
   if (scene.watermarkEnabled && scene.watermarkText) {
-    // Mirror the on-screen .preview-watermark: 13px, weight 500, white at 0.85,
+    // Mirror the on-screen .preview-watermark: weight 500, white at 0.85,
     // 16px inset from the canvas edge, and a soft text shadow for legibility.
-    // Scale by dpiScale so the exported watermark matches the preview exactly.
-    const watermarkSize = RENDER.watermarkFontSize * dpiScale;
+    // Scale by dpiScale so the exported watermark matches the preview exactly;
+    // position and size come from the scene so the PNG matches the preview.
+    const watermarkSize = scene.watermarkSize * dpiScale;
     const inset = 16 * dpiScale;
+    const onLeft = scene.watermarkPosition === "bottom-left" || scene.watermarkPosition === "top-left";
+    const onTop = scene.watermarkPosition === "top-right" || scene.watermarkPosition === "top-left";
+    const textX = onLeft ? inset : width - inset;
+    const textY = onTop ? inset + watermarkSize : height - inset;
     ctx.save();
     ctx.fillStyle = "rgba(255,255,255,0.85)";
     ctx.font = `500 ${watermarkSize}px Inter, system-ui, sans-serif`;
-    ctx.textAlign = "right";
+    ctx.textAlign = onLeft ? "left" : "right";
+    ctx.textBaseline = onTop ? "top" : "alphabetic";
     ctx.shadowColor = "rgba(0,0,0,0.6)";
     ctx.shadowBlur = 3 * dpiScale;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 1 * dpiScale;
-    ctx.fillText(scene.watermarkText, width - inset, height - inset);
+    ctx.fillText(scene.watermarkText, textX, textY);
     ctx.restore();
   }
 }

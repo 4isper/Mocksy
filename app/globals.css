@@ -645,10 +645,7 @@ body::before {
 
 .preview-watermark {
   position: absolute;
-  right: 16px;
-  bottom: 16px;
   z-index: 3;
-  font-size: 13px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.85);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);

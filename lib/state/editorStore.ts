@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { AnimationPreset, EditorScene, MediaType, MockupFrame, StylePreset, VideoQuality } from "@/lib/types/editor";
+import type { AnimationPreset, EditorScene, MediaType, MockupFrame, StylePreset, VideoQuality, WatermarkPosition } from "@/lib/types/editor";
 import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
 
 export interface EditorStoreState {
@@ -27,6 +27,8 @@ export interface EditorStoreState {
   setBackgroundTransparent: () => void;
   toggleWatermark: (enabled: boolean) => void;
   setWatermarkText: (text: string) => void;
+  setWatermarkPosition: (position: WatermarkPosition) => void;
+  setWatermarkSize: (size: number) => void;
   setAspectRatio: (aspectRatio: string) => void;
   setVideoMuted: (muted: boolean) => void;
   setVideoLoop: (loop: boolean) => void;
@@ -55,6 +57,8 @@ export const initialScene: EditorScene = {
   gradientTo: "#7c3aed",
   watermarkText: "Mocksy",
   watermarkEnabled: false,
+  watermarkPosition: "bottom-right",
+  watermarkSize: 13,
   aspectRatio: "16 / 9",
   videoMuted: true,
   videoLoop: true,
@@ -153,6 +157,8 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   setBackgroundTransparent: () => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "transparent" })),
   toggleWatermark: (watermarkEnabled) => set((s) => pushHistory(s, { ...s.scene, watermarkEnabled })),
   setWatermarkText: (watermarkText) => set((s) => pushHistory(s, { ...s.scene, watermarkText })),
+  setWatermarkPosition: (watermarkPosition) => set((s) => pushHistory(s, { ...s.scene, watermarkPosition })),
+  setWatermarkSize: (watermarkSize) => set((s) => pushHistory(s, { ...s.scene, watermarkSize: Math.max(8, Math.min(64, Math.round(watermarkSize))) })),
   setAspectRatio: (aspectRatio) => set((s) => pushHistory(s, { ...s.scene, aspectRatio })),
   setVideoMuted: (videoMuted) => set((s) => pushHistory(s, { ...s.scene, videoMuted })),
   setVideoLoop: (videoLoop) => set((s) => pushHistory(s, { ...s.scene, videoLoop })),

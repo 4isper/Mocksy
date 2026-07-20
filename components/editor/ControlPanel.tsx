@@ -3,7 +3,7 @@
 import type { ChangeEvent } from "react";
 import { useState } from "react";
 import { useEditorStore } from "@/lib/state/editorStore";
-import type { AnimationPreset, MockupFrame, StylePreset } from "@/lib/types/editor";
+import type { AnimationPreset, EditorScene, MockupFrame, StylePreset } from "@/lib/types/editor";
 import { FRAME_ORDER, ANIMATION_PRESETS } from "@/lib/render/frames";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { backgroundPresets } from "@/lib/presets/presets";
@@ -85,6 +85,8 @@ export function ControlPanel() {
     setBackgroundTransparent,
     toggleWatermark,
     setWatermarkText,
+    setWatermarkPosition,
+    setWatermarkSize,
     setAspectRatio
   } = useEditorStore();
 
@@ -235,6 +237,31 @@ export function ControlPanel() {
         <label className="field">
           <span>Watermark text</span>
           <input value={scene.watermarkText} onChange={(e) => setWatermarkText(e.target.value)} />
+        </label>
+        <label className="field">
+          <span>Watermark position</span>
+          <select
+            className="select"
+            value={scene.watermarkPosition}
+            onChange={(e) => setWatermarkPosition(e.target.value as EditorScene["watermarkPosition"])}
+          >
+            <option value="bottom-right">Bottom right</option>
+            <option value="bottom-left">Bottom left</option>
+            <option value="top-right">Top right</option>
+            <option value="top-left">Top left</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>Watermark size ({scene.watermarkSize}px)</span>
+          <input
+            className="range"
+            type="range"
+            min={8}
+            max={64}
+            step={1}
+            value={scene.watermarkSize}
+            onChange={(e) => setWatermarkSize(Number(e.target.value))}
+          />
         </label>
       </div>
     </div>

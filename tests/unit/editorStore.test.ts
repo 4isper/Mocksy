@@ -115,6 +115,18 @@ describe("editorStore", () => {
     expect(store().scene.videoQuality).toBe("low");
   });
 
+  it("setWatermarkPosition and setWatermarkSize update the watermark", () => {
+    store().setWatermarkPosition("top-left");
+    expect(store().scene.watermarkPosition).toBe("top-left");
+    store().setWatermarkSize(40);
+    expect(store().scene.watermarkSize).toBe(40);
+    // size is clamped to the 8..64 range
+    store().setWatermarkSize(999);
+    expect(store().scene.watermarkSize).toBe(64);
+    store().setWatermarkSize(0);
+    expect(store().scene.watermarkSize).toBe(8);
+  });
+
   it("setBackgroundSolid switches mode and color", () => {
     store().setBackgroundSolid("#09090b");
     expect(store().scene.backgroundMode).toBe("solid");

@@ -26,7 +26,9 @@ const scene: EditorScene = {
   videoDuration: 0,
   videoTrimStart: 0,
   videoTrimEnd: 0,
-  videoQuality: "medium"
+  videoQuality: "medium",
+  watermarkPosition: "bottom-right",
+  watermarkSize: 13
 };
 
 describe("buildVideoTimeline", () => {

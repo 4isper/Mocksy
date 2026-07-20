@@ -4,6 +4,7 @@ export type StylePreset = "default" | "glassLight" | "glassDark" | "outline";
 export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax";
 export type MediaType = "none" | "image" | "video";
 export type VideoQuality = "low" | "medium" | "high";
+export type WatermarkPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
 
 export interface EditorScene {
   mediaUrl: string | null;
@@ -21,6 +22,8 @@ export interface EditorScene {
   gradientTo: string;
   watermarkText: string;
   watermarkEnabled: boolean;
+  watermarkPosition: WatermarkPosition;
+  watermarkSize: number;
   aspectRatio: string;
   videoMuted: boolean;
   videoLoop: boolean;
