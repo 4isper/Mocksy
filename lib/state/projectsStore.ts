@@ -30,6 +30,7 @@ export interface ProjectsStoreState {
   createProject: (name?: string, scene?: EditorScene) => string;
   switchProject: (id: string) => void;
   renameProject: (id: string, name: string) => void;
+  duplicateProject: (id: string) => void;
   deleteProject: (id: string) => void;
   /** Writes the current editor scene into the active project. */
   updateActiveProjectScene: (scene: EditorScene) => void;
@@ -159,6 +160,19 @@ export const useProjectsStore = create<ProjectsStoreState>((set, get) => ({
     });
     persist(get());
   },
+  duplicateProject: (id) => {
+    const source = get().projects.find((p) => p.id === id);
+    if (!source) return;
+    const newId = nextProjectId();
+    const copy: Project = {
+      id: newId,
+      name: `${source.name} copy`,
+      scene: cloneScene(source.scene),
+      updatedAt: Date.now()
+    };
+    set((s) => ({ projects: [...s.projects, copy], activeProjectId: newId }));
+    persist(get());
+  },
   updateActiveProjectScene: (scene) => {
     const { activeProjectId, projects } = get();
     if (!activeProjectId) return;
@@ -170,7 +184,12 @@ export const useProjectsStore = create<ProjectsStoreState>((set, get) => ({
     persist(get());
   },
   importProject: (project) => {
-    set((s) => ({ projects: [...s.projects, project], activeProjectId: project.id }));
+    // Regenerate the id so an imported file (which carries its own id from the
+    // source browser) can never collide with an existing project here. Without
+    // this, importing a project exported on another device could overwrite or
+    // alias an existing one, breaking switch/delete by id.
+    const imported: Project = { ...project, id: nextProjectId() };
+    set((s) => ({ projects: [...s.projects, imported], activeProjectId: imported.id }));
     persist(get());
   }
 }));

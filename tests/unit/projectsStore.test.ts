@@ -129,10 +129,42 @@ describe("projectsStore", () => {
 
   it("importProject adds and activates an external project", () => {
     useProjectsStore.getState().hydrate();
+    const before = useProjectsStore.getState().projects.length;
     const external: Project = { id: "ext", name: "From file", scene: makeDemoScene(), updatedAt: Date.now() };
     useProjectsStore.getState().importProject(external);
     const state = useProjectsStore.getState();
-    expect(state.projects.some((p) => p.id === "ext")).toBe(true);
-    expect(state.activeProjectId).toBe("ext");
+    // id is regenerated on import, but the project is added and activated
+    expect(state.projects).toHaveLength(before + 1);
+    expect(state.activeProjectId).not.toBeNull();
+    expect(state.projects.find((p) => p.id === state.activeProjectId)?.name).toBe("From file");
+  });
+
+  it("importProject regenerates the id so cross-device imports can't collide", () => {
+    const first = useProjectsStore.getState().hydrate();
+    const existing = useProjectsStore.getState().activeProjectId!;
+    // Simulate a project file exported on another device carrying an id that
+    // already exists locally.
+    const external: Project = { id: existing, name: "Clashing id", scene: first, updatedAt: Date.now() };
+    useProjectsStore.getState().importProject(external);
+    const state = useProjectsStore.getState();
+    const clash = state.projects.find((p) => p.id === existing);
+    expect(clash?.name).toBe("My mockup");
+    expect(state.projects.some((p) => p.name === "Clashing id")).toBe(true);
+    expect(state.activeProjectId).not.toBe(existing);
+  });
+
+  it("duplicateProject copies the scene under a new id with a 'copy' suffix", () => {
+    const id = useProjectsStore.getState().hydrate();
+    const sourceId = useProjectsStore.getState().activeProjectId!;
+    const source = useProjectsStore.getState().projects.find((p) => p.id === sourceId)!;
+    source.name = "Original";
+    useProjectsStore.getState().duplicateProject(sourceId);
+    const state = useProjectsStore.getState();
+    expect(state.projects).toHaveLength(2);
+    const copy = state.projects.find((p) => p.name === "Original copy");
+    expect(copy).toBeDefined();
+    expect(copy!.id).not.toBe(sourceId);
+    expect(copy!.scene).toEqual(source.scene);
+    expect(state.activeProjectId).toBe(copy!.id);
   });
 });
