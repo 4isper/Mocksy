@@ -2,13 +2,22 @@ import { describe, expect, it } from "vitest";
 import { useEditorStore, orphanedBlobUrls } from "@/lib/state/editorStore";
 import { initialScene } from "@/lib/state/editorStore";
 import { DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
-import type { EditorScene } from "@/lib/types/editor";
+import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 import type { EditorStoreState } from "@/lib/state/editorStore";
 
 const store = () => useEditorStore.getState();
 
-function sceneWith(mediaUrl: string | null): EditorScene {
-  return { ...initialScene, mediaUrl, mediaType: mediaUrl ? "image" : "none" };
+function layer(overrides: Partial<MediaLayer> = {}): MediaLayer {
+  return { ...initialScene.layers[0]!, id: overrides.id ?? "layer-test", ...overrides };
+}
+
+function sceneWithLayer(overrides: Partial<MediaLayer> = {}): EditorScene {
+  const l = layer(overrides);
+  return { ...initialScene, layers: [l], activeLayerId: l.id };
+}
+
+function fullState(scene: EditorScene, past: EditorScene[] = [], future: EditorScene[] = []): EditorStoreState {
+  return { ...store(), scene, past, future } as EditorStoreState;
 }
 
 describe("editorStore", () => {
@@ -18,48 +27,22 @@ describe("editorStore", () => {
 
   describe("blob: media URL lifecycle", () => {
     it("revokes a replaced blob URL once it falls out of history", () => {
-      const prev = {
-        ...initialScene,
-        scene: sceneWith("blob:old"),
-        past: [{ ...sceneWith("blob:old") }],
-        future: []
-      } as unknown as EditorStoreState;
-      const state = {
-        ...initialScene,
-        scene: sceneWith("blob:new"),
-        past: [{ ...sceneWith("blob:new") }],
-        future: []
-      } as unknown as EditorStoreState;
+      const prev = fullState(sceneWithLayer({ mediaUrl: "blob:old" }), [sceneWithLayer({ mediaUrl: "blob:old" })]);
+      const state = fullState(sceneWithLayer({ mediaUrl: "blob:new" }), [sceneWithLayer({ mediaUrl: "blob:new" })] );
       // blob:old is gone from every collection -> should be revoked
       expect(orphanedBlobUrls(state, prev)).toEqual(["blob:old"]);
     });
 
     it("keeps a blob URL alive while reachable via undo history", () => {
-      const prev = {
-        scene: sceneWith("blob:new"),
-        past: [{ ...sceneWith("blob:old") }],
-        future: []
-      } as unknown as EditorStoreState;
-      const state = {
-        scene: sceneWith("blob:old"),
-        past: [{ ...sceneWith("blob:new") }],
-        future: []
-      } as unknown as EditorStoreState;
+      const prev = fullState(sceneWithLayer({ mediaUrl: "blob:new" }), [sceneWithLayer({ mediaUrl: "blob:old" })]);
+      const state = fullState(sceneWithLayer({ mediaUrl: "blob:old" }), [sceneWithLayer({ mediaUrl: "blob:new" })]);
       // undo swapped current/past; blob:old still reachable -> keep alive
       expect(orphanedBlobUrls(state, prev)).toEqual([]);
     });
 
     it("does not report demo (data:) media URLs", () => {
-      const prev = {
-        scene: sceneWith(DEMO_MEDIA_URL),
-        past: [],
-        future: []
-      } as unknown as EditorStoreState;
-      const state = {
-        scene: sceneWith("blob:new"),
-        past: [],
-        future: []
-      } as unknown as EditorStoreState;
+      const prev = fullState(sceneWithLayer({ mediaUrl: DEMO_MEDIA_URL }));
+      const state = fullState(sceneWithLayer({ mediaUrl: "blob:new" }));
       expect(orphanedBlobUrls(state, prev)).toEqual([]);
     });
   });
@@ -70,24 +53,24 @@ describe("editorStore", () => {
     store().setVideoTrimEnd(10);
     store().setMedia("blob:abc", "image", "shot.png");
     const scene = store().scene;
-    expect(scene.mediaUrl).toBe("blob:abc");
-    expect(scene.mediaName).toBe("shot.png");
-    expect(scene.videoDuration).toBe(0);
-    expect(scene.videoTrimStart).toBe(0);
-    expect(scene.videoTrimEnd).toBe(0);
+    expect(scene.layers[0]!.mediaUrl).toBe("blob:abc");
+    expect(scene.layers[0]!.mediaName).toBe("shot.png");
+    expect(scene.layers[0]!.videoDuration).toBe(0);
+    expect(scene.layers[0]!.videoTrimStart).toBe(0);
+    expect(scene.layers[0]!.videoTrimEnd).toBe(0);
     expect(store().videoCurrentTime).toBe(0);
   });
 
   it("setVideoDuration clamps existing trim end to duration", () => {
     store().setVideoTrimEnd(10);
     store().setVideoDuration(6);
-    expect(store().scene.videoTrimEnd).toBe(6);
+    expect(store().scene.layers[0]!.videoTrimEnd).toBe(6);
   });
 
   it("setVideoTrimEnd(0) clamps to the full duration instead of a 0 sentinel", () => {
     store().setVideoDuration(8);
     store().setVideoTrimEnd(0);
-    expect(store().scene.videoTrimEnd).toBe(8);
+    expect(store().scene.layers[0]!.videoTrimEnd).toBe(8);
   });
 
   it("setVideoDuration keeps an explicit trim end", () => {
@@ -95,24 +78,24 @@ describe("editorStore", () => {
     store().setVideoTrimEnd(5);
     store().setVideoDuration(10);
     // explicit end is preserved (clamped to new duration)
-    expect(store().scene.videoTrimEnd).toBe(5);
+    expect(store().scene.layers[0]!.videoTrimEnd).toBe(5);
   });
 
   it("setVideoTrimStart never exceeds trim end", () => {
     store().setVideoTrimEnd(5);
     store().setVideoTrimStart(9);
-    expect(store().scene.videoTrimStart).toBe(5);
+    expect(store().scene.layers[0]!.videoTrimStart).toBe(5);
   });
 
   it("setVideoTrimEnd never drops below trim start", () => {
     store().setVideoTrimStart(4);
     store().setVideoTrimEnd(1);
-    expect(store().scene.videoTrimEnd).toBe(4);
+    expect(store().scene.layers[0]!.videoTrimEnd).toBe(4);
   });
 
   it("setVideoQuality updates the export quality", () => {
     store().setVideoQuality("low");
-    expect(store().scene.videoQuality).toBe("low");
+    expect(store().scene.layers[0]!.videoQuality).toBe("low");
   });
 
   it("setWatermarkPosition and setWatermarkSize update the watermark", () => {
@@ -141,20 +124,22 @@ describe("editorStore", () => {
   });
 
   it("setScene merges onto the initial scene", () => {
-    store().setScene({ frame: "desktop", zoom: 1.2 } as never);
+    store().setScene({ frame: "desktop" });
+    store().setZoom(1.2);
     expect(store().scene.frame).toBe("desktop");
-    expect(store().scene.zoom).toBe(1.2);
+    expect(store().scene.layers[0]!.zoom).toBe(1.2);
     // untouched fields fall back to initial values
     expect(store().scene.stylePreset).toBe(initialScene.stylePreset);
   });
 
   it("resetScene restores defaults with demo media", () => {
-    store().setScene({ frame: "desktop", zoom: 1.2 });
+    store().setScene({ frame: "desktop" });
+    store().setZoom(1.2);
     store().resetScene();
     expect(store().scene.frame).toBe(initialScene.frame);
-    expect(store().scene.zoom).toBe(initialScene.zoom);
-    expect(store().scene.mediaUrl).toContain("data:image/svg");
-    expect(store().scene.mediaType).toBe("image");
+    expect(store().scene.layers[0]!.zoom).toBe(initialScene.layers[0]!.zoom);
+    expect(store().scene.layers[0]!.mediaUrl).toContain("data:image/svg");
+    expect(store().scene.layers[0]!.mediaType).toBe("image");
   });
 
   it("records history on a mutation and supports undo/redo", () => {
@@ -184,7 +169,7 @@ describe("editorStore", () => {
     store().undo();
     store().setZoom(1.5);
     expect(store().future.length).toBe(0);
-    expect(store().scene.zoom).toBe(1.5);
+    expect(store().scene.layers[0]!.zoom).toBe(1.5);
   });
 
   it("setBackgroundTransparent switches mode without color", () => {
@@ -206,10 +191,10 @@ describe("editorStore", () => {
     store().setZoom(1.3);
     // one baseline entry for the whole drag, not one per call
     expect(store().past.length).toBe(1);
-    expect(store().scene.zoom).toBe(1.3);
+    expect(store().scene.layers[0]!.zoom).toBe(1.3);
 
     store().undo();
-    expect(store().scene.zoom).toBe(initialScene.zoom);
+    expect(store().scene.layers[0]!.zoom).toBe(initialScene.layers[0]!.zoom);
   });
 
   it("does not coalesce across different fields", () => {

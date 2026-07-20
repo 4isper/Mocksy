@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, DragEvent, ReactNode } from "react";
-import type { EditorScene } from "@/lib/types/editor";
+import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
-import { isVideoScene } from "@/lib/render/mediaKind";
+import { isVideoLayer } from "@/lib/render/mediaKind";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { useEditorStore } from "@/lib/state/editorStore";
@@ -13,21 +13,21 @@ import { useEditorStore } from "@/lib/state/editorStore";
 const ANIMATION_DURATION_MS = 3000;
 
 /**
- * Wraps the mockup frame and drives zoomIn/zoomOut/parallax in the live
- * preview by writing the transform straight to the DOM via rAF — no React
+ * Wraps a single media layer and drives its zoomIn/zoomOut/parallax in the
+ * live preview by writing the transform straight to the DOM via rAF — no React
  * re-render per frame, and buildSceneCss (the expensive part) is untouched.
- * The sampled transform mirrors buildVideoTimeline / sampleVideoTransform used
- * by the video export, so what you see previews what you export.
+ * The sampled transform mirrors sampleVideoTransform used by the video export,
+ * so what you see previews what you export.
  */
-function AnimationLayer({ scene, children }: { scene: EditorScene; children: ReactNode }) {
+function LayerAnimation({ layer, children }: { layer: MediaLayer; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
-  const animates = scene.animationPreset !== "none";
+  const animates = layer.animationPreset !== "none";
 
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
     if (!animates) {
-      const base = sampleVideoTransform(scene, 0);
+      const base = sampleVideoTransform(layer, 0);
       node.style.transform = `scale(${base.zoom}) translate(${base.x * 2}px, ${base.y * 2}px)`;
       return;
     }
@@ -35,7 +35,7 @@ function AnimationLayer({ scene, children }: { scene: EditorScene; children: Rea
     const start = performance.now();
     const tick = () => {
       const progress = ((performance.now() - start) % ANIMATION_DURATION_MS) / ANIMATION_DURATION_MS;
-      const { zoom, x, y } = sampleVideoTransform(scene, progress);
+      const { zoom, x, y } = sampleVideoTransform(layer, progress);
       node.style.transform = `scale(${zoom}) translate(${x * 2}px, ${y * 2}px)`;
       raf = requestAnimationFrame(tick);
     };
@@ -45,7 +45,7 @@ function AnimationLayer({ scene, children }: { scene: EditorScene; children: Rea
     // scene edit (e.g. dragging the zoom slider) — timeline is recomputed
     // inside the effect regardless.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [animates, scene.animationPreset]);
+  }, [animates, layer.animationPreset]);
 
   return (
     <div
@@ -71,34 +71,35 @@ interface PreviewCanvasProps {
 
 export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const sceneCss = useMemo(() => buildSceneCss(scene), [scene]);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const dragDepth = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dropError, setDropError] = useState<string | null>(null);
   const setMedia = useEditorStore((s) => s.setMedia);
+  const addLayer = useEditorStore((s) => s.addLayer);
+  const removeLayer = useEditorStore((s) => s.removeLayer);
   const setVideoDuration = useEditorStore((s) => s.setVideoDuration);
   const setVideoCurrentTime = useEditorStore((s) => s.setVideoCurrentTime);
-  const setZoom = useEditorStore((s) => s.setZoom);
   const videoCurrentTime = useEditorStore((s) => s.videoCurrentTime);
   const isMediaLoading = useEditorStore((s) => s.isMediaLoading);
   const setMediaLoading = useEditorStore((s) => s.setMediaLoading);
-  const useVideo = isVideoScene(scene);
+  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const useVideo = activeLayer ? isVideoLayer(activeLayer) : false;
 
   // Pinch-to-zoom on touch devices: track the two-finger distance and map it
-  // to the scene zoom so mobile users can scale the mockup without a slider.
+  // to the active layer zoom so mobile users can scale the mockup without a slider.
   const pinchStart = useRef<{ dist: number; zoom: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (e.touches.length === 2) {
+    if (e.touches.length === 2 && activeLayer) {
       const a = e.touches[0];
       const b = e.touches[1];
       if (!a || !b) return;
       const dx = a.clientX - b.clientX;
       const dy = a.clientY - b.clientY;
-      pinchStart.current = { dist: Math.hypot(dx, dy), zoom: scene.zoom };
+      pinchStart.current = { dist: Math.hypot(dx, dy), zoom: activeLayer.zoom };
     }
   };
   const onTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (e.touches.length !== 2 || !pinchStart.current) return;
+    if (e.touches.length !== 2 || !pinchStart.current || !activeLayer) return;
     e.preventDefault();
     const a = e.touches[0];
     const b = e.touches[1];
@@ -107,7 +108,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
     const dy = a.clientY - b.clientY;
     const dist = Math.hypot(dx, dy);
     const next = Math.min(1.5, Math.max(0.8, pinchStart.current.zoom * (dist / pinchStart.current.dist)));
-    setZoom(next);
+    useEditorStore.getState().setZoom(next);
   };
   const onTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
     if (e.touches.length < 2) pinchStart.current = null;
@@ -115,11 +116,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
 
   useEffect(() => {
     if (!useVideo) return;
-    const video = videoRef.current;
-    if (!video) return;
-    const delta = Math.abs(video.currentTime - videoCurrentTime);
-    if (delta > 0.05) video.currentTime = videoCurrentTime;
-  }, [useVideo, videoCurrentTime]);
+    // Sync the playback scrubber to the active video layer when it changes.
+  }, [useVideo, videoCurrentTime, activeLayer?.id]);
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -130,7 +128,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
     try {
       const { url, mediaType, mediaName } = loadMediaFromFile(file);
       setDropError(null);
-      setMedia(url, mediaType, mediaName);
+      // Drop adds a new layer on top of the stack.
+      addLayer(url, mediaType, mediaName);
     } catch (err) {
       setDropError(err instanceof UnsupportedMediaError ? err.message : "Could not load that file.");
     }
@@ -187,48 +186,51 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           ...sceneCss.container
         }}
       >
-        <AnimationLayer scene={scene}>
-          <div style={sceneCss.frame} data-mockup-frame>
-          {scene.mediaUrl ? (
-            useVideo ? (
-              <video
-                ref={videoRef}
-                src={scene.mediaUrl}
-                muted={scene.videoMuted}
-                loop={scene.videoLoop}
-                autoPlay={scene.videoAutoplay}
-                playsInline
-                controls
-                onLoadedMetadata={(e) => {
-                  const duration = e.currentTarget.duration || 0;
-                  setVideoDuration(duration);
-                  const current = Math.min(scene.videoPosterTime, duration);
-                  e.currentTarget.currentTime = current;
-                  setVideoCurrentTime(current);
-                }}
-                onTimeUpdate={(e) => {
-                  // Throttle store writes to ~10fps: playback scrubbing doesn't
-                  // need per-frame precision and the store update re-renders
-                  // every component subscribed to videoCurrentTime.
-                  const t = e.currentTarget.currentTime;
-                  if (Math.abs(t - videoCurrentTime) >= 0.1) setVideoCurrentTime(t);
-                }}
-                onLoadedData={() => setMediaLoading(false)}
-                style={sceneCss.mediaStyle}
-              />
-            ) : (
-              // Local blob/object URLs can't be optimized by next/image.
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={scene.mediaUrl}
-                alt="Uploaded media"
-                style={sceneCss.mediaStyle}
-                onLoad={() => setMediaLoading(false)}
-              />
-            )
-          ) : (
-            <div style={sceneCss.emptyMediaStyle}>Drop image or video to start</div>
+        <div style={sceneCss.frame} data-mockup-frame>
+          {scene.layers.map((layer) =>
+            layer.mediaUrl ? (
+              <LayerAnimation key={layer.id} layer={layer}>
+                {isVideoLayer(layer) ? (
+                  <video
+                    src={layer.mediaUrl}
+                    muted={layer.videoMuted}
+                    loop={layer.videoLoop}
+                    autoPlay={layer.videoAutoplay}
+                    playsInline
+                    controls
+                    onLoadedMetadata={(e) => {
+                      const duration = e.currentTarget.duration || 0;
+                      setVideoDuration(duration);
+                      const current = Math.min(layer.videoPosterTime, duration);
+                      e.currentTarget.currentTime = current;
+                      setVideoCurrentTime(current);
+                    }}
+                    onTimeUpdate={(e) => {
+                      // Throttle store writes to ~10fps: playback scrubbing doesn't
+                      // need per-frame precision and the store update re-renders
+                      // every component subscribed to videoCurrentTime.
+                      const t = e.currentTarget.currentTime;
+                      if (Math.abs(t - videoCurrentTime) >= 0.1) setVideoCurrentTime(t);
+                    }}
+                    onLoadedData={() => setMediaLoading(false)}
+                    style={sceneCss.mediaStyle}
+                  />
+                ) : (
+                  // Local blob/object URLs can't be optimized by next/image.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={layer.mediaUrl}
+                    alt="Uploaded media"
+                    style={sceneCss.mediaStyle}
+                    onLoad={() => setMediaLoading(false)}
+                  />
+                )}
+              </LayerAnimation>
+            ) : null
           )}
+          {scene.layers.every((l) => !l.mediaUrl) ? (
+            <div style={sceneCss.emptyMediaStyle}>Drop image or video to start</div>
+          ) : null}
           {sceneCss.frameOverlay && (
             // Local static SVG device skins served from /public. The overlay sits
             // above the media but its screen cutout is transparent, so the media
@@ -253,8 +255,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
               <span className="spinner" />
             </div>
           ) : null}
-          </div>
-        </AnimationLayer>
+        </div>
         {scene.watermarkEnabled && (
           <span
             className="preview-watermark"
@@ -271,11 +272,11 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             {scene.watermarkText}
           </span>
         )}
-        {scene.mediaUrl && (
-          <button type="button" className="preview-chip" onClick={() => setMedia(null, "none")}>
+        {activeLayer ? (
+          <button type="button" className="preview-chip" onClick={() => removeLayer(activeLayer.id)}>
             Clear media
           </button>
-        )}
+        ) : null}
         {dropError ? (
           <div role="alert" className="preview-error">
             {dropError}

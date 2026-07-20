@@ -6,6 +6,7 @@ import { useEditorStore } from "@/lib/state/editorStore";
 import type { AnimationPreset, EditorScene, MockupFrame, StylePreset } from "@/lib/types/editor";
 import { FRAME_ORDER, ANIMATION_PRESETS, ASPECT_RATIOS } from "@/lib/render/frames";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
+import { isVideoLayer } from "@/lib/render/mediaKind";
 import { backgroundPresets } from "@/lib/presets/presets";
 import { VideoOptions } from "@/components/editor/VideoOptions";
 
@@ -107,6 +108,8 @@ export function ControlPanel() {
     }
   };
 
+  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+
   return (
     <div className="panel control-panel" style={{ padding: 16, display: "grid", gap: 16 }}>
       <h2 className="panel-title">Controls</h2>
@@ -123,7 +126,7 @@ export function ControlPanel() {
             {mediaError}
           </span>
         ) : null}
-        {scene.mediaType === "video" && <VideoOptions />}
+        {activeLayer && isVideoLayer(activeLayer) && <VideoOptions />}
       </div>
 
       <div className="divider" />
@@ -149,7 +152,7 @@ export function ControlPanel() {
         />
         <Segmented
           label="Animation"
-          value={scene.animationPreset}
+          value={activeLayer?.animationPreset ?? "none"}
           options={animations.map((a) => ({ value: a, label: ANIM_LABELS[a] }))}
           onChange={setAnimationPreset}
         />
@@ -166,9 +169,9 @@ export function ControlPanel() {
             min={0.8}
             max={1.5}
             step={0.01}
-            value={scene.zoom}
+            value={activeLayer?.zoom ?? 1}
             aria-label="Zoom"
-            aria-valuetext={`${Math.round(scene.zoom * 100)}%`}
+            aria-valuetext={`${Math.round((activeLayer?.zoom ?? 1) * 100)}%`}
             onChange={(e) => setZoom(Number(e.target.value))}
           />
         </label>
@@ -180,9 +183,9 @@ export function ControlPanel() {
             min={-1}
             max={1}
             step={0.01}
-            value={scene.mediaOffsetX}
+            value={activeLayer?.mediaOffsetX ?? 0}
             aria-label="Media horizontal position"
-            aria-valuetext={`${Math.round(scene.mediaOffsetX * 100)}%`}
+            aria-valuetext={`${Math.round((activeLayer?.mediaOffsetX ?? 0) * 100)}%`}
             onChange={(e) => setMediaOffsetX(Number(e.target.value))}
           />
         </label>
@@ -194,9 +197,9 @@ export function ControlPanel() {
             min={-1}
             max={1}
             step={0.01}
-            value={scene.mediaOffsetY}
+            value={activeLayer?.mediaOffsetY ?? 0}
             aria-label="Media vertical position"
-            aria-valuetext={`${Math.round(scene.mediaOffsetY * 100)}%`}
+            aria-valuetext={`${Math.round((activeLayer?.mediaOffsetY ?? 0) * 100)}%`}
             onChange={(e) => setMediaOffsetY(Number(e.target.value))}
           />
         </label>

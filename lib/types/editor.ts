@@ -6,18 +6,35 @@ export type MediaType = "none" | "image" | "video";
 export type VideoQuality = "low" | "medium" | "high";
 export type WatermarkPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
 
-export interface EditorScene {
+/** A single media item stacked inside the mockup frame. Each layer owns its
+ *  own transform, animation and (for video) playback/trim settings. */
+export interface MediaLayer {
+  id: string;
   mediaUrl: string | null;
   mediaType: MediaType;
   mediaName: string | null;
-  frame: MockupFrame;
-  stylePreset: StylePreset;
-  animationPreset: AnimationPreset;
+  /** Base scale of this layer (frame-wide zoom is applied on top in preview). */
   zoom: number;
-  /** Media pan inside the frame, as a fraction of half the frame size.
-   *  Independent of `zoom` (which scales the whole frame). Range [-1, 1]. */
+  /** Media pan inside the frame, as a fraction of half the frame size. Range [-1, 1]. */
   mediaOffsetX: number;
   mediaOffsetY: number;
+  animationPreset: AnimationPreset;
+  videoMuted: boolean;
+  videoLoop: boolean;
+  videoAutoplay: boolean;
+  videoPosterTime: number;
+  videoDuration: number;
+  videoTrimStart: number;
+  videoTrimEnd: number;
+  videoQuality: VideoQuality;
+}
+
+export interface EditorScene {
+  layers: MediaLayer[];
+  /** The layer targeted by scene-level zoom/position/video controls. */
+  activeLayerId: string | null;
+  frame: MockupFrame;
+  stylePreset: StylePreset;
   shadowOpacity: number;
   borderRadius: number;
   backgroundMode: BackgroundMode;
@@ -29,12 +46,5 @@ export interface EditorScene {
   watermarkPosition: WatermarkPosition;
   watermarkSize: number;
   aspectRatio: string;
-  videoMuted: boolean;
-  videoLoop: boolean;
-  videoAutoplay: boolean;
-  videoPosterTime: number;
-  videoDuration: number;
-  videoTrimStart: number;
-  videoTrimEnd: number;
-  videoQuality: VideoQuality;
 }
+

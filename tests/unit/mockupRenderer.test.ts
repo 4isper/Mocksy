@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
 import { initialScene } from "@/lib/state/editorStore";
-import type { EditorScene } from "@/lib/types/editor";
+import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 
-const base = (overrides: Partial<EditorScene> = {}): EditorScene => ({
-  ...initialScene,
-  ...overrides
-});
+function layer(overrides: Partial<MediaLayer> = {}): MediaLayer {
+  return { ...initialScene.layers[0]!, id: overrides.id ?? "layer-test", ...overrides };
+}
+
+function base(overrides: { layer?: Partial<MediaLayer> } & Partial<EditorScene> = {}): EditorScene {
+  const l = layer(overrides.layer ?? {});
+  const { layer: _layer, ...sceneOverrides } = overrides;
+  return { ...initialScene, layers: [l], activeLayerId: l.id, ...sceneOverrides };
+}
 
 describe("buildSceneCss", () => {
   it("applies a solid background when mode is solid", () => {
@@ -27,8 +32,8 @@ describe("buildSceneCss", () => {
   });
 
   it("does not scale the frame by zoom (zoom is applied by AnimationLayer)", () => {
-    const scaled = buildSceneCss(base({ zoom: 1.2 })).frame.transform;
-    const unscaled = buildSceneCss(base({ zoom: 1 })).frame.transform;
+    const scaled = buildSceneCss(base({ layer: { zoom: 1.2 } })).frame.transform;
+    const unscaled = buildSceneCss(base({ layer: { zoom: 1 } })).frame.transform;
     expect(scaled).toBe("none");
     expect(unscaled).toBe("none");
   });
@@ -117,9 +122,9 @@ describe("buildSceneCss", () => {
   });
 
   it("pans media via object-position from mediaOffset fields", () => {
-    const { mediaStyle } = buildSceneCss(base({ mediaOffsetX: 0.5, mediaOffsetY: -0.5 }));
+    const { mediaStyle } = buildSceneCss(base({ layer: { mediaOffsetX: 0.5, mediaOffsetY: -0.5 } }));
     expect(mediaStyle.objectPosition).toBe("75% 25%");
-    const overlay = buildSceneCss(base({ frame: "iphone15", mediaOffsetX: -1, mediaOffsetY: 1 }));
+    const overlay = buildSceneCss(base({ frame: "iphone15", layer: { mediaOffsetX: -1, mediaOffsetY: 1 } }));
     expect(overlay.mediaStyle.objectPosition).toBe("0% 100%");
   });
 

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { initialScene } from "@/lib/state/editorStore";
-import type { EditorScene } from "@/lib/types/editor";
+import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 
 // renderMockup pulls in canvas APIs we don't need for the export orchestration
 // test; stub it so the suite runs under node.
@@ -27,6 +27,15 @@ vi.mock("@ffmpeg/ffmpeg", () => ({
 import { exportVideo, exportGif, sanitizeFilename, resolvePixelRatio, computeCaptureDuration, chooseWebmMimeType, terminateFfmpeg } from "@/lib/export/exportVideo";
 
 const ORIGINAL_WINDOW = globalThis.window;
+
+function layer(overrides: Partial<MediaLayer> = {}): MediaLayer {
+  return { ...initialScene.layers[0]!, id: overrides.id ?? "layer-test", ...overrides };
+}
+
+function sceneWithLayer(overrides: Partial<MediaLayer> = {}): EditorScene {
+  const l = layer(overrides);
+  return { ...initialScene, layers: [l], activeLayerId: l.id };
+}
 
 beforeEach(() => {
   // reset the shared FFmpeg harness so a prior test's failure code can't
@@ -83,19 +92,18 @@ describe("exportVideo pure helpers", () => {
   });
 
   it("computeCaptureDuration uses the animation length for still images", () => {
-    const scene: EditorScene = { ...initialScene, mediaUrl: null, mediaType: "none" };
+    const scene = sceneWithLayer({ mediaUrl: null, mediaType: "none" });
     expect(computeCaptureDuration(scene)).toBe(3);
   });
 
   it("computeCaptureDuration uses trimmed video length", () => {
-    const scene: EditorScene = {
-      ...initialScene,
+    const scene = sceneWithLayer({
       mediaUrl: "blob:vid",
       mediaType: "video",
       videoDuration: 10,
       videoTrimStart: 2,
       videoTrimEnd: 6
-    };
+    });
     expect(computeCaptureDuration(scene)).toBe(4);
   });
 
@@ -180,7 +188,7 @@ describe("exportVideo orchestration", () => {
     installDom(preview, canvas);
     const recorder = installMediaRecorder();
 
-    const scene: EditorScene = { ...initialScene, mediaUrl: null, mediaType: "none" };
+    const scene = sceneWithLayer({ mediaUrl: null, mediaType: "none" });
     const statuses: string[] = [];
     const progress: number[] = [];
     await exportVideo(
@@ -209,7 +217,7 @@ describe("exportVideo orchestration", () => {
     installMediaRecorder();
 
     const errors: string[] = [];
-    await exportVideo({ ...initialScene, mediaUrl: null, mediaType: "none" }, undefined, undefined, (m) => errors.push(m));
+    await exportVideo(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), undefined, undefined, (m) => errors.push(m));
     expect(errors).toContain("Preview area not found.");
   });
 
@@ -221,7 +229,7 @@ describe("exportVideo orchestration", () => {
     ffmpegHarness.execCode = 1;
 
     const errors: string[] = [];
-    await exportVideo({ ...initialScene, mediaUrl: null, mediaType: "none" }, undefined, undefined, (m) => errors.push(m));
+    await exportVideo(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), undefined, undefined, (m) => errors.push(m));
     expect(errors).toContain("Video encoding failed.");
     ffmpegHarness.execCode = 0;
   });
@@ -233,11 +241,11 @@ describe("exportVideo orchestration", () => {
     const canvas = fakeCanvas();
     installDom(preview, canvas);
     installMediaRecorder();
-    await exportVideo({ ...initialScene, mediaUrl: null, mediaType: "none" });
+    await exportVideo(sceneWithLayer({ mediaUrl: null, mediaType: "none" }));
     expect(ffmpegHarness.loadCalls).toBe(before + 1);
 
     terminateFfmpeg();
-    await exportVideo({ ...initialScene, mediaUrl: null, mediaType: "none" });
+    await exportVideo(sceneWithLayer({ mediaUrl: null, mediaType: "none" }));
     expect(ffmpegHarness.loadCalls).toBe(before + 2);
   });
 
@@ -248,7 +256,7 @@ describe("exportVideo orchestration", () => {
     installMediaRecorder();
 
     const statuses: string[] = [];
-    await exportGif({ ...initialScene, mediaUrl: null, mediaType: "none" }, (m) => statuses.push(m));
+    await exportGif(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), (m) => statuses.push(m));
     expect(statuses).toContain("Done");
   });
 });

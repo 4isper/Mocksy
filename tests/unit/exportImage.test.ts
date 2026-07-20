@@ -2,15 +2,22 @@ import { describe, expect, it } from "vitest";
 import { resolveExportTransform, waitForImage } from "@/lib/export/exportImage";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { initialScene } from "@/lib/state/editorStore";
-import type { EditorScene } from "@/lib/types/editor";
+import type { AnimationPreset, EditorScene, MediaLayer } from "@/lib/types/editor";
 
-function sceneWith(preset: EditorScene["animationPreset"], zoom = 1): EditorScene {
-  return { ...initialScene, animationPreset: preset, zoom };
+function layer(overrides: Partial<MediaLayer> = {}): MediaLayer {
+  return { ...initialScene.layers[0]!, id: overrides.id ?? "layer-test", ...overrides };
+}
+
+function sceneWith(preset: AnimationPreset, zoom = 1): EditorScene {
+  const l = layer({ animationPreset: preset, zoom });
+  return { ...initialScene, layers: [l], activeLayerId: l.id };
 }
 
 describe("resolveExportTransform", () => {
   it("uses the base zoom and media offset for a static (none) scene", () => {
-    const scene = { ...sceneWith("none", 1.4), mediaOffsetX: 0.5, mediaOffsetY: -0.25 };
+    const scene = sceneWith("none", 1.4);
+    scene.layers[0]!.mediaOffsetX = 0.5;
+    scene.layers[0]!.mediaOffsetY = -0.25;
     expect(resolveExportTransform(scene)).toEqual({ zoom: 1.4, offsetX: 0.5, offsetY: -0.25 });
   });
 
@@ -31,7 +38,7 @@ describe("resolveExportTransform", () => {
     // The exported frame should coincide with the preview's mid-animation
     // sample so PNG and preview don't diverge in composition.
     const scene = sceneWith("zoomOut");
-    const expected = sampleVideoTransform(scene, 0.5);
+    const expected = sampleVideoTransform(scene.layers[0]!, 0.5);
     expect(resolveExportTransform(scene)).toEqual({
       zoom: expected.zoom,
       offsetX: expected.x,

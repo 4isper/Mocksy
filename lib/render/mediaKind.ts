@@ -1,4 +1,4 @@
-import type { EditorScene, MediaType } from "@/lib/types/editor";
+import type { MediaLayer, MediaType } from "@/lib/types/editor";
 
 const VIDEO_EXT = /\.(mp4|mov|m4v|webm|ogg|ogv|avi|mkv)$/i;
 
@@ -8,7 +8,12 @@ export function isVideoSource(mediaType: MediaType, mediaName: string | null): b
   return Boolean(mediaName && VIDEO_EXT.test(mediaName));
 }
 
-/** True when the scene's loaded media should render as a <video>. */
-export function isVideoScene(scene: EditorScene): boolean {
-  return isVideoSource(scene.mediaType, scene.mediaName);
+/** True when the layer's media should render as a <video>. */
+export function isVideoLayer(layer: MediaLayer): boolean {
+  return isVideoSource(layer.mediaType, layer.mediaName);
+}
+
+/** True when any layer in the scene is a video. */
+export function hasVideoLayer(layers: MediaLayer[]): boolean {
+  return layers.some(isVideoLayer);
 }

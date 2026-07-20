@@ -1,6 +1,7 @@
 import type {
   BackgroundMode,
   EditorScene,
+  MediaLayer,
   MediaType,
   MockupFrame,
   StylePreset
@@ -12,6 +13,7 @@ const FRAMES = Object.keys(FRAME_SPECS) as MockupFrame[];
 const STYLE_PRESETS: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
 const BACKGROUND_MODES: BackgroundMode[] = ["transparent", "solid", "gradient"];
 const MEDIA_TYPES: MediaType[] = ["none", "image", "video"];
+const ANIMATIONS = ANIMATION_PRESETS;
 
 function pick<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
   return allowed.includes(value as T) ? (value as T) : fallback;
@@ -27,26 +29,58 @@ function str(value: unknown, fallback: string | null): string | null {
   return typeof value === "string" && value.length > 0 ? value : fallback;
 }
 
+let layerSeq = 0;
+function nextLayerId(): string {
+  layerSeq += 1;
+  return `layer-${layerSeq}-${Date.now().toString(36)}`;
+}
+
+/** Normalizes one raw layer-shaped object (or a legacy single-media payload). */
+function normalizeLayer(raw: unknown, fallback: MediaLayer): MediaLayer {
+  if (!raw || typeof raw !== "object") return fallback;
+  const r = raw as Record<string, unknown>;
+  return {
+    id: typeof r.id === "string" && r.id.length > 0 ? r.id : nextLayerId(),
+    mediaUrl: str(r.mediaUrl, fallback.mediaUrl),
+    mediaType: pick(r.mediaType, MEDIA_TYPES, fallback.mediaType),
+    mediaName: str(r.mediaName, fallback.mediaName),
+    zoom: num(r.zoom, fallback.zoom, 0.1, 3),
+    mediaOffsetX: num(r.mediaOffsetX, fallback.mediaOffsetX, -1, 1),
+    mediaOffsetY: num(r.mediaOffsetY, fallback.mediaOffsetY, -1, 1),
+    animationPreset: pick(r.animationPreset, ANIMATIONS, fallback.animationPreset),
+    videoMuted: r.videoMuted !== false,
+    videoLoop: r.videoLoop !== false,
+    videoAutoplay: r.videoAutoplay !== false,
+    videoPosterTime: num(r.videoPosterTime, fallback.videoPosterTime, 0, 1e6),
+    videoDuration: num(r.videoDuration, fallback.videoDuration, 0, 1e6),
+    videoTrimStart: num(r.videoTrimStart, fallback.videoTrimStart, 0, 1e6),
+    videoTrimEnd: num(r.videoTrimEnd, fallback.videoTrimEnd, 0, 1e6),
+    videoQuality: pick(r.videoQuality, ["low", "medium", "high"], fallback.videoQuality)
+  };
+}
+
 /**
  * Coerces arbitrary parsed input (localStorage / share URL) into a valid
  * EditorScene. Unknown or malformed fields fall back to the initial scene so a
- * corrupted or outdated payload can never crash the editor.
+ * corrupted or outdated payload can never crash the editor. Legacy payloads
+ * that still carry a top-level `mediaUrl` are migrated into a single layer.
  */
 export function normalizeScene(raw: unknown): EditorScene {
   if (!raw || typeof raw !== "object") return { ...initialScene };
   const r = raw as Record<string, unknown>;
 
+  // Migrate a legacy single-media scene into the layers model.
+  const fallbackLayer = initialScene.layers[0];
+  if (!fallbackLayer) return { ...initialScene };
+  const legacyMedia = r.mediaUrl != null ? r : null;
+  const rawLayers = Array.isArray(r.layers) ? r.layers : legacyMedia ? [r] : [];
+  const layers = rawLayers.length > 0 ? rawLayers.map((l) => normalizeLayer(l, fallbackLayer)) : [{ ...fallbackLayer }];
+
   return {
-    ...initialScene,
-    mediaUrl: str(r.mediaUrl, null),
-    mediaType: pick(r.mediaType, MEDIA_TYPES, "none"),
-    mediaName: str(r.mediaName, null),
+    layers,
+    activeLayerId: typeof r.activeLayerId === "string" ? r.activeLayerId : layers[0]?.id ?? null,
     frame: pick(r.frame, FRAMES, initialScene.frame),
     stylePreset: pick(r.stylePreset, STYLE_PRESETS, initialScene.stylePreset),
-    animationPreset: pick(r.animationPreset, ANIMATION_PRESETS, initialScene.animationPreset),
-    zoom: num(r.zoom, initialScene.zoom, 0.1, 3),
-    mediaOffsetX: num(r.mediaOffsetX, initialScene.mediaOffsetX, -1, 1),
-    mediaOffsetY: num(r.mediaOffsetY, initialScene.mediaOffsetY, -1, 1),
     shadowOpacity: num(r.shadowOpacity, initialScene.shadowOpacity, 0, 1),
     borderRadius: num(r.borderRadius, initialScene.borderRadius, 0, 200),
     backgroundMode: pick(r.backgroundMode, BACKGROUND_MODES, initialScene.backgroundMode),
@@ -56,12 +90,7 @@ export function normalizeScene(raw: unknown): EditorScene {
     watermarkText: str(r.watermarkText, initialScene.watermarkText) ?? initialScene.watermarkText,
     watermarkEnabled: r.watermarkEnabled === true,
     aspectRatio: str(r.aspectRatio, initialScene.aspectRatio) ?? initialScene.aspectRatio,
-    videoMuted: r.videoMuted !== false,
-    videoLoop: r.videoLoop !== false,
-    videoAutoplay: r.videoAutoplay !== false,
-    videoPosterTime: num(r.videoPosterTime, 0, 0, 1e6),
-    videoDuration: num(r.videoDuration, 0, 0, 1e6),
-    videoTrimStart: num(r.videoTrimStart, 0, 0, 1e6),
-    videoTrimEnd: num(r.videoTrimEnd, 0, 0, 1e6)
+    watermarkPosition: pick(r.watermarkPosition, ["bottom-right", "bottom-left", "top-right", "top-left"], initialScene.watermarkPosition),
+    watermarkSize: num(r.watermarkSize, initialScene.watermarkSize, 8, 64)
   };
 }

@@ -1,11 +1,11 @@
 "use client";
 
-import type { EditorScene } from "@/lib/types/editor";
+import type { EditorScene, VideoQuality } from "@/lib/types/editor";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { loadImage, renderMockupToCanvas, type RenderTransform } from "@/lib/export/renderMockup";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { getFrameSpec } from "@/lib/render/frames";
-import { isVideoScene } from "@/lib/render/mediaKind";
+import { isVideoLayer } from "@/lib/render/mediaKind";
 
 let ffmpegSingleton: FFmpeg | null = null;
 
@@ -44,7 +44,7 @@ export function sanitizeFilename(name: string): string {
  * The 2x floor keeps overlays readable; reads window.devicePixelRatio so it
  * can be stubbed in tests.
  */
-export function resolvePixelRatio(videoQuality: EditorScene["videoQuality"]): number {
+export function resolvePixelRatio(videoQuality: VideoQuality): number {
   const quality = QUALITY[videoQuality] ?? QUALITY.medium;
   const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
   return Math.max(2, dpr) * quality.scale;
@@ -55,10 +55,11 @@ export function resolvePixelRatio(videoQuality: EditorScene["videoQuality"]): nu
  * fixed animation loop. Returns seconds.
  */
 export function computeCaptureDuration(scene: EditorScene): number {
-  const isVideo = isVideoScene(scene) && scene.mediaUrl != null;
-  if (!isVideo) return ANIMATION_DURATION_SEC;
-  const start = Math.max(0, scene.videoTrimStart || 0);
-  const end = scene.videoTrimEnd > start ? scene.videoTrimEnd : scene.videoDuration;
+  const active = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const isVideo = active ? isVideoLayer(active) && active.mediaUrl != null : false;
+  if (!isVideo || !active) return ANIMATION_DURATION_SEC;
+  const start = Math.max(0, active.videoTrimStart || 0);
+  const end = active.videoTrimEnd > start ? active.videoTrimEnd : active.videoDuration;
   return Math.max(0.2, end - start);
 }
 
@@ -76,7 +77,7 @@ export function chooseWebmMimeType(): string {
  * is better) and the capture resolution scale drive the output size. "high"
  * keeps the full device-pixel-ratio canvas; lower tiers downscale it.
  */
-const QUALITY: Record<EditorScene["videoQuality"], { qscale: number; scale: number }> = {
+const QUALITY: Record<VideoQuality, { qscale: number; scale: number }> = {
   low: { qscale: 10, scale: 0.5 },
   medium: { qscale: 5, scale: 0.75 },
   high: { qscale: 2, scale: 1 }
@@ -138,8 +139,15 @@ async function recordCanvasToWebm(
     if (e.data.size > 0) chunks.push(e.data);
   };
 
-  const start = Math.max(0, scene.videoTrimStart || 0);
-  const end = scene.videoTrimEnd > start ? scene.videoTrimEnd : scene.videoDuration;
+  // Trimming is driven by the active video layer (captureWebm resolves the
+  // detached <video> from that layer), so read its trim window here.
+  const activeForCapture = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  if (!activeForCapture) {
+    canvas.remove();
+    throw new Error("Cannot export a scene with no layers.");
+  }
+  const start = Math.max(0, activeForCapture.videoTrimStart || 0);
+  const end = activeForCapture.videoTrimEnd > start ? activeForCapture.videoTrimEnd : activeForCapture.videoDuration;
   const isVideo = media instanceof HTMLVideoElement;
   const duration = computeCaptureDuration(scene);
 
@@ -160,7 +168,7 @@ async function recordCanvasToWebm(
       const elapsed = (performance.now() - startedAt) / 1000;
       const normalized = duration > 0 ? Math.min(1, elapsed / duration) : 1;
       const progress = Math.min(100, normalized * 100);
-      const sampled = sampleVideoTransform(scene, normalized);
+      const sampled = sampleVideoTransform(activeForCapture ?? scene.layers[0], normalized);
       const transform: RenderTransform = { zoom: sampled.zoom, offsetX: sampled.x, offsetY: sampled.y };
       onProgress?.(progress);
 
@@ -209,21 +217,24 @@ async function captureWebm(
   const previewNode = document.getElementById("preview-canvas");
   if (!previewNode) throw new Error("Preview area not found.");
 
-  const quality = QUALITY[scene.videoQuality] ?? QUALITY.medium;
-  const pixelRatio = resolvePixelRatio(scene.videoQuality);
+  const exportQuality = (scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0])?.videoQuality ?? "medium";
+  const quality = QUALITY[exportQuality] ?? QUALITY.medium;
+  const pixelRatio = resolvePixelRatio(exportQuality);
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(640, Math.round(previewNode.clientWidth * pixelRatio));
   canvas.height = Math.max(360, Math.round(previewNode.clientHeight * pixelRatio));
 
   const videoInPreview = previewNode.querySelector("video");
   const imageInPreview = previewNode.querySelector("img");
-  // When exporting a video scene we create a detached <video> from the media
-  // URL; track it so we can stop/remove it and free its blob: URL afterwards.
+  // When exporting a video scene we create a detached <video> from the active
+  // video layer's URL; track it so we can stop/remove it and free its blob: URL
+  // afterwards. For image scenes we reuse the element already in the preview.
+  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   let sourceVideo: HTMLVideoElement | null = null;
   let media: HTMLVideoElement | HTMLImageElement | null = null;
-  if (isVideoScene(scene) && scene.mediaUrl) {
+  if (activeLayer && isVideoLayer(activeLayer) && activeLayer.mediaUrl) {
     sourceVideo = document.createElement("video");
-    sourceVideo.src = scene.mediaUrl;
+    sourceVideo.src = activeLayer.mediaUrl;
     sourceVideo.crossOrigin = "anonymous";
     sourceVideo.muted = true;
     sourceVideo.playsInline = true;
@@ -267,7 +278,8 @@ export async function exportVideo(
 
   onStatus?.("Encoding MP4…");
   onProgress?.(0);
-  const quality = QUALITY[scene.videoQuality] ?? QUALITY.medium;
+  const exportQuality = (scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0])?.videoQuality ?? "medium";
+  const quality = QUALITY[exportQuality] ?? QUALITY.medium;
   const ffmpeg = await getFfmpegInstance(onStatus);
   const inputName = "input.webm";
   const outputName = "mocksy-export.mp4";
@@ -294,7 +306,7 @@ export async function exportVideo(
   const blob = new Blob([bytes], { type: "video/mp4" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = sanitizeFilename((scene.mediaName || "mocksy-export").replace(/\.[^.]+$/, "")) + ".mp4";
+  link.download = sanitizeFilename(((scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0])?.mediaName || "mocksy-export").replace(/\.[^.]+$/, "")) + ".mp4";
   link.click();
   URL.revokeObjectURL(link.href);
   await ffmpeg.deleteFile(inputName);
@@ -338,7 +350,8 @@ export async function exportGif(
 
     onStatus?.("Encoding GIF…");
     onProgress?.(0);
-    const quality = QUALITY[scene.videoQuality] ?? QUALITY.medium;
+    const exportQuality = (scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0])?.videoQuality ?? "medium";
+    const quality = QUALITY[exportQuality] ?? QUALITY.medium;
     const ffmpeg = await getFfmpegInstance(onStatus);
     const inputName = "input.webm";
     const paletteName = "palette.png";
@@ -366,7 +379,7 @@ export async function exportGif(
     const blob = new Blob([bytes], { type: "image/gif" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = sanitizeFilename((scene.mediaName || "mocksy-export").replace(/\.[^.]+$/, "")) + ".gif";
+    link.download = sanitizeFilename(((scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0])?.mediaName || "mocksy-export").replace(/\.[^.]+$/, "")) + ".gif";
     link.click();
     URL.revokeObjectURL(link.href);
     await ffmpeg.deleteFile(inputName);

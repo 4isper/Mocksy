@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { EditorScene } from "@/lib/types/editor";
+import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { VideoTrimControl } from "@/components/editor/VideoTrimControl";
 
@@ -17,6 +17,8 @@ export function VideoOptions() {
     setVideoQuality
   } = useEditorStore();
   const videoCurrentTime = useEditorStore((s) => s.videoCurrentTime);
+  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  if (!activeLayer) return null;
 
   return (
     <div className="field-group video-options">
@@ -34,17 +36,17 @@ export function VideoOptions() {
       {open ? (
         <div className="field-group">
           <label className="toggle">
-            <input type="checkbox" checked={scene.videoMuted} onChange={(e) => setVideoMuted(e.target.checked)} />
+            <input type="checkbox" checked={activeLayer.videoMuted} onChange={(e) => setVideoMuted(e.target.checked)} />
             <span className="track" aria-hidden="true" />
             <span>Muted</span>
           </label>
           <label className="toggle">
-            <input type="checkbox" checked={scene.videoLoop} onChange={(e) => setVideoLoop(e.target.checked)} />
+            <input type="checkbox" checked={activeLayer.videoLoop} onChange={(e) => setVideoLoop(e.target.checked)} />
             <span className="track" aria-hidden="true" />
             <span>Loop</span>
           </label>
           <label className="toggle">
-            <input type="checkbox" checked={scene.videoAutoplay} onChange={(e) => setVideoAutoplay(e.target.checked)} />
+            <input type="checkbox" checked={activeLayer.videoAutoplay} onChange={(e) => setVideoAutoplay(e.target.checked)} />
             <span className="track" aria-hidden="true" />
             <span>Autoplay</span>
           </label>
@@ -54,11 +56,11 @@ export function VideoOptions() {
               className="range"
               type="range"
               min={0}
-              max={Math.max(scene.videoDuration, 0.1)}
+              max={Math.max(activeLayer.videoDuration, 0.1)}
               step={0.1}
-              value={scene.videoPosterTime}
+              value={activeLayer.videoPosterTime}
               aria-label="Poster time"
-              aria-valuetext={`${scene.videoPosterTime.toFixed(1)} seconds`}
+              aria-valuetext={`${activeLayer.videoPosterTime.toFixed(1)} seconds`}
               onChange={(e) => setVideoPosterTime(Number(e.target.value))}
             />
           </label>
@@ -68,7 +70,7 @@ export function VideoOptions() {
               className="range"
               type="range"
               min={0}
-              max={Math.max(scene.videoDuration, 0.1)}
+              max={Math.max(activeLayer.videoDuration, 0.1)}
               step={0.01}
               value={videoCurrentTime}
               aria-label="Playback position"
@@ -76,13 +78,13 @@ export function VideoOptions() {
               onChange={(e) => setVideoCurrentTime(Number(e.target.value))}
             />
           </label>
-          <VideoTrimControl duration={scene.videoDuration} />
+          <VideoTrimControl duration={activeLayer.videoDuration} />
           <label className="field">
             <span>Export quality</span>
             <select
               className="select"
-              value={scene.videoQuality}
-              onChange={(e) => setVideoQuality(e.target.value as EditorScene["videoQuality"])}
+              value={activeLayer.videoQuality}
+              onChange={(e) => setVideoQuality(e.target.value as MediaLayer["videoQuality"])}
             >
               <option value="low">Low (smaller file)</option>
               <option value="medium">Medium</option>

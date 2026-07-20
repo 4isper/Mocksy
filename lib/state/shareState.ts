@@ -5,11 +5,18 @@ import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
 export function sceneToShareUrl(scene: EditorScene): string {
   // The demo media is a long data: URI bundled into the app; encoding it into
   // every share link bloats the URL for no reason since the reader restores
-  // the same demo by default. Drop it when the scene is still on demo media.
-  const payload =
-    scene.mediaUrl === DEMO_MEDIA_URL
-      ? { ...scene, mediaUrl: null, mediaType: "none", mediaName: null }
-      : scene;
+  // the same demo by default. Drop demo layers (replaced on read).
+  const hasDemo = scene.layers.some((l) => l.mediaUrl === DEMO_MEDIA_URL);
+  const payload = hasDemo
+    ? {
+        ...scene,
+        layers: scene.layers.map((l) =>
+          l.mediaUrl === DEMO_MEDIA_URL
+            ? { ...l, mediaUrl: null, mediaType: "none" as const, mediaName: null }
+            : l
+        )
+      }
+    : scene;
   const serialized = encodeURIComponent(JSON.stringify(payload));
   const url = new URL(window.location.href);
   url.searchParams.set("scene", serialized);
@@ -24,11 +31,17 @@ export function readSceneFromUrl(): EditorScene | null {
     const scene = normalizeScene(JSON.parse(decodeURIComponent(raw)));
     // A share URL omits the demo media to stay short; restore it so the
     // canvas isn't blank when the link is opened.
-    if (!scene.mediaUrl) {
-      return { ...scene, mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME };
+    if (!scene.layers.some((l) => l.mediaUrl)) {
+      return {
+        ...scene,
+        layers: scene.layers.map((l) =>
+          l.mediaUrl == null ? { ...l, mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME } : l
+        )
+      };
     }
     return scene;
   } catch {
     return null;
   }
 }
+

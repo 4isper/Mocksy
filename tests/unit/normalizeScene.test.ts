@@ -17,37 +17,38 @@ describe("normalizeScene", () => {
   });
 
   it("clamps numbers into range and rejects NaN", () => {
-    const s = normalizeScene({ zoom: 99, shadowOpacity: -5, borderRadius: Number.NaN });
-    expect(s.zoom).toBe(3);
+    const s = normalizeScene({ layers: [{ zoom: 99 }], shadowOpacity: -5, borderRadius: Number.NaN });
+    expect(s.layers[0]!.zoom).toBe(3);
     expect(s.shadowOpacity).toBe(0);
     expect(s.borderRadius).toBe(initialScene.borderRadius);
   });
 
   it("clamps media offset into [-1, 1] and falls back for NaN", () => {
-    const s = normalizeScene({ mediaOffsetX: 5, mediaOffsetY: Number.NaN });
-    expect(s.mediaOffsetX).toBe(1);
-    expect(s.mediaOffsetY).toBe(initialScene.mediaOffsetY);
+    const s = normalizeScene({ layers: [{ mediaOffsetX: 5, mediaOffsetY: Number.NaN }] });
+    expect(s.layers[0]!.mediaOffsetX).toBe(1);
+    expect(s.layers[0]!.mediaOffsetY).toBe(initialScene.layers[0]!.mediaOffsetY);
   });
 
   it("coerces numeric strings and drops values outside range", () => {
-    const s = normalizeScene({ zoom: "1.5", shadowOpacity: "2" });
-    expect(s.zoom).toBe(1.5);
+    const s = normalizeScene({ layers: [{ zoom: "1.5" }], shadowOpacity: "2" });
+    expect(s.layers[0]!.zoom).toBe(1.5);
     expect(s.shadowOpacity).toBe(1);
   });
 
-  it("restores a valid subset without losing defaults", () => {
+  it("migrates a legacy single-media payload into one layer", () => {
     const s = normalizeScene({ mediaUrl: "x.png", mediaType: "image", frame: "iphone16pro" });
-    expect(s.mediaUrl).toBe("x.png");
-    expect(s.mediaType).toBe("image");
+    expect(s.layers).toHaveLength(1);
+    expect(s.layers[0]!.mediaUrl).toBe("x.png");
+    expect(s.layers[0]!.mediaType).toBe("image");
     expect(s.frame).toBe("iphone16pro");
-    expect(s.zoom).toBe(initialScene.zoom);
+    expect(s.layers[0]!.zoom).toBe(initialScene.layers[0]!.zoom);
     expect(s.watermarkText).toBe(initialScene.watermarkText);
   });
 
   it("treats missing boolean flags as enabled", () => {
-    const s = normalizeScene({ videoMuted: false, watermarkEnabled: true });
-    expect(s.videoMuted).toBe(false);
+    const s = normalizeScene({ layers: [{ videoMuted: false }], watermarkEnabled: true });
+    expect(s.layers[0]!.videoMuted).toBe(false);
     expect(s.watermarkEnabled).toBe(true);
-    expect(s.videoLoop).toBe(true);
+    expect(s.layers[0]!.videoLoop).toBe(true);
   });
 });

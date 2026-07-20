@@ -1,4 +1,4 @@
-import type { EditorScene } from "@/lib/types/editor";
+import type { MediaLayer } from "@/lib/types/editor";
 
 export interface VideoKeyframe {
   at: number;
@@ -7,8 +7,8 @@ export interface VideoKeyframe {
   y: number;
 }
 
-export function buildVideoTimeline(scene: EditorScene): VideoKeyframe[] {
-  switch (scene.animationPreset) {
+export function buildVideoTimeline(layer: MediaLayer): VideoKeyframe[] {
+  switch (layer.animationPreset) {
     case "zoomIn":
       return [
         { at: 0, zoom: 1, x: 0, y: 0 },
@@ -26,7 +26,7 @@ export function buildVideoTimeline(scene: EditorScene): VideoKeyframe[] {
         { at: 1, zoom: 1.03, x: -10, y: -6 }
       ];
     default:
-      return [{ at: 0, zoom: scene.zoom, x: 0, y: 0 }];
+      return [{ at: 0, zoom: layer.zoom, x: 0, y: 0 }];
   }
 }
 
@@ -37,22 +37,22 @@ export interface SampledTransform {
 }
 
 /**
- * Interpolates the animation transform at a normalized progress (0..1) so the
- * live preview can mirror the video export. For a single keyframe it returns
- * that keyframe; otherwise it lerps between the surrounding keyframes.
+ * Interpolates a layer's animation transform at a normalized progress (0..1).
+ * For a single keyframe it returns that keyframe; otherwise it lerps between
+ * the surrounding keyframes.
  */
-export function sampleVideoTransform(scene: EditorScene, progress: number): SampledTransform {
-  const timeline = buildVideoTimeline(scene);
-  if (timeline.length === 0) return { zoom: scene.zoom, x: 0, y: 0 };
+export function sampleVideoTransform(layer: MediaLayer, progress: number): SampledTransform {
+  const timeline = buildVideoTimeline(layer);
+  if (timeline.length === 0) return { zoom: layer.zoom, x: 0, y: 0 };
   if (timeline.length === 1) {
     const k = timeline[0];
-    if (!k) return { zoom: scene.zoom, x: 0, y: 0 };
+    if (!k) return { zoom: layer.zoom, x: 0, y: 0 };
     return { zoom: k.zoom, x: k.x, y: k.y };
   }
   const p = Math.max(0, Math.min(1, progress));
   const first = timeline[0];
   const last = timeline[timeline.length - 1];
-  if (!first || !last) return { zoom: scene.zoom, x: 0, y: 0 };
+  if (!first || !last) return { zoom: layer.zoom, x: 0, y: 0 };
   let lower = first;
   let upper = last;
   for (let i = 0; i < timeline.length - 1; i++) {

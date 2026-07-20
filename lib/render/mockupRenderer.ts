@@ -95,8 +95,9 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
   // only line up at the SVG's native 390px width and drift at any other size.
   // Pan the media inside the frame: object-position shifts the covered image
   // within its box by a fraction of half the frame on each axis.
-  const mediaPosX = 50 + scene.mediaOffsetX * 50;
-  const mediaPosY = 50 + scene.mediaOffsetY * 50;
+  const activeLayerForCss = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const mediaPosX = 50 + (activeLayerForCss?.mediaOffsetX ?? 0) * 50;
+  const mediaPosY = 50 + (activeLayerForCss?.mediaOffsetY ?? 0) * 50;
   const mediaStyle: CSSProperties = spec.isOverlay && spec.cutout
     ? {
         position: "absolute",

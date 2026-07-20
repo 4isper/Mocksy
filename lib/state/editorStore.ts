@@ -1,9 +1,45 @@
 "use client";
 
 import { create } from "zustand";
-import type { AnimationPreset, EditorScene, MediaType, MockupFrame, StylePreset, VideoQuality, WatermarkPosition } from "@/lib/types/editor";
+import type {
+  AnimationPreset,
+  EditorScene,
+  MediaLayer,
+  MediaType,
+  MockupFrame,
+  StylePreset,
+  VideoQuality,
+  WatermarkPosition
+} from "@/lib/types/editor";
 import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
 import { ASPECT_RATIOS } from "@/lib/render/frames";
+
+let layerSeq = 0;
+function nextLayerId(): string {
+  layerSeq += 1;
+  return `layer-${layerSeq}-${Date.now().toString(36)}`;
+}
+
+function makeDemoLayer(): MediaLayer {
+  return {
+    id: nextLayerId(),
+    mediaUrl: DEMO_MEDIA_URL,
+    mediaType: "image",
+    mediaName: DEMO_MEDIA_NAME,
+    zoom: 1,
+    mediaOffsetX: 0,
+    mediaOffsetY: 0,
+    animationPreset: "none",
+    videoMuted: true,
+    videoLoop: true,
+    videoAutoplay: true,
+    videoPosterTime: 0,
+    videoDuration: 0,
+    videoTrimStart: 0,
+    videoTrimEnd: 0,
+    videoQuality: "medium"
+  };
+}
 
 export interface EditorStoreState {
   scene: EditorScene;
@@ -22,7 +58,13 @@ export interface EditorStoreState {
   resetScene: () => void;
   undo: () => void;
   redo: () => void;
+  /** Replaces the active layer's media (or seeds the first layer). */
   setMedia: (mediaUrl: string | null, mediaType: MediaType, mediaName?: string | null) => void;
+  addLayer: (mediaUrl: string, mediaType: MediaType, mediaName?: string | null) => void;
+  removeLayer: (id: string) => void;
+  selectLayer: (id: string) => void;
+  reorderLayers: (orderedIds: string[]) => void;
+  updateActiveLayer: (patch: Partial<MediaLayer>) => void;
   setFrame: (frame: MockupFrame) => void;
   setStylePreset: (stylePreset: StylePreset) => void;
   setAnimationPreset: (animationPreset: AnimationPreset) => void;
@@ -51,15 +93,10 @@ export interface EditorStoreState {
 }
 
 export const initialScene: EditorScene = {
-  mediaUrl: null,
-  mediaType: "none",
-  mediaName: null,
+  layers: [makeDemoLayer()],
+  activeLayerId: null,
   frame: "iphone",
   stylePreset: "default",
-  animationPreset: "none",
-  zoom: 1,
-  mediaOffsetX: 0,
-  mediaOffsetY: 0,
   shadowOpacity: 0.4,
   borderRadius: 20,
   backgroundMode: "gradient",
@@ -70,16 +107,10 @@ export const initialScene: EditorScene = {
   watermarkEnabled: false,
   watermarkPosition: "bottom-right",
   watermarkSize: 13,
-  aspectRatio: ASPECT_RATIOS[0] ?? "16 / 9",
-  videoMuted: true,
-  videoLoop: true,
-  videoAutoplay: true,
-  videoPosterTime: 0,
-  videoDuration: 0,
-  videoTrimStart: 0,
-  videoTrimEnd: 0,
-  videoQuality: "medium"
+  aspectRatio: ASPECT_RATIOS[0] ?? "16 / 9"
 };
+// The first layer is the active one by default.
+initialScene.activeLayerId = initialScene.layers[0]?.id ?? null;
 
 const HISTORY_LIMIT = 100;
 /** Edits of the same field within this window collapse into one undo step,
@@ -98,28 +129,41 @@ function pushHistory(s: EditorStoreState, scene: EditorScene, coalesceKey?: stri
   return { past, future: [], scene, lastHistoryKey: coalesceKey ?? null, lastHistoryAt: now };
 }
 
+/** Returns the layer currently targeted by scene-level controls. */
+function activeLayer(scene: EditorScene): MediaLayer | undefined {
+  return scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+}
+
 /**
  * Returns the blob: media URLs that existed in `prev` but are no longer
  * reachable from `state` (current, past, or future). Blob URLs are one-shot,
  * so revoking one that history could still restore (via undo/redo) would
- * leave a dead canvas.
+ * leave a dead canvas. Layers are scanned, not a single mediaUrl.
  */
 export function orphanedBlobUrls(state: EditorStoreState, prev: EditorStoreState): string[] {
   const live = new Set<string>();
-  if (state.scene.mediaUrl?.startsWith("blob:")) live.add(state.scene.mediaUrl);
-  for (const s of state.past) if (s.mediaUrl?.startsWith("blob:")) live.add(s.mediaUrl);
-  for (const s of state.future) if (s.mediaUrl?.startsWith("blob:")) live.add(s.mediaUrl);
-
   const prevBlobs = new Set<string>();
-  if (prev.scene.mediaUrl?.startsWith("blob:")) prevBlobs.add(prev.scene.mediaUrl);
-  for (const s of prev.past) if (s.mediaUrl?.startsWith("blob:")) prevBlobs.add(s.mediaUrl);
-  for (const s of prev.future) if (s.mediaUrl?.startsWith("blob:")) prevBlobs.add(s.mediaUrl);
+  const collect = (target: Set<string>, scenes: EditorScene[]) => {
+    for (const scene of scenes) {
+      for (const layer of scene.layers) {
+        if (layer.mediaUrl?.startsWith("blob:")) target.add(layer.mediaUrl);
+      }
+    }
+  };
+  collect(live, [state.scene, ...state.past, ...state.future]);
+  collect(prevBlobs, [prev.scene, ...prev.past, ...prev.future]);
 
   return [...prevBlobs].filter((url) => !live.has(url));
 }
 
 function revokeOrphanedBlobs(state: EditorStoreState, prev: EditorStoreState) {
   for (const url of orphanedBlobUrls(state, prev)) URL.revokeObjectURL(url);
+}
+
+/** Poster time of the active video layer (or 0 when none). */
+function activePosterTime(scene: EditorScene): number {
+  const layer = activeLayer(scene);
+  return layer?.videoPosterTime ?? 0;
 }
 
 export const useEditorStore = create<EditorStoreState>((set) => ({
@@ -140,9 +184,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
     set((s) =>
       pushHistory(s, {
         ...initialScene,
-        mediaUrl: DEMO_MEDIA_URL,
-        mediaType: "image",
-        mediaName: DEMO_MEDIA_NAME
+        layers: [makeDemoLayer()]
       })
     ),
   undo: () =>
@@ -152,36 +194,87 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
       // Playback position lives outside the scene, so re-sync it to the
       // restored scene's poster time instead of leaving the timeline slider
       // pointing at a moment that no longer matches the video.
-      return { scene: previous, past: s.past.slice(0, -1), future: [s.scene, ...s.future], videoCurrentTime: previous?.videoPosterTime ?? 0 };
+      return { scene: previous, past: s.past.slice(0, -1), future: [s.scene, ...s.future], videoCurrentTime: activePosterTime(previous ?? s.scene) };
     }),
   redo: () =>
     set((s) => {
       if (s.future.length === 0) return {};
       const next = s.future[0];
-      return { scene: next, past: [...s.past, s.scene], future: s.future.slice(1), videoCurrentTime: next?.videoPosterTime ?? 0 };
+      return { scene: next, past: [...s.past, s.scene], future: s.future.slice(1), videoCurrentTime: activePosterTime(next ?? s.scene) };
     }),
   setMedia: (mediaUrl, mediaType, mediaName = null) =>
-    set((s) => ({
-      ...pushHistory(s, {
-        ...s.scene,
+    set((s) => {
+      const layer = activeLayer(s.scene);
+      const nextLayers = layer
+        ? s.scene.layers.map((l) =>
+            l.id === layer.id
+              ? {
+                  ...l,
+                  mediaUrl,
+                  mediaType,
+                  mediaName,
+                  videoDuration: 0,
+                  videoTrimStart: 0,
+                  videoTrimEnd: 0
+                }
+              : l
+          )
+        : [{ ...makeDemoLayer(), mediaUrl, mediaType, mediaName }];
+      const activeLayerId = layer?.id ?? nextLayers[0]?.id ?? null;
+      return {
+        ...pushHistory(s, { ...s.scene, layers: nextLayers, activeLayerId }),
+        videoCurrentTime: 0,
+        // A real upload decodes asynchronously; clear media stops loading.
+        isMediaLoading: mediaUrl != null
+      };
+    }),
+  addLayer: (mediaUrl, mediaType, mediaName = null) =>
+    set((s) => {
+      const newLayer: MediaLayer = {
+        ...makeDemoLayer(),
+        id: nextLayerId(),
         mediaUrl,
         mediaType,
         mediaName,
-        videoDuration: 0,
-        videoTrimStart: 0,
-        videoTrimEnd: 0
-      }),
-      videoCurrentTime: 0,
-      // A real upload decodes asynchronously; clear media stops loading.
-      isMediaLoading: mediaUrl != null
-    })),
+        animationPreset: "none"
+      };
+      const layers = [...s.scene.layers, newLayer];
+      return {
+        ...pushHistory(s, { ...s.scene, layers, activeLayerId: newLayer.id }),
+        videoCurrentTime: 0,
+        isMediaLoading: mediaUrl != null
+      };
+    }),
+  removeLayer: (id) =>
+    set((s) => {
+      if (s.scene.layers.length <= 1) return {};
+      const layers = s.scene.layers.filter((l) => l.id !== id);
+      const activeLayerId = s.scene.activeLayerId === id ? layers[0]?.id ?? null : s.scene.activeLayerId;
+      return pushHistory(s, { ...s.scene, layers, activeLayerId });
+    }),
+  selectLayer: (id) => set((s) => ({ scene: { ...s.scene, activeLayerId: id } })),
+  reorderLayers: (orderedIds) =>
+    set((s) => {
+      const byId = new Map(s.scene.layers.map((l) => [l.id, l]));
+      const layers = orderedIds.map((id) => byId.get(id)).filter((l): l is MediaLayer => Boolean(l));
+      // Keep any layers not mentioned in the order (defensive).
+      for (const l of s.scene.layers) if (!orderedIds.includes(l.id)) layers.push(l);
+      return pushHistory(s, { ...s.scene, layers });
+    }),
+  updateActiveLayer: (patch) =>
+    set((s) => {
+      const layer = activeLayer(s.scene);
+      if (!layer) return {};
+      const layers = s.scene.layers.map((l) => (l.id === layer.id ? { ...l, ...patch } : l));
+      return pushHistory(s, { ...s.scene, layers }, Object.keys(patch).join(","));
+    }),
   setMediaLoading: (loading) => set({ isMediaLoading: loading }),
   setFrame: (frame) => set((s) => pushHistory(s, { ...s.scene, frame })),
   setStylePreset: (stylePreset) => set((s) => pushHistory(s, { ...s.scene, stylePreset })),
-  setAnimationPreset: (animationPreset) => set((s) => pushHistory(s, { ...s.scene, animationPreset })),
-  setZoom: (zoom) => set((s) => pushHistory(s, { ...s.scene, zoom }, "zoom")),
-  setMediaOffsetX: (mediaOffsetX) => set((s) => pushHistory(s, { ...s.scene, mediaOffsetX }, "mediaOffsetX")),
-  setMediaOffsetY: (mediaOffsetY) => set((s) => pushHistory(s, { ...s.scene, mediaOffsetY }, "mediaOffsetY")),
+  setAnimationPreset: (animationPreset) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationPreset }) }, "animation")),
+  setZoom: (zoom) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { zoom }) }, "zoom")),
+  setMediaOffsetX: (mediaOffsetX) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetX }) }, "mediaOffsetX")),
+  setMediaOffsetY: (mediaOffsetY) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetY }) }, "mediaOffsetY")),
   setShadowOpacity: (shadowOpacity) => set((s) => pushHistory(s, { ...s.scene, shadowOpacity }, "shadow")),
   setBorderRadius: (borderRadius) => set((s) => pushHistory(s, { ...s.scene, borderRadius }, "radius")),
   setBackgroundSolid: (backgroundColor) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "solid", backgroundColor })),
@@ -192,33 +285,61 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   setWatermarkPosition: (watermarkPosition) => set((s) => pushHistory(s, { ...s.scene, watermarkPosition })),
   setWatermarkSize: (watermarkSize) => set((s) => pushHistory(s, { ...s.scene, watermarkSize: Math.max(8, Math.min(64, Math.round(watermarkSize))) }, "watermarkSize")),
   setAspectRatio: (aspectRatio) => set((s) => pushHistory(s, { ...s.scene, aspectRatio })),
-  setVideoMuted: (videoMuted) => set((s) => pushHistory(s, { ...s.scene, videoMuted })),
-  setVideoLoop: (videoLoop) => set((s) => pushHistory(s, { ...s.scene, videoLoop })),
-  setVideoAutoplay: (videoAutoplay) => set((s) => pushHistory(s, { ...s.scene, videoAutoplay })),
-  setVideoPosterTime: (videoPosterTime) => set((s) => pushHistory(s, { ...s.scene, videoPosterTime }, "poster")),
+  setVideoMuted: (videoMuted) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoMuted }) })),
+  setVideoLoop: (videoLoop) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoLoop }) })),
+  setVideoAutoplay: (videoAutoplay) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoAutoplay }) })),
+  setVideoPosterTime: (videoPosterTime) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoPosterTime }) }, "poster")),
   setVideoDuration: (videoDuration) =>
     set((s) =>
       pushHistory(s, {
         ...s.scene,
-        videoDuration,
-        videoTrimEnd: s.scene.videoTrimEnd > 0 ? Math.min(s.scene.videoTrimEnd, videoDuration) : videoDuration
+        layers: s.scene.layers.map((l) =>
+          l.id === (s.scene.activeLayerId ?? s.scene.layers[0]?.id)
+            ? {
+                ...l,
+                videoDuration,
+                videoTrimEnd: l.videoTrimEnd > 0 ? Math.min(l.videoTrimEnd, videoDuration) : videoDuration
+              }
+            : l
+        )
       })
     ),
   setVideoCurrentTime: (videoCurrentTime) => set({ videoCurrentTime }),
   setVideoTrimStart: (videoTrimStart) =>
-    set((s) => pushHistory(s, { ...s.scene, videoTrimStart: Math.min(videoTrimStart, s.scene.videoTrimEnd || videoTrimStart) }, "trimStart")),
+    set((s) =>
+      pushHistory(s, {
+        ...s.scene,
+        layers: patchActive(s.scene, {
+          videoTrimStart: Math.min(videoTrimStart, activeOf(s.scene)?.videoTrimEnd ?? videoTrimStart)
+        })
+      }, "trimStart")
+    ),
   setVideoTrimEnd: (videoTrimEnd) =>
     set((s) =>
       pushHistory(s, {
         ...s.scene,
-        // A zero (or negative) end means "not trimmed" — clamp to the full
-        // duration so 0 never lingers in state as a confusing sentinel.
-        videoTrimEnd: videoTrimEnd <= 0 ? s.scene.videoDuration : Math.max(videoTrimEnd, s.scene.videoTrimStart)
+        layers: patchActive(s.scene, {
+          // A zero (or negative) end means "not trimmed" — clamp to the full
+          // duration so 0 never lingers in state as a confusing sentinel.
+          videoTrimEnd: videoTrimEnd <= 0 ? (activeOf(s.scene)?.videoDuration ?? 0) : Math.max(videoTrimEnd, activeOf(s.scene)?.videoTrimStart ?? 0)
+        })
       }, "trimEnd")
     ),
-  setVideoQuality: (videoQuality) => set((s) => pushHistory(s, { ...s.scene, videoQuality }))
+  setVideoQuality: (videoQuality) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoQuality }) }))
 }));
 
+/** Applies a patch to the active layer, returning a new layers array. */
+function patchActive(scene: EditorScene, patch: Partial<MediaLayer>): MediaLayer[] {
+  const id = scene.activeLayerId ?? scene.layers[0]?.id;
+  return scene.layers.map((l) => (l.id === id ? { ...l, ...patch } : l));
+}
+
+/** The active layer (or first), or undefined when there are no layers. */
+function activeOf(scene: EditorScene): MediaLayer | undefined {
+  return scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+}
+
 // After any state change, free blob: media URLs that history can no longer
-// reach (covers setMedia, undo, redo, Clear, and scene replacement).
+// reach (covers setMedia, addLayer, removeLayer, undo, redo, Clear, and scene
+// replacement).
 useEditorStore.subscribe(revokeOrphanedBlobs);

@@ -2,12 +2,17 @@ import { describe, expect, it } from "vitest";
 import { computeFrameBox } from "@/lib/export/renderMockup";
 import { getFrameSpec, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
 import { initialScene } from "@/lib/state/editorStore";
-import type { EditorScene } from "@/lib/types/editor";
+import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 
-const scene = (overrides: Partial<EditorScene> = {}): EditorScene => ({
-  ...initialScene,
-  ...overrides
-});
+function layer(overrides: Partial<MediaLayer> = {}): MediaLayer {
+  return { ...initialScene.layers[0]!, id: overrides.id ?? "layer-test", ...overrides };
+}
+
+function scene(overrides: { layer?: Partial<MediaLayer> } & Partial<EditorScene> = {}): EditorScene {
+  const l = layer(overrides.layer ?? {});
+  const { layer: _layer, ...sceneOverrides } = overrides;
+  return { ...initialScene, layers: [l], activeLayerId: l.id, ...sceneOverrides };
+}
 
 // Inset ratio = horizontal gap between frame edge and media, over frame width.
 const insetRatio = (box: ReturnType<typeof computeFrameBox>) => (box.innerX - box.x) / box.width;
@@ -41,9 +46,10 @@ describe("computeFrameBox geometry", () => {
 
   it("applies zoom to the frame size but preserves the inset ratio", () => {
     const cssWidth = 600;
-    const base = computeFrameBox(scene({ frame: "desktop" }), 1200, 1200, 2, cssWidth * 2, cssWidth * 2 * (10 / 16), undefined, undefined, undefined);
+    const baseScene = scene({ frame: "desktop" });
+    const base = computeFrameBox(baseScene, 1200, 1200, 2, cssWidth * 2, cssWidth * 2 * (10 / 16), undefined, undefined, undefined);
     const zoomed = computeFrameBox(
-      scene({ frame: "desktop", zoom: 1.5 }),
+      scene({ frame: "desktop", layer: { zoom: 1.5 } }),
       1200,
       1200,
       2,

@@ -20,10 +20,12 @@ function downloadBlob(blob: Blob, filename: string) {
  * animating in the live preview, instead of always snapping to the base zoom.
  */
 export function resolveExportTransform(scene: EditorScene): RenderTransform {
-  if (scene.animationPreset === "none") {
-    return { zoom: scene.zoom, offsetX: scene.mediaOffsetX, offsetY: scene.mediaOffsetY };
+  const active = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  if (!active) return { zoom: 1, offsetX: 0, offsetY: 0 };
+  if (active.animationPreset === "none") {
+    return { zoom: active.zoom, offsetX: active.mediaOffsetX, offsetY: active.mediaOffsetY };
   }
-  const sampled = sampleVideoTransform(scene, 0.5);
+  const sampled = sampleVideoTransform(active, 0.5);
   return { zoom: sampled.zoom, offsetX: sampled.x, offsetY: sampled.y };
 }
 

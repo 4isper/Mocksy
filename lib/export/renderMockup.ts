@@ -82,7 +82,8 @@ export function computeFrameBox(
 ): FrameBox {
   const spec = getFrameSpec(scene.frame);
   const dpiScale = pixelRatio;
-  const actualZoom = Math.max(0.01, transform?.zoom ?? scene.zoom);
+  const activeLayerForRender = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const actualZoom = Math.max(0.01, transform?.zoom ?? activeLayerForRender?.zoom ?? 1);
   const defaultFrameW = Math.min(RENDER.defaultFrameWidth, (canvasWidth / dpiScale) * RENDER.defaultFrameFill) * dpiScale;
   const frameW = (typeof frameWidth === "number" && frameWidth > 0 ? frameWidth : defaultFrameW) * actualZoom;
   const frameH = (typeof frameHeight === "number" && frameHeight > 0 ? frameHeight : frameW * RENDER.defaultAspect) * actualZoom;
@@ -139,6 +140,7 @@ export function renderMockupToCanvas(
   const width = canvas.width;
   const height = canvas.height;
   const dpiScale = pixelRatio;
+  const activeLayerForRender = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   ctx.clearRect(0, 0, width, height);
 
   if (scene.backgroundMode === "gradient") {
@@ -182,7 +184,8 @@ export function renderMockupToCanvas(
     frameX,
     frameY
   );
-  const actualZoom = Math.max(0.01, transform?.zoom ?? scene.zoom);
+  const activeLayerForRender2 = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const actualZoom = Math.max(0.01, transform?.zoom ?? activeLayerForRender2?.zoom ?? 1);
 
   // Draw shadow (matches HTML box-shadow: 0 28px 70px), scaled with transform and DPI
   if (!spec.isOverlay) {
@@ -226,8 +229,10 @@ export function renderMockupToCanvas(
     const dh = mh * scale;
     // Pan the media inside the screen area by a fraction of half its size,
     // matching the CSS object-position used in the live preview.
-    const dx = innerX + (innerW - dw) / 2 + scene.mediaOffsetX * (innerW / 2);
-    const dy = innerY + (innerH - dh) / 2 + scene.mediaOffsetY * (innerH / 2);
+    const offsetX = activeLayerForRender?.mediaOffsetX ?? 0;
+    const offsetY = activeLayerForRender?.mediaOffsetY ?? 0;
+    const dx = innerX + (innerW - dw) / 2 + offsetX * (innerW / 2);
+    const dy = innerY + (innerH - dh) / 2 + offsetY * (innerH / 2);
     ctx.drawImage(media, dx, dy, dw, dh);
   } else {
     ctx.fillStyle = RENDER.emptyMediaFill;
