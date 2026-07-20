@@ -127,6 +127,31 @@ describe("projectsStore", () => {
     expect(parsed.projects.some((p) => p.name === "Persisted")).toBe(true);
   });
 
+  it("persists and restores a data:-URL media layer across hydrate", () => {
+    useProjectsStore.getState().hydrate();
+    const id = useProjectsStore.getState().activeProjectId!;
+    // A data: URL is self-contained, so it survives a page reload (unlike a
+    // one-shot blob: URL, which dies and leaves a blank canvas on refresh).
+    const dataUrl =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC";
+    const scene: EditorScene = {
+      ...initialScene,
+      layers: [{ ...initialScene.layers[0]!, mediaUrl: dataUrl, mediaType: "image", mediaName: "shot.png" }]
+    };
+    useProjectsStore.getState().updateActiveProjectScene(scene);
+
+    // The serialized localStorage payload carries the data: URL verbatim.
+    const raw = storage.getItem("mocksy-projects");
+    expect(raw).toContain(dataUrl);
+
+    // Simulate a fresh page load: drop the in-memory store, then re-hydrate
+    // from storage. The uploaded media must come back intact.
+    useProjectsStore.setState({ projects: [], activeProjectId: null, hydrated: false });
+    useProjectsStore.getState().hydrate();
+    const restored = useProjectsStore.getState().projects.find((p) => p.id === id)!;
+    expect(restored.scene.layers[0]!.mediaUrl).toBe(dataUrl);
+  });
+
   it("importProject adds and activates an external project", () => {
     useProjectsStore.getState().hydrate();
     const before = useProjectsStore.getState().projects.length;

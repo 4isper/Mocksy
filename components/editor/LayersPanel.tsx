@@ -18,11 +18,11 @@ export function LayersPanel() {
   const [error, setError] = useState<string | null>(null);
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
 
-  const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      const { url, mediaType, mediaName } = loadMediaFromFile(file);
+      const { url, mediaType, mediaName } = await loadMediaFromFile(file);
       setError(null);
       addLayer(url, mediaType, mediaName);
     } catch (err) {

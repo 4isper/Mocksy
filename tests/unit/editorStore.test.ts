@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { useEditorStore, orphanedBlobUrls } from "@/lib/state/editorStore";
+import { useEditorStore } from "@/lib/state/editorStore";
 import { initialScene } from "@/lib/state/editorStore";
-import { DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 import type { EditorStoreState } from "@/lib/state/editorStore";
 
@@ -23,28 +22,6 @@ function fullState(scene: EditorScene, past: EditorScene[] = [], future: EditorS
 describe("editorStore", () => {
   it("starts from the documented initial scene", () => {
     expect(store().scene).toEqual(initialScene);
-  });
-
-  describe("blob: media URL lifecycle", () => {
-    it("revokes a replaced blob URL once it falls out of history", () => {
-      const prev = fullState(sceneWithLayer({ mediaUrl: "blob:old" }), [sceneWithLayer({ mediaUrl: "blob:old" })]);
-      const state = fullState(sceneWithLayer({ mediaUrl: "blob:new" }), [sceneWithLayer({ mediaUrl: "blob:new" })] );
-      // blob:old is gone from every collection -> should be revoked
-      expect(orphanedBlobUrls(state, prev)).toEqual(["blob:old"]);
-    });
-
-    it("keeps a blob URL alive while reachable via undo history", () => {
-      const prev = fullState(sceneWithLayer({ mediaUrl: "blob:new" }), [sceneWithLayer({ mediaUrl: "blob:old" })]);
-      const state = fullState(sceneWithLayer({ mediaUrl: "blob:old" }), [sceneWithLayer({ mediaUrl: "blob:new" })]);
-      // undo swapped current/past; blob:old still reachable -> keep alive
-      expect(orphanedBlobUrls(state, prev)).toEqual([]);
-    });
-
-    it("does not report demo (data:) media URLs", () => {
-      const prev = fullState(sceneWithLayer({ mediaUrl: DEMO_MEDIA_URL }));
-      const state = fullState(sceneWithLayer({ mediaUrl: "blob:new" }));
-      expect(orphanedBlobUrls(state, prev)).toEqual([]);
-    });
   });
 
   it("setMedia resets video timing fields", () => {

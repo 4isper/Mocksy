@@ -29,11 +29,37 @@ export function isSupportedMedia(file: File): boolean {
   return SUPPORTED_IMAGE_EXT.test(file.name) || VIDEO_EXT.test(file.name);
 }
 
-/** Reads a dropped/selected file into an object URL the editor can render. */
-export function loadMediaFromFile(file: File): LoadedMedia {
+/** Encodes a Blob/File as a `data:` URL using base64. Works in the
+ *  browser and in the Node test runner (no FileReader dependency), so the
+ *  same code path serves uploads and unit tests. The resulting data: URL is
+ *  a self-contained, same-origin-clean string: it survives a localStorage
+ *  round-trip and embeds directly into a share URL, unlike a one-shot
+ *  `blob:` URL which dies on reload and can't travel to another device. */
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  const buf = await blob.arrayBuffer();
+  const base64 = arrayBufferToBase64(buf);
+  const mime = blob.type || "application/octet-stream";
+  return `data:${mime};base64,${base64}`;
+}
+
+function arrayBufferToBase64(buf: ArrayBuffer): string {
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(new Uint8Array(buf)).toString("base64");
+  }
+  let binary = "";
+  const bytes = new Uint8Array(buf);
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+export async function loadMediaFromFile(file: File): Promise<LoadedMedia> {
   if (!isSupportedMedia(file)) throw new UnsupportedMediaError(file.name);
+  const url = await blobToDataUrl(file);
   return {
-    url: URL.createObjectURL(file),
+    url,
     mediaType: detectMediaType(file),
     mediaName: file.name
   };

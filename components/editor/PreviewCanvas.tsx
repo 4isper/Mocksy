@@ -153,14 +153,14 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
     if (e.touches.length < 2) pinchStart.current = null;
   };
 
-  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+  const handleDrop = async (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     dragDepth.current = 0;
     setIsDragging(false);
     const file = event.dataTransfer.files?.[0];
     if (!file) return;
     try {
-      const { url, mediaType, mediaName } = loadMediaFromFile(file);
+      const { url, mediaType, mediaName } = await loadMediaFromFile(file);
       setDropError(null);
       // Drop adds a new layer on top of the stack.
       addLayer(url, mediaType, mediaName);

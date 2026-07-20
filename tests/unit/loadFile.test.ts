@@ -20,11 +20,11 @@ describe("loadFile", () => {
     expect(detectMediaType(file("notes.txt", "text/plain"))).toBe("image");
   });
 
-  it("loadMediaFromFile returns an object URL and metadata", () => {
-    const result = loadMediaFromFile(file("demo.mp4", "video/mp4"));
+  it("loadMediaFromFile returns a data: URL and metadata", async () => {
+    const result = await loadMediaFromFile(file("demo.mp4", "video/mp4"));
     expect(result.mediaType).toBe("video");
     expect(result.mediaName).toBe("demo.mp4");
-    expect(result.url).toMatch(/^blob:/);
+    expect(result.url).toMatch(/^data:/);
   });
 
   it("accepts common image and video formats", () => {
@@ -39,8 +39,8 @@ describe("loadFile", () => {
     expect(isSupportedMedia(file("data.csv", "text/csv"))).toBe(false);
   });
 
-  it("loadMediaFromFile throws UnsupportedMediaError on bad files", () => {
-    expect(() => loadMediaFromFile(file("notes.pdf", "application/pdf"))).toThrow(UnsupportedMediaError);
-    expect(() => loadMediaFromFile(file("notes.pdf", "application/pdf"))).toThrow(/"notes.pdf" is not a supported/);
+  it("loadMediaFromFile rejects unsupported files", async () => {
+    await expect(loadMediaFromFile(file("notes.pdf", "application/pdf"))).rejects.toThrow(UnsupportedMediaError);
+    await expect(loadMediaFromFile(file("notes.pdf", "application/pdf"))).rejects.toThrow(/"notes.pdf" is not a supported/);
   });
 });

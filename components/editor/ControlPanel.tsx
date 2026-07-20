@@ -96,11 +96,11 @@ export function ControlPanel() {
     setAspectRatio
   } = useEditorStore();
 
-  const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      const { url, mediaType, mediaName } = loadMediaFromFile(file);
+      const { url, mediaType, mediaName } = await loadMediaFromFile(file);
       setMediaError(null);
       // Drop any palette from the previous media; a fresh one is computed once
       // the new file decodes in the preview.

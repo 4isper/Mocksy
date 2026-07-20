@@ -170,32 +170,6 @@ function activeLayer(scene: EditorScene): MediaLayer | undefined {
   return scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
 }
 
-/**
- * Returns the blob: media URLs that existed in `prev` but are no longer
- * reachable from `state` (current, past, or future). Blob URLs are one-shot,
- * so revoking one that history could still restore (via undo/redo) would
- * leave a dead canvas. Layers are scanned, not a single mediaUrl.
- */
-export function orphanedBlobUrls(state: EditorStoreState, prev: EditorStoreState): string[] {
-  const live = new Set<string>();
-  const prevBlobs = new Set<string>();
-  const collect = (target: Set<string>, scenes: EditorScene[]) => {
-    for (const scene of scenes) {
-      for (const layer of scene.layers) {
-        if (layer.mediaUrl?.startsWith("blob:")) target.add(layer.mediaUrl);
-      }
-    }
-  };
-  collect(live, [state.scene, ...state.past, ...state.future]);
-  collect(prevBlobs, [prev.scene, ...prev.past, ...prev.future]);
-
-  return [...prevBlobs].filter((url) => !live.has(url));
-}
-
-function revokeOrphanedBlobs(state: EditorStoreState, prev: EditorStoreState) {
-  for (const url of orphanedBlobUrls(state, prev)) URL.revokeObjectURL(url);
-}
-
 /** Poster time of the active video layer (or 0 when none). */
 function activePosterTime(scene: EditorScene): number {
   const layer = activeLayer(scene);
@@ -286,8 +260,8 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
     set((s) => {
       const source = s.scene.layers.find((l) => l.id === id);
       if (!source) return {};
-      // Clone with a fresh id; share the same media URL (blob: stays alive
-      // while either layer references it via the orphan-revocation sweep).
+      // Clone with a fresh id; the media URL is a self-contained data: URL,
+      // so both layers keep rendering it independently (no shared blob: to revoke).
       const clone: MediaLayer = { ...source, id: nextLayerId() };
       const layers = [...s.scene.layers, clone];
       return {
@@ -395,8 +369,3 @@ function patchActive(scene: EditorScene, patch: Partial<MediaLayer>): MediaLayer
 function activeOf(scene: EditorScene): MediaLayer | undefined {
   return scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
 }
-
-// After any state change, free blob: media URLs that history can no longer
-// reach (covers setMedia, addLayer, removeLayer, undo, redo, Clear, and scene
-// replacement).
-useEditorStore.subscribe(revokeOrphanedBlobs);

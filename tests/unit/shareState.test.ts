@@ -76,4 +76,16 @@ describe("shareState", () => {
     const restored = readSceneFromUrl();
     expect(restored?.layers[0]!.mediaUrl).toBe("blob:abc");
   });
+
+  it("embeds a data:-URL media so the share link works on another device", () => {
+    const dataUrl =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC";
+    const scene = withLayer(initialScene, { mediaUrl: dataUrl, mediaType: "image", mediaName: "shot.png" });
+    const url = sceneToShareUrl(scene);
+    const raw = decodeURIComponent(new URL(url).searchParams.get("scene") ?? "");
+    expect(raw).toContain(dataUrl);
+    stubLocation(url);
+    const restored = readSceneFromUrl();
+    expect(restored?.layers[0]!.mediaUrl).toBe(dataUrl);
+  });
 });
