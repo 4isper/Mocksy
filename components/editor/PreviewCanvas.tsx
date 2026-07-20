@@ -84,8 +84,24 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
       setScenePalette(null);
     }
   };
+
+  // When the active layer changes (e.g. via the layers panel), recompute the
+  // palette from that layer's media already in the DOM — the onLoad hook only
+  // fires on a fresh decode, so switching layers would otherwise keep the
+  // previous layer's palette. Skips while the new layer is still loading.
+  useEffect(() => {
+    const frame = document.querySelector<HTMLElement>("[data-mockup-frame]");
+    if (!frame) return;
+    const el = frame.querySelector<HTMLImageElement | HTMLVideoElement>("img, video");
+    if (!el) {
+      setScenePalette(null);
+      return;
+    }
+    const ready = el instanceof HTMLVideoElement ? el.readyState >= 2 : el.complete && el.naturalWidth > 0;
+    if (ready) analyzeMedia(el);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scene.activeLayerId]);
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
-  const useVideo = activeLayer ? isVideoLayer(activeLayer) : false;
 
   // The whole-mockup zoom/animation is applied to the frame container so the
   // device skin and media scale together, matching the export.
@@ -120,11 +136,6 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const onTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
     if (e.touches.length < 2) pinchStart.current = null;
   };
-
-  useEffect(() => {
-    if (!useVideo) return;
-    // Sync the playback scrubber to the active video layer when it changes.
-  }, [useVideo, videoCurrentTime, activeLayer?.id]);
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
