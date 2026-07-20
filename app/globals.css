@@ -295,6 +295,22 @@ body::before {
   outline-offset: 2px;
 }
 
+/* The native file input is kept for the mobile/touch fallback (tap opens the
+   OS picker) but hidden so the styled label is the only visible trigger.
+   visibility:hidden keeps it focusable/clickable, unlike display:none. */
+.file-trigger input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .field input[type="checkbox"] {
   width: 16px;
   height: 16px;
