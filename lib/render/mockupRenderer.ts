@@ -58,6 +58,11 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
 
   const frameStyle: CSSProperties = {
     ...basis,
+    // Establish a positioning context so the absolutely-positioned media and
+    // overlay skin are inset relative to the frame itself, not the canvas.
+    // Without this they anchor to #preview-canvas (position: relative) and
+    // drift once the frame is contained (and centered) inside the canvas.
+    position: "relative",
     aspectRatio: ratioSrc,
     // Never let the frame dictate the canvas size; it must fit inside the
     // canvas (whose shape is the scene aspect ratio) and stay centered.

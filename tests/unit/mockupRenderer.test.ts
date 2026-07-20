@@ -38,6 +38,14 @@ describe("buildSceneCss", () => {
     expect(unscaled).toBe("none");
   });
 
+  it("establishes a positioning context so media/overlay anchor to the frame", () => {
+    // The absolutely-positioned media and overlay skin must inset relative to
+    // the frame, not the canvas; otherwise they drift once the frame is
+    // contained (and centered) inside the canvas.
+    expect(buildSceneCss(base({ frame: "iphone15" })).frame.position).toBe("relative");
+    expect(buildSceneCss(base({ frame: "none" })).frame.position).toBe("relative");
+  });
+
   it("uses overlay asset for iphone15 and omits frame border", () => {
     const css = buildSceneCss(base({ frame: "iphone15" }));
     expect(css.frameOverlay).toMatch(/iphone15\.svg$/);
