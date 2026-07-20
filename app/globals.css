@@ -733,6 +733,22 @@ body::before {
   background: transparent;
 }
 
+/* Coarse pointers (touch) need larger thumbs and taller hit areas so the
+   two overlapping trim sliders are easy to grab with a finger. */
+@media (pointer: coarse) {
+  .trim-range {
+    height: 40px;
+  }
+  .trim-range::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+  .trim-range::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+}
+
 /* Media decode spinner shown over the preview until the uploaded image/video
    has loaded. */
 .media-loading {

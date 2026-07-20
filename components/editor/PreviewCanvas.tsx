@@ -78,10 +78,40 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const setMedia = useEditorStore((s) => s.setMedia);
   const setVideoDuration = useEditorStore((s) => s.setVideoDuration);
   const setVideoCurrentTime = useEditorStore((s) => s.setVideoCurrentTime);
+  const setZoom = useEditorStore((s) => s.setZoom);
   const videoCurrentTime = useEditorStore((s) => s.videoCurrentTime);
   const isMediaLoading = useEditorStore((s) => s.isMediaLoading);
   const setMediaLoading = useEditorStore((s) => s.setMediaLoading);
   const useVideo = isVideoScene(scene);
+
+  // Pinch-to-zoom on touch devices: track the two-finger distance and map it
+  // to the scene zoom so mobile users can scale the mockup without a slider.
+  const pinchStart = useRef<{ dist: number; zoom: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length === 2) {
+      const a = e.touches[0];
+      const b = e.touches[1];
+      if (!a || !b) return;
+      const dx = a.clientX - b.clientX;
+      const dy = a.clientY - b.clientY;
+      pinchStart.current = { dist: Math.hypot(dx, dy), zoom: scene.zoom };
+    }
+  };
+  const onTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length !== 2 || !pinchStart.current) return;
+    e.preventDefault();
+    const a = e.touches[0];
+    const b = e.touches[1];
+    if (!a || !b) return;
+    const dx = a.clientX - b.clientX;
+    const dy = a.clientY - b.clientY;
+    const dist = Math.hypot(dx, dy);
+    const next = Math.min(1.5, Math.max(0.8, pinchStart.current.zoom * (dist / pinchStart.current.dist)));
+    setZoom(next);
+  };
+  const onTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length < 2) pinchStart.current = null;
+  };
 
   useEffect(() => {
     if (!useVideo) return;
@@ -123,6 +153,9 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         containerType: "size",
         ["--canvas-ar-w" as string]: arW,
         ["--canvas-ar-h" as string]: arH,
+        // Let the component own pinch gestures instead of the browser zooming
+        // the whole page when two fingers land on the preview.
+        touchAction: "none",
         outline: isDragging ? "2px dashed #00d9ff" : "2px dashed transparent"
       }}
       onDragEnter={(e) => {
@@ -136,6 +169,9 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         if (dragDepth.current <= 0) setIsDragging(false);
       }}
       onDrop={handleDrop}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
     >
       <div
         id="preview-canvas"
