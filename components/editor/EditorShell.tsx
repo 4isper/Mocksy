@@ -6,6 +6,7 @@ import { PreviewCanvas } from "@/components/editor/PreviewCanvas";
 import { TemplatesPanel } from "@/components/editor/TemplatesPanel";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { exportImage } from "@/lib/export/exportImage";
+import { exportGif } from "@/lib/export/exportVideo";
 import { readSceneFromUrl, sceneToShareUrl } from "@/lib/state/shareState";
 import { normalizeScene } from "@/lib/state/normalizeScene";
 import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
@@ -23,6 +24,8 @@ export function EditorShell() {
   const futureLength = useEditorStore((s) => s.future.length);
   const [videoExportStatus, setVideoExportStatus] = useState<string | null>(null);
   const [videoExportProgress, setVideoExportProgress] = useState<number>(0);
+  const [gifExportStatus, setGifExportStatus] = useState<string | null>(null);
+  const [gifExportProgress, setGifExportProgress] = useState<number>(0);
   const [exportError, setExportError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
@@ -96,6 +99,22 @@ export function EditorShell() {
     }
   }, [scene]);
 
+  const handleExportGif = useCallback(async () => {
+    setExportError(null);
+    try {
+      setGifExportStatus("Exporting GIF…");
+      setGifExportProgress(0);
+      // Reuse the lazily-loaded FFmpeg module already imported for MP4.
+      const { exportGif } = await import("@/lib/export/exportVideo");
+      await exportGif(scene, setGifExportStatus, setGifExportProgress, setExportError);
+    } finally {
+      setTimeout(() => {
+        setGifExportStatus(null);
+        setGifExportProgress(0);
+      }, 800);
+    }
+  }, [scene]);
+
   const handleReset = useCallback(() => {
     setConfirmResetOpen(true);
   }, []);
@@ -162,11 +181,20 @@ export function EditorShell() {
             <button
               type="button"
               className="btn"
-              disabled={videoExportStatus !== null}
+              disabled={videoExportStatus !== null || gifExportStatus !== null}
               onClick={handleExportMp4}
               title="Export MP4"
             >
               Export MP4
+            </button>
+            <button
+              type="button"
+              className="btn"
+              disabled={videoExportStatus !== null || gifExportStatus !== null}
+              onClick={handleExportGif}
+              title="Export GIF"
+            >
+              Export GIF
             </button>
             {videoExportStatus ? (
               <div className="export-status">
@@ -175,6 +203,15 @@ export function EditorShell() {
                   <div style={{ width: `${videoExportProgress}%` }} />
                 </div>
                 <span className="pct">{Math.round(videoExportProgress)}%</span>
+              </div>
+            ) : null}
+            {gifExportStatus ? (
+              <div className="export-status">
+                <span className="label">{gifExportStatus}</span>
+                <div className="progress">
+                  <div style={{ width: `${gifExportProgress}%` }} />
+                </div>
+                <span className="pct">{Math.round(gifExportProgress)}%</span>
               </div>
             ) : null}
             {exportError ? (

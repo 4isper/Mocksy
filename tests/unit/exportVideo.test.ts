@@ -24,11 +24,14 @@ vi.mock("@ffmpeg/ffmpeg", () => ({
   }
 }));
 
-import { exportVideo, sanitizeFilename, resolvePixelRatio, computeCaptureDuration, chooseWebmMimeType, terminateFfmpeg } from "@/lib/export/exportVideo";
+import { exportVideo, exportGif, sanitizeFilename, resolvePixelRatio, computeCaptureDuration, chooseWebmMimeType, terminateFfmpeg } from "@/lib/export/exportVideo";
 
 const ORIGINAL_WINDOW = globalThis.window;
 
 beforeEach(() => {
+  // reset the shared FFmpeg harness so a prior test's failure code can't
+  // leak into the next one (the instance is module-level).
+  ffmpegHarness.execCode = 0;
   // minimal window so resolvePixelRatio / chooseWebmMimeType behave
   Object.defineProperty(globalThis, "window", {
     configurable: true,
@@ -52,7 +55,11 @@ beforeEach(() => {
 
 afterEach(() => {
   Object.defineProperty(globalThis, "window", { configurable: true, value: ORIGINAL_WINDOW });
-  vi.restoreAllMocks();
+  // clearAllMocks (not restoreAllMocks): the export module caches a singleton
+  // FFmpeg instance across tests, and restoreAllMocks would strip its
+  // mockImplementation, leaving later exports with an exec that returns
+  // undefined.
+  vi.clearAllMocks();
   vi.unstubAllGlobals();
 });
 
@@ -232,5 +239,16 @@ describe("exportVideo orchestration", () => {
     terminateFfmpeg();
     await exportVideo({ ...initialScene, mediaUrl: null, mediaType: "none" });
     expect(ffmpegHarness.loadCalls).toBe(before + 2);
+  });
+
+  it("exports a GIF for a still-image scene (palette pipeline)", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+
+    const statuses: string[] = [];
+    await exportGif({ ...initialScene, mediaUrl: null, mediaType: "none" }, (m) => statuses.push(m));
+    expect(statuses).toContain("Done");
   });
 });

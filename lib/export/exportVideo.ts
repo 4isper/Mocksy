@@ -195,22 +195,20 @@ async function recordCanvasToWebm(
   return new Blob(chunks, { type: "video/webm" });
 }
 
-export async function exportVideo(
+/**
+ * Captures the preview animation to a WebM blob, shared by the MP4 and GIF
+ * exporters. Builds the off-screen canvas, resolves the media element (a
+ * detached <video> for video scenes, or the one already in the preview), and
+ * records via MediaRecorder. Returns null if no frames were captured.
+ */
+async function captureWebm(
   scene: EditorScene,
   onStatus?: (message: string) => void,
-  onProgress?: (progress: number) => void,
-  onError?: (message: string) => void
-) {
-  try {
-    const previewNode = document.getElementById("preview-canvas");
-    if (!previewNode) {
-      onError?.("Preview area not found.");
-      return;
-    }
+  onProgress?: (progress: number) => void
+): Promise<Blob | null> {
+  const previewNode = document.getElementById("preview-canvas");
+  if (!previewNode) throw new Error("Preview area not found.");
 
-  // Match the PNG export's pixel ratio so both outputs use the same sharpness
-  // and frame sizing instead of the video path hard-coding 2x. Lower quality
-  // tiers downscale the capture to shrink the output file.
   const quality = QUALITY[scene.videoQuality] ?? QUALITY.medium;
   const pixelRatio = resolvePixelRatio(scene.videoQuality);
   const canvas = document.createElement("canvas");
@@ -251,13 +249,25 @@ export async function exportVideo(
       sourceVideo.remove();
     }
   }
-  if (!webmBlob || webmBlob.size === 0) {
-    onError?.("Recording produced no video frames.");
-    return;
-  }
+  return webmBlob;
+}
+
+export async function exportVideo(
+  scene: EditorScene,
+  onStatus?: (message: string) => void,
+  onProgress?: (progress: number) => void,
+  onError?: (message: string) => void
+) {
+  try {
+    const webmBlob = await captureWebm(scene, onStatus, onProgress);
+    if (!webmBlob || webmBlob.size === 0) {
+      onError?.("Recording produced no video frames.");
+      return;
+    }
 
   onStatus?.("Encoding MP4…");
   onProgress?.(0);
+  const quality = QUALITY[scene.videoQuality] ?? QUALITY.medium;
   const ffmpeg = await getFfmpegInstance(onStatus);
   const inputName = "input.webm";
   const outputName = "mocksy-export.mp4";
@@ -304,5 +314,77 @@ export async function exportVideo(
       // ignore cleanup errors
     }
     onError?.(err instanceof Error ? err.message : "Video export failed.");
+  }
+}
+
+/**
+ * Exports an animated GIF by capturing the preview to WebM (via
+ * captureWebm) and transcoding it through FFmpeg with a generated palette,
+ * which keeps the file small and the colors accurate. Pixel ratio follows
+ * the same quality tiers as the MP4 export.
+ */
+export async function exportGif(
+  scene: EditorScene,
+  onStatus?: (message: string) => void,
+  onProgress?: (progress: number) => void,
+  onError?: (message: string) => void
+) {
+  try {
+    const webmBlob = await captureWebm(scene, onStatus, onProgress);
+    if (!webmBlob || webmBlob.size === 0) {
+      onError?.("Recording produced no frames.");
+      return;
+    }
+
+    onStatus?.("Encoding GIF…");
+    onProgress?.(0);
+    const quality = QUALITY[scene.videoQuality] ?? QUALITY.medium;
+    const ffmpeg = await getFfmpegInstance(onStatus);
+    const inputName = "input.webm";
+    const paletteName = "palette.png";
+    const outputName = "mocksy-export.gif";
+    await ffmpeg.writeFile(inputName, new Uint8Array(await webmBlob.arrayBuffer()));
+    onProgress?.(50);
+    // Scale down for GIF: keep it crisp but cap width so the palette step
+    // stays cheap. Quality tier scales the target width.
+    const width = Math.round(480 * quality.scale);
+    const code = await ffmpeg.exec([
+      "-i", inputName,
+      "-vf", `fps=15,scale=${width}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`,
+      "-loop", "0",
+      outputName
+    ]);
+    if (code !== 0) {
+      throw new Error("GIF encoding failed.");
+    }
+    onProgress?.(90);
+    const data = await ffmpeg.readFile(outputName);
+    const bytes = typeof data === "string" ? new TextEncoder().encode(data) : new Uint8Array(data);
+    if (bytes.length === 0) {
+      throw new Error("GIF encoding produced no output.");
+    }
+    const blob = new Blob([bytes], { type: "image/gif" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = sanitizeFilename((scene.mediaName || "mocksy-export").replace(/\.[^.]+$/, "")) + ".gif";
+    link.click();
+    URL.revokeObjectURL(link.href);
+    await ffmpeg.deleteFile(inputName);
+    await ffmpeg.deleteFile(paletteName);
+    await ffmpeg.deleteFile(outputName);
+    onStatus?.("Done");
+    onProgress?.(100);
+  } catch (err) {
+    try {
+      const ffmpeg = ffmpegSingleton;
+      if (ffmpeg) {
+        await ffmpeg.deleteFile("input.webm");
+        await ffmpeg.deleteFile("palette.png");
+        await ffmpeg.deleteFile("mocksy-export.gif");
+      }
+    } catch {
+      // ignore cleanup errors
+    }
+    onError?.(err instanceof Error ? err.message : "GIF export failed.");
   }
 }
