@@ -255,6 +255,27 @@ test("Reset restores default settings and demo media", async ({ page }) => {
   await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
 });
 
+test("Layers panel clears media of the active layer", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+
+  // The layers panel exposes a Clear button for the selected layer, mirroring
+  // the one in the preview. It empties the active layer's media rather than
+  // deleting the layer itself. Scope to the layers panel title so we don't
+  // clash with the identical button inside the preview canvas.
+  await page.getByTitle("Remove media from the selected layer").click();
+  await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(0);
+  await expect(page.getByText("Drop image or video to start")).toBeVisible();
+});
+
 test("undo and redo restore a previous frame choice", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "Desktop");

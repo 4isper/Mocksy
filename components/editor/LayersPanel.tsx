@@ -12,7 +12,9 @@ export function LayersPanel() {
   const removeLayer = useEditorStore((s) => s.removeLayer);
   const selectLayer = useEditorStore((s) => s.selectLayer);
   const reorderLayers = useEditorStore((s) => s.reorderLayers);
+  const setMedia = useEditorStore((s) => s.setMedia);
   const [error, setError] = useState<string | null>(null);
+  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
 
   const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -153,6 +155,16 @@ export function LayersPanel() {
           );
         })}
       </ul>
+      {activeLayer?.mediaUrl ? (
+        <button
+          type="button"
+          className="btn btn-sm"
+          onClick={() => setMedia(null, "none", null)}
+          title="Remove media from the selected layer"
+        >
+          Clear media
+        </button>
+      ) : null}
       <p style={{ color: "var(--text-dim)", fontSize: 12, margin: 0 }}>
         Layers stack top to bottom. Select a layer to edit its zoom, position and video options.
       </p>
