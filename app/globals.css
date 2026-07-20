@@ -402,6 +402,38 @@ body::before {
   outline-offset: 2px;
 }
 
+/* ---- Auto background button ---- */
+.auto-bg-btn {
+  appearance: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: #eafdff;
+  cursor: pointer;
+  transition: filter 0.15s ease, opacity 0.15s ease;
+}
+
+.auto-bg-btn:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.auto-bg-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: var(--panel-border);
+  background: var(--field-bg);
+  color: var(--text-dim);
+}
+
+.auto-bg-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ---- Toggle switch ---- */
 .toggle {
   display: inline-flex;

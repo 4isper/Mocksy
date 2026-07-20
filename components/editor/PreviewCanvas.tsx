@@ -7,6 +7,7 @@ import { buildSceneCss } from "@/lib/render/mockupRenderer";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
+import { extractPalette } from "@/lib/media/palette";
 import { useEditorStore } from "@/lib/state/editorStore";
 
 /** Duration of one animation loop in the preview, matching the video export. */
@@ -69,6 +70,20 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const videoCurrentTime = useEditorStore((s) => s.videoCurrentTime);
   const isMediaLoading = useEditorStore((s) => s.isMediaLoading);
   const setMediaLoading = useEditorStore((s) => s.setMediaLoading);
+  const setScenePalette = useEditorStore((s) => s.setScenePalette);
+
+  // Sample the active layer's media for a dominant-color palette once it has
+  // decoded, so the "match background" control can suggest a gradient. Runs
+  // whenever the active layer's media changes; failures (e.g. tainted
+  // cross-origin video) are swallowed so the rest of the preview still works.
+  const analyzeMedia = (el: HTMLImageElement | HTMLVideoElement) => {
+    try {
+      const { colors } = extractPalette(el, 5);
+      setScenePalette(colors.length ? colors : null);
+    } catch {
+      setScenePalette(null);
+    }
+  };
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   const useVideo = activeLayer ? isVideoLayer(activeLayer) : false;
 
@@ -203,7 +218,10 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
                       const t = e.currentTarget.currentTime;
                       if (Math.abs(t - videoCurrentTime) >= 0.1) setVideoCurrentTime(t);
                     }}
-                    onLoadedData={() => setMediaLoading(false)}
+                    onLoadedData={(ev) => {
+                      setMediaLoading(false);
+                      analyzeMedia(ev.currentTarget);
+                    }}
                     style={sceneCss.mediaStyle}
                   />
                 ) : (
@@ -213,7 +231,10 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
                     src={layer.mediaUrl}
                     alt="Uploaded media"
                     style={sceneCss.mediaStyle}
-                    onLoad={() => setMediaLoading(false)}
+                    onLoad={(e) => {
+                      setMediaLoading(false);
+                      analyzeMedia(e.currentTarget);
+                    }}
                   />
                 )
               )

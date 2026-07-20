@@ -8,6 +8,7 @@ import { FRAME_ORDER, ANIMATION_PRESETS, ASPECT_RATIOS } from "@/lib/render/fram
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { backgroundPresets } from "@/lib/presets/presets";
+import { pickGradientPair } from "@/lib/media/palette";
 import { VideoOptions } from "@/components/editor/VideoOptions";
 
 const frames: MockupFrame[] = FRAME_ORDER;
@@ -74,6 +75,7 @@ export function ControlPanel() {
   const [mediaError, setMediaError] = useState<string | null>(null);
   const {
     scene,
+    scenePalette,
     setMedia,
     setFrame,
     setStylePreset,
@@ -86,6 +88,7 @@ export function ControlPanel() {
     setBackgroundSolid,
     setBackgroundGradient,
     setBackgroundTransparent,
+    setScenePalette,
     toggleWatermark,
     setWatermarkText,
     setWatermarkPosition,
@@ -99,6 +102,9 @@ export function ControlPanel() {
     try {
       const { url, mediaType, mediaName } = loadMediaFromFile(file);
       setMediaError(null);
+      // Drop any palette from the previous media; a fresh one is computed once
+      // the new file decodes in the preview.
+      setScenePalette(null);
       setMedia(url, mediaType, mediaName);
     } catch (err) {
       if (err instanceof UnsupportedMediaError) setMediaError(err.message);
@@ -237,6 +243,23 @@ export function ControlPanel() {
 
       <div className="field-group">
         <span style={{ color: "var(--text-dim)", fontSize: 12, fontWeight: 500 }}>Background</span>
+        <button
+          type="button"
+          className="auto-bg-btn"
+          disabled={!scenePalette || scenePalette.length < 2}
+          title={
+            scenePalette && scenePalette.length >= 2
+              ? "Generate a gradient from the media's colors"
+              : "Upload an image or video first"
+          }
+          onClick={() => {
+            if (!scenePalette || scenePalette.length < 2) return;
+            const [from, to] = pickGradientPair(scenePalette);
+            setBackgroundGradient(from, to);
+          }}
+        >
+          Auto from media
+        </button>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {backgroundPresets.map((preset) => {
             const active =

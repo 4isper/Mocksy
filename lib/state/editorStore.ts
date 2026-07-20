@@ -53,8 +53,13 @@ export interface EditorStoreState {
   lastHistoryAt: number;
   /** True while uploaded media is decoding (between setMedia and onLoad). */
   isMediaLoading: boolean;
+  /** Dominant-color palette of the active layer's media, used to suggest a
+   *  matching background. Kept out of `scene` so it doesn't churn history or
+   *  get serialized into share URLs. Null until media has been analyzed. */
+  scenePalette: string[] | null;
   setScene: (scene: Partial<EditorScene>, recordHistory?: boolean) => void;
   setMediaLoading: (loading: boolean) => void;
+  setScenePalette: (palette: string[] | null) => void;
   resetScene: () => void;
   undo: () => void;
   redo: () => void;
@@ -197,6 +202,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   lastHistoryKey: null,
   lastHistoryAt: 0,
   isMediaLoading: false,
+  scenePalette: null,
   setScene: (scene, recordHistory = true) =>
     set((s) => {
       const next = { ...s.scene, ...scene };
@@ -292,6 +298,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
       return pushHistory(s, { ...s.scene, layers }, Object.keys(patch).join(","));
     }),
   setMediaLoading: (loading) => set({ isMediaLoading: loading }),
+  setScenePalette: (palette) => set({ scenePalette: palette }),
   setFrame: (frame) => set((s) => pushHistory(s, { ...s.scene, frame })),
   setStylePreset: (stylePreset) => set((s) => pushHistory(s, { ...s.scene, stylePreset })),
   setAnimationPreset: (animationPreset) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationPreset }) }, "animation")),
