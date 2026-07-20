@@ -5,7 +5,7 @@ import type { CSSProperties, DragEvent, ReactNode } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
 import { isVideoScene } from "@/lib/render/mediaKind";
-import { buildVideoTimeline, sampleVideoTransform } from "@/lib/render/videoComposer";
+import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { useEditorStore } from "@/lib/state/editorStore";
 
@@ -22,7 +22,6 @@ const ANIMATION_DURATION_MS = 3000;
 function AnimationLayer({ scene, children }: { scene: EditorScene; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const animates = scene.animationPreset !== "none";
-  const timeline = buildVideoTimeline(scene);
 
   useEffect(() => {
     const node = ref.current;
@@ -42,8 +41,11 @@ function AnimationLayer({ scene, children }: { scene: EditorScene; children: Rea
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-    // timeline identity changes when the preset/keyframes change
-  }, [animates, scene, timeline]);
+    // Restart only when the animation preset itself changes, not on every
+    // scene edit (e.g. dragging the zoom slider) — timeline is recomputed
+    // inside the effect regardless.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [animates, scene.animationPreset]);
 
   return (
     <div

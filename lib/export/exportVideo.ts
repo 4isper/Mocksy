@@ -129,6 +129,9 @@ async function recordCanvasToWebm(
   });
 
   canvas.remove();
+  // Free the capture stream's tracks so the canvas track doesn't leak between
+  // exports.
+  stream.getTracks().forEach((track) => track.stop());
   return new Blob(chunks, { type: "video/webm" });
 }
 
