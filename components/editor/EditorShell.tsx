@@ -119,11 +119,6 @@ export function EditorShell() {
         saveNow();
         return;
       }
-      if (modifier && event.key.toLowerCase() === "e") {
-        event.preventDefault();
-        handleExportPng();
-        return;
-      }
       if (event.key.toLowerCase() === "r" && !modifier) {
         const target = event.target as HTMLElement | null;
         if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT")) return;
@@ -133,7 +128,7 @@ export function EditorShell() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [undo, redo, saveNow, handleExportPng, handleReset]);
+  }, [undo, redo, saveNow, handleReset]);
 
   return (
     <main className="editor-shell">
@@ -153,7 +148,7 @@ export function EditorShell() {
             <button type="button" className="btn" onClick={redo} disabled={futureLength === 0} title="Redo (⇧⌘Z)">
               Redo
             </button>
-            <button type="button" className="btn btn-primary" onClick={handleExportPng} title="Export PNG (⌘E)">
+            <button type="button" className="btn btn-primary" onClick={handleExportPng} title="Export PNG">
               Export PNG
             </button>
             <button
