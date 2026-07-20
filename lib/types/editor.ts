@@ -48,3 +48,33 @@ export interface EditorScene {
   aspectRatio: string;
 }
 
+/** A named set of scene-appearance settings (frame, frame style, background,
+ *  shadow, watermark). Intentionally excludes media layers so applying a
+ *  preset restyles the mockup without discarding the user's uploaded media. */
+export interface SceneStylePreset {
+  id: string;
+  name: string;
+  frame: MockupFrame;
+  stylePreset: StylePreset;
+  backgroundMode: BackgroundMode;
+  backgroundColor: string;
+  gradientFrom: string;
+  gradientTo: string;
+  shadowOpacity: number;
+  borderRadius: number;
+  watermarkEnabled: boolean;
+  watermarkText: string;
+  watermarkPosition: WatermarkPosition;
+  watermarkSize: number;
+}
+
+/** A self-contained editor project: a named scene plus bookkeeping. Projects
+ *  live in localStorage and can be exported/imported as JSON files. */
+export interface Project {
+  id: string;
+  name: string;
+  scene: EditorScene;
+  /** Epoch ms of the last edit, used for the "updated" label and sorting. */
+  updatedAt: number;
+}
+

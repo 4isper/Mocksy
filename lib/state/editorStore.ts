@@ -112,6 +112,29 @@ export const initialScene: EditorScene = {
 // The first layer is the active one by default.
 initialScene.activeLayerId = initialScene.layers[0]?.id ?? null;
 
+/** A fresh scene seeded with the bundled demo media. Shared by the editor
+ *  bootstrap and the projects store so both start from the same default. */
+export function makeDemoScene(): EditorScene {
+  const layers = [makeDemoLayer()];
+  return {
+    layers,
+    activeLayerId: layers[0]?.id ?? null,
+    frame: initialScene.frame,
+    stylePreset: initialScene.stylePreset,
+    shadowOpacity: initialScene.shadowOpacity,
+    borderRadius: initialScene.borderRadius,
+    backgroundMode: initialScene.backgroundMode,
+    backgroundColor: initialScene.backgroundColor,
+    gradientFrom: initialScene.gradientFrom,
+    gradientTo: initialScene.gradientTo,
+    watermarkText: initialScene.watermarkText,
+    watermarkEnabled: initialScene.watermarkEnabled,
+    watermarkPosition: initialScene.watermarkPosition,
+    watermarkSize: initialScene.watermarkSize,
+    aspectRatio: initialScene.aspectRatio
+  };
+}
+
 const HISTORY_LIMIT = 100;
 /** Edits of the same field within this window collapse into one undo step,
  *  so dragging a slider doesn't flood history with a record per pixel. */

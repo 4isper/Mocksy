@@ -1,22 +1,4 @@
-import type { AnimationPreset, MockupFrame, StylePreset } from "@/lib/types/editor";
-
-export interface TemplatePreset {
-  id: string;
-  name: string;
-  description: string;
-  frame: MockupFrame;
-  stylePreset: StylePreset;
-  animationPreset: AnimationPreset;
-  zoom: number;
-}
-
-export const templatePresets: TemplatePreset[] = [
-  { id: "hero-glass", name: "Hero Glass", description: "Light glass iPhone, zoom-in", frame: "iphone", stylePreset: "glassLight", animationPreset: "zoomIn", zoom: 1.1 },
-  { id: "dark-product", name: "Dark Product", description: "Dark glass desktop, parallax", frame: "desktop", stylePreset: "glassDark", animationPreset: "parallax", zoom: 1.03 },
-  { id: "minimal", name: "Minimal", description: "Clean, no frame", frame: "none", stylePreset: "default", animationPreset: "none", zoom: 1 },
-  { id: "iphone15-zoom", name: "iPhone 15 Zoom", description: "iPhone 15, zoom-in", frame: "iphone15", stylePreset: "default", animationPreset: "zoomIn", zoom: 1.05 },
-  { id: "iphone16pro-glass", name: "16 Pro Glass", description: "16 Pro glass, parallax", frame: "iphone16pro", stylePreset: "glassLight", animationPreset: "parallax", zoom: 1.04 }
-];
+import type { EditorScene, SceneStylePreset } from "@/lib/types/editor";
 
 export type BackgroundKind = "transparent" | "solid" | "gradient";
 
@@ -40,3 +22,111 @@ export const backgroundPresets: BackgroundPreset[] = [
   { id: "sunset", name: "Sunset", kind: "gradient", swatch: "#f97316", gradientFrom: "#f97316", gradientTo: "#db2777" },
   { id: "mint", name: "Mint", kind: "gradient", swatch: "#059669", gradientFrom: "#059669", gradientTo: "#0ea5e9" }
 ];
+
+/** Named appearance presets. Each carries the scene's frame, frame style,
+ *  background, shadow and watermark — but never the media layers — so
+ *  applying one restyles the mockup in one click without dropping the
+ *  user's uploaded photo or video. */
+export const sceneStylePresets: SceneStylePreset[] = [
+  {
+    id: "dark-studio",
+    name: "Dark Studio",
+    frame: "iphone",
+    stylePreset: "default",
+    backgroundMode: "solid",
+    backgroundColor: "#09090b",
+    gradientFrom: "#09090b",
+    gradientTo: "#09090b",
+    shadowOpacity: 0.45,
+    borderRadius: 20,
+    watermarkEnabled: false,
+    watermarkText: "Mocksy",
+    watermarkPosition: "bottom-right",
+    watermarkSize: 13
+  },
+  {
+    id: "soft-glass",
+    name: "Soft Glass",
+    frame: "iphone16pro",
+    stylePreset: "glassLight",
+    backgroundMode: "gradient",
+    backgroundColor: "#1d4ed8",
+    gradientFrom: "#1d4ed8",
+    gradientTo: "#7c3aed",
+    shadowOpacity: 0.4,
+    borderRadius: 28,
+    watermarkEnabled: false,
+    watermarkText: "Mocksy",
+    watermarkPosition: "bottom-right",
+    watermarkSize: 13
+  },
+  {
+    id: "bold-gradient",
+    name: "Bold Gradient",
+    frame: "desktop",
+    stylePreset: "glassDark",
+    backgroundMode: "gradient",
+    backgroundColor: "#f97316",
+    gradientFrom: "#f97316",
+    gradientTo: "#db2777",
+    shadowOpacity: 0.5,
+    borderRadius: 16,
+    watermarkEnabled: true,
+    watermarkText: "Made with Mocksy",
+    watermarkPosition: "bottom-right",
+    watermarkSize: 14
+  },
+  {
+    id: "minimal",
+    name: "Minimal",
+    frame: "none",
+    stylePreset: "default",
+    backgroundMode: "solid",
+    backgroundColor: "#ffffff",
+    gradientFrom: "#ffffff",
+    gradientTo: "#ffffff",
+    shadowOpacity: 0.12,
+    borderRadius: 8,
+    watermarkEnabled: false,
+    watermarkText: "Mocksy",
+    watermarkPosition: "bottom-right",
+    watermarkSize: 12
+  },
+  {
+    id: "warm",
+    name: "Warm",
+    frame: "iphone15",
+    stylePreset: "glassDark",
+    backgroundMode: "gradient",
+    backgroundColor: "#f59e0b",
+    gradientFrom: "#f59e0b",
+    gradientTo: "#ef4444",
+    shadowOpacity: 0.42,
+    borderRadius: 24,
+    watermarkEnabled: false,
+    watermarkText: "Mocksy",
+    watermarkPosition: "bottom-left",
+    watermarkSize: 13
+  }
+];
+
+/** Returns the scene-appearance fields defined by a style preset. Media
+ *  layers and aspect ratio are intentionally left out so callers apply the
+ *  result via setScene without disturbing the active media. */
+export function applySceneStylePreset(preset: SceneStylePreset): Partial<EditorScene> {
+  return {
+    frame: preset.frame,
+    stylePreset: preset.stylePreset,
+    backgroundMode: preset.backgroundMode,
+    backgroundColor: preset.backgroundColor,
+    gradientFrom: preset.gradientFrom,
+    gradientTo: preset.gradientTo,
+    shadowOpacity: preset.shadowOpacity,
+    borderRadius: preset.borderRadius,
+    watermarkEnabled: preset.watermarkEnabled,
+    watermarkText: preset.watermarkText,
+    watermarkPosition: preset.watermarkPosition,
+    watermarkSize: preset.watermarkSize
+  };
+}
+

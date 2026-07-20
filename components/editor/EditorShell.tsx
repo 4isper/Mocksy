@@ -6,57 +6,13 @@ import { PreviewCanvas } from "@/components/editor/PreviewCanvas";
 import { TemplatesPanel } from "@/components/editor/TemplatesPanel";
 import { LayersPanel } from "@/components/editor/LayersPanel";
 import { useEditorStore } from "@/lib/state/editorStore";
-import { initialScene } from "@/lib/state/editorStore";
-import type { EditorScene } from "@/lib/types/editor";
 import { exportImage } from "@/lib/export/exportImage";
 import { exportGif } from "@/lib/export/exportVideo";
-import { readSceneFromUrl, sceneToShareUrl } from "@/lib/state/shareState";
-import { normalizeScene } from "@/lib/state/normalizeScene";
-import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
+import { sceneToShareUrl } from "@/lib/state/shareState";
+import { useProjectsStore } from "@/lib/state/projectsStore";
+import { ProjectsPanel } from "@/components/editor/ProjectsPanel";
 
-const AUTOSAVE_KEY = "mocksy-scene";
 const AUTOSAVE_DELAY = 500;
-
-/** A fresh scene seeded with the bundled demo media (used on first load and
- *  when a saved payload is too corrupted to normalize). */
-function demoScene(): EditorScene {
-  return {
-    layers: [
-      {
-        id: "seed",
-        mediaUrl: DEMO_MEDIA_URL,
-        mediaType: "image",
-        mediaName: DEMO_MEDIA_NAME,
-        zoom: 1,
-        mediaOffsetX: 0,
-        mediaOffsetY: 0,
-        animationPreset: "none",
-        videoMuted: true,
-        videoLoop: true,
-        videoAutoplay: true,
-        videoPosterTime: 0,
-        videoDuration: 0,
-        videoTrimStart: 0,
-        videoTrimEnd: 0,
-        videoQuality: "medium"
-      }
-    ],
-    activeLayerId: "seed",
-    frame: initialScene.frame,
-    stylePreset: initialScene.stylePreset,
-    shadowOpacity: initialScene.shadowOpacity,
-    borderRadius: initialScene.borderRadius,
-    backgroundMode: initialScene.backgroundMode,
-    backgroundColor: initialScene.backgroundColor,
-    gradientFrom: initialScene.gradientFrom,
-    gradientTo: initialScene.gradientTo,
-    watermarkText: initialScene.watermarkText,
-    watermarkEnabled: initialScene.watermarkEnabled,
-    watermarkPosition: initialScene.watermarkPosition,
-    watermarkSize: initialScene.watermarkSize,
-    aspectRatio: initialScene.aspectRatio
-  };
-}
 
 export function EditorShell() {
   const scene = useEditorStore((s) => s.scene);
@@ -76,45 +32,21 @@ export function EditorShell() {
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const fromUrl = readSceneFromUrl();
-    const fromLocal = window.localStorage.getItem(AUTOSAVE_KEY);
-    // Initial load restores saved state; it is not a user edit, so don't push
-    // it onto the undo stack (also keeps StrictMode's double-mount from
-    // recording a duplicate entry).
-    if (fromUrl) setScene(fromUrl, false);
-    else if (fromLocal) {
-      try {
-        const restored = normalizeScene(JSON.parse(fromLocal));
-        // Object URLs (blob:) are revoked when the tab closes, so a saved
-        // blob: layer can never reload after a refresh. Replace any dead
-        // blob: layers with the demo media instead of showing an empty canvas.
-        const hasBlob = restored.layers.some((l) => l.mediaUrl?.startsWith("blob:"));
-        if (hasBlob) {
-          setScene(
-            {
-              ...restored,
-              layers: restored.layers.map((l) =>
-                l.mediaUrl && l.mediaUrl.startsWith("blob:")
-                  ? { ...l, mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME }
-                  : l
-              )
-            },
-            false
-          );
-        } else {
-          setScene(restored, false);
-        }
-      } catch {
-        setScene(demoScene(), false);
-      }
-    } else setScene(demoScene(), false);
+    // Bootstrap from projects (URL share, localStorage, or a fresh demo). The
+    // restored scene is not a user edit, so don't push it onto the undo stack
+    // (also keeps StrictMode's double-mount from recording a duplicate entry).
+    const restored = useProjectsStore.getState().hydrate();
+    setScene(restored, false);
   }, [setScene]);
 
   useEffect(() => {
     setSaved(false);
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     autosaveTimer.current = setTimeout(() => {
-      window.localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(scene));
+      // Persist the current scene into the active project (which writes the
+      // whole project list to localStorage). Dead blob: layers are handled by
+      // the orphaned-blob subscription, so a refresh simply shows the demo.
+      useProjectsStore.getState().updateActiveProjectScene(scene);
       setSaved(true);
     }, AUTOSAVE_DELAY);
     return () => {
@@ -123,7 +55,7 @@ export function EditorShell() {
   }, [scene]);
 
   const saveNow = useCallback(() => {
-    window.localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(scene));
+    useProjectsStore.getState().updateActiveProjectScene(scene);
     setSaved(true);
   }, [scene]);
 
@@ -289,6 +221,7 @@ export function EditorShell() {
           </div>
         </section>
         <TemplatesPanel />
+        <ProjectsPanel />
         <LayersPanel />
       </div>
       {confirmResetOpen ? (
