@@ -1,5 +1,12 @@
 import type { AnimationPreset, MockupFrame } from "@/lib/types/editor";
 
+/** Native SVG viewBox size shared by the iPhone overlay skins. The screen
+ *  cutout (FrameSpec.cutout) is expressed in these units, so insets and
+ *  corner radii are converted off the rendered frame size using these
+ *  constants rather than repeating 390/844 at every call site. */
+export const SVG_VIEWBOX_WIDTH = 390;
+export const SVG_VIEWBOX_HEIGHT = 844;
+
 export interface FrameSpec {
   /** SVG overlay asset path, or null for CSS-only frames (none/iphone/desktop/tablet). */
   asset: string | null;

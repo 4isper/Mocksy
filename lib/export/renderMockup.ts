@@ -1,7 +1,7 @@
 "use client";
 
 import type { EditorScene } from "@/lib/types/editor";
-import { getFrameSpec } from "@/lib/render/frames";
+import { getFrameSpec, SVG_VIEWBOX_HEIGHT, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
 
 function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   const radius = Math.max(0, Math.min(r, Math.min(w, h) / 2));
@@ -58,7 +58,6 @@ export interface FrameBox {
   y: number;
   width: number;
   height: number;
-  pad: number;
   outerRadius: number;
   innerX: number;
   innerY: number;
@@ -98,12 +97,10 @@ export function computeFrameBox(
   // device px off the rendered frame so the media matches the skin at any size.
   // Other frames use a simple padding-based inset.
   const cutout = spec.cutout;
-  const padX = cutout ? (cutout.x / 390) * frameW : spec.padding * dpiScale * actualZoom;
-  const padY = cutout ? (cutout.y / 844) * frameH : spec.padding * dpiScale * actualZoom;
-  // `pad` keeps its historical meaning of the horizontal inset (used by ratio
-  // checks and any callers); X and Y insets differ because the skin viewBox is
-  // not square, but innerX/innerY/innerW/innerH use the correct per-axis values.
-  const pad = spec.isOverlay ? padX : spec.padding * dpiScale * actualZoom;
+  const padX = cutout ? (cutout.x / SVG_VIEWBOX_WIDTH) * frameW : spec.padding * dpiScale * actualZoom;
+  const padY = cutout ? (cutout.y / SVG_VIEWBOX_HEIGHT) * frameH : spec.padding * dpiScale * actualZoom;
+  // X and Y insets differ because the skin viewBox is not square; innerX/Y/W/H
+  // use the correct per-axis values below.
   // Circular frames (watch) ignore the corner radius and clip to a full circle.
   const isCircular = scene.frame === "watch";
   const outerRadius = isCircular
@@ -118,7 +115,7 @@ export function computeFrameBox(
     : cutout
       ? Math.max(0, (cutout.rx / cutout.w) * innerW, (cutout.rx / cutout.h) * innerH)
       : Math.max(0, spec.screenRadius * dpiScale * actualZoom);
-  return { x, y, width: frameW, height: frameH, pad, outerRadius, innerX, innerY, innerW, innerH, innerRadius };
+  return { x, y, width: frameW, height: frameH, outerRadius, innerX, innerY, innerW, innerH, innerRadius };
 }
 
 /**
@@ -177,7 +174,7 @@ export function renderMockupToCanvas(
   }
   ctx.fillRect(0, 0, width, height);
 
-  const { x, y, width: frameW, height: frameH, pad, outerRadius, innerX, innerY, innerW, innerH, innerRadius } = computeFrameBox(
+  const { x, y, width: frameW, height: frameH, outerRadius, innerX, innerY, innerW, innerH, innerRadius } = computeFrameBox(
     scene,
     width,
     height,

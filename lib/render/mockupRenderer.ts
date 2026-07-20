@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import type { EditorScene } from "@/lib/types/editor";
-import { getFrameSpec } from "@/lib/render/frames";
+import { getFrameSpec, SVG_VIEWBOX_HEIGHT, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
 
 interface SceneCss {
   container: CSSProperties;
@@ -96,10 +96,10 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
   const mediaStyle: CSSProperties = spec.isOverlay && spec.cutout
     ? {
         position: "absolute",
-        left: `${(spec.cutout.x / 390) * 100}%`,
-        top: `${(spec.cutout.y / 844) * 100}%`,
-        width: `${(spec.cutout.w / 390) * 100}%`,
-        height: `${(spec.cutout.h / 844) * 100}%`,
+        left: `${(spec.cutout.x / SVG_VIEWBOX_WIDTH) * 100}%`,
+        top: `${(spec.cutout.y / SVG_VIEWBOX_HEIGHT) * 100}%`,
+        width: `${(spec.cutout.w / SVG_VIEWBOX_WIDTH) * 100}%`,
+        height: `${(spec.cutout.h / SVG_VIEWBOX_HEIGHT) * 100}%`,
         objectFit: "cover",
         borderRadius: `${(spec.cutout.rx / spec.cutout.w) * 100}% / ${(spec.cutout.rx / spec.cutout.h) * 100}%`,
         background: "#0a0a0a"
@@ -115,10 +115,10 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
   const emptyMediaStyle: CSSProperties = spec.isOverlay && spec.cutout
     ? {
         position: "absolute",
-        left: `${(spec.cutout.x / 390) * 100}%`,
-        top: `${(spec.cutout.y / 844) * 100}%`,
-        width: `${(spec.cutout.w / 390) * 100}%`,
-        height: `${(spec.cutout.h / 844) * 100}%`,
+        left: `${(spec.cutout.x / SVG_VIEWBOX_WIDTH) * 100}%`,
+        top: `${(spec.cutout.y / SVG_VIEWBOX_HEIGHT) * 100}%`,
+        width: `${(spec.cutout.w / SVG_VIEWBOX_WIDTH) * 100}%`,
+        height: `${(spec.cutout.h / SVG_VIEWBOX_HEIGHT) * 100}%`,
         borderRadius: `${(spec.cutout.rx / spec.cutout.w) * 100}% / ${(spec.cutout.rx / spec.cutout.h) * 100}%`,
         display: "grid",
         placeItems: "center",

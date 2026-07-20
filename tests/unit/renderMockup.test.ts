@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { computeFrameBox } from "@/lib/export/renderMockup";
-import { getFrameSpec } from "@/lib/render/frames";
+import { getFrameSpec, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
 import { initialScene } from "@/lib/state/editorStore";
 import type { EditorScene } from "@/lib/types/editor";
 
@@ -9,17 +9,14 @@ const scene = (overrides: Partial<EditorScene> = {}): EditorScene => ({
   ...overrides
 });
 
-// For CSS-only frames the media is inset by `frameStyle.padding` (CSS px)
-// inside a frame of `offsetWidth` (CSS px). The exported canvas gets
-// frameWidth in device px (offsetWidth * pixelRatio), so the inset ratio must
-// stay spec.padding / offsetWidth regardless of pixelRatio. Overlay skins use
-// a viewBox-based cutout ratio (cutout.x / 390) instead, which must also be
-// pixelRatio-independent.
+// Inset ratio = horizontal gap between frame edge and media, over frame width.
+const insetRatio = (box: ReturnType<typeof computeFrameBox>) => (box.innerX - box.x) / box.width;
+
 describe("computeFrameBox geometry", () => {
   it("keeps the media inset ratio independent of pixelRatio (overlay cutout)", () => {
     const cssWidth = 700;
     const spec = getFrameSpec("iphone15");
-    const expectedRatio = (spec.cutout?.x ?? 0) / 390;
+    const expectedRatio = (spec.cutout?.x ?? 0) / SVG_VIEWBOX_WIDTH;
 
     const atDpr = (dpr: number) =>
       computeFrameBox(scene({ frame: "iphone15" }), 1400, 1400, dpr, cssWidth * dpr, cssWidth * dpr * (10 / 16));
@@ -27,8 +24,8 @@ describe("computeFrameBox geometry", () => {
     const low = atDpr(1);
     const high = atDpr(3);
 
-    const ratioLow = low.pad / low.width;
-    const ratioHigh = high.pad / high.width;
+    const ratioLow = insetRatio(low);
+    const ratioHigh = insetRatio(high);
 
     expect(ratioLow).toBeCloseTo(expectedRatio, 5);
     expect(ratioHigh).toBeCloseTo(expectedRatio, 5);
@@ -39,7 +36,7 @@ describe("computeFrameBox geometry", () => {
     const cssWidth = 640;
     const spec = getFrameSpec("iphone");
     const box = computeFrameBox(scene({ frame: "iphone" }), 1280, 1280, 2, cssWidth * 2, cssWidth * 2 * (10 / 16));
-    expect(box.pad / box.width).toBeCloseTo(spec.padding / cssWidth, 5);
+    expect(insetRatio(box)).toBeCloseTo(spec.padding / cssWidth, 5);
   });
 
   it("applies zoom to the frame size but preserves the inset ratio", () => {
@@ -54,7 +51,7 @@ describe("computeFrameBox geometry", () => {
       cssWidth * 2 * (10 / 16)
     );
     expect(zoomed.width).toBeCloseTo(base.width * 1.5, 3);
-    expect(zoomed.pad / zoomed.width).toBeCloseTo(base.pad / base.width, 5);
+    expect(insetRatio(zoomed)).toBeCloseTo(insetRatio(base), 5);
   });
 
   it("derives frameH from frameW with a 16:10 ratio when height is omitted", () => {
