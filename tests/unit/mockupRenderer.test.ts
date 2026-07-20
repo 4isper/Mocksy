@@ -116,6 +116,13 @@ describe("buildSceneCss", () => {
     expect(screenRadius).toBe(48);
   });
 
+  it("pans media via object-position from mediaOffset fields", () => {
+    const { mediaStyle } = buildSceneCss(base({ mediaOffsetX: 0.5, mediaOffsetY: -0.5 }));
+    expect(mediaStyle.objectPosition).toBe("75% 25%");
+    const overlay = buildSceneCss(base({ frame: "iphone15", mediaOffsetX: -1, mediaOffsetY: 1 }));
+    expect(overlay.mediaStyle.objectPosition).toBe("0% 100%");
+  });
+
   it("renders the watch frame as a full circle", () => {
     const { frame } = buildSceneCss(base({ frame: "watch" }));
     expect(frame.borderRadius).toBe("50%");

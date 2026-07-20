@@ -23,6 +23,12 @@ describe("normalizeScene", () => {
     expect(s.borderRadius).toBe(initialScene.borderRadius);
   });
 
+  it("clamps media offset into [-1, 1] and falls back for NaN", () => {
+    const s = normalizeScene({ mediaOffsetX: 5, mediaOffsetY: Number.NaN });
+    expect(s.mediaOffsetX).toBe(1);
+    expect(s.mediaOffsetY).toBe(initialScene.mediaOffsetY);
+  });
+
   it("coerces numeric strings and drops values outside range", () => {
     const s = normalizeScene({ zoom: "1.5", shadowOpacity: "2" });
     expect(s.zoom).toBe(1.5);

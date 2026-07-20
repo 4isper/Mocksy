@@ -10,6 +10,8 @@ const scene: EditorScene = {
   stylePreset: "default",
   animationPreset: "zoomIn",
   zoom: 1,
+  mediaOffsetX: 0,
+  mediaOffsetY: 0,
   shadowOpacity: 0.4,
   borderRadius: 20,
   backgroundMode: "solid",

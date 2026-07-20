@@ -78,6 +78,8 @@ export function ControlPanel() {
     setStylePreset,
     setAnimationPreset,
     setZoom,
+    setMediaOffsetX,
+    setMediaOffsetY,
     setShadowOpacity,
     setBorderRadius,
     setBackgroundSolid,
@@ -168,6 +170,34 @@ export function ControlPanel() {
             aria-label="Zoom"
             aria-valuetext={`${Math.round(scene.zoom * 100)}%`}
             onChange={(e) => setZoom(Number(e.target.value))}
+          />
+        </label>
+        <label className="field">
+          <span>Position X</span>
+          <input
+            className="range"
+            type="range"
+            min={-1}
+            max={1}
+            step={0.01}
+            value={scene.mediaOffsetX}
+            aria-label="Media horizontal position"
+            aria-valuetext={`${Math.round(scene.mediaOffsetX * 100)}%`}
+            onChange={(e) => setMediaOffsetX(Number(e.target.value))}
+          />
+        </label>
+        <label className="field">
+          <span>Position Y</span>
+          <input
+            className="range"
+            type="range"
+            min={-1}
+            max={1}
+            step={0.01}
+            value={scene.mediaOffsetY}
+            aria-label="Media vertical position"
+            aria-valuetext={`${Math.round(scene.mediaOffsetY * 100)}%`}
+            onChange={(e) => setMediaOffsetY(Number(e.target.value))}
           />
         </label>
         <label className="field">

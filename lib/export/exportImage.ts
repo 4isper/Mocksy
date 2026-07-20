@@ -21,7 +21,7 @@ function downloadBlob(blob: Blob, filename: string) {
  */
 export function resolveExportTransform(scene: EditorScene): RenderTransform {
   if (scene.animationPreset === "none") {
-    return { zoom: scene.zoom, offsetX: 0, offsetY: 0 };
+    return { zoom: scene.zoom, offsetX: scene.mediaOffsetX, offsetY: scene.mediaOffsetY };
   }
   const sampled = sampleVideoTransform(scene, 0.5);
   return { zoom: sampled.zoom, offsetX: sampled.x, offsetY: sampled.y };

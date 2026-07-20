@@ -9,8 +9,9 @@ function sceneWith(preset: EditorScene["animationPreset"], zoom = 1): EditorScen
 }
 
 describe("resolveExportTransform", () => {
-  it("uses the base zoom for a static (none) scene", () => {
-    expect(resolveExportTransform(sceneWith("none", 1.4))).toEqual({ zoom: 1.4, offsetX: 0, offsetY: 0 });
+  it("uses the base zoom and media offset for a static (none) scene", () => {
+    const scene = { ...sceneWith("none", 1.4), mediaOffsetX: 0.5, mediaOffsetY: -0.25 };
+    expect(resolveExportTransform(scene)).toEqual({ zoom: 1.4, offsetX: 0.5, offsetY: -0.25 });
   });
 
   it("samples the mid-animation frame for zoomIn", () => {

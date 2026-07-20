@@ -45,6 +45,8 @@ export function normalizeScene(raw: unknown): EditorScene {
     stylePreset: pick(r.stylePreset, STYLE_PRESETS, initialScene.stylePreset),
     animationPreset: pick(r.animationPreset, ANIMATION_PRESETS, initialScene.animationPreset),
     zoom: num(r.zoom, initialScene.zoom, 0.1, 3),
+    mediaOffsetX: num(r.mediaOffsetX, initialScene.mediaOffsetX, -1, 1),
+    mediaOffsetY: num(r.mediaOffsetY, initialScene.mediaOffsetY, -1, 1),
     shadowOpacity: num(r.shadowOpacity, initialScene.shadowOpacity, 0, 1),
     borderRadius: num(r.borderRadius, initialScene.borderRadius, 0, 200),
     backgroundMode: pick(r.backgroundMode, BACKGROUND_MODES, initialScene.backgroundMode),

@@ -14,6 +14,10 @@ export interface EditorScene {
   stylePreset: StylePreset;
   animationPreset: AnimationPreset;
   zoom: number;
+  /** Media pan inside the frame, as a fraction of half the frame size.
+   *  Independent of `zoom` (which scales the whole frame). Range [-1, 1]. */
+  mediaOffsetX: number;
+  mediaOffsetY: number;
   shadowOpacity: number;
   borderRadius: number;
   backgroundMode: BackgroundMode;

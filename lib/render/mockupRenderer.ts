@@ -93,6 +93,10 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
   // screen cutout. The cutout is defined in viewBox units, so express the
   // inset and corner radius as percentages of the frame — otherwise they would
   // only line up at the SVG's native 390px width and drift at any other size.
+  // Pan the media inside the frame: object-position shifts the covered image
+  // within its box by a fraction of half the frame on each axis.
+  const mediaPosX = 50 + scene.mediaOffsetX * 50;
+  const mediaPosY = 50 + scene.mediaOffsetY * 50;
   const mediaStyle: CSSProperties = spec.isOverlay && spec.cutout
     ? {
         position: "absolute",
@@ -101,6 +105,7 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
         width: `${(spec.cutout.w / SVG_VIEWBOX_WIDTH) * 100}%`,
         height: `${(spec.cutout.h / SVG_VIEWBOX_HEIGHT) * 100}%`,
         objectFit: "cover",
+        objectPosition: `${mediaPosX}% ${mediaPosY}%`,
         borderRadius: `${(spec.cutout.rx / spec.cutout.w) * 100}% / ${(spec.cutout.rx / spec.cutout.h) * 100}%`,
         background: "#0a0a0a"
       }
@@ -108,6 +113,7 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
         width: "100%",
         height: "100%",
         objectFit: "cover",
+        objectPosition: `${mediaPosX}% ${mediaPosY}%`,
         borderRadius: spec.screenRadius,
         background: "#0a0a0a"
       };

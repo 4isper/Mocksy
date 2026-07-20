@@ -27,6 +27,8 @@ export interface EditorStoreState {
   setStylePreset: (stylePreset: StylePreset) => void;
   setAnimationPreset: (animationPreset: AnimationPreset) => void;
   setZoom: (zoom: number) => void;
+  setMediaOffsetX: (offset: number) => void;
+  setMediaOffsetY: (offset: number) => void;
   setShadowOpacity: (shadowOpacity: number) => void;
   setBorderRadius: (radius: number) => void;
   setBackgroundSolid: (color: string) => void;
@@ -56,6 +58,8 @@ export const initialScene: EditorScene = {
   stylePreset: "default",
   animationPreset: "none",
   zoom: 1,
+  mediaOffsetX: 0,
+  mediaOffsetY: 0,
   shadowOpacity: 0.4,
   borderRadius: 20,
   backgroundMode: "gradient",
@@ -176,6 +180,8 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   setStylePreset: (stylePreset) => set((s) => pushHistory(s, { ...s.scene, stylePreset })),
   setAnimationPreset: (animationPreset) => set((s) => pushHistory(s, { ...s.scene, animationPreset })),
   setZoom: (zoom) => set((s) => pushHistory(s, { ...s.scene, zoom }, "zoom")),
+  setMediaOffsetX: (mediaOffsetX) => set((s) => pushHistory(s, { ...s.scene, mediaOffsetX }, "mediaOffsetX")),
+  setMediaOffsetY: (mediaOffsetY) => set((s) => pushHistory(s, { ...s.scene, mediaOffsetY }, "mediaOffsetY")),
   setShadowOpacity: (shadowOpacity) => set((s) => pushHistory(s, { ...s.scene, shadowOpacity }, "shadow")),
   setBorderRadius: (borderRadius) => set((s) => pushHistory(s, { ...s.scene, borderRadius }, "radius")),
   setBackgroundSolid: (backgroundColor) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "solid", backgroundColor })),

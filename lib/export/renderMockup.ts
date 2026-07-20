@@ -224,8 +224,10 @@ export function renderMockupToCanvas(
     const scale = Math.max(innerW / mw, innerH / mh);
     const dw = mw * scale;
     const dh = mh * scale;
-    const dx = innerX + (innerW - dw) / 2;
-    const dy = innerY + (innerH - dh) / 2;
+    // Pan the media inside the screen area by a fraction of half its size,
+    // matching the CSS object-position used in the live preview.
+    const dx = innerX + (innerW - dw) / 2 + scene.mediaOffsetX * (innerW / 2);
+    const dy = innerY + (innerH - dh) / 2 + scene.mediaOffsetY * (innerH / 2);
     ctx.drawImage(media, dx, dy, dw, dh);
   } else {
     ctx.fillStyle = RENDER.emptyMediaFill;
