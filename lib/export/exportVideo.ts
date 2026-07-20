@@ -254,16 +254,24 @@ export async function exportVideo(
   const outputName = "mocksy-export.mp4";
   await ffmpeg.writeFile(inputName, new Uint8Array(await webmBlob.arrayBuffer()));
   onProgress?.(50);
-  await ffmpeg.exec([
+  const code = await ffmpeg.exec([
     "-i", inputName,
     "-c:v", "mpeg4",
     "-q:v", String(quality.qscale),
     "-pix_fmt", "yuv420p",
     outputName,
   ]);
+  // FFmpeg returns 0 on success; a non-zero code means the encode failed
+  // (e.g. unsupported input) and would otherwise produce an empty/corrupt MP4.
+  if (code !== 0) {
+    throw new Error("Video encoding failed.");
+  }
   onProgress?.(90);
   const data = await ffmpeg.readFile(outputName);
   const bytes = typeof data === "string" ? new TextEncoder().encode(data) : new Uint8Array(data);
+  if (bytes.length === 0) {
+    throw new Error("Video encoding produced no output.");
+  }
   const blob = new Blob([bytes], { type: "video/mp4" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -275,6 +283,17 @@ export async function exportVideo(
   onStatus?.("Done");
   onProgress?.(100);
   } catch (err) {
+    // Best-effort temp-file cleanup so the FFmpeg singleton doesn't carry
+    // stale input/output between failed exports.
+    try {
+      const ffmpeg = ffmpegSingleton;
+      if (ffmpeg) {
+        await ffmpeg.deleteFile("input.webm");
+        await ffmpeg.deleteFile("mocksy-export.mp4");
+      }
+    } catch {
+      // ignore cleanup errors
+    }
     onError?.(err instanceof Error ? err.message : "Video export failed.");
   }
 }

@@ -10,11 +10,12 @@ vi.mock("@/lib/export/renderMockup", () => ({
 }));
 
 // FFmpeg WASM can't run in node; stub the heavy lifetime.
+const ffmpegHarness = vi.hoisted(() => ({ execCode: 0 }));
 vi.mock("@ffmpeg/ffmpeg", () => ({
   FFmpeg: class {
     writeFile = vi.fn().mockResolvedValue(undefined);
     deleteFile = vi.fn().mockResolvedValue(undefined);
-    exec = vi.fn().mockResolvedValue(undefined);
+    exec = vi.fn().mockImplementation(() => Promise.resolve(ffmpegHarness.execCode));
     readFile = vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3, 4]));
     load = vi.fn().mockResolvedValue(undefined);
   }
@@ -200,5 +201,18 @@ describe("exportVideo orchestration", () => {
     const errors: string[] = [];
     await exportVideo({ ...initialScene, mediaUrl: null, mediaType: "none" }, undefined, undefined, (m) => errors.push(m));
     expect(errors).toContain("Preview area not found.");
+  });
+
+  it("surfaces a FFmpeg failure instead of producing an empty MP4", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+    ffmpegHarness.execCode = 1;
+
+    const errors: string[] = [];
+    await exportVideo({ ...initialScene, mediaUrl: null, mediaType: "none" }, undefined, undefined, (m) => errors.push(m));
+    expect(errors).toContain("Video encoding failed.");
+    ffmpegHarness.execCode = 0;
   });
 });
