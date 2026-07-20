@@ -27,11 +27,19 @@ export function resolveExportTransform(scene: EditorScene): RenderTransform {
   return { zoom: sampled.zoom, offsetX: sampled.x, offsetY: sampled.y };
 }
 
-function waitForImage(img: HTMLImageElement) {
+export function waitForImage(img: HTMLImageElement, timeoutMs = 10000) {
   if (img.complete && img.naturalWidth > 0) return Promise.resolve();
   return new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = () => reject(new Error("Image load failed"));
+    const timer = setTimeout(() => reject(new Error("Image load timed out")), timeoutMs);
+    const clear = () => clearTimeout(timer);
+    img.onload = () => {
+      clear();
+      resolve();
+    };
+    img.onerror = () => {
+      clear();
+      reject(new Error("Image load failed"));
+    };
   });
 }
 

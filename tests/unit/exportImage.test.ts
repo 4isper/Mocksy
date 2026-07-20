@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveExportTransform } from "@/lib/export/exportImage";
+import { resolveExportTransform, waitForImage } from "@/lib/export/exportImage";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { initialScene } from "@/lib/state/editorStore";
 import type { EditorScene } from "@/lib/types/editor";
@@ -36,5 +36,32 @@ describe("resolveExportTransform", () => {
       offsetX: expected.x,
       offsetY: expected.y
     });
+  });
+});
+
+describe("waitForImage", () => {
+  it("resolves immediately for an already-loaded image", async () => {
+    const img = { complete: true, naturalWidth: 100 } as unknown as HTMLImageElement;
+    await expect(waitForImage(img)).resolves.toBeUndefined();
+  });
+
+  it("resolves when the image loads", async () => {
+    const img = {} as HTMLImageElement & { onload?: () => void };
+    const promise = waitForImage(img);
+    img.onload?.();
+    await expect(promise).resolves.toBeUndefined();
+  });
+
+  it("rejects when the image errors", async () => {
+    const img = {} as HTMLImageElement & { onerror?: () => void };
+    const promise = waitForImage(img);
+    img.onerror?.();
+    await expect(promise).rejects.toThrow("Image load failed");
+  });
+
+  it("rejects on timeout if the image never loads", async () => {
+    const img = {} as HTMLImageElement;
+    const promise = waitForImage(img, 10);
+    await expect(promise).rejects.toThrow("Image load timed out");
   });
 });
