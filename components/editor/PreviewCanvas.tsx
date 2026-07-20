@@ -106,7 +106,24 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   // The whole-mockup zoom/animation is applied to the frame container so the
   // device skin and media scale together, matching the export.
   const frameRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   useFrameTransform(frameRef, activeLayer);
+
+  // Mirror the Timeline scrubber (driven by VideoOptions) onto the actual
+  // <video>. The onTimeUpdate handler also writes videoCurrentTime back to the
+  // store, so we only seek when the change is large enough to be a user scrub
+  // rather than playback echo — otherwise we'd fight the playing video.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (Math.abs(video.currentTime - videoCurrentTime) > 0.1) {
+      try {
+        video.currentTime = videoCurrentTime;
+      } catch {
+        // Seeking before metadata is ready can throw; ignore until it loads.
+      }
+    }
+  }, [videoCurrentTime]);
 
   // Pinch-to-zoom on touch devices: track the two-finger distance and map it
   // to the active layer zoom so mobile users can scale the mockup without a slider.
@@ -209,6 +226,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             layer.mediaUrl ? (
               isVideoLayer(layer) ? (
                   <video
+                    ref={videoRef}
                     src={layer.mediaUrl}
                     muted={layer.videoMuted}
                     loop={layer.videoLoop}
