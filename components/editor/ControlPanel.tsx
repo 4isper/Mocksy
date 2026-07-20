@@ -126,6 +126,16 @@ export function ControlPanel() {
             Upload image or video
             <input type="file" accept="image/*,video/*" onChange={handleFile} />
           </label>
+          {activeLayer?.mediaUrl ? (
+            <button
+              type="button"
+              className="btn btn-sm"
+              title="Clear the active layer's media"
+              onClick={() => setMedia(null, "none", null)}
+            >
+              Clear media
+            </button>
+          ) : null}
         </div>
         {mediaError ? (
           <span role="alert" style={{ color: "var(--danger)", fontSize: 13 }}>
