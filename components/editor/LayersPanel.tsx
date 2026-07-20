@@ -179,7 +179,7 @@ export function LayersPanel() {
         </button>
       ) : null}
       <p style={{ color: "var(--text-dim)", fontSize: 12, margin: 0 }}>
-        Layers stack top to bottom. Select a layer to edit its zoom, position and video options. Shortcuts for the active layer: ⌘D duplicate, ⌘↑ / ⌘↓ reorder.
+        Layers stack top to bottom. Select a layer to edit its zoom, position and video options. Shortcuts for the active layer: ⌘D duplicate, ⌘↑ / ⌘↓ reorder, ⌘[ / ⌘] switch.
       </p>
     </div>
   );

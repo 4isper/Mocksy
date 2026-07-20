@@ -343,6 +343,33 @@ test("keyboard duplicates and reorders the active layer", async ({ page }) => {
   await expect(page.locator(".layer-item").last()).toHaveClass(/is-active/);
 });
 
+test("keyboard switches between layers", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  await expect(page.locator(".layer-item")).toHaveCount(1);
+
+  // ⌘D gives two layers; the clone (bottom) is active.
+  await page.keyboard.press("Control+d");
+  await expect(page.locator(".layer-item")).toHaveCount(2);
+  await expect(page.locator(".layer-item").last()).toHaveClass(/is-active/);
+
+  // ⌘[ selects the previous (top) layer.
+  await page.keyboard.press("Control+[");
+  await expect(page.locator(".layer-item").first()).toHaveClass(/is-active/);
+
+  // ⌘] selects the next (bottom) layer again.
+  await page.keyboard.press("Control+]");
+  await expect(page.locator(".layer-item").last()).toHaveClass(/is-active/);
+});
+
 test("undo and redo restore a previous frame choice", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "Desktop");

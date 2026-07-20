@@ -167,6 +167,18 @@ export function EditorShell() {
         st.reorderLayers(ids);
         return;
       }
+      if (modifier && !typing && (event.key === "[" || event.key === "]")) {
+        event.preventDefault();
+        const st = useEditorStore.getState();
+        const ids = st.scene.layers.map((l) => l.id);
+        const idx = ids.indexOf(st.scene.activeLayerId ?? st.scene.layers[0]?.id ?? "");
+        if (idx < 0) return;
+        const dir = event.key === "[" ? -1 : 1;
+        const nextIdx = Math.max(0, Math.min(ids.length - 1, idx + dir));
+        const id = ids[nextIdx];
+        if (id) st.selectLayer(id);
+        return;
+      }
       if (event.key.toLowerCase() === "r" && !modifier) {
         const target = event.target as HTMLElement | null;
         if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT")) return;
