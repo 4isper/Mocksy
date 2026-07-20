@@ -109,9 +109,14 @@ body::before {
 /* Side panels scroll internally when taller than the viewport so the page
    itself never scrolls and the preview stays fully visible. */
 .control-panel,
-.templates-panel {
+.templates-panel,
+.projects-panel,
+.layers-panel {
   overflow-y: auto;
   min-height: 0;
+  /* Let grid/flex items shrink below their content min-width on narrow
+     screens so the editor never overflows horizontally. */
+  min-width: 0;
 }
 
 .panel::before {
@@ -139,6 +144,7 @@ body::before {
 .brand {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: 12px;
   padding: 2px 4px 6px;
 }
@@ -216,6 +222,7 @@ body::before {
 .field {
   display: grid;
   gap: 7px;
+  min-width: 0;
   font-size: 13px;
 }
 
@@ -567,6 +574,8 @@ body::before {
 .field-group {
   display: grid;
   gap: 14px;
+  /* Shrink below the widest control's min-content on narrow screens. */
+  min-width: 0;
 }
 
 .divider {
