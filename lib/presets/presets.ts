@@ -3,6 +3,7 @@ import type { AnimationPreset, MockupFrame, StylePreset } from "@/lib/types/edit
 export interface TemplatePreset {
   id: string;
   name: string;
+  description: string;
   frame: MockupFrame;
   stylePreset: StylePreset;
   animationPreset: AnimationPreset;
@@ -10,11 +11,11 @@ export interface TemplatePreset {
 }
 
 export const templatePresets: TemplatePreset[] = [
-  { id: "hero-glass", name: "Hero Glass", frame: "iphone", stylePreset: "glassLight", animationPreset: "zoomIn", zoom: 1.1 },
-  { id: "dark-product", name: "Dark Product", frame: "desktop", stylePreset: "glassDark", animationPreset: "parallax", zoom: 1.03 },
-  { id: "minimal", name: "Minimal", frame: "none", stylePreset: "default", animationPreset: "none", zoom: 1 },
-  { id: "iphone15-zoom", name: "iPhone 15 Zoom", frame: "iphone15", stylePreset: "default", animationPreset: "zoomIn", zoom: 1.05 },
-  { id: "iphone16pro-glass", name: "16 Pro Glass", frame: "iphone16pro", stylePreset: "glassLight", animationPreset: "parallax", zoom: 1.04 }
+  { id: "hero-glass", name: "Hero Glass", description: "Light glass iPhone, zoom-in", frame: "iphone", stylePreset: "glassLight", animationPreset: "zoomIn", zoom: 1.1 },
+  { id: "dark-product", name: "Dark Product", description: "Dark glass desktop, parallax", frame: "desktop", stylePreset: "glassDark", animationPreset: "parallax", zoom: 1.03 },
+  { id: "minimal", name: "Minimal", description: "Clean, no frame", frame: "none", stylePreset: "default", animationPreset: "none", zoom: 1 },
+  { id: "iphone15-zoom", name: "iPhone 15 Zoom", description: "iPhone 15, zoom-in", frame: "iphone15", stylePreset: "default", animationPreset: "zoomIn", zoom: 1.05 },
+  { id: "iphone16pro-glass", name: "16 Pro Glass", description: "16 Pro glass, parallax", frame: "iphone16pro", stylePreset: "glassLight", animationPreset: "parallax", zoom: 1.04 }
 ];
 
 export type BackgroundKind = "transparent" | "solid" | "gradient";
