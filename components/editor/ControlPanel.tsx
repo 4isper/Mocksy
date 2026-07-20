@@ -246,14 +246,14 @@ export function ControlPanel() {
         <button
           type="button"
           className="auto-bg-btn"
-          disabled={!scenePalette || scenePalette.length < 2}
+          disabled={!scenePalette || scenePalette.length < 1}
           title={
-            scenePalette && scenePalette.length >= 2
+            scenePalette && scenePalette.length >= 1
               ? "Generate a gradient from the media's colors"
               : "Upload an image or video first"
           }
           onClick={() => {
-            if (!scenePalette || scenePalette.length < 2) return;
+            if (!scenePalette || scenePalette.length < 1) return;
             const [from, to] = pickGradientPair(scenePalette);
             setBackgroundGradient(from, to);
           }}

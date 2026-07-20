@@ -64,7 +64,6 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const [dropError, setDropError] = useState<string | null>(null);
   const setMedia = useEditorStore((s) => s.setMedia);
   const addLayer = useEditorStore((s) => s.addLayer);
-  const removeLayer = useEditorStore((s) => s.removeLayer);
   const setVideoDuration = useEditorStore((s) => s.setVideoDuration);
   const setVideoCurrentTime = useEditorStore((s) => s.setVideoCurrentTime);
   const videoCurrentTime = useEditorStore((s) => s.videoCurrentTime);
@@ -226,6 +225,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             layer.mediaUrl ? (
               isVideoLayer(layer) ? (
                   <video
+                    key={layer.id}
                     ref={videoRef}
                     src={layer.mediaUrl}
                     muted={layer.videoMuted}
@@ -257,6 +257,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
                   // Local blob/object URLs can't be optimized by next/image.
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
+                    key={layer.id}
                     src={layer.mediaUrl}
                     alt="Uploaded media"
                     style={sceneCss.mediaStyle}
@@ -314,7 +315,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           </span>
         )}
         {activeLayer ? (
-          <button type="button" className="preview-chip" onClick={() => removeLayer(activeLayer.id)}>
+          <button type="button" className="preview-chip" onClick={() => setMedia(null, "none", null)}>
             Clear media
           </button>
         ) : null}

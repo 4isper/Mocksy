@@ -134,6 +134,11 @@ export function EditorShell() {
         saveNow();
         return;
       }
+      if (modifier && event.key.toLowerCase() === "e") {
+        event.preventDefault();
+        handleExportPng();
+        return;
+      }
       if (event.key.toLowerCase() === "r" && !modifier) {
         const target = event.target as HTMLElement | null;
         if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT")) return;
