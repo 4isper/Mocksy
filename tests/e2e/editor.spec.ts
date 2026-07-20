@@ -16,10 +16,26 @@ async function frameIsActive(page: import("@playwright/test").Page, label: strin
     .getAttribute("aria-pressed");
 }
 
+// Opens the unified export dialog from the toolbar. Use an exact match so we
+// don't also resolve the preview's "Export My mockup" button (its accessible
+// name contains "Export" too, which trips strict mode when both are present).
+async function openExportDialog(page: import("@playwright/test").Page) {
+  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await expect(page.locator(".modal[role='dialog']")).toBeVisible();
+}
+
+// Picks a format tab inside the export dialog (PNG / MP4 / GIF).
+async function chooseExportFormat(page: import("@playwright/test").Page, label: "PNG" | "MP4" | "GIF") {
+  await page
+    .locator('.segmented[aria-label="Format"] button', { hasText: label })
+    .first()
+    .click();
+}
+
 test("shows editor shell", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("Scene presets")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Export PNG" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Export", exact: true })).toBeVisible();
 });
 
 test("selecting iphone16pro renders the device overlay", async ({ page }) => {
@@ -146,6 +162,7 @@ test("exporting an image scene triggers a PNG download", async ({ page }) => {
   });
   await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
 
+  await openExportDialog(page);
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export PNG" }).click();
   const download = await downloadPromise;
@@ -188,6 +205,7 @@ test("watermark preview matches the exported image", async ({ page }) => {
   expect(wm.bottomGap).toBe(16);
 
   // Exporting with the watermark on must still produce a PNG download.
+  await openExportDialog(page);
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export PNG" }).click();
   const download = await downloadPromise;
@@ -447,7 +465,7 @@ test("panels stack and stay within the viewport on a narrow screen", async ({ pa
   await page.setViewportSize({ width: 390, height: 800 });
   await page.goto("/");
   await expect(page.getByText("Scene presets")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Export PNG" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Export", exact: true })).toBeVisible();
   // No horizontal overflow on mobile.
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
   expect(overflow).toBe(true);
@@ -528,6 +546,8 @@ test("exporting an image scene triggers an MP4 download", async ({ page }) => {
   await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
 
   const downloadPromise = page.waitForEvent("download");
+  await openExportDialog(page);
+  await chooseExportFormat(page, "MP4");
   await page.getByRole("button", { name: "Export MP4" }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/\.mp4$/);
@@ -553,6 +573,8 @@ test("exporting an overlay phone frame (16 Pro) produces an MP4", async ({ page 
   await expect(page.locator('img[src*="iphone16pro.svg"]')).toBeVisible();
 
   const downloadPromise = page.waitForEvent("download");
+  await openExportDialog(page);
+  await chooseExportFormat(page, "MP4");
   await page.getByRole("button", { name: "Export MP4" }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/\.mp4$/);
@@ -605,6 +627,7 @@ test("copy PNG button writes the mockup image to the clipboard", async ({ page, 
   });
   await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
 
+  await openExportDialog(page);
   await page.getByRole("button", { name: "Copy PNG" }).click();
   await expect(page.getByText("Copied PNG to clipboard")).toBeVisible();
 
@@ -739,20 +762,27 @@ test("Fill / Fit toggle switches the media fit and persists across reload", asyn
   expect(fitAfterReload).toBe("contain");
 });
 
-test("PNG export scale selector sets the chosen resolution", async ({ page }) => {
+test("export dialog Size selector sets the chosen resolution", async ({ page }) => {
   await page.goto("/");
   await page.waitForTimeout(300);
-  const scale = page.locator("label.png-scale select");
-  // Defaults to 2× (matching the preview's pixel ratio on a standard display).
-  await expect(scale).toHaveValue("2");
 
-  // The selector drives the PNG export resolution. It lives outside the scene
-  // (it's an export preference, not serialized into share URLs), so it is not
-  // expected to survive a reload — only that the choice is applied here.
-  await scale.selectOption("4");
-  await expect(scale).toHaveValue("4");
-  await scale.selectOption("1");
-  await expect(scale).toHaveValue("1");
+  const sizeButton = (label: string) =>
+    page.locator('.segmented[aria-label="Size"] button', { hasText: label }).first();
+
+  await openExportDialog(page);
+  // Defaults to 2× (matching the preview's pixel ratio on a standard display).
+  await expect(sizeButton("2×")).toHaveAttribute("aria-pressed", "true");
+
+  // The selector drives the export resolution for PNG, MP4 and GIF. It lives
+  // outside the scene (an export preference, not serialized into share URLs),
+  // but it persists in the store while the editor is open.
+  await sizeButton("4×").click();
+  await expect(sizeButton("4×")).toHaveAttribute("aria-pressed", "true");
+
+  // Closing and reopening keeps the chosen preference.
+  await page.locator(".modal-backdrop").click({ position: { x: 4, y: 4 } });
+  await openExportDialog(page);
+  await expect(sizeButton("4×")).toHaveAttribute("aria-pressed", "true");
 });
 
 

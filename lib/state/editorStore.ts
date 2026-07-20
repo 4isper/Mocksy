@@ -86,7 +86,7 @@ export interface EditorStoreState {
   selectedAnnotationId: string | null;
   /** Pixel multiplier used when exporting/copying PNG (1×/2×/4×). Kept out of
    *  `scene` so it doesn't churn undo history or serialize into share URLs. */
-  pngExportScale: 1 | 2 | 4;
+  exportScale: 1 | 2 | 4;
   /** Groups rapid same-field edits (e.g. slider drags) into one undo step. */
   lastHistoryKey: string | null;
   lastHistoryAt: number;
@@ -99,7 +99,7 @@ export interface EditorStoreState {
   setScene: (scene: Partial<EditorScene>, recordHistory?: boolean) => void;
   setMediaLoading: (loading: boolean) => void;
   setScenePalette: (palette: string[] | null) => void;
-  setPngExportScale: (scale: 1 | 2 | 4) => void;
+  setExportScale: (scale: 1 | 2 | 4) => void;
   resetScene: () => void;
   undo: () => void;
   redo: () => void;
@@ -239,7 +239,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   lastHistoryAt: 0,
   isMediaLoading: false,
   scenePalette: null,
-  pngExportScale: 2,
+  exportScale: 2,
   setScene: (scene, recordHistory = true) =>
     set((s) => {
       const next = { ...s.scene, ...scene };
@@ -355,7 +355,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
     }),
   setMediaLoading: (loading) => set({ isMediaLoading: loading }),
   setScenePalette: (palette) => set({ scenePalette: palette }),
-  setPngExportScale: (pngExportScale) => set({ pngExportScale }),
+  setExportScale: (exportScale) => set({ exportScale }),
   setFrame: (frame) => set((s) => pushHistory(s, { ...s.scene, frame })),
   setStylePreset: (stylePreset) => set((s) => pushHistory(s, { ...s.scene, stylePreset })),
   setAnimationPreset: (animationPreset) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationPreset }) }, "animation")),

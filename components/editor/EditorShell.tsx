@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ControlPanel } from "@/components/editor/ControlPanel";
+import { ExportDialog } from "@/components/editor/ExportDialog";
 import { PreviewCanvas } from "@/components/editor/PreviewCanvas";
 import { TemplatesPanel } from "@/components/editor/TemplatesPanel";
 import { LayersPanel } from "@/components/editor/LayersPanel";
@@ -28,11 +29,12 @@ export function EditorShell() {
   const [gifExportProgress, setGifExportProgress] = useState<number>(0);
   const isExporting = videoExportStatus !== null || gifExportStatus !== null;
   const [exportError, setExportError] = useState<string | null>(null);
-  const pngExportScale = useEditorStore((s) => s.pngExportScale);
-  const setPngExportScale = useEditorStore((s) => s.setPngExportScale);
+  const exportScale = useEditorStore((s) => s.exportScale);
+  const setExportScale = useEditorStore((s) => s.setExportScale);
   const [saved, setSaved] = useState(false);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -78,13 +80,13 @@ export function EditorShell() {
 
   const handleExportPng = useCallback(() => {
     setExportError(null);
-    exportImage(scene, "preview-canvas", "mocksy-export", setExportError, pngExportScale);
-  }, [scene, pngExportScale]);
+    exportImage(scene, "preview-canvas", "mocksy-export", setExportError, exportScale);
+  }, [scene, exportScale]);
 
   const handleCopyPng = useCallback(async () => {
     setExportError(null);
-    await copyPngToClipboard(scene, "preview-canvas", setExportError, setCopyStatus, pngExportScale);
-  }, [scene, pngExportScale]);
+    await copyPngToClipboard(scene, "preview-canvas", setExportError, setCopyStatus, exportScale);
+  }, [scene, exportScale]);
 
   const handleExportMp4 = useCallback(async () => {
     setExportError(null);
@@ -94,14 +96,14 @@ export function EditorShell() {
       // Loaded lazily so the 32MB FFmpeg WASM bundle stays out of the editor's
       // main chunk and only downloads when the user actually exports an MP4.
       const { exportVideo } = await import("@/lib/export/exportVideo");
-      await exportVideo(scene, setVideoExportStatus, setVideoExportProgress, setExportError);
+      await exportVideo(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError);
     } finally {
       setTimeout(() => {
         setVideoExportStatus(null);
         setVideoExportProgress(0);
       }, 800);
     }
-  }, [scene]);
+  }, [scene, exportScale]);
 
   const handleExportGif = useCallback(async () => {
     setExportError(null);
@@ -110,14 +112,29 @@ export function EditorShell() {
       setGifExportProgress(0);
       // Reuse the lazily-loaded FFmpeg module already imported for MP4.
       const { exportGif } = await import("@/lib/export/exportVideo");
-      await exportGif(scene, setGifExportStatus, setGifExportProgress, setExportError);
+      await exportGif(scene, exportScale, setGifExportStatus, setGifExportProgress, setExportError);
     } finally {
       setTimeout(() => {
         setGifExportStatus(null);
         setGifExportProgress(0);
       }, 800);
     }
-  }, [scene]);
+  }, [scene, exportScale]);
+
+  const handleExport = useCallback(
+    (format: "png" | "mp4" | "gif") => {
+      setExportOpen(false);
+      if (format === "png") handleExportPng();
+      else if (format === "mp4") handleExportMp4();
+      else handleExportGif();
+    },
+    [handleExportPng, handleExportMp4, handleExportGif]
+  );
+
+  const handleCopyFromDialog = useCallback(() => {
+    setExportOpen(false);
+    handleCopyPng();
+  }, [handleCopyPng]);
 
   const handleReset = useCallback(() => {
     setConfirmResetOpen(true);
@@ -243,48 +260,14 @@ export function EditorShell() {
             <button type="button" className="btn" onClick={redo} disabled={futureLength === 0} title="Redo (⇧⌘Z)">
               Redo
             </button>
-            <button type="button" className="btn btn-primary" onClick={handleExportPng} title="Export PNG (⌘E)">
-              Export PNG
-            </button>
             <button
               type="button"
-              className="btn"
+              className="btn btn-primary"
               disabled={isExporting}
-              onClick={handleCopyPng}
-              title="Copy PNG to clipboard (⌘⇧C)"
+              onClick={() => setExportOpen(true)}
+              title="Export PNG / MP4 / GIF (⌘E)"
             >
-              Copy PNG
-            </button>
-            <label className="field png-scale" title="PNG export resolution (1× / 2× / 4×)">
-              <span>PNG</span>
-              <select
-                className="select"
-                value={pngExportScale}
-                disabled={isExporting}
-                onChange={(e) => setPngExportScale(Number(e.target.value) as 1 | 2 | 4)}
-              >
-                <option value={1}>1×</option>
-                <option value={2}>2×</option>
-                <option value={4}>4×</option>
-              </select>
-            </label>
-            <button
-              type="button"
-              className="btn"
-              disabled={isExporting}
-              onClick={handleExportMp4}
-              title="Export MP4 (⌘⇧E)"
-            >
-              Export MP4
-            </button>
-            <button
-              type="button"
-              className="btn"
-              disabled={isExporting}
-              onClick={handleExportGif}
-              title="Export GIF (⌘⇧G)"
-            >
-              Export GIF
+              Export
             </button>
             {videoExportStatus ? (
               <div className="export-status">
@@ -353,6 +336,15 @@ export function EditorShell() {
           </div>
         </div>
       ) : null}
+      <ExportDialog
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        scale={exportScale}
+        onScaleChange={setExportScale}
+        onExport={handleExport}
+        onCopy={handleCopyFromDialog}
+        busy={isExporting}
+      />
     </main>
   );
 }

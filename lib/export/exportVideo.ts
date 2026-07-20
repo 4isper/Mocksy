@@ -222,6 +222,7 @@ async function recordCanvasToWebm(
  */
 async function captureWebm(
   scene: EditorScene,
+  scale?: number,
   onStatus?: (message: string) => void,
   onProgress?: (progress: number) => void
 ): Promise<Blob | null> {
@@ -230,7 +231,7 @@ async function captureWebm(
 
   const exportQuality = (scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0])?.videoQuality ?? "medium";
   const quality = QUALITY[exportQuality] ?? QUALITY.medium;
-  const pixelRatio = resolvePixelRatio(exportQuality);
+  const pixelRatio = resolvePixelRatio(exportQuality) * (typeof scale === "number" && scale > 0 ? scale / 2 : 1);
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(640, Math.round(previewNode.clientWidth * pixelRatio));
   canvas.height = Math.max(360, Math.round(previewNode.clientHeight * pixelRatio));
@@ -276,12 +277,13 @@ async function captureWebm(
 
 export async function exportVideo(
   scene: EditorScene,
+  scale?: number,
   onStatus?: (message: string) => void,
   onProgress?: (progress: number) => void,
   onError?: (message: string) => void
 ) {
   try {
-    const webmBlob = await captureWebm(scene, onStatus, onProgress);
+    const webmBlob = await captureWebm(scene, scale, onStatus, onProgress);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no video frames.");
       return;
@@ -348,12 +350,13 @@ export async function exportVideo(
  */
 export async function exportGif(
   scene: EditorScene,
+  scale?: number,
   onStatus?: (message: string) => void,
   onProgress?: (progress: number) => void,
   onError?: (message: string) => void
 ) {
   try {
-    const webmBlob = await captureWebm(scene, onStatus, onProgress);
+    const webmBlob = await captureWebm(scene, scale, onStatus, onProgress);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no frames.");
       return;
@@ -370,8 +373,9 @@ export async function exportGif(
     await ffmpeg.writeFile(inputName, new Uint8Array(await webmBlob.arrayBuffer()));
     onProgress?.(50);
     // Scale down for GIF: keep it crisp but cap width so the palette step
-    // stays cheap. Quality tier scales the target width.
-    const width = Math.round(480 * quality.scale);
+    // stays cheap. Quality tier and the chosen export scale drive the width
+    // (2× is the baseline, so 1× halves and 4× doubles it).
+    const width = Math.round(480 * quality.scale * (typeof scale === "number" && scale > 0 ? scale / 2 : 1));
     const code = await ffmpeg.exec([
       "-i", inputName,
       "-vf", `fps=15,scale=${width}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`,

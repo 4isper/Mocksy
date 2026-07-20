@@ -323,11 +323,11 @@ describe("media fit + PNG export scale", () => {
     expect(store().past.length).toBe(1);
   });
 
-  it("defaults PNG export scale to 2× and updates via setter", () => {
-    expect(store().pngExportScale).toBe(2);
-    store().setPngExportScale(4);
-    expect(store().pngExportScale).toBe(4);
-    store().setPngExportScale(1);
-    expect(store().pngExportScale).toBe(1);
+  it("defaults export scale to 2× and updates via setter", () => {
+    expect(store().exportScale).toBe(2);
+    store().setExportScale(4);
+    expect(store().exportScale).toBe(4);
+    store().setExportScale(1);
+    expect(store().exportScale).toBe(1);
   });
 });

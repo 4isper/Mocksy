@@ -193,6 +193,7 @@ describe("exportVideo orchestration", () => {
     const progress: number[] = [];
     await exportVideo(
       scene,
+      undefined,
       (m) => statuses.push(m),
       (p) => progress.push(p)
     );
@@ -217,7 +218,7 @@ describe("exportVideo orchestration", () => {
     installMediaRecorder();
 
     const errors: string[] = [];
-    await exportVideo(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), undefined, undefined, (m) => errors.push(m));
+    await exportVideo(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), undefined, undefined, undefined, (m) => errors.push(m));
     expect(errors).toContain("Preview area not found.");
   });
 
@@ -229,7 +230,7 @@ describe("exportVideo orchestration", () => {
     ffmpegHarness.execCode = 1;
 
     const errors: string[] = [];
-    await exportVideo(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), undefined, undefined, (m) => errors.push(m));
+    await exportVideo(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), undefined, undefined, undefined, (m) => errors.push(m));
     expect(errors).toContain("Video encoding failed.");
     ffmpegHarness.execCode = 0;
   });
@@ -256,7 +257,7 @@ describe("exportVideo orchestration", () => {
     installMediaRecorder();
 
     const statuses: string[] = [];
-    await exportGif(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), (m) => statuses.push(m));
+    await exportGif(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), undefined, (m) => statuses.push(m));
     expect(statuses).toContain("Done");
   });
 });
