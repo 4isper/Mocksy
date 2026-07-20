@@ -82,28 +82,30 @@ export function computeFrameBox(
 ): FrameBox {
   const spec = getFrameSpec(scene.frame);
   const dpiScale = pixelRatio;
+  const activeLayerForRender = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const actualZoom = Math.max(0.01, transform?.zoom ?? activeLayerForRender?.zoom ?? 1);
   const defaultFrameW = Math.min(RENDER.defaultFrameWidth, (canvasWidth / dpiScale) * RENDER.defaultFrameFill) * dpiScale;
-  const frameW = typeof frameWidth === "number" && frameWidth > 0 ? frameWidth : defaultFrameW;
-  const frameH = typeof frameHeight === "number" && frameHeight > 0 ? frameHeight : frameW * RENDER.defaultAspect;
-  // The frame stays fixed at its rendered size; zoom and media panning are
-  // applied to the media inside the screen cutout (see renderMockupToCanvas),
-  // which mirrors the live preview where `object-position`/`scale` act on the
-  // media, not the device skin.
+  const frameW = (typeof frameWidth === "number" && frameWidth > 0 ? frameWidth : defaultFrameW) * actualZoom;
+  const frameH = (typeof frameHeight === "number" && frameHeight > 0 ? frameHeight : frameW * RENDER.defaultAspect) * actualZoom;
+  // Zoom scales the whole mockup (device + media together), matching the
+  // preview where the transform is applied to the frame container. The media
+  // pan (mediaOffsetX/Y) is applied inside the screen cutout, not to the
+  // frame position, so the frame stays centered on the canvas.
   const x = typeof frameX === "number" ? frameX : (canvasWidth - frameW) / 2;
   const y = typeof frameY === "number" ? frameY : (canvasHeight - frameH) / 2;
   // Overlay skins define their screen cutout in viewBox units; convert to
   // device px off the rendered frame so the media matches the skin at any size.
   // Other frames use a simple padding-based inset.
   const cutout = spec.cutout;
-  const padX = cutout ? (cutout.x / SVG_VIEWBOX_WIDTH) * frameW : spec.padding * dpiScale;
-  const padY = cutout ? (cutout.y / SVG_VIEWBOX_HEIGHT) * frameH : spec.padding * dpiScale;
+  const padX = cutout ? (cutout.x / SVG_VIEWBOX_WIDTH) * frameW : spec.padding * dpiScale * actualZoom;
+  const padY = cutout ? (cutout.y / SVG_VIEWBOX_HEIGHT) * frameH : spec.padding * dpiScale * actualZoom;
   // X and Y insets differ because the skin viewBox is not square; innerX/Y/W/H
   // use the correct per-axis values below.
   // Circular frames (watch) ignore the corner radius and clip to a full circle.
   const isCircular = scene.frame === "watch";
   const outerRadius = isCircular
     ? Math.min(frameW, frameH) / 2
-    : (spec.isOverlay ? spec.screenRadius : scene.borderRadius + spec.padding) * dpiScale;
+    : (spec.isOverlay ? spec.screenRadius : scene.borderRadius + spec.padding) * dpiScale * actualZoom;
   const innerX = x + padX;
   const innerY = y + padY;
   const innerW = frameW - padX * 2;
@@ -112,7 +114,7 @@ export function computeFrameBox(
     ? Math.min(innerW, innerH) / 2
     : cutout
       ? Math.max(0, (cutout.rx / cutout.w) * innerW, (cutout.rx / cutout.h) * innerH)
-      : Math.max(0, spec.screenRadius * dpiScale);
+      : Math.max(0, spec.screenRadius * dpiScale * actualZoom);
   return { x, y, width: frameW, height: frameH, outerRadius, innerX, innerY, innerW, innerH, innerRadius };
 }
 
@@ -221,12 +223,13 @@ export function renderMockupToCanvas(
       videoWidth?: number;
       videoHeight?: number;
     };
-    // Use natural dimensions for images, video dimensions for videos
+    // Use natural dimensions for images, video dimensions for videos. The
+    // media is drawn at the cover scale for the (already zoomed) frame box,
+    // so zoom from the frame multiplier above scales device + media together,
+    // matching the preview where the transform is applied to the frame.
     const mw = m.videoWidth || m.naturalWidth || m.width || innerW;
     const mh = m.videoHeight || m.naturalHeight || m.height || innerH;
-    // Zoom scales the media (not the device skin), mirroring the preview where
-    // zoom is applied to the media wrapper via `scale()`.
-    const scale = Math.max(innerW / mw, innerH / mh) * actualZoom;
+    const scale = Math.max(innerW / mw, innerH / mh);
     const dw = mw * scale;
     const dh = mh * scale;
     // Pan the media inside the screen cutout. Using `(innerW - dw) / 2` exactly

@@ -13,58 +13,43 @@ import { useEditorStore } from "@/lib/state/editorStore";
 const ANIMATION_DURATION_MS = 3000;
 
 /**
- * Wraps a single media layer and drives its zoomIn/zoomOut/parallax in the
- * live preview by writing the transform straight to the DOM via rAF — no React
- * re-render per frame, and buildSceneCss (the expensive part) is untouched.
- * The sampled transform mirrors sampleVideoTransform used by the video export,
- * so what you see previews what you export.
+ * Drives the frame's zoomIn/zoomOut/parallax in the live preview by writing
+ * the transform straight to the frame DOM via rAF — no React re-render per
+ * frame, and buildSceneCss (the expensive part) is untouched. The sampled
+ * transform mirrors sampleVideoTransform used by the video export, so what you
+ * see previews what you export. Zoom/animation scale the whole mockup (device
+ * + media together), matching the export where the frame box is multiplied by
+ * the zoom.
  */
-function LayerAnimation({ layer, children }: { layer: MediaLayer; children: ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
-  // Keep the latest layer in a ref so the rAF loop always samples fresh zoom/
-  // pan values without re-seeding the loop on every slider tick.
+function useFrameTransform(node: React.RefObject<HTMLDivElement | null>, layer: MediaLayer | undefined) {
   const layerRef = useRef(layer);
   layerRef.current = layer;
-  const animates = layer.animationPreset !== "none";
+  const animates = !!layer && layer.animationPreset !== "none";
 
   useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
+    const el = node.current;
+    if (!el) return;
+    const apply = (zoom: number, x: number, y: number) => {
+      el.style.transform = `scale(${zoom}) translate(${x * 2}px, ${y * 2}px)`;
+    };
     if (!animates) {
-      const base = sampleVideoTransform(layerRef.current, 0);
-      node.style.transform = `scale(${base.zoom}) translate(${base.x * 2}px, ${base.y * 2}px)`;
+      const base = sampleVideoTransform(layerRef.current ?? ({} as MediaLayer), 0);
+      apply(base.zoom, base.x, base.y);
       return;
     }
     let raf = 0;
     const start = performance.now();
     const tick = () => {
       const progress = ((performance.now() - start) % ANIMATION_DURATION_MS) / ANIMATION_DURATION_MS;
-      const { zoom, x, y } = sampleVideoTransform(layerRef.current, progress);
-      node.style.transform = `scale(${zoom}) translate(${x * 2}px, ${y * 2}px)`;
+      const { zoom, x, y } = sampleVideoTransform(layerRef.current ?? ({} as MediaLayer), progress);
+      apply(zoom, x, y);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-    // Re-seed the loop when the preset, zoom, or pan actually changes so the
-    // static (non-animated) branch re-applies its transform to the DOM.
-  }, [animates, layer.animationPreset, layer.zoom, layer.mediaOffsetX, layer.mediaOffsetY]);
-
-  return (
-    <div
-      ref={ref}
-      style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        transformOrigin: "center",
-        willChange: "transform"
-      }}
-    >
-      {children}
-    </div>
-  );
+    // Re-seed when the preset, zoom, or pan changes so the static branch
+    // re-applies, and the rAF loop picks up fresh values.
+  }, [node, animates, layer?.animationPreset, layer?.zoom, layer?.mediaOffsetX, layer?.mediaOffsetY]);
 }
 
 interface PreviewCanvasProps {
@@ -86,6 +71,11 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const setMediaLoading = useEditorStore((s) => s.setMediaLoading);
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   const useVideo = activeLayer ? isVideoLayer(activeLayer) : false;
+
+  // The whole-mockup zoom/animation is applied to the frame container so the
+  // device skin and media scale together, matching the export.
+  const frameRef = useRef<HTMLDivElement>(null);
+  useFrameTransform(frameRef, activeLayer);
 
   // Pinch-to-zoom on touch devices: track the two-finger distance and map it
   // to the active layer zoom so mobile users can scale the mockup without a slider.
@@ -188,11 +178,10 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           ...sceneCss.container
         }}
       >
-        <div style={sceneCss.frame} data-mockup-frame>
+        <div ref={frameRef} style={sceneCss.frame} data-mockup-frame>
           {scene.layers.map((layer) =>
             layer.mediaUrl ? (
-              <LayerAnimation key={layer.id} layer={layer}>
-                {isVideoLayer(layer) ? (
+              isVideoLayer(layer) ? (
                   <video
                     src={layer.mediaUrl}
                     muted={layer.videoMuted}
@@ -226,9 +215,9 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
                     style={sceneCss.mediaStyle}
                     onLoad={() => setMediaLoading(false)}
                   />
-                )}
-              </LayerAnimation>
-            ) : null
+                )
+              )
+            : null
           )}
           {scene.layers.every((l) => !l.mediaUrl) ? (
             <div style={sceneCss.emptyMediaStyle}>Drop image or video to start</div>

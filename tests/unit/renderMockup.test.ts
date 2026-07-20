@@ -44,10 +44,9 @@ describe("computeFrameBox geometry", () => {
     expect(insetRatio(box)).toBeCloseTo(spec.padding / cssWidth, 5);
   });
 
-  it("ignores zoom for the frame box (zoom scales the media, not the skin)", () => {
-    // The frame stays at its rendered size regardless of layer zoom; zoom is
-    // applied to the media inside the screen cutout in renderMockupToCanvas,
-    // mirroring the preview where `scale()` acts on the media wrapper.
+  it("scales the whole frame box by zoom (device + media together)", () => {
+    // Zoom scales the entire mockup, matching the preview where the transform
+    // is applied to the frame container; the inset ratio is preserved.
     const cssWidth = 600;
     const base = computeFrameBox(scene({ frame: "desktop" }), 1200, 1200, 2, cssWidth * 2, cssWidth * 2 * (10 / 16));
     const zoomed = computeFrameBox(
@@ -58,8 +57,8 @@ describe("computeFrameBox geometry", () => {
       cssWidth * 2,
       cssWidth * 2 * (10 / 16)
     );
-    expect(zoomed.width).toBeCloseTo(base.width, 5);
-    expect(zoomed.height).toBeCloseTo(base.height, 5);
+    expect(zoomed.width).toBeCloseTo(base.width * 1.5, 3);
+    expect(zoomed.height).toBeCloseTo(base.height * 1.5, 3);
     expect(insetRatio(zoomed)).toBeCloseTo(insetRatio(base), 5);
   });
 
@@ -153,12 +152,14 @@ describe("renderMockupToCanvas media geometry", () => {
     expect(captured.dx).toBeCloseTo(expectedDx, 3);
   });
 
-  it("scales the media by zoom without changing the frame box", () => {
+  it("scales the media together with the frame under whole-mockup zoom", () => {
+    // Zoom grows the frame box, and the media (drawn at the cover scale inside
+    // the larger cutout) scales by the same factor, so both dw and frame width
+    // grow 1.5x at zoom 1.5.
     const base = renderAndCapture({ zoom: 1 });
     const zoomed = renderAndCapture({ zoom: 1.5 });
     expect(zoomed.captured.dw).toBeCloseTo(base.captured.dw * 1.5, 3);
     expect(zoomed.captured.dh).toBeCloseTo(base.captured.dh * 1.5, 3);
-    // Frame geometry is untouched by zoom.
-    expect(zoomed.box.width).toBeCloseTo(base.box.width, 5);
+    expect(zoomed.box.width).toBeCloseTo(base.box.width * 1.5, 3);
   });
 });

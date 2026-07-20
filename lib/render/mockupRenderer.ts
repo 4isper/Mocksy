@@ -77,10 +77,13 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
     // opacity is driven by the Shadow control.
     boxShadow: spec.isOverlay ? "none" : baseShadow,
     filter: spec.isOverlay ? `drop-shadow(0 28px 70px rgba(0,0,0,${scene.shadowOpacity}))` : "none",
-    // Zoom is applied by the AnimationLayer wrapper in PreviewCanvas (which
+    // Zoom/animation is applied to this frame container in PreviewCanvas (which
     // also drives zoomIn/zoomOut/parallax) so the live preview matches the
-    // video export, where the whole frame scales by the animation transform.
+    // video export, where the whole frame scales by the transform. The hook
+    // overwrites `transform`; we keep `transformOrigin` centered so the
+    // device + media scale together from the middle.
     transform: "none",
+    transformOrigin: "center",
     backdropFilter: !spec.isOverlay && scene.stylePreset.startsWith("glass") ? "blur(10px)" : "none",
     background:
       spec.isOverlay
