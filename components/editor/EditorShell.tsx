@@ -31,7 +31,10 @@ export function EditorShell() {
   useEffect(() => {
     const fromUrl = readSceneFromUrl();
     const fromLocal = window.localStorage.getItem(AUTOSAVE_KEY);
-    if (fromUrl) setScene(fromUrl);
+    // Initial load restores saved state; it is not a user edit, so don't push
+    // it onto the undo stack (also keeps StrictMode's double-mount from
+    // recording a duplicate entry).
+    if (fromUrl) setScene(fromUrl, false);
     else if (fromLocal) {
       try {
         const restored = normalizeScene(JSON.parse(fromLocal));
@@ -39,14 +42,14 @@ export function EditorShell() {
         // blob: mediaUrl can never reload after a refresh. Fall back to the
         // demo media instead of showing an empty canvas.
         if (restored.mediaUrl && restored.mediaUrl.startsWith("blob:")) {
-          setScene({ ...restored, mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME });
+          setScene({ ...restored, mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME }, false);
         } else {
-          setScene(restored);
+          setScene(restored, false);
         }
       } catch {
-        setScene({ mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME });
+        setScene({ mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME }, false);
       }
-    } else setScene({ mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME });
+    } else setScene({ mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME }, false);
   }, [setScene]);
 
   useEffect(() => {

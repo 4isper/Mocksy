@@ -1,12 +1,67 @@
 import { describe, expect, it } from "vitest";
-import { useEditorStore } from "@/lib/state/editorStore";
+import { useEditorStore, orphanedBlobUrls } from "@/lib/state/editorStore";
 import { initialScene } from "@/lib/state/editorStore";
+import { DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
+import type { EditorScene } from "@/lib/types/editor";
+import type { EditorStoreState } from "@/lib/state/editorStore";
 
 const store = () => useEditorStore.getState();
+
+function sceneWith(mediaUrl: string | null): EditorScene {
+  return { ...initialScene, mediaUrl, mediaType: mediaUrl ? "image" : "none" };
+}
 
 describe("editorStore", () => {
   it("starts from the documented initial scene", () => {
     expect(store().scene).toEqual(initialScene);
+  });
+
+  describe("blob: media URL lifecycle", () => {
+    it("revokes a replaced blob URL once it falls out of history", () => {
+      const prev = {
+        ...initialScene,
+        scene: sceneWith("blob:old"),
+        past: [{ ...sceneWith("blob:old") }],
+        future: []
+      } as unknown as EditorStoreState;
+      const state = {
+        ...initialScene,
+        scene: sceneWith("blob:new"),
+        past: [{ ...sceneWith("blob:new") }],
+        future: []
+      } as unknown as EditorStoreState;
+      // blob:old is gone from every collection -> should be revoked
+      expect(orphanedBlobUrls(state, prev)).toEqual(["blob:old"]);
+    });
+
+    it("keeps a blob URL alive while reachable via undo history", () => {
+      const prev = {
+        scene: sceneWith("blob:new"),
+        past: [{ ...sceneWith("blob:old") }],
+        future: []
+      } as unknown as EditorStoreState;
+      const state = {
+        scene: sceneWith("blob:old"),
+        past: [{ ...sceneWith("blob:new") }],
+        future: []
+      } as unknown as EditorStoreState;
+      // undo swapped current/past; blob:old still reachable -> keep alive
+      expect(orphanedBlobUrls(state, prev)).toEqual([]);
+    });
+
+    it("does not report demo (data:) media URLs", () => {
+      const prev = {
+        scene: sceneWith(DEMO_MEDIA_URL),
+        past: [],
+        future: []
+      } as unknown as EditorStoreState;
+      const state = {
+        scene: sceneWith("blob:new"),
+        past: [],
+        future: []
+      } as unknown as EditorStoreState;
+      expect(orphanedBlobUrls(state, prev)).toEqual([]);
+    });
   });
 
   it("setMedia resets video timing fields", () => {

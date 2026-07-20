@@ -4,14 +4,14 @@ import { create } from "zustand";
 import type { AnimationPreset, EditorScene, MediaType, MockupFrame, StylePreset } from "@/lib/types/editor";
 import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
 
-interface EditorStoreState {
+export interface EditorStoreState {
   scene: EditorScene;
   past: EditorScene[];
   future: EditorScene[];
   /** Playback scrubber position; kept out of scene so playback doesn't
    *  churn history or re-render scene subscribers every frame. */
   videoCurrentTime: number;
-  setScene: (scene: Partial<EditorScene>) => void;
+  setScene: (scene: Partial<EditorScene>, recordHistory?: boolean) => void;
   resetScene: () => void;
   undo: () => void;
   redo: () => void;
@@ -67,11 +67,32 @@ export const initialScene: EditorScene = {
 const HISTORY_LIMIT = 100;
 
 function pushHistory(s: EditorStoreState, scene: EditorScene) {
-  if (s.scene.mediaUrl && s.scene.mediaUrl.startsWith("blob:") && s.scene.mediaUrl !== scene.mediaUrl) {
-    URL.revokeObjectURL(s.scene.mediaUrl);
-  }
   const past = [...s.past, s.scene].slice(-HISTORY_LIMIT);
   return { past, future: [], scene };
+}
+
+/**
+ * Returns the blob: media URLs that existed in `prev` but are no longer
+ * reachable from `state` (current, past, or future). Blob URLs are one-shot,
+ * so revoking one that history could still restore (via undo/redo) would
+ * leave a dead canvas.
+ */
+export function orphanedBlobUrls(state: EditorStoreState, prev: EditorStoreState): string[] {
+  const live = new Set<string>();
+  if (state.scene.mediaUrl?.startsWith("blob:")) live.add(state.scene.mediaUrl);
+  for (const s of state.past) if (s.mediaUrl?.startsWith("blob:")) live.add(s.mediaUrl);
+  for (const s of state.future) if (s.mediaUrl?.startsWith("blob:")) live.add(s.mediaUrl);
+
+  const prevBlobs = new Set<string>();
+  if (prev.scene.mediaUrl?.startsWith("blob:")) prevBlobs.add(prev.scene.mediaUrl);
+  for (const s of prev.past) if (s.mediaUrl?.startsWith("blob:")) prevBlobs.add(s.mediaUrl);
+  for (const s of prev.future) if (s.mediaUrl?.startsWith("blob:")) prevBlobs.add(s.mediaUrl);
+
+  return [...prevBlobs].filter((url) => !live.has(url));
+}
+
+function revokeOrphanedBlobs(state: EditorStoreState, prev: EditorStoreState) {
+  for (const url of orphanedBlobUrls(state, prev)) URL.revokeObjectURL(url);
 }
 
 export const useEditorStore = create<EditorStoreState>((set) => ({
@@ -79,7 +100,12 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   past: [],
   future: [],
   videoCurrentTime: 0,
-  setScene: (scene) => set((s) => pushHistory(s, { ...initialScene, ...scene })),
+  setScene: (scene, recordHistory = true) =>
+    set((s) => {
+      const next = { ...s.scene, ...scene };
+      if (!recordHistory) return { scene: next };
+      return pushHistory(s, next);
+    }),
   resetScene: () =>
     set((s) =>
       pushHistory(s, {
@@ -144,3 +170,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   setVideoTrimEnd: (videoTrimEnd) =>
     set((s) => pushHistory(s, { ...s.scene, videoTrimEnd: Math.max(videoTrimEnd, s.scene.videoTrimStart) }))
 }));
+
+// After any state change, free blob: media URLs that history can no longer
+// reach (covers setMedia, undo, redo, Clear, and scene replacement).
+useEditorStore.subscribe(revokeOrphanedBlobs);
