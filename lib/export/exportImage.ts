@@ -1,8 +1,9 @@
 "use client";
 
 import type { EditorScene } from "@/lib/types/editor";
-import { loadImage, renderMockupToCanvas } from "@/lib/export/renderMockup";
+import { loadImage, renderMockupToCanvas, type RenderTransform } from "@/lib/export/renderMockup";
 import { getFrameSpec } from "@/lib/render/frames";
+import { sampleVideoTransform } from "@/lib/render/videoComposer";
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -11,6 +12,19 @@ function downloadBlob(blob: Blob, filename: string) {
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+/**
+ * Transform for the exported PNG. An animated scene samples its mid-animation
+ * frame (progress 0.5) so the static image matches what the user sees
+ * animating in the live preview, instead of always snapping to the base zoom.
+ */
+export function resolveExportTransform(scene: EditorScene): RenderTransform {
+  if (scene.animationPreset === "none") {
+    return { zoom: scene.zoom, offsetX: 0, offsetY: 0 };
+  }
+  const sampled = sampleVideoTransform(scene, 0.5);
+  return { zoom: sampled.zoom, offsetX: sampled.x, offsetY: sampled.y };
 }
 
 function waitForImage(img: HTMLImageElement) {
@@ -83,6 +97,8 @@ export async function exportImage(
     const frameWidth = Math.max(1, Math.round(baseFrameWidth * pixelRatio));
     const frameHeight = Math.max(1, Math.round(baseFrameHeight * pixelRatio));
 
+    const transform = resolveExportTransform(scene);
+
     renderMockupToCanvas(
       canvas,
       scene,
@@ -92,7 +108,7 @@ export async function exportImage(
       frameWidth,
       frameHeight,
       pixelRatio,
-      { zoom: scene.zoom, offsetX: 0, offsetY: 0 },
+      transform,
       undefined,
       overlay
     );

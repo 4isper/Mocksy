@@ -6,7 +6,6 @@ import { PreviewCanvas } from "@/components/editor/PreviewCanvas";
 import { TemplatesPanel } from "@/components/editor/TemplatesPanel";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { exportImage } from "@/lib/export/exportImage";
-import { exportVideo } from "@/lib/export/exportVideo";
 import { readSceneFromUrl, sceneToShareUrl } from "@/lib/state/shareState";
 import { normalizeScene } from "@/lib/state/normalizeScene";
 import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
@@ -84,6 +83,9 @@ export function EditorShell() {
     try {
       setVideoExportStatus("Exporting video…");
       setVideoExportProgress(0);
+      // Loaded lazily so the 32MB FFmpeg WASM bundle stays out of the editor's
+      // main chunk and only downloads when the user actually exports an MP4.
+      const { exportVideo } = await import("@/lib/export/exportVideo");
       await exportVideo(scene, setVideoExportStatus, setVideoExportProgress, setExportError);
     } finally {
       setTimeout(() => {
