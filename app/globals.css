@@ -659,6 +659,7 @@ body::before {
 .template-card .t-name {
   font-size: 13px;
   font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
 }
 
 .template-card .t-desc {
