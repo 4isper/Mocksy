@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { EditorScene } from "@/lib/types/editor";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { VideoTrimControl } from "@/components/editor/VideoTrimControl";
 
@@ -12,7 +13,8 @@ export function VideoOptions() {
     setVideoLoop,
     setVideoAutoplay,
     setVideoPosterTime,
-    setVideoCurrentTime
+    setVideoCurrentTime,
+    setVideoQuality
   } = useEditorStore();
   const videoCurrentTime = useEditorStore((s) => s.videoCurrentTime);
 
@@ -71,6 +73,18 @@ export function VideoOptions() {
             />
           </label>
           <VideoTrimControl duration={scene.videoDuration} />
+          <label className="field">
+            <span>Export quality</span>
+            <select
+              className="select"
+              value={scene.videoQuality}
+              onChange={(e) => setVideoQuality(e.target.value as EditorScene["videoQuality"])}
+            >
+              <option value="low">Low (smaller file)</option>
+              <option value="medium">Medium</option>
+              <option value="high">High (best detail)</option>
+            </select>
+          </label>
         </div>
       ) : null}
     </div>

@@ -3,6 +3,7 @@ export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "desk
 export type StylePreset = "default" | "glassLight" | "glassDark" | "outline";
 export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax";
 export type MediaType = "none" | "image" | "video";
+export type VideoQuality = "low" | "medium" | "high";
 
 export interface EditorScene {
   mediaUrl: string | null;
@@ -28,4 +29,5 @@ export interface EditorScene {
   videoDuration: number;
   videoTrimStart: number;
   videoTrimEnd: number;
+  videoQuality: VideoQuality;
 }

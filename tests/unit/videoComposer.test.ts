@@ -25,7 +25,8 @@ const scene: EditorScene = {
   videoPosterTime: 0,
   videoDuration: 0,
   videoTrimStart: 0,
-  videoTrimEnd: 0
+  videoTrimEnd: 0,
+  videoQuality: "medium"
 };
 
 describe("buildVideoTimeline", () => {

@@ -110,6 +110,11 @@ describe("editorStore", () => {
     expect(store().scene.videoTrimEnd).toBe(4);
   });
 
+  it("setVideoQuality updates the export quality", () => {
+    store().setVideoQuality("low");
+    expect(store().scene.videoQuality).toBe("low");
+  });
+
   it("setBackgroundSolid switches mode and color", () => {
     store().setBackgroundSolid("#09090b");
     expect(store().scene.backgroundMode).toBe("solid");

@@ -25,6 +25,18 @@ async function getFfmpegInstance(onStatus?: (message: string) => void) {
 /** Duration of an animated still-image export, in seconds. */
 const ANIMATION_DURATION_SEC = 3;
 
+/**
+ * Per-quality export tuning. fps and the VPX/webm capture rate stay fixed; the
+ * MP4 encode quality (mpeg4 has no real bitrate control, so we use -q:v, lower
+ * is better) and the capture resolution scale drive the output size. "high"
+ * keeps the full device-pixel-ratio canvas; lower tiers downscale it.
+ */
+const QUALITY: Record<EditorScene["videoQuality"], { qscale: number; scale: number }> = {
+  low: { qscale: 10, scale: 0.5 },
+  medium: { qscale: 5, scale: 0.75 },
+  high: { qscale: 2, scale: 1 }
+};
+
 function sanitizeFilename(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
@@ -158,8 +170,10 @@ export async function exportVideo(
     }
 
   // Match the PNG export's pixel ratio so both outputs use the same sharpness
-  // and frame sizing instead of the video path hard-coding 2x.
-  const pixelRatio = Math.max(2, window.devicePixelRatio || 1);
+  // and frame sizing instead of the video path hard-coding 2x. Lower quality
+  // tiers downscale the capture to shrink the output file.
+  const quality = QUALITY[scene.videoQuality] ?? QUALITY.medium;
+  const pixelRatio = Math.max(2, window.devicePixelRatio || 1) * quality.scale;
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(640, Math.round(previewNode.clientWidth * pixelRatio));
   canvas.height = Math.max(360, Math.round(previewNode.clientHeight * pixelRatio));
@@ -213,7 +227,7 @@ export async function exportVideo(
   await ffmpeg.exec([
     "-i", inputName,
     "-c:v", "mpeg4",
-    "-q:v", "5",
+    "-q:v", String(quality.qscale),
     "-pix_fmt", "yuv420p",
     outputName,
   ]);

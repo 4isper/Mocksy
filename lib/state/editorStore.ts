@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { AnimationPreset, EditorScene, MediaType, MockupFrame, StylePreset } from "@/lib/types/editor";
+import type { AnimationPreset, EditorScene, MediaType, MockupFrame, StylePreset, VideoQuality } from "@/lib/types/editor";
 import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
 
 export interface EditorStoreState {
@@ -36,6 +36,7 @@ export interface EditorStoreState {
   setVideoCurrentTime: (time: number) => void;
   setVideoTrimStart: (time: number) => void;
   setVideoTrimEnd: (time: number) => void;
+  setVideoQuality: (quality: VideoQuality) => void;
 }
 
 export const initialScene: EditorScene = {
@@ -61,7 +62,8 @@ export const initialScene: EditorScene = {
   videoPosterTime: 0,
   videoDuration: 0,
   videoTrimStart: 0,
-  videoTrimEnd: 0
+  videoTrimEnd: 0,
+  videoQuality: "medium"
 };
 
 const HISTORY_LIMIT = 100;
@@ -175,7 +177,8 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
         // duration so 0 never lingers in state as a confusing sentinel.
         videoTrimEnd: videoTrimEnd <= 0 ? s.scene.videoDuration : Math.max(videoTrimEnd, s.scene.videoTrimStart)
       })
-    )
+    ),
+  setVideoQuality: (videoQuality) => set((s) => pushHistory(s, { ...s.scene, videoQuality }))
 }));
 
 // After any state change, free blob: media URLs that history can no longer
