@@ -73,6 +73,42 @@ export function LayersPanel() {
               }}
               onClick={() => selectLayer(layer.id)}
             >
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 32,
+                  height: 32,
+                  flex: "0 0 auto",
+                  borderRadius: 6,
+                  overflow: "hidden",
+                  background: "#0a0a0a",
+                  display: "grid",
+                  placeItems: "center",
+                  border: "1px solid var(--panel-border)"
+                }}
+              >
+                {layer.mediaUrl ? (
+                  isVideoLayer(layer) ? (
+                    <video
+                      src={layer.mediaUrl}
+                      muted
+                      playsInline
+                      preload="metadata"
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : (
+                    // Local blob/object URLs can't be optimized by next/image.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={layer.mediaUrl}
+                      alt=""
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  )
+                ) : (
+                  <span style={{ fontSize: 14, color: "var(--text-dim)" }}>∅</span>
+                )}
+              </span>
               <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {label}
                 {isVideoLayer(layer) ? " 🎬" : ""}

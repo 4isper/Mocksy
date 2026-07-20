@@ -26,6 +26,7 @@ export function EditorShell() {
   const [videoExportProgress, setVideoExportProgress] = useState<number>(0);
   const [gifExportStatus, setGifExportStatus] = useState<string | null>(null);
   const [gifExportProgress, setGifExportProgress] = useState<number>(0);
+  const isExporting = videoExportStatus !== null || gifExportStatus !== null;
   const [exportError, setExportError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
@@ -168,7 +169,7 @@ export function EditorShell() {
             <button
               type="button"
               className="btn"
-              disabled={videoExportStatus !== null || gifExportStatus !== null}
+              disabled={isExporting}
               onClick={handleExportMp4}
               title="Export MP4"
             >
@@ -177,7 +178,7 @@ export function EditorShell() {
             <button
               type="button"
               className="btn"
-              disabled={videoExportStatus !== null || gifExportStatus !== null}
+              disabled={isExporting}
               onClick={handleExportGif}
               title="Export GIF"
             >
