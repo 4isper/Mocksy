@@ -198,4 +198,24 @@ describe("editorStore", () => {
     expect(store().past.length).toBe(0);
     expect(store().videoCurrentTime).toBe(3);
   });
+
+  it("coalesces rapid slider drags of the same field into one undo step", () => {
+    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene }, lastHistoryKey: null, lastHistoryAt: 0 });
+    store().setZoom(1.1);
+    store().setZoom(1.2);
+    store().setZoom(1.3);
+    // one baseline entry for the whole drag, not one per call
+    expect(store().past.length).toBe(1);
+    expect(store().scene.zoom).toBe(1.3);
+
+    store().undo();
+    expect(store().scene.zoom).toBe(initialScene.zoom);
+  });
+
+  it("does not coalesce across different fields", () => {
+    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene }, lastHistoryKey: null, lastHistoryAt: 0 });
+    store().setZoom(1.2);
+    store().setShadowOpacity(0.6);
+    expect(store().past.length).toBe(2);
+  });
 });

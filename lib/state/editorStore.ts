@@ -12,6 +12,9 @@ export interface EditorStoreState {
   /** Playback scrubber position; kept out of scene so playback doesn't
    *  churn history or re-render scene subscribers every frame. */
   videoCurrentTime: number;
+  /** Groups rapid same-field edits (e.g. slider drags) into one undo step. */
+  lastHistoryKey: string | null;
+  lastHistoryAt: number;
   setScene: (scene: Partial<EditorScene>, recordHistory?: boolean) => void;
   resetScene: () => void;
   undo: () => void;
@@ -72,10 +75,20 @@ export const initialScene: EditorScene = {
 };
 
 const HISTORY_LIMIT = 100;
+/** Edits of the same field within this window collapse into one undo step,
+ *  so dragging a slider doesn't flood history with a record per pixel. */
+const COALESCE_MS = 400;
 
-function pushHistory(s: EditorStoreState, scene: EditorScene) {
+function pushHistory(s: EditorStoreState, scene: EditorScene, coalesceKey?: string) {
+  const now = Date.now();
+  // Coalesce rapid repeats of the same field: keep the pre-drag baseline in
+  // past and only update the current scene, so undo returns to the value
+  // before the drag rather than one pixel of it.
+  if (coalesceKey && coalesceKey === s.lastHistoryKey && now - s.lastHistoryAt < COALESCE_MS) {
+    return { scene, lastHistoryAt: now };
+  }
   const past = [...s.past, s.scene].slice(-HISTORY_LIMIT);
-  return { past, future: [], scene };
+  return { past, future: [], scene, lastHistoryKey: coalesceKey ?? null, lastHistoryAt: now };
 }
 
 /**
@@ -107,6 +120,8 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   past: [],
   future: [],
   videoCurrentTime: 0,
+  lastHistoryKey: null,
+  lastHistoryAt: 0,
   setScene: (scene, recordHistory = true) =>
     set((s) => {
       const next = { ...s.scene, ...scene };
@@ -150,21 +165,21 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   setFrame: (frame) => set((s) => pushHistory(s, { ...s.scene, frame })),
   setStylePreset: (stylePreset) => set((s) => pushHistory(s, { ...s.scene, stylePreset })),
   setAnimationPreset: (animationPreset) => set((s) => pushHistory(s, { ...s.scene, animationPreset })),
-  setZoom: (zoom) => set((s) => pushHistory(s, { ...s.scene, zoom })),
-  setShadowOpacity: (shadowOpacity) => set((s) => pushHistory(s, { ...s.scene, shadowOpacity })),
-  setBorderRadius: (borderRadius) => set((s) => pushHistory(s, { ...s.scene, borderRadius })),
+  setZoom: (zoom) => set((s) => pushHistory(s, { ...s.scene, zoom }, "zoom")),
+  setShadowOpacity: (shadowOpacity) => set((s) => pushHistory(s, { ...s.scene, shadowOpacity }, "shadow")),
+  setBorderRadius: (borderRadius) => set((s) => pushHistory(s, { ...s.scene, borderRadius }, "radius")),
   setBackgroundSolid: (backgroundColor) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "solid", backgroundColor })),
   setBackgroundGradient: (gradientFrom, gradientTo) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "gradient", gradientFrom, gradientTo })),
   setBackgroundTransparent: () => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "transparent" })),
   toggleWatermark: (watermarkEnabled) => set((s) => pushHistory(s, { ...s.scene, watermarkEnabled })),
   setWatermarkText: (watermarkText) => set((s) => pushHistory(s, { ...s.scene, watermarkText })),
   setWatermarkPosition: (watermarkPosition) => set((s) => pushHistory(s, { ...s.scene, watermarkPosition })),
-  setWatermarkSize: (watermarkSize) => set((s) => pushHistory(s, { ...s.scene, watermarkSize: Math.max(8, Math.min(64, Math.round(watermarkSize))) })),
+  setWatermarkSize: (watermarkSize) => set((s) => pushHistory(s, { ...s.scene, watermarkSize: Math.max(8, Math.min(64, Math.round(watermarkSize))) }, "watermarkSize")),
   setAspectRatio: (aspectRatio) => set((s) => pushHistory(s, { ...s.scene, aspectRatio })),
   setVideoMuted: (videoMuted) => set((s) => pushHistory(s, { ...s.scene, videoMuted })),
   setVideoLoop: (videoLoop) => set((s) => pushHistory(s, { ...s.scene, videoLoop })),
   setVideoAutoplay: (videoAutoplay) => set((s) => pushHistory(s, { ...s.scene, videoAutoplay })),
-  setVideoPosterTime: (videoPosterTime) => set((s) => pushHistory(s, { ...s.scene, videoPosterTime })),
+  setVideoPosterTime: (videoPosterTime) => set((s) => pushHistory(s, { ...s.scene, videoPosterTime }, "poster")),
   setVideoDuration: (videoDuration) =>
     set((s) =>
       pushHistory(s, {
@@ -175,7 +190,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
     ),
   setVideoCurrentTime: (videoCurrentTime) => set({ videoCurrentTime }),
   setVideoTrimStart: (videoTrimStart) =>
-    set((s) => pushHistory(s, { ...s.scene, videoTrimStart: Math.min(videoTrimStart, s.scene.videoTrimEnd || videoTrimStart) })),
+    set((s) => pushHistory(s, { ...s.scene, videoTrimStart: Math.min(videoTrimStart, s.scene.videoTrimEnd || videoTrimStart) }, "trimStart")),
   setVideoTrimEnd: (videoTrimEnd) =>
     set((s) =>
       pushHistory(s, {
@@ -183,7 +198,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
         // A zero (or negative) end means "not trimmed" — clamp to the full
         // duration so 0 never lingers in state as a confusing sentinel.
         videoTrimEnd: videoTrimEnd <= 0 ? s.scene.videoDuration : Math.max(videoTrimEnd, s.scene.videoTrimStart)
-      })
+      }, "trimEnd")
     ),
   setVideoQuality: (videoQuality) => set((s) => pushHistory(s, { ...s.scene, videoQuality }))
 }));
