@@ -18,7 +18,7 @@ async function frameIsActive(page: import("@playwright/test").Page, label: strin
 
 test("shows editor shell", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("Templates")).toBeVisible();
+  await expect(page.getByText("Scene presets")).toBeVisible();
   await expect(page.getByRole("button", { name: "Export PNG" })).toBeVisible();
 });
 
@@ -35,7 +35,7 @@ test("selecting iphone16pro renders the device overlay", async ({ page }) => {
 test("iphone16pro media stays inside the device cutout, not under the bezel", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "16 Pro");
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
     name: "sample.png",
     mimeType: "image/png",
     buffer: Buffer.from(
@@ -110,14 +110,14 @@ test("iphone15 and iphone16pro overlays have a transparent screen cutout", async
   }
 });
 
-test("templates include the 16 Pro Glass preset", async ({ page }) => {
+test("templates include the Soft Glass preset", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("button", { name: "16 Pro Glass" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Soft Glass" })).toBeVisible();
 });
 
 test("uploading media reveals a Clear button that resets it", async ({ page }) => {
   await page.goto("/");
-  const fileInput = page.locator('input[type="file"]');
+  const fileInput = page.getByRole("button", { name: "Upload image or video" });
   await fileInput.setInputFiles({
     name: "sample.png",
     mimeType: "image/png",
@@ -136,7 +136,7 @@ test("uploading media reveals a Clear button that resets it", async ({ page }) =
 
 test("exporting an image scene triggers a PNG download", async ({ page }) => {
   await page.goto("/");
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
     name: "sample.png",
     mimeType: "image/png",
     buffer: Buffer.from(
@@ -154,7 +154,7 @@ test("exporting an image scene triggers a PNG download", async ({ page }) => {
 
 test("watermark preview matches the exported image", async ({ page }) => {
   await page.goto("/");
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
     name: "sample.png",
     mimeType: "image/png",
     buffer: Buffer.from(
@@ -249,6 +249,8 @@ test("Reset restores default settings and demo media", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "Tablet");
   await page.getByRole("button", { name: "Reset" }).click();
+  // Reset opens a confirmation modal; confirm it.
+  await page.locator(".modal").getByRole("button", { name: "Reset" }).click();
   await expect.poll(() => frameIsActive(page, "iPhone")).toBe("true");
   await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
 });
@@ -288,7 +290,7 @@ test("background swatches apply a preset", async ({ page }) => {
 
 test("Export PNG via keyboard shortcut triggers a download", async ({ page }) => {
   await page.goto("/");
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
     name: "sample.png",
     mimeType: "image/png",
     buffer: Buffer.from(
@@ -307,7 +309,7 @@ test("Export PNG via keyboard shortcut triggers a download", async ({ page }) =>
 test("panels stack and stay within the viewport on a narrow screen", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 800 });
   await page.goto("/");
-  await expect(page.getByText("Templates")).toBeVisible();
+  await expect(page.getByText("Scene presets")).toBeVisible();
   await expect(page.getByRole("button", { name: "Export PNG" })).toBeVisible();
   // No horizontal overflow on mobile.
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
@@ -335,7 +337,7 @@ test("portrait 9/16 preview fits the viewport without page scroll on desktop", a
 
 test("video scene shows a dual-range trim control", async ({ page }) => {
   await page.goto("/");
-  await page.locator('input[type="file"]').setInputFiles("public/sample-video.mp4");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles("public/sample-video.mp4");
   await expect(page.getByText("Trim")).toBeVisible();
   await expect(page.getByRole("slider", { name: "Trim start" })).toBeVisible();
   await expect(page.getByRole("slider", { name: "Trim end" })).toBeVisible();
@@ -346,7 +348,7 @@ test("video scene shows a dual-range trim control", async ({ page }) => {
 
 test("video options accordion collapses and expands", async ({ page }) => {
   await page.goto("/");
-  await page.locator('input[type="file"]').setInputFiles("public/sample-video.mp4");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles("public/sample-video.mp4");
   const toggle = page.getByRole("button", { name: "Video options" });
   await expect(toggle).toBeVisible();
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
@@ -363,7 +365,7 @@ test("video options accordion collapses and expands", async ({ page }) => {
 
 test("rejects unsupported file types with an inline error", async ({ page }) => {
   await page.goto("/");
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
     name: "notes.pdf",
     mimeType: "application/pdf",
     buffer: Buffer.from("%PDF-1.4 fake")
@@ -378,7 +380,7 @@ test("rejects unsupported file types with an inline error", async ({ page }) => 
 
 test("exporting an image scene triggers an MP4 download", async ({ page }) => {
   await page.goto("/");
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
     name: "sample.png",
     mimeType: "image/png",
     buffer: Buffer.from(
@@ -403,7 +405,7 @@ test("exporting an image scene triggers an MP4 download", async ({ page }) => {
 test("exporting an overlay phone frame (16 Pro) produces an MP4", async ({ page }) => {
   await page.goto("/");
   await page.locator('.segmented[aria-label="Frame"] button', { hasText: "16 Pro" }).first().click();
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
     name: "sample.png",
     mimeType: "image/png",
     buffer: Buffer.from(
@@ -423,6 +425,36 @@ test("exporting an overlay phone frame (16 Pro) produces an MP4", async ({ page 
   const size = path ? fs.statSync(path).size : 0;
   expect(size).toBeGreaterThan(0);
 });
+
+test("Auto from media builds a gradient from the uploaded image palette", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    // A solid red 2x2 PNG so the extracted palette is dominated by red.
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEklEQVR42mP8z8BQz0AEYBxVSFQGAFa0A/0jf9d",
+      "base64"
+    )
+  });
+  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+
+  // The button starts disabled until the media palette is analyzed after load.
+  const autoBtn = page.getByRole("button", { name: "Auto from media" });
+  await expect(autoBtn).toBeEnabled();
+
+  await autoBtn.click();
+  await page.waitForTimeout(150);
+
+  // The background container must now carry a gradient derived from the media.
+  const bg = await page.evaluate(
+    () => getComputedStyle(document.querySelector("#preview-canvas") as HTMLElement).backgroundImage
+  );
+  expect(bg).toContain("gradient");
+  // The preset swatch should no longer read as the previously-active gradient.
+  await expect(page.getByRole("button", { name: "Blue → Violet", exact: true })).toHaveAttribute("aria-pressed", "false");
+});
+
 
 
 
