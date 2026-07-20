@@ -68,7 +68,16 @@ async function recordCanvasToWebm(
   canvas.style.pointerEvents = "none";
   document.body.appendChild(canvas);
 
-  const stream = canvas.captureStream(fps);
+  let stream: MediaStream;
+  try {
+    stream = canvas.captureStream(fps);
+  } catch (err) {
+    canvas.remove();
+    if (err instanceof DOMException && err.name === "SecurityError") {
+      throw new Error("This video can't be exported: its host doesn't allow cross-origin capture. Use a file you uploaded instead.");
+    }
+    throw err;
+  }
   const chunks: BlobPart[] = [];
   const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
     ? "video/webm;codecs=vp9"

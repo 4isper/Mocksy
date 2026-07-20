@@ -84,10 +84,18 @@ describe("editorStore", () => {
     expect(store().scene.videoTrimEnd).toBe(6);
   });
 
-  it("setVideoDuration keeps trim end when none set", () => {
-    store().setVideoTrimEnd(0);
+  it("setVideoTrimEnd(0) clamps to the full duration instead of a 0 sentinel", () => {
     store().setVideoDuration(8);
+    store().setVideoTrimEnd(0);
     expect(store().scene.videoTrimEnd).toBe(8);
+  });
+
+  it("setVideoDuration keeps an explicit trim end", () => {
+    store().setVideoDuration(8);
+    store().setVideoTrimEnd(5);
+    store().setVideoDuration(10);
+    // explicit end is preserved (clamped to new duration)
+    expect(store().scene.videoTrimEnd).toBe(5);
   });
 
   it("setVideoTrimStart never exceeds trim end", () => {

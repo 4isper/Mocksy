@@ -168,7 +168,14 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   setVideoTrimStart: (videoTrimStart) =>
     set((s) => pushHistory(s, { ...s.scene, videoTrimStart: Math.min(videoTrimStart, s.scene.videoTrimEnd || videoTrimStart) })),
   setVideoTrimEnd: (videoTrimEnd) =>
-    set((s) => pushHistory(s, { ...s.scene, videoTrimEnd: Math.max(videoTrimEnd, s.scene.videoTrimStart) }))
+    set((s) =>
+      pushHistory(s, {
+        ...s.scene,
+        // A zero (or negative) end means "not trimmed" — clamp to the full
+        // duration so 0 never lingers in state as a confusing sentinel.
+        videoTrimEnd: videoTrimEnd <= 0 ? s.scene.videoDuration : Math.max(videoTrimEnd, s.scene.videoTrimStart)
+      })
+    )
 }));
 
 // After any state change, free blob: media URLs that history can no longer

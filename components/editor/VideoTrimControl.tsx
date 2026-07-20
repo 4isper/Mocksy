@@ -15,7 +15,7 @@ export function VideoTrimControl({ duration }: VideoTrimControlProps) {
   const { scene, setVideoTrimStart, setVideoTrimEnd } = useEditorStore();
   const max = Math.max(duration, 0.1);
   const startPct = (scene.videoTrimStart / max) * 100;
-  const endPct = ((scene.videoTrimEnd || duration) / max) * 100;
+  const endPct = (scene.videoTrimEnd / max) * 100;
 
   const trackStyle: React.CSSProperties = {
     position: "relative",
@@ -45,7 +45,7 @@ export function VideoTrimControl({ duration }: VideoTrimControlProps) {
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--text-dim)" }}>
         <span>Trim</span>
         <span>
-          {scene.videoTrimStart.toFixed(1)}s – {(scene.videoTrimEnd || duration).toFixed(1)}s
+          {scene.videoTrimStart.toFixed(1)}s – {scene.videoTrimEnd.toFixed(1)}s
         </span>
       </div>
       <div style={trackStyle}>
@@ -67,7 +67,7 @@ export function VideoTrimControl({ duration }: VideoTrimControlProps) {
           min={0}
           max={max}
           step={0.01}
-          value={scene.videoTrimEnd || duration}
+          value={scene.videoTrimEnd}
           aria-label="Trim end"
           className="trim-range"
           onChange={(e) => setVideoTrimEnd(Number(e.target.value))}
