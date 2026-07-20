@@ -12,6 +12,7 @@ export function LayersPanel() {
   const removeLayer = useEditorStore((s) => s.removeLayer);
   const selectLayer = useEditorStore((s) => s.selectLayer);
   const reorderLayers = useEditorStore((s) => s.reorderLayers);
+  const duplicateLayer = useEditorStore((s) => s.duplicateLayer);
   const setMedia = useEditorStore((s) => s.setMedia);
   const [error, setError] = useState<string | null>(null);
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
@@ -115,6 +116,18 @@ export function LayersPanel() {
                 {label}
                 {isVideoLayer(layer) ? " 🎬" : ""}
               </span>
+              <button
+                type="button"
+                className="btn btn-sm"
+                aria-label="Duplicate layer"
+                title="Duplicate layer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  duplicateLayer(layer.id);
+                }}
+              >
+                ⧉
+              </button>
               <button
                 type="button"
                 className="btn btn-sm"

@@ -66,6 +66,10 @@ export interface EditorStoreState {
   /** Replaces the active layer's media (or seeds the first layer). */
   setMedia: (mediaUrl: string | null, mediaType: MediaType, mediaName?: string | null) => void;
   addLayer: (mediaUrl: string, mediaType: MediaType, mediaName?: string | null) => void;
+  /** Clones a layer (same media + per-layer settings) as a new top-of-stack
+   *  layer with a fresh id. Shares the source's blob: URL, which the
+   *  orphan-revocation logic keeps alive while either layer references it. */
+  duplicateLayer: (id: string) => void;
   removeLayer: (id: string) => void;
   selectLayer: (id: string) => void;
   reorderLayers: (orderedIds: string[]) => void;
@@ -272,6 +276,20 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
         ...pushHistory(s, { ...s.scene, layers, activeLayerId: newLayer.id }),
         videoCurrentTime: 0,
         isMediaLoading: mediaUrl != null
+      };
+    }),
+  duplicateLayer: (id) =>
+    set((s) => {
+      const source = s.scene.layers.find((l) => l.id === id);
+      if (!source) return {};
+      // Clone with a fresh id; share the same media URL (blob: stays alive
+      // while either layer references it via the orphan-revocation sweep).
+      const clone: MediaLayer = { ...source, id: nextLayerId() };
+      const layers = [...s.scene.layers, clone];
+      return {
+        ...pushHistory(s, { ...s.scene, layers, activeLayerId: clone.id }),
+        videoCurrentTime: 0,
+        isMediaLoading: false
       };
     }),
   removeLayer: (id) =>

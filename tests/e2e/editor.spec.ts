@@ -276,6 +276,27 @@ test("Layers panel clears media of the active layer", async ({ page }) => {
   await expect(page.getByText("Drop image or video to start")).toBeVisible();
 });
 
+test("duplicating a layer clones it with the same media", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  // One layer to start.
+  await expect(page.locator(".layer-item")).toHaveCount(1);
+
+  // Duplicate the selected layer from the layers panel. The clone keeps the
+  // same media, so the preview now renders two copies of it.
+  await page.locator(".layer-item.is-active").getByRole("button", { name: "Duplicate layer" }).click();
+  await expect(page.locator(".layer-item")).toHaveCount(2);
+  await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(2);
+});
+
 test("undo and redo restore a previous frame choice", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "Desktop");
