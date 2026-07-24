@@ -13,6 +13,7 @@ import { exportImage, copyPngToClipboard } from "@/lib/export/exportImage";
 import { sceneToShareUrl } from "@/lib/state/shareState";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { ProjectsPanel } from "@/components/editor/ProjectsPanel";
+import { useThemeStore } from "@/lib/state/themeStore";
 
 const AUTOSAVE_DELAY = 500;
 
@@ -24,6 +25,10 @@ export function EditorShell() {
   const redo = useEditorStore((s) => s.redo);
   const pastLength = useEditorStore((s) => s.past.length);
   const futureLength = useEditorStore((s) => s.future.length);
+  const exportScale = useEditorStore((s) => s.exportScale);
+  const setExportScale = useEditorStore((s) => s.setExportScale);
+  const themeMode = useThemeStore((s) => s.mode);
+  const setThemeMode = useThemeStore((s) => s.setMode);
   const [videoExportStatus, setVideoExportStatus] = useState<string | null>(null);
   const [videoExportProgress, setVideoExportProgress] = useState<number>(0);
   const [gifExportStatus, setGifExportStatus] = useState<string | null>(null);
@@ -31,8 +36,6 @@ export function EditorShell() {
   const isExporting = videoExportStatus !== null || gifExportStatus !== null;
   const saveError = useProjectsStore((s) => s.saveError);
   const [exportError, setExportError] = useState<string | null>(null);
-  const exportScale = useEditorStore((s) => s.exportScale);
-  const setExportScale = useEditorStore((s) => s.setExportScale);
   const [saved, setSaved] = useState(false);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
@@ -316,6 +319,35 @@ export function EditorShell() {
               <span className={`status${saved ? " saved" : ""}`}>{saved ? "Saved" : "Editing…"}</span>
             )}
             <span className="spacer" />
+            <div className="segmented" style={{ marginRight: 8 }} role="group" aria-label="Theme">
+              <button
+                type="button"
+                className={themeMode === "light" ? "is-active" : ""}
+                aria-pressed={themeMode === "light"}
+                onClick={() => setThemeMode("light")}
+                title="Light theme"
+              >
+                ☀️
+              </button>
+              <button
+                type="button"
+                className={themeMode === "dark" ? "is-active" : ""}
+                aria-pressed={themeMode === "dark"}
+                onClick={() => setThemeMode("dark")}
+                title="Dark theme"
+              >
+                🌙
+              </button>
+              <button
+                type="button"
+                className={themeMode === "system" ? "is-active" : ""}
+                aria-pressed={themeMode === "system"}
+                onClick={() => setThemeMode("system")}
+                title="System theme"
+              >
+                💻
+              </button>
+            </div>
             <button type="button" className="btn" onClick={saveNow} title="Save (⌘S)">
               Save
             </button>
