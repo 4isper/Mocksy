@@ -8,6 +8,7 @@ import { PreviewCanvas } from "@/components/editor/PreviewCanvas";
 import { TemplatesPanel } from "@/components/editor/TemplatesPanel";
 import { LayersPanel } from "@/components/editor/LayersPanel";
 import { AnnotationsPanel } from "@/components/editor/AnnotationsPanel";
+import { CommandPalette, useCommands } from "@/components/editor/CommandPalette";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { exportImage, copyPngToClipboard } from "@/lib/export/exportImage";
 import { sceneToShareUrl } from "@/lib/state/shareState";
@@ -41,43 +42,14 @@ export function EditorShell() {
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    // Bootstrap from projects (URL share, localStorage, or a fresh demo). The
-    // restored scene is not a user edit, so don't push it onto the undo stack
-    // (also keeps StrictMode's double-mount from recording a duplicate entry).
-    const restored = useProjectsStore.getState().hydrate();
-    setScene(restored, false);
-  }, [setScene]);
-
-  useEffect(() => {
-    setSaved(false);
-    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
-    autosaveTimer.current = setTimeout(() => {
-      // Persist the current scene into the active project (which writes the
-      // whole project list to localStorage). Dead blob: layers are handled by
-      // the orphaned-blob subscription, so a refresh simply shows the demo.
-      useProjectsStore.getState().updateActiveProjectScene(scene);
-      setSaved(true);
-    }, AUTOSAVE_DELAY);
-    return () => {
-      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
-    };
-  }, [scene]);
-
+  // Callbacks must be defined before useCommands
   const saveNow = useCallback(() => {
     useProjectsStore.getState().updateActiveProjectScene(scene);
     setSaved(true);
   }, [scene]);
-
-  // Clear the transient "Copied" status after a moment so it doesn't
-  // linger in the toolbar like the persistent Saved indicator.
-  useEffect(() => {
-    if (!copyStatus) return;
-    const t = setTimeout(() => setCopyStatus(null), 1500);
-    return () => clearTimeout(t);
-  }, [copyStatus]);
 
   const copyShareUrl = useCallback(async () => {
     try {
@@ -103,8 +75,6 @@ export function EditorShell() {
     try {
       setVideoExportStatus("Exporting video…");
       setVideoExportProgress(0);
-      // Loaded lazily so the 32MB FFmpeg WASM bundle stays out of the editor's
-      // main chunk and only downloads when the user actually exports an MP4.
       const { exportVideo } = await import("@/lib/export/exportVideo");
       await exportVideo(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError);
     } finally {
@@ -120,7 +90,6 @@ export function EditorShell() {
     try {
       setGifExportStatus("Exporting GIF…");
       setGifExportProgress(0);
-      // Reuse the lazily-loaded FFmpeg module already imported for MP4.
       const { exportGif } = await import("@/lib/export/exportVideo");
       await exportGif(scene, exportScale, setGifExportStatus, setGifExportProgress, setExportError);
     } finally {
@@ -158,6 +127,46 @@ export function EditorShell() {
 
   const cancelReset = useCallback(() => setConfirmResetOpen(false), []);
 
+  // Clear the transient "Copied" status after a moment so it doesn't
+  // linger in the toolbar like the persistent Saved indicator.
+  useEffect(() => {
+    if (!copyStatus) return;
+    const t = setTimeout(() => setCopyStatus(null), 1500);
+    return () => clearTimeout(t);
+  }, [copyStatus]);
+
+  const commands = useCommands(
+    handleExportPng,
+    handleExportMp4,
+    handleExportGif,
+    handleCopyPng,
+    copyShareUrl,
+    saveNow
+  );
+
+  useEffect(() => {
+    // Bootstrap from projects (URL share, localStorage, or a fresh demo). The
+    // restored scene is not a user edit, so don't push it onto the undo stack
+    // (also keeps StrictMode's double-mount from recording a duplicate entry).
+    const restored = useProjectsStore.getState().hydrate();
+    setScene(restored, false);
+  }, [setScene]);
+
+  useEffect(() => {
+    setSaved(false);
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = setTimeout(() => {
+      // Persist the current scene into the active project (which writes the
+      // whole project list to localStorage). Dead blob: layers are handled by
+      // the orphaned-blob subscription, so a refresh simply shows the demo.
+      useProjectsStore.getState().updateActiveProjectScene(scene);
+      setSaved(true);
+    }, AUTOSAVE_DELAY);
+    return () => {
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    };
+  }, [scene]);
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const modifier = event.metaKey || event.ctrlKey;
@@ -171,6 +180,12 @@ export function EditorShell() {
       if ((event.key === "?" || (event.code === "Slash" && event.shiftKey)) && !typing) {
         event.preventDefault();
         setShortcutsOpen(true);
+        return;
+      }
+      // ⌘K opens the command palette
+      if (modifier && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setCommandPaletteOpen(true);
         return;
       }
       if (modifier && event.key.toLowerCase() === "z") {
@@ -258,7 +273,7 @@ export function EditorShell() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [undo, redo, saveNow, handleReset, handleExportPng, handleExportMp4, handleExportGif, handleCopyPng, setShortcutsOpen]);
+  }, [undo, redo, saveNow, handleReset, handleExportPng, handleExportMp4, handleExportGif, handleCopyPng, setShortcutsOpen, setCommandPaletteOpen]);
 
   return (
     <main className="editor-shell">
@@ -405,6 +420,11 @@ export function EditorShell() {
         busy={isExporting}
       />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <CommandPalette
+        commands={commands}
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+      />
     </main>
   );
 }
