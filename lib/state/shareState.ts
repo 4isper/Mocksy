@@ -2,6 +2,11 @@ import type { EditorScene } from "@/lib/types/editor";
 import { normalizeScene } from "@/lib/state/normalizeScene";
 import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
 
+/** Above this length the URL becomes impractical to share (some browsers cap
+ *  URLs around 64KB; long data: media also can't be pasted reliably). Demo
+ *  media is already stripped, but a large uploaded asset still can blow this. */
+const MAX_SHARE_URL_LENGTH = 16000;
+
 export function sceneToShareUrl(scene: EditorScene): string {
   // The demo media is a long data: URI bundled into the app; encoding it into
   // every share link bloats the URL for no reason since the reader restores
@@ -20,6 +25,11 @@ export function sceneToShareUrl(scene: EditorScene): string {
   const serialized = encodeURIComponent(JSON.stringify(payload));
   const url = new URL(window.location.href);
   url.searchParams.set("scene", serialized);
+  if (url.toString().length > MAX_SHARE_URL_LENGTH) {
+    // A full-resolution uploaded image/video can't travel in a URL — point the
+    // user at the project-file export instead of producing a broken link.
+    throw new Error("Share link is too large — export the project file to share this mockup instead.");
+  }
   return url.toString();
 }
 

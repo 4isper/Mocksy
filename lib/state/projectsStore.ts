@@ -24,6 +24,9 @@ export interface ProjectsStoreState {
   activeProjectId: string | null;
   /** True once hydrate() has run (localStorage/URL read on the client). */
   hydrated: boolean;
+  /** Set when a persist() fails because localStorage is full, so the UI can
+   *  stop showing "Saved" and warn the user their latest edits weren't stored. */
+  saveError: string | null;
   /** Loads persisted projects (or migrates a legacy autosave / demo) and
    *  returns the scene that should become the editor's active scene. */
   hydrate: () => EditorScene;
@@ -38,15 +41,28 @@ export interface ProjectsStoreState {
   importProject: (project: Project) => void;
 }
 
-function persist(state: ProjectsStoreState) {
-  if (typeof window === "undefined") return;
+function persist(state: ProjectsStoreState): boolean {
+  if (typeof window === "undefined") return true;
   try {
     window.localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({ projects: state.projects, activeProjectId: state.activeProjectId })
     );
-  } catch {
-    // storage full or unavailable — non-fatal, the in-memory state still works
+    // A successful write clears any prior quota warning.
+    useProjectsStore.setState({ saveError: null });
+    return true;
+  } catch (err) {
+    // A full quota means the latest edits were NOT persisted, even though the
+    // in-memory state is intact. Surface it so the UI stops showing "Saved".
+    // Other storage failures (private mode, disabled storage) aren't
+    // actionable, so they stay silent but still report failure.
+    if (
+      err instanceof DOMException &&
+      (err.name === "QuotaExceededError" || err.name === "NS_ERROR_DOM_QUOTA_REACHED")
+    ) {
+      useProjectsStore.setState({ saveError: "Storage full — recent changes may not be saved" });
+    }
+    return false;
   }
 }
 
@@ -84,6 +100,7 @@ export const useProjectsStore = create<ProjectsStoreState>((set, get) => ({
   projects: [],
   activeProjectId: null,
   hydrated: false,
+  saveError: null,
   hydrate: () => {
     // A shared scene URL always wins: it is a one-off scene, not a saved project.
     const fromUrl = readSceneFromUrl();

@@ -29,6 +29,7 @@ export function EditorShell() {
   const [gifExportStatus, setGifExportStatus] = useState<string | null>(null);
   const [gifExportProgress, setGifExportProgress] = useState<number>(0);
   const isExporting = videoExportStatus !== null || gifExportStatus !== null;
+  const saveError = useProjectsStore((s) => s.saveError);
   const [exportError, setExportError] = useState<string | null>(null);
   const exportScale = useEditorStore((s) => s.exportScale);
   const setExportScale = useEditorStore((s) => s.setExportScale);
@@ -76,8 +77,12 @@ export function EditorShell() {
   }, [copyStatus]);
 
   const copyShareUrl = useCallback(async () => {
-    const url = sceneToShareUrl(scene);
-    await navigator.clipboard.writeText(url);
+    try {
+      const url = sceneToShareUrl(scene);
+      await navigator.clipboard.writeText(url);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "Could not create share link");
+    }
   }, [scene]);
 
   const handleExportPng = useCallback(() => {
@@ -302,6 +307,10 @@ export function EditorShell() {
             ) : exportError ? (
               <span className="error" role="alert">
                 {exportError}
+              </span>
+            ) : saveError ? (
+              <span className="error" role="alert" title={saveError}>
+                {saveError}
               </span>
             ) : (
               <span className={`status${saved ? " saved" : ""}`}>{saved ? "Saved" : "Editing…"}</span>

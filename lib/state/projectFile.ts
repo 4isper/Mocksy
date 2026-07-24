@@ -34,7 +34,8 @@ export function exportProjectToFile(project: Project): void {
 export async function importProjectFromFile(file: File): Promise<Project> {
   const text = await file.text();
   const parsed = JSON.parse(text) as unknown;
-  const scene: EditorScene = normalizeScene(parsed);
+  const raw = parsed as Record<string, unknown>;
+  const scene: EditorScene = normalizeScene(raw?.scene ?? raw);
   const name =
     parsed && typeof parsed === "object" && typeof (parsed as Record<string, unknown>).name === "string"
       ? ((parsed as Record<string, unknown>).name as string)
