@@ -88,4 +88,12 @@ describe("shareState", () => {
     const restored = readSceneFromUrl();
     expect(restored?.layers[0]!.mediaUrl).toBe(dataUrl);
   });
+
+  it("throws when the share URL exceeds the practical length limit", () => {
+    // A large uploaded image that can't meaningfully travel in a URL.
+    const largePayload = "a".repeat(20000);
+    const dataUrl = `data:image/png;base64,${largePayload}`;
+    const scene = withLayer(initialScene, { mediaUrl: dataUrl, mediaType: "image", mediaName: "large.png" });
+    expect(() => sceneToShareUrl(scene)).toThrow("Share link is too large");
+  });
 });

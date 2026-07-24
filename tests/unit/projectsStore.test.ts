@@ -30,7 +30,7 @@ describe("projectsStore", () => {
     stubWindow(storage);
     storage.clear();
     // reset the store to a clean bootstrap state between tests
-    useProjectsStore.setState({ projects: [], activeProjectId: null, hydrated: false });
+    useProjectsStore.setState({ projects: [], activeProjectId: null, hydrated: false, saveError: null });
   });
 
   afterEach(() => {
@@ -176,6 +176,36 @@ describe("projectsStore", () => {
     expect(clash?.name).toBe("My mockup");
     expect(state.projects.some((p) => p.name === "Clashing id")).toBe(true);
     expect(state.activeProjectId).not.toBe(existing);
+  });
+
+  it("sets saveError when localStorage throws QuotaExceededError", () => {
+    const quotaError = new DOMException("Storage full", "QuotaExceededError");
+    const origSetItem = storage.setItem;
+    storage.setItem = (_k: string, _v: string) => {
+      throw quotaError;
+    };
+    useProjectsStore.getState().hydrate();
+    useProjectsStore.getState().createProject("Will fail");
+    storage.setItem = origSetItem;
+    expect(useProjectsStore.getState().saveError).toBe(
+      "Storage full — recent changes may not be saved"
+    );
+  });
+
+  it("clears saveError on a successful persist", () => {
+    // First, cause a quota error to set saveError
+    const quotaError = new DOMException("Storage full", "QuotaExceededError");
+    const origSetItem = storage.setItem;
+    storage.setItem = (_k: string, _v: string) => {
+      throw quotaError;
+    };
+    useProjectsStore.getState().hydrate();
+    useProjectsStore.getState().createProject("Will fail");
+    storage.setItem = origSetItem;
+
+    // Now a normal write should clear the error
+    useProjectsStore.getState().createProject("Should clear error");
+    expect(useProjectsStore.getState().saveError).toBeNull();
   });
 
   it("duplicateProject copies the scene under a new id with a 'copy' suffix", () => {

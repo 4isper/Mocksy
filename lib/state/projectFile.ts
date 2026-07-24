@@ -29,9 +29,14 @@ export function exportProjectToFile(project: Project): void {
  * Reads a project JSON file and returns a normalized Project. The scene is
  * run through normalizeScene so a malformed/corrupted file can never crash
  * the editor; a generated id/updatedAt keeps it distinct from any existing
- * project. Throws if the file cannot be parsed as JSON.
+ * project. Throws if the file cannot be parsed as JSON or exceeds the
+ * size limit (5 MB).
  */
 export async function importProjectFromFile(file: File): Promise<Project> {
+  const MAX_FILE_SIZE = 5 * 1024 * 1024;
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(`File is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum is 5 MB.`);
+  }
   const text = await file.text();
   const parsed = JSON.parse(text) as unknown;
   const raw = parsed as Record<string, unknown>;

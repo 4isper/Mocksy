@@ -40,4 +40,15 @@ describe("projectFile", () => {
     expect(imported.scene.layers.length).toBeGreaterThan(0);
     expect(imported.scene.layers[0]!.mediaUrl).toBe("data:image/png;base64,abc");
   });
+
+  it("throws on oversized files so the caller can surface the error", async () => {
+    const oversized = new File(
+      [JSON.stringify({ scene: { ...initialScene, frame: "watch" } })],
+      "huge.json",
+      { type: "application/json" }
+    );
+    // 5 MB + 1 byte — just over the limit.
+    Object.defineProperty(oversized, "size", { value: 5 * 1024 * 1024 + 1 });
+    await expect(importProjectFromFile(oversized)).rejects.toThrow("too large");
+  });
 });
