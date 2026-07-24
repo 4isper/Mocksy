@@ -1,0 +1,121 @@
+export let layerSeq = 0;
+export function nextLayerId(): string {
+  layerSeq += 1;
+  return `layer-${layerSeq}-${Date.now().toString(36)}`;
+}
+
+export let annotationSeq = 0;
+export function nextAnnotationId(): string {
+  annotationSeq += 1;
+  return `anno-${annotationSeq}-${Date.now().toString(36)}`;
+}
+
+const ANNOTATION_COLORS = ["#00d9ff", "#f87171", "#fbbf24", "#4ade80", "#c084fc", "#ffffff"];
+
+import type {
+  Annotation,
+  AnnotationType,
+  EditorScene,
+  MediaLayer,
+  MediaType,
+  MockupFrame,
+  StylePreset,
+  VideoQuality,
+  WatermarkPosition
+} from "@/lib/types/editor";
+import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
+
+export function makeAnnotation(type: AnnotationType): Annotation {
+  const color = ANNOTATION_COLORS[annotationSeq % ANNOTATION_COLORS.length] ?? "#00d9ff";
+  const base = {
+    id: nextAnnotationId(),
+    type,
+    color,
+    strokeWidth: type === "text" ? 0 : 4,
+    // Anchored near the center so a freshly added overlay is visible and
+    // easy to grab, regardless of the current canvas aspect ratio.
+    x: 0.32,
+    y: 0.32
+  };
+  if (type === "text") {
+    return { ...base, w: 0.36, h: 0, text: "Label", fontSize: 48 };
+  }
+  if (type === "arrow") {
+    return { ...base, w: 0.32, h: 0.2, text: "", fontSize: 0 };
+  }
+  return { ...base, w: 0.28, h: 0.2, text: "", fontSize: 0 };
+}
+
+export function makeDemoLayer(): MediaLayer {
+  return {
+    id: nextLayerId(),
+    mediaUrl: DEMO_MEDIA_URL,
+    mediaType: "image",
+    mediaName: DEMO_MEDIA_NAME,
+    hidden: false,
+    zoom: 1,
+    mediaOffsetX: 0,
+    mediaOffsetY: 0,
+    mediaFit: "cover",
+    animationPreset: "none",
+    videoMuted: true,
+    videoLoop: true,
+    videoAutoplay: true,
+    videoPosterTime: 0,
+    videoDuration: 0,
+    videoTrimStart: 0,
+    videoTrimEnd: 0,
+    videoQuality: "medium"
+  };
+}
+
+const HISTORY_LIMIT = 100;
+/** Edits of the same field within this window collapse into one undo step,
+ *  so dragging a slider doesn't flood history with a record per pixel. */
+const COALESCE_MS = 400;
+
+type HistoryMutator = {
+  past: EditorScene[];
+  future: EditorScene[];
+  scene: EditorScene;
+  lastHistoryKey: string | null;
+  lastHistoryAt: number;
+};
+
+/** Returns an object suitable for passing to Zustand's set(state => ...).
+ *  Coalesces rapid repeats of the same field (e.g. slider drags) so undo
+ *  returns to the pre-drag value rather than one pixel at a time. */
+export function pushHistory(
+  s: HistoryMutator,
+  scene: EditorScene,
+  coalesceKey?: string
+): HistoryMutator {
+  const now = Date.now();
+  if (coalesceKey && coalesceKey === s.lastHistoryKey && now - s.lastHistoryAt < COALESCE_MS) {
+    return { ...s, scene, lastHistoryAt: now };
+  }
+  const past = [...s.past, s.scene].slice(-HISTORY_LIMIT);
+  return { past, future: [], scene, lastHistoryKey: coalesceKey ?? null, lastHistoryAt: now };
+}
+
+/** Returns the layer currently targeted by scene-level controls. */
+export function activeLayer(scene: EditorScene): MediaLayer | undefined {
+  return scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+}
+
+/** Poster time of the active video layer (or 0 when none). */
+export function activePosterTime(scene: EditorScene): number {
+  const layer = activeLayer(scene);
+  return layer?.videoPosterTime ?? 0;
+}
+
+/** Applies a patch to the active layer, returning a new layers array. */
+export function patchActive(scene: EditorScene, patch: Partial<MediaLayer>): MediaLayer[] {
+  const id = scene.activeLayerId ?? scene.layers[0]?.id;
+  return scene.layers.map((l) => (l.id === id ? { ...l, ...patch } : l));
+}
+
+/** The active layer (or first), or undefined when there are no layers. */
+export function activeOf(scene: EditorScene): MediaLayer | undefined {
+  return scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+}

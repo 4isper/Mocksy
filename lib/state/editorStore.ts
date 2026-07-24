@@ -13,66 +13,17 @@ import type {
   VideoQuality,
   WatermarkPosition
 } from "@/lib/types/editor";
-import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
 import { ASPECT_RATIOS } from "@/lib/render/frames";
-
-let layerSeq = 0;
-function nextLayerId(): string {
-  layerSeq += 1;
-  return `layer-${layerSeq}-${Date.now().toString(36)}`;
-}
-
-let annotationSeq = 0;
-function nextAnnotationId(): string {
-  annotationSeq += 1;
-  return `anno-${annotationSeq}-${Date.now().toString(36)}`;
-}
-
-const ANNOTATION_COLORS = ["#00d9ff", "#f87171", "#fbbf24", "#4ade80", "#c084fc", "#ffffff"];
-
-function makeAnnotation(type: AnnotationType): Annotation {
-  const color = ANNOTATION_COLORS[annotationSeq % ANNOTATION_COLORS.length] ?? "#00d9ff";
-  const base = {
-    id: nextAnnotationId(),
-    type,
-    color,
-    strokeWidth: type === "text" ? 0 : 4,
-    // Anchored near the center so a freshly added overlay is visible and
-    // easy to grab, regardless of the current canvas aspect ratio.
-    x: 0.32,
-    y: 0.32
-  };
-  if (type === "text") {
-    return { ...base, w: 0.36, h: 0, text: "Label", fontSize: 48 };
-  }
-  if (type === "arrow") {
-    return { ...base, w: 0.32, h: 0.2, text: "", fontSize: 0 };
-  }
-  return { ...base, w: 0.28, h: 0.2, text: "", fontSize: 0 };
-}
-
-function makeDemoLayer(): MediaLayer {
-  return {
-    id: nextLayerId(),
-    mediaUrl: DEMO_MEDIA_URL,
-    mediaType: "image",
-    mediaName: DEMO_MEDIA_NAME,
-    hidden: false,
-    zoom: 1,
-    mediaOffsetX: 0,
-    mediaOffsetY: 0,
-    mediaFit: "cover",
-    animationPreset: "none",
-    videoMuted: true,
-    videoLoop: true,
-    videoAutoplay: true,
-    videoPosterTime: 0,
-    videoDuration: 0,
-    videoTrimStart: 0,
-    videoTrimEnd: 0,
-    videoQuality: "medium"
-  };
-}
+import {
+  activeLayer,
+  activeOf,
+  activePosterTime,
+  makeAnnotation,
+  makeDemoLayer,
+  nextLayerId,
+  patchActive,
+  pushHistory
+} from "@/lib/state/editorHelpers";
 
 export interface EditorStoreState {
   scene: EditorScene;
@@ -199,34 +150,6 @@ export function makeDemoScene(): EditorScene {
     backgroundBlur: initialScene.backgroundBlur,
     annotations: []
   };
-}
-
-const HISTORY_LIMIT = 100;
-/** Edits of the same field within this window collapse into one undo step,
- *  so dragging a slider doesn't flood history with a record per pixel. */
-const COALESCE_MS = 400;
-
-function pushHistory(s: EditorStoreState, scene: EditorScene, coalesceKey?: string) {
-  const now = Date.now();
-  // Coalesce rapid repeats of the same field: keep the pre-drag baseline in
-  // past and only update the current scene, so undo returns to the value
-  // before the drag rather than one pixel of it.
-  if (coalesceKey && coalesceKey === s.lastHistoryKey && now - s.lastHistoryAt < COALESCE_MS) {
-    return { scene, lastHistoryAt: now };
-  }
-  const past = [...s.past, s.scene].slice(-HISTORY_LIMIT);
-  return { past, future: [], scene, lastHistoryKey: coalesceKey ?? null, lastHistoryAt: now };
-}
-
-/** Returns the layer currently targeted by scene-level controls. */
-function activeLayer(scene: EditorScene): MediaLayer | undefined {
-  return scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
-}
-
-/** Poster time of the active video layer (or 0 when none). */
-function activePosterTime(scene: EditorScene): number {
-  const layer = activeLayer(scene);
-  return layer?.videoPosterTime ?? 0;
 }
 
 export const useEditorStore = create<EditorStoreState>((set) => ({
@@ -446,14 +369,3 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
     ),
   setVideoQuality: (videoQuality) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoQuality }) }))
 }));
-
-/** Applies a patch to the active layer, returning a new layers array. */
-function patchActive(scene: EditorScene, patch: Partial<MediaLayer>): MediaLayer[] {
-  const id = scene.activeLayerId ?? scene.layers[0]?.id;
-  return scene.layers.map((l) => (l.id === id ? { ...l, ...patch } : l));
-}
-
-/** The active layer (or first), or undefined when there are no layers. */
-function activeOf(scene: EditorScene): MediaLayer | undefined {
-  return scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
-}
