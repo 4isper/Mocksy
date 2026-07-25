@@ -15,6 +15,7 @@ import { sceneToShareUrl } from "@/lib/state/shareState";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { ProjectsPanel } from "@/components/editor/ProjectsPanel";
 import { useThemeStore } from "@/lib/state/themeStore";
+import { LocaleSwitcher } from "@/components/editor/LocaleSwitcher";
 
 const AUTOSAVE_DELAY = 500;
 
@@ -380,6 +381,7 @@ export function EditorShell() {
             <button type="button" className="btn" onClick={handleReset} title="Reset (R)">
               Reset
             </button>
+            <LocaleSwitcher />
           </div>
         </section>
         <TemplatesPanel />
