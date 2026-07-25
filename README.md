@@ -63,6 +63,7 @@ npm run dev
 
 ```bash
 npm run test        # unit tests (Vitest)
+npm run test:coverage  # unit tests with coverage report
 npm run test:e2e    # end-to-end tests (Playwright; needs a browser installed)
 ```
 

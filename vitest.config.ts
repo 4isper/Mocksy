@@ -8,6 +8,11 @@ export default defineConfig({
     }
   },
   test: {
-    include: ["tests/unit/**/*.test.ts"]
+    include: ["tests/unit/**/*.test.ts"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov"],
+      reportsDirectory: "coverage"
+    }
   }
 });
