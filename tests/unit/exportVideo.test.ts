@@ -5,7 +5,7 @@ import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 // renderMockup pulls in canvas APIs we don't need for the export orchestration
 // test; stub it so the suite runs under node.
 vi.mock("@/lib/export/renderMockup", () => ({
-  renderMockupToCanvas: vi.fn(),
+  renderMockupToCanvas: vi.fn(function () {}),
   loadImage: vi.fn().mockResolvedValue(null)
 }));
 
@@ -15,9 +15,9 @@ vi.mock("@ffmpeg/ffmpeg", () => ({
   FFmpeg: class {
     writeFile = vi.fn().mockResolvedValue(undefined);
     deleteFile = vi.fn().mockResolvedValue(undefined);
-    exec = vi.fn().mockImplementation(() => Promise.resolve(ffmpegHarness.execCode));
+    exec = vi.fn().mockImplementation(function () { return Promise.resolve(ffmpegHarness.execCode); });
     readFile = vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3, 4]));
-    load = vi.fn().mockImplementation(() => {
+    load = vi.fn().mockImplementation(function () {
       ffmpegHarness.loadCalls += 1;
       return Promise.resolve(undefined);
     });
@@ -176,9 +176,9 @@ describe("exportVideo orchestration", () => {
       }),
       stop: vi.fn()
     };
-    const MR = vi.fn().mockImplementation(() => recorder);
+    const MR = vi.fn().mockImplementation(function () { return recorder; });
     (MR as unknown as { isTypeSupported: (t: string) => boolean }).isTypeSupported = (t: string) => t.includes("vp9");
-    Object.defineProperty(globalThis, "MediaRecorder", { configurable: true, value: MR });
+    vi.stubGlobal("MediaRecorder", MR);
     return recorder;
   }
 
