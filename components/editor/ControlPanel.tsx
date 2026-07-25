@@ -2,6 +2,7 @@
 
 import type { ChangeEvent } from "react";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 import type { AnimationPreset, EditorScene, MockupFrame, StylePreset } from "@/lib/types/editor";
 import { FRAME_ORDER, ANIMATION_PRESETS, ASPECT_RATIOS } from "@/lib/render/frames";
@@ -15,30 +16,6 @@ const frames: MockupFrame[] = FRAME_ORDER;
 const styles: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
 const animations = ANIMATION_PRESETS;
 const aspectRatios = ASPECT_RATIOS;
-
-const FRAME_LABELS: Record<MockupFrame, string> = {
-  none: "None",
-  iphone: "iPhone",
-  iphone15: "15",
-  iphone16pro: "16 Pro",
-  desktop: "Desktop",
-  tablet: "Tablet",
-  watch: "Watch"
-};
-
-const STYLE_LABELS: Record<StylePreset, string> = {
-  default: "Default",
-  glassLight: "Glass",
-  glassDark: "Dark glass",
-  outline: "Outline"
-};
-
-const ANIM_LABELS: Record<AnimationPreset, string> = {
-  none: "None",
-  zoomIn: "Zoom in",
-  zoomOut: "Zoom out",
-  parallax: "Parallax"
-};
 
 function Segmented<T extends string>({
   label,
@@ -72,6 +49,7 @@ function Segmented<T extends string>({
 }
 
 export function ControlPanel() {
+  const t = useTranslations();
   const [mediaError, setMediaError] = useState<string | null>(null);
   const {
     scene,
@@ -99,6 +77,28 @@ export function ControlPanel() {
     setAspectRatio
   } = useEditorStore();
 
+  const frameLabels: Record<MockupFrame, string> = {
+    none: t("frame.none"),
+    iphone: t("frame.iphone"),
+    iphone15: t("frame.iphone15"),
+    iphone16pro: t("frame.iphone16pro"),
+    desktop: t("frame.desktop"),
+    tablet: t("frame.tablet"),
+    watch: t("frame.watch")
+  };
+  const styleLabels: Record<StylePreset, string> = {
+    default: t("style.default"),
+    glassLight: t("style.glassLight"),
+    glassDark: t("style.glassDark"),
+    outline: t("style.outline")
+  };
+  const animLabels: Record<AnimationPreset, string> = {
+    none: t("animation.none"),
+    zoomIn: t("animation.zoomIn"),
+    zoomOut: t("animation.zoomOut"),
+    parallax: t("animation.parallax")
+  };
+
   const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -111,7 +111,7 @@ export function ControlPanel() {
       setMedia(url, mediaType, mediaName);
     } catch (err) {
       if (err instanceof UnsupportedMediaError) setMediaError(err.message);
-      else setMediaError("Could not load that file.");
+      else setMediaError(t("editor.uploadError"));
     } finally {
       event.target.value = "";
     }
@@ -135,22 +135,22 @@ export function ControlPanel() {
 
   return (
     <div className="panel control-panel" style={{ padding: 16, display: "grid", gap: 16 }}>
-      <h2 className="panel-title">Controls</h2>
+      <h2 className="panel-title">{t("editor.controls")}</h2>
       <div className="field-group">
         <div className="field">
-          <span>Media</span>
+          <span>{t("editor.media")}</span>
           <label className="file-trigger">
-            Upload image or video
+            {t("editor.uploadMediaShort")}
             <input type="file" accept="image/*,video/*" onChange={handleFile} />
           </label>
           {activeLayer?.mediaUrl ? (
             <button
               type="button"
               className="btn btn-sm"
-              title="Clear the active layer's media"
+              title={t("editor.clearMedia")}
               onClick={() => setMedia(null, "none", null)}
             >
-              Clear media
+              {t("editor.clearMedia")}
             </button>
           ) : null}
         </div>
@@ -166,27 +166,27 @@ export function ControlPanel() {
 
       <div className="field-group">
         <Segmented
-          label="Frame"
+          label={t("editor.frame")}
           value={scene.frame}
-          options={frames.map((f) => ({ value: f, label: FRAME_LABELS[f] }))}
+          options={frames.map((f) => ({ value: f, label: frameLabels[f] }))}
           onChange={setFrame}
         />
         <Segmented
-          label="Aspect ratio"
+          label={t("editor.aspectRatio")}
           value={scene.aspectRatio}
           options={aspectRatios.map((r) => ({ value: r, label: r }))}
           onChange={setAspectRatio}
         />
         <Segmented
-          label="Style"
+          label={t("editor.style")}
           value={scene.stylePreset}
-          options={styles.map((s) => ({ value: s, label: STYLE_LABELS[s] }))}
+          options={styles.map((s) => ({ value: s, label: styleLabels[s] }))}
           onChange={setStylePreset}
         />
         <Segmented
-          label="Animation"
+          label={t("editor.animation")}
           value={activeLayer?.animationPreset ?? "none"}
-          options={animations.map((a) => ({ value: a, label: ANIM_LABELS[a] }))}
+          options={animations.map((a) => ({ value: a, label: animLabels[a] }))}
           onChange={setAnimationPreset}
         />
       </div>
@@ -195,16 +195,16 @@ export function ControlPanel() {
 
       <div className="field-group">
         <Segmented
-          label="Fill / Fit"
+          label={t("editor.fillFitLabel")}
           value={activeLayer?.mediaFit ?? "cover"}
           options={[
-            { value: "cover", label: "Fill" },
-            { value: "contain", label: "Fit" }
+            { value: "cover", label: t("editor.fill") },
+            { value: "contain", label: t("editor.fit") }
           ]}
           onChange={setMediaFit}
         />
         <label className="field">
-          <span>Zoom</span>
+          <span>{t("editor.zoom")}</span>
           <input
             className="range"
             type="range"
@@ -212,13 +212,13 @@ export function ControlPanel() {
             max={1.5}
             step={0.01}
             value={activeLayer?.zoom ?? 1}
-            aria-label="Zoom"
+            aria-label={t("editor.zoom")}
             aria-valuetext={`${Math.round((activeLayer?.zoom ?? 1) * 100)}%`}
             onChange={(e) => setZoom(Number(e.target.value))}
           />
         </label>
         <label className="field">
-          <span>Position X</span>
+          <span>{t("editor.positionX")}</span>
           <input
             className="range"
             type="range"
@@ -226,13 +226,13 @@ export function ControlPanel() {
             max={1}
             step={0.01}
             value={activeLayer?.mediaOffsetX ?? 0}
-            aria-label="Media horizontal position"
+            aria-label={t("editor.positionX")}
             aria-valuetext={`${Math.round((activeLayer?.mediaOffsetX ?? 0) * 100)}%`}
             onChange={(e) => setMediaOffsetX(Number(e.target.value))}
           />
         </label>
         <label className="field">
-          <span>Position Y</span>
+          <span>{t("editor.positionY")}</span>
           <input
             className="range"
             type="range"
@@ -240,13 +240,13 @@ export function ControlPanel() {
             max={1}
             step={0.01}
             value={activeLayer?.mediaOffsetY ?? 0}
-            aria-label="Media vertical position"
+            aria-label={t("editor.positionY")}
             aria-valuetext={`${Math.round((activeLayer?.mediaOffsetY ?? 0) * 100)}%`}
             onChange={(e) => setMediaOffsetY(Number(e.target.value))}
           />
         </label>
         <label className="field">
-          <span>Shadow</span>
+          <span>{t("editor.shadowOpacity")}</span>
           <input
             className="range"
             type="range"
@@ -254,13 +254,13 @@ export function ControlPanel() {
             max={1}
             step={0.01}
             value={scene.shadowOpacity}
-            aria-label="Shadow opacity"
+            aria-label={t("editor.shadowOpacity")}
             aria-valuetext={`${Math.round(scene.shadowOpacity * 100)}%`}
             onChange={(e) => setShadowOpacity(Number(e.target.value))}
           />
         </label>
         <label className="field">
-          <span>Radius</span>
+          <span>{t("editor.cornerRadius")}</span>
           <input
             className="range"
             type="range"
@@ -268,7 +268,7 @@ export function ControlPanel() {
             max={48}
             step={1}
             value={scene.borderRadius}
-            aria-label="Corner radius"
+            aria-label={t("editor.cornerRadius")}
             aria-valuetext={`${scene.borderRadius} pixels`}
             onChange={(e) => setBorderRadius(Number(e.target.value))}
           />
@@ -278,15 +278,15 @@ export function ControlPanel() {
       <div className="divider" />
 
       <div className="field-group">
-        <span style={{ color: "var(--text-dim)", fontSize: 12, fontWeight: 500 }}>Background</span>
+        <span style={{ color: "var(--text-dim)", fontSize: 12, fontWeight: 500 }}>{t("editor.background")}</span>
         <button
           type="button"
           className="auto-bg-btn"
           disabled={!scenePalette || scenePalette.length < 1}
           title={
             scenePalette && scenePalette.length >= 1
-              ? "Generate a gradient from the media's colors"
-              : "Upload an image or video first"
+              ? t("editor.autoBgTooltip")
+              : t("editor.autoBgDisabled")
           }
           onClick={() => {
             if (!scenePalette || scenePalette.length < 1) return;
@@ -294,7 +294,7 @@ export function ControlPanel() {
             setBackgroundGradient(from, to);
           }}
         >
-          Auto from media
+          {t("editor.autoBackground")}
         </button>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {backgroundPresets.map((preset) => {
@@ -335,13 +335,13 @@ export function ControlPanel() {
           })}
         </div>
         <label className="file-trigger">
-          Upload background image
+          {t("editor.uploadBgImage")}
           <input type="file" accept="image/*" onChange={handleBgFile} />
         </label>
         {scene.backgroundMode === "image" ? (
           <>
             <label className="field">
-              <span>Background blur ({scene.backgroundBlur}px)</span>
+              <span>{t("editor.bgBlurLabel", { val: scene.backgroundBlur })}</span>
               <input
                 className="range"
                 type="range"
@@ -349,13 +349,13 @@ export function ControlPanel() {
                 max={40}
                 step={1}
                 value={scene.backgroundBlur}
-                aria-label="Background blur"
+                aria-label={t("editor.bgBlurLabel", { val: scene.backgroundBlur })}
                 aria-valuetext={`${scene.backgroundBlur} pixels`}
                 onChange={(e) => setBackgroundBlur(Number(e.target.value))}
               />
             </label>
             <button type="button" className="btn btn-sm" onClick={() => setBackgroundTransparent()}>
-              Remove background image
+              {t("editor.removeBgImage")}
             </button>
           </>
         ) : null}
@@ -371,27 +371,27 @@ export function ControlPanel() {
             onChange={(e) => toggleWatermark(e.target.checked)}
           />
           <span className="track" aria-hidden="true" />
-          <span>Watermark</span>
+          <span>{t("editor.watermark")}</span>
         </label>
         <label className="field">
-          <span>Watermark text</span>
+          <span>{t("editor.watermarkText")}</span>
           <input value={scene.watermarkText} onChange={(e) => setWatermarkText(e.target.value)} />
         </label>
         <label className="field">
-          <span>Watermark position</span>
+          <span>{t("editor.watermarkPosition")}</span>
           <select
             className="select"
             value={scene.watermarkPosition}
             onChange={(e) => setWatermarkPosition(e.target.value as EditorScene["watermarkPosition"])}
           >
-            <option value="bottom-right">Bottom right</option>
-            <option value="bottom-left">Bottom left</option>
-            <option value="top-right">Top right</option>
-            <option value="top-left">Top left</option>
+            <option value="bottom-right">{t("editor.posBottomRight")}</option>
+            <option value="bottom-left">{t("editor.posBottomLeft")}</option>
+            <option value="top-right">{t("editor.posTopRight")}</option>
+            <option value="top-left">{t("editor.posTopLeft")}</option>
           </select>
         </label>
         <label className="field">
-          <span>Watermark size ({scene.watermarkSize}px)</span>
+          <span>{t("editor.watermarkSize", { val: scene.watermarkSize })}</span>
           <input
             className="range"
             type="range"
@@ -399,7 +399,7 @@ export function ControlPanel() {
             max={64}
             step={1}
             value={scene.watermarkSize}
-            aria-label="Watermark size"
+            aria-label={t("editor.watermarkSize", { val: scene.watermarkSize })}
             aria-valuetext={`${scene.watermarkSize} pixels`}
             onChange={(e) => setWatermarkSize(Number(e.target.value))}
           />

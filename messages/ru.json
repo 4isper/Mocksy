@@ -17,6 +17,13 @@
     "aspectRatio": "Соотношение сторон",
     "background": "Фон",
     "watermark": "Водяной знак",
+    "watermarkText": "Текст водяного знака",
+    "watermarkPosition": "Позиция водяного знака",
+    "watermarkSize": "Размер водяного знака ({val}px)",
+    "posBottomRight": "Вниз-справа",
+    "posBottomLeft": "Вниз-слева",
+    "posTopRight": "Вверх-справа",
+    "posTopLeft": "Вверх-слева",
     "layers": "Слои",
     "annotations": "Аннотации",
     "controls": "Управление",
@@ -49,7 +56,78 @@
     "moveUp": "Переместить слой вверх",
     "moveDown": "Переместить слой вниз",
     "copyToClipboard": "Скопировать PNG в буфер обмена",
-    "copiedToClipboard": "Скопировано в буфер обмена!"
+    "copiedToClipboard": "Скопировано в буфер обмена!",
+    "media": "Медиа",
+    "uploadMediaShort": "Загрузить изображение или видео",
+    "uploadError": "Не удалось загрузить файл.",
+    "autoBgTooltip": "Создать градиент из цветов медиа",
+    "autoBgDisabled": "Сначала загрузите изображение или видео",
+    "positionX": "Позиция X",
+    "positionY": "Позиция Y",
+    "uploadBgImage": "Загрузить фоновое изображение",
+    "bgBlurLabel": "Размытие фона ({val}px)",
+    "removeBgImage": "Удалить фоновое изображение",
+    "uploadBgTooltip": "Выберите файл фонового изображения",
+    "fill": "Заполнение",
+    "fit": "Вписать",
+    "fillFitLabel": "Заполнение / Вписать"
+  },
+  "frame": {
+    "none": "Без рамки",
+    "iphone": "iPhone",
+    "iphone15": "15",
+    "iphone16pro": "16 Pro",
+    "desktop": "Desktop",
+    "tablet": "Планшет",
+    "watch": "Часы"
+  },
+  "style": {
+    "default": "По умолчанию",
+    "glassLight": "Стекло светлое",
+    "glassDark": "Стекло тёмное",
+    "outline": "Контур"
+  },
+  "animation": {
+    "none": "Без анимации",
+    "zoomIn": "Увеличение",
+    "zoomOut": "Уменьшение",
+    "parallax": "Параллакс"
+  },
+  "annotation": {
+    "text": "Текст",
+    "arrow": "Стрелка",
+    "rect": "Рамка",
+    "addAnnotation": "Добавить аннотацию",
+    "addCallouts": "Добавьте заметки, стрелки или рамки для аннотаций. Перетащите на холст для изменения позиции.",
+    "fontSize": "Размер шрифта ({val}px)",
+    "strokeWidth": "Толщина линии ({val}px)",
+    "color": "Цвет",
+    "delete": "Удалить",
+    "clearAll": "Очистить всё"
+  },
+  "video": {
+    "options": "Настройки видео",
+    "muted": "Без звука",
+    "loop": "Зациклить",
+    "autoplay": "Автовоспроизведение",
+    "posterTime": "Постер",
+    "timeline": "Таймлайн",
+    "exportQuality": "Качество экспорта",
+    "qualityLow": "Низкое",
+    "qualityMedium": "Среднее",
+    "qualityHigh": "Высокое"
+  },
+  "videoTrim": {
+    "trim": "Обрезка",
+    "trimStart": "Начало обрезки",
+    "trimEnd": "Конец обрезки"
+  },
+  "templates": {
+    "title": "Пресеты сцен",
+    "apply": "Применить {name}"
+  },
+  "help": {
+    "layersStack": "Слои расположены снизу вверх. Выберите слой для редактирования масштаба, позиции и настроек видео. Горячие клавиши для активного слоя: ⌘D — дублировать, ⌘↑ / ⌘↓ — переместить, ⌘[ / ⌘] — выбрать."
   },
   "export": {
     "title": "Экспорт",

@@ -17,6 +17,13 @@
     "aspectRatio": "Aspect ratio",
     "background": "Background",
     "watermark": "Watermark",
+    "watermarkText": "Watermark text",
+    "watermarkPosition": "Watermark position",
+    "watermarkSize": "Watermark size ({val}px)",
+    "posBottomRight": "Bottom right",
+    "posBottomLeft": "Bottom left",
+    "posTopRight": "Top right",
+    "posTopLeft": "Top left",
     "layers": "Layers",
     "annotations": "Annotations",
     "controls": "Controls",
@@ -49,7 +56,78 @@
     "moveUp": "Move layer up",
     "moveDown": "Move layer down",
     "copyToClipboard": "Copy PNG to clipboard",
-    "copiedToClipboard": "Copied to clipboard!"
+    "copiedToClipboard": "Copied to clipboard!",
+    "media": "Media",
+    "uploadMediaShort": "Upload image or video",
+    "uploadError": "Could not load that file.",
+    "autoBgTooltip": "Generate a gradient from the media's colors",
+    "autoBgDisabled": "Upload an image or video first",
+    "positionX": "Position X",
+    "positionY": "Position Y",
+    "uploadBgImage": "Upload background image",
+    "bgBlurLabel": "Background blur ({val}px)",
+    "removeBgImage": "Remove background image",
+    "uploadBgTooltip": "Select a background image file",
+    "fill": "Fill",
+    "fit": "Fit",
+    "fillFitLabel": "Fill / Fit"
+  },
+  "frame": {
+    "none": "None",
+    "iphone": "iPhone",
+    "iphone15": "15",
+    "iphone16pro": "16 Pro",
+    "desktop": "Desktop",
+    "tablet": "Tablet",
+    "watch": "Watch"
+  },
+  "style": {
+    "default": "Default",
+    "glassLight": "Glass",
+    "glassDark": "Dark glass",
+    "outline": "Outline"
+  },
+  "animation": {
+    "none": "None",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "parallax": "Parallax"
+  },
+  "annotation": {
+    "text": "Text",
+    "arrow": "Arrow",
+    "rect": "Box",
+    "addAnnotation": "Add annotation",
+    "addCallouts": "Add callouts, arrows or boxes to annotate the mockup. Drag them on the canvas to reposition.",
+    "fontSize": "Font size ({val}px)",
+    "strokeWidth": "Stroke ({val}px)",
+    "color": "Color",
+    "delete": "Delete",
+    "clearAll": "Clear all"
+  },
+  "video": {
+    "options": "Video options",
+    "muted": "Muted",
+    "loop": "Loop",
+    "autoplay": "Autoplay",
+    "posterTime": "Poster time",
+    "timeline": "Timeline",
+    "exportQuality": "Export quality",
+    "qualityLow": "Low (smaller file)",
+    "qualityMedium": "Medium",
+    "qualityHigh": "High (best detail)"
+  },
+  "videoTrim": {
+    "trim": "Trim",
+    "trimStart": "Trim start",
+    "trimEnd": "Trim end"
+  },
+  "templates": {
+    "title": "Scene presets",
+    "apply": "Apply {name}"
+  },
+  "help": {
+    "layersStack": "Layers stack top to bottom. Select a layer to edit its zoom, position and video options. Shortcuts for the active layer: ⌘D duplicate, ⌘↑ / ⌘↓ reorder, ⌘[ / ⌘] switch."
   },
   "export": {
     "title": "Export",
