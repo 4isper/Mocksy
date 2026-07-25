@@ -197,13 +197,14 @@ export function EditorShell() {
       }
       if (modifier && event.key.toLowerCase() === "z") {
         event.preventDefault();
-        if (event.shiftKey) redo();
-        else undo();
+        const st = useEditorStore.getState();
+        if (event.shiftKey) st.redo();
+        else st.undo();
         return;
       }
       if (modifier && event.key.toLowerCase() === "y") {
         event.preventDefault();
-        redo();
+        useEditorStore.getState().redo();
         return;
       }
       if (modifier && event.key.toLowerCase() === "s") {
@@ -280,7 +281,7 @@ export function EditorShell() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [undo, redo, saveNow, handleReset, handleExportPng, handleExportMp4, handleExportGif, handleCopyPng, setShortcutsOpen, setCommandPaletteOpen]);
+  }, [saveNow, handleReset, handleExportPng, handleExportMp4, handleExportGif, handleCopyPng, setShortcutsOpen, setCommandPaletteOpen]);
 
   return (
     <main className="editor-shell">

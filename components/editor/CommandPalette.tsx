@@ -316,7 +316,7 @@ function createCommands(
       label: t("commandPalette.addRectangleAnnotation"),
       description: t("commandPalette.addRectangleAnnotationDesc"),
       keywords: ["annotation", "rectangle", "box", "highlight", "shape"],
-      action: () => addAnnotation("rectangle"),
+      action: () => addAnnotation("rect"),
     },
     {
       id: "anno-clear",
