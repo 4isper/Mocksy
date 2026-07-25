@@ -1,23 +1,29 @@
 "use client";
 
 import type { ChangeEvent } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { exportProjectToFile, importProjectFromFile } from "@/lib/state/projectFile";
 
-function relativeTime(ts: number): string {
-  const diff = Date.now() - ts;
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const day = Math.floor(hr / 24);
-  return `${day}d ago`;
-}
-
 export function ProjectsPanel() {
+  const t = useTranslations();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(id);
+  }, []);
+  const relativeTime = (ts: number): string => {
+    const diff = now - ts;
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return t("projects.justNow");
+    if (min < 60) return t("projects.minAgo", { n: min });
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return t("projects.hourAgo", { n: hr });
+    const day = Math.floor(hr / 24);
+    return t("projects.dayAgo", { n: day });
+  };
   const projects = useProjectsStore((s) => s.projects);
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
   const createProject = useProjectsStore((s) => s.createProject);
@@ -56,19 +62,19 @@ export function ProjectsPanel() {
       importProject(project);
       setError(null);
     } catch {
-      setError("Could not import that file.");
+      setError(t("projects.importError"));
     }
   };
 
   return (
     <div className="panel projects-panel" style={{ padding: 16, display: "grid", gap: 10, alignContent: "start" }}>
-      <h2 className="panel-title">Projects</h2>
+      <h2 className="panel-title">{t("projects.title")}</h2>
       <div style={{ display: "flex", gap: 8 }}>
         <button type="button" className="btn btn-sm" onClick={handleNew}>
-          + New
+          {t("projects.newProjectBtn")}
         </button>
         <label className="btn btn-sm" style={{ cursor: "pointer" }}>
-          Import
+          {t("projects.import")}
           <input type="file" accept="application/json,.json" onChange={handleImport} style={{ display: "none" }} />
         </label>
       </div>
@@ -130,7 +136,7 @@ export function ProjectsPanel() {
               <button
                 type="button"
                 className="btn btn-sm"
-                aria-label={`Rename ${project.name}`}
+                aria-label={t("projects.renameLabel", { name: project.name })}
                 disabled={editing}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -142,7 +148,7 @@ export function ProjectsPanel() {
               <button
                 type="button"
                 className="btn btn-sm"
-                aria-label={`Duplicate ${project.name}`}
+                aria-label={t("projects.duplicateLabel", { name: project.name })}
                 onClick={(e) => {
                   e.stopPropagation();
                   duplicateProject(project.id);
@@ -153,7 +159,7 @@ export function ProjectsPanel() {
               <button
                 type="button"
                 className="btn btn-sm"
-                aria-label={`Export ${project.name}`}
+                aria-label={t("projects.exportLabel", { name: project.name })}
                 onClick={(e) => {
                   e.stopPropagation();
                   exportProjectToFile(project);
@@ -164,7 +170,7 @@ export function ProjectsPanel() {
               <button
                 type="button"
                 className="btn btn-sm"
-                aria-label={`Delete ${project.name}`}
+                aria-label={t("projects.deleteLabel", { name: project.name })}
                 disabled={projects.length <= 1}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -178,7 +184,7 @@ export function ProjectsPanel() {
         })}
       </ul>
       <p style={{ color: "var(--text-dim)", fontSize: 12, margin: 0 }}>
-        Projects autosave to this browser. Export to back up or move a mockup between devices.
+        {t("projects.autosaveNote")}
       </p>
     </div>
   );

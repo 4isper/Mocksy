@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 
 interface VideoTrimControlProps {
@@ -12,6 +13,7 @@ interface VideoTrimControlProps {
  * a glance instead of two disconnected sliders.
  */
 export function VideoTrimControl({ duration }: VideoTrimControlProps) {
+  const t = useTranslations();
   const { scene, setVideoTrimStart, setVideoTrimEnd } = useEditorStore();
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   const layer = activeLayer ?? { videoTrimStart: 0, videoTrimEnd: 0 };
@@ -45,7 +47,7 @@ export function VideoTrimControl({ duration }: VideoTrimControlProps) {
   return (
     <div style={{ display: "grid", gap: 4 }}>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--text-dim)" }}>
-        <span>Trim</span>
+        <span>{t("videoTrim.trim")}</span>
         <span>
           {layer.videoTrimStart.toFixed(1)}s – {layer.videoTrimEnd.toFixed(1)}s
         </span>
@@ -59,7 +61,7 @@ export function VideoTrimControl({ duration }: VideoTrimControlProps) {
           max={max}
           step={0.01}
           value={layer.videoTrimStart}
-          aria-label="Trim start"
+          aria-label={t("videoTrim.trimStart")}
           aria-valuetext={`${layer.videoTrimStart.toFixed(1)} seconds`}
           className="trim-range"
           onChange={(e) => setVideoTrimStart(Number(e.target.value))}
@@ -71,7 +73,7 @@ export function VideoTrimControl({ duration }: VideoTrimControlProps) {
           max={max}
           step={0.01}
           value={layer.videoTrimEnd}
-          aria-label="Trim end"
+          aria-label={t("videoTrim.trimEnd")}
           aria-valuetext={`${layer.videoTrimEnd.toFixed(1)} seconds`}
           className="trim-range"
           onChange={(e) => setVideoTrimEnd(Number(e.target.value))}

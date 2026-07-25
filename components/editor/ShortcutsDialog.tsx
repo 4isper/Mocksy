@@ -1,47 +1,49 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 type Shortcut = { keys: string[]; label: string };
 type ShortcutGroup = { title: string; items: Shortcut[] };
 
 // Mirror of the handlers registered in EditorShell's keydown listener. ⌘ is
 // Cmd on macOS; Ctrl is accepted everywhere (event.metaKey || event.ctrlKey).
-const GROUPS: ShortcutGroup[] = [
-  {
-    title: "Edit",
-    items: [
-      { keys: ["⌘", "Z"], label: "Undo" },
-      { keys: ["⇧", "⌘", "Z"], label: "Redo" },
-      { keys: ["⌘", "S"], label: "Save to localStorage" }
-    ]
-  },
-  {
-    title: "Export",
-    items: [
-      { keys: ["⌘", "E"], label: "Export PNG" },
-      { keys: ["⇧", "⌘", "C"], label: "Copy PNG to clipboard" },
-      { keys: ["⇧", "⌘", "E"], label: "Export MP4" },
-      { keys: ["⇧", "⌘", "G"], label: "Export GIF" }
-    ]
-  },
-  {
-    title: "Layers",
-    items: [
-      { keys: ["⌘", "D"], label: "Duplicate active layer" },
-      { keys: ["⌘", "↑"], label: "Move layer up" },
-      { keys: ["⌘", "↓"], label: "Move layer down" },
-      { keys: ["⌘", "["], label: "Select previous layer" },
-      { keys: ["⌘", "]"], label: "Select next layer" }
-    ]
-  },
-  {
-    title: "Scene",
-    items: [{ keys: ["R"], label: "Reset to defaults" }]
-  }
-];
-
 export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations();
+  const GROUPS: ShortcutGroup[] = [
+    {
+      title: t("shortcuts.edit"),
+      items: [
+        { keys: ["⌘", "Z"], label: t("shortcuts.undo") },
+        { keys: ["⇧", "⌘", "Z"], label: t("shortcuts.redo") },
+        { keys: ["⌘", "S"], label: t("shortcuts.saveLocalStorage") }
+      ]
+    },
+    {
+      title: t("shortcuts.export"),
+      items: [
+        { keys: ["⌘", "E"], label: t("shortcuts.exportPng") },
+        { keys: ["⇧", "⌘", "C"], label: t("shortcuts.copyPng") },
+        { keys: ["⇧", "⌘", "E"], label: t("shortcuts.exportMp4") },
+        { keys: ["⇧", "⌘", "G"], label: t("shortcuts.exportGif") }
+      ]
+    },
+    {
+      title: t("shortcuts.layers"),
+      items: [
+        { keys: ["⌘", "D"], label: t("shortcuts.duplicateActiveLayer") },
+        { keys: ["⌘", "↑"], label: t("shortcuts.moveLayerUp") },
+        { keys: ["⌘", "↓"], label: t("shortcuts.moveLayerDown") },
+        { keys: ["⌘", "["], label: t("shortcuts.selectPrevLayer") },
+        { keys: ["⌘", "]"], label: t("shortcuts.selectNextLayer") }
+      ]
+    },
+    {
+      title: t("shortcuts.scene"),
+      items: [{ keys: ["R"], label: t("shortcuts.reset") }]
+    }
+  ];
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -61,8 +63,8 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
         aria-labelledby="shortcuts-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 id="shortcuts-title">Keyboard shortcuts</h3>
-        <p>⌘ = Cmd on macOS, Ctrl on Windows and Linux. Layer shortcuts are ignored while typing in a field.</p>
+        <h3 id="shortcuts-title">{t("shortcuts.title")}</h3>
+        <p>{t("shortcuts.cmdHint")}</p>
         <div className="shortcut-list">
           {GROUPS.map((group) => (
             <section key={group.title} className="shortcut-group">
@@ -86,7 +88,7 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
         </div>
         <div className="modal-actions">
           <button type="button" className="btn" onClick={onClose}>
-            Close
+            {t("shortcuts.close")}
           </button>
         </div>
       </div>

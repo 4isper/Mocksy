@@ -8,6 +8,7 @@ import { isVideoLayer } from "@/lib/render/mediaKind";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { extractPalette } from "@/lib/media/palette";
+import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 
 /** Duration of one animation loop in the preview, matching the video export. */
@@ -24,14 +25,16 @@ const ANIMATION_DURATION_MS = 3000;
  */
 function useFrameTransform(node: React.RefObject<HTMLDivElement | null>, layer: MediaLayer | undefined) {
   const layerRef = useRef(layer);
-  layerRef.current = layer;
+  useEffect(() => {
+    layerRef.current = layer;
+  });
   const animates = !!layer && layer.animationPreset !== "none";
 
   useEffect(() => {
     const el = node.current;
     if (!el) return;
     const apply = (zoom: number, x: number, y: number) => {
-      el.style.transform = `scale(${zoom}) translate(${x * 2}px, ${y * 2}px)`;
+      el.style.setProperty("transform", `scale(${zoom}) translate(${x * 2}px, ${y * 2}px)`);
     };
     if (!animates) {
       const base = sampleVideoTransform(layerRef.current ?? ({} as MediaLayer), 0);
@@ -68,6 +71,7 @@ interface AnnotationItemProps {
  * stroke width and arrowhead match the exported PNG exactly.
  */
 function AnnotationItem({ annotation, selected, canvasRef, onSelect, onUpdate }: AnnotationItemProps) {
+  const t = useTranslations();
   const moveRef = useRef<{ x: number; y: number; ax: number; ay: number } | null>(null);
   const resizeRef = useRef<{ x: number; y: number; aw: number; ah: number } | null>(null);
   // Measured canvas size, captured after layout so the arrow renders at the
@@ -194,7 +198,7 @@ function AnnotationItem({ annotation, selected, canvasRef, onSelect, onUpdate }:
       {content}
       {selected ? (
         <span
-          aria-label="Resize annotation"
+          aria-label={t("editor.resizeAnnotation")}
           onPointerDown={onResizeDown}
           onPointerMove={onResizeMove}
           onPointerUp={onResizeUp}
@@ -222,6 +226,7 @@ interface PreviewCanvasProps {
 }
 
 export function PreviewCanvas({ scene }: PreviewCanvasProps) {
+  const t = useTranslations();
   const sceneCss = useMemo(() => buildSceneCss(scene), [scene]);
   const dragDepth = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -370,7 +375,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
       // Drop adds a new layer on top of the stack.
       addLayer(url, mediaType, mediaName);
     } catch (err) {
-      setDropError(err instanceof UnsupportedMediaError ? err.message : "Could not load that file.");
+      setDropError(err instanceof UnsupportedMediaError ? err.message : t("editor.uploadError"));
     }
   };
 
@@ -527,7 +532,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             />
           )}
           {isMediaLoading ? (
-            <div className="media-loading" role="status" aria-busy="true" aria-label="Loading media">
+            <div className="media-loading" role="status" aria-busy="true" aria-label={t("editor.loadingMedia")}>
               <span className="spinner" />
             </div>
           ) : null}

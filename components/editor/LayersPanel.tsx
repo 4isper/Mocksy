@@ -2,11 +2,13 @@
 
 import type { ChangeEvent } from "react";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 
 export function LayersPanel() {
+  const t = useTranslations();
   const scene = useEditorStore((s) => s.scene);
   const addLayer = useEditorStore((s) => s.addLayer);
   const removeLayer = useEditorStore((s) => s.removeLayer);
@@ -26,7 +28,7 @@ export function LayersPanel() {
       setError(null);
       addLayer(url, mediaType, mediaName);
     } catch (err) {
-      setError(err instanceof UnsupportedMediaError ? err.message : "Could not load that file.");
+      setError(err instanceof UnsupportedMediaError ? err.message : t("editor.uploadError"));
     } finally {
       event.target.value = "";
     }
@@ -47,9 +49,9 @@ export function LayersPanel() {
 
   return (
     <div className="panel layers-panel" style={{ padding: 16, display: "grid", gap: 10, alignContent: "start" }}>
-      <h2 className="panel-title">Layers</h2>
+      <h2 className="panel-title">{t("editor.layers")}</h2>
       <label className="file-trigger">
-        Add layer
+        {t("editor.addLayer")}
         <input type="file" accept="image/*,video/*" onChange={handleFile} />
       </label>
       {error ? (
@@ -60,7 +62,7 @@ export function LayersPanel() {
       <ul className="layers-list" style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
         {scene.layers.map((layer, index) => {
           const active = layer.id === scene.activeLayerId;
-          const label = layer.mediaName ?? (layer.mediaType === "video" ? "Video" : "Image");
+          const label = layer.mediaName ?? (layer.mediaType === "video" ? t("editor.videoLabel") : t("editor.imageLabel"));
           return (
             <li
               key={layer.id}
@@ -121,8 +123,8 @@ export function LayersPanel() {
               <button
                 type="button"
                 className="btn btn-sm"
-                aria-label={layer.hidden ? `Show ${label}` : `Hide ${label}`}
-                title={layer.hidden ? "Show layer" : "Hide layer"}
+                aria-label={layer.hidden ? t("editor.showLayer") : t("editor.hideLayer")}
+                title={layer.hidden ? t("editor.showLayer") : t("editor.hideLayer")}
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleLayerHidden(layer.id);
@@ -133,8 +135,8 @@ export function LayersPanel() {
               <button
                 type="button"
                 className="btn btn-sm"
-                aria-label="Duplicate layer"
-                title="Duplicate layer"
+                aria-label={t("editor.duplicateLayer")}
+                title={t("editor.duplicateLayer")}
                 onClick={(e) => {
                   e.stopPropagation();
                   duplicateLayer(layer.id);
@@ -145,7 +147,7 @@ export function LayersPanel() {
               <button
                 type="button"
                 className="btn btn-sm"
-                aria-label="Move layer up"
+                aria-label={t("editor.moveUp")}
                 disabled={index === 0}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -157,7 +159,7 @@ export function LayersPanel() {
               <button
                 type="button"
                 className="btn btn-sm"
-                aria-label="Move layer down"
+                aria-label={t("editor.moveDown")}
                 disabled={index === scene.layers.length - 1}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -169,7 +171,7 @@ export function LayersPanel() {
               <button
                 type="button"
                 className="btn btn-sm"
-                aria-label={`Remove ${label}`}
+                aria-label={t("editor.removeLayer", { label })}
                 disabled={scene.layers.length <= 1}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -187,13 +189,13 @@ export function LayersPanel() {
           type="button"
           className="btn btn-sm"
           onClick={() => setMedia(null, "none", null)}
-          title="Remove media from the selected layer"
+          title={t("editor.removeMediaTitle")}
         >
-          Clear media
+          {t("editor.clearMedia")}
         </button>
       ) : null}
       <p style={{ color: "var(--text-dim)", fontSize: 12, margin: 0 }}>
-        Layers stack top to bottom. Select a layer to edit its zoom, position and video options. Shortcuts for the active layer: ⌘D duplicate, ⌘↑ / ⌘↓ reorder, ⌘[ / ⌘] switch.
+        {t("help.layersStack")}
       </p>
     </div>
   );

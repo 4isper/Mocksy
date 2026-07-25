@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { useThemeStore } from "@/lib/state/themeStore";
@@ -52,6 +53,7 @@ function scoreMatch(command: Command, query: string): number {
 }
 
 function createCommands(
+  t: ReturnType<typeof useTranslations>,
   // Editor state
   scene: EditorScene,
   undo: () => void,
@@ -100,8 +102,8 @@ function createCommands(
     // === File / Project ===
     {
       id: "new-project",
-      label: "New Project",
-      description: "Create a fresh mockup project",
+      label: t("commandPalette.newProject"),
+      description: t("commandPalette.newProjectDesc"),
       shortcut: "⌘N",
       keywords: ["new", "create", "fresh", "start"],
       action: () => {
@@ -111,48 +113,48 @@ function createCommands(
     },
     {
       id: "save-project",
-      label: "Save Project",
-      description: "Save current project to localStorage",
+      label: t("commandPalette.saveProject"),
+      description: t("commandPalette.saveProjectDesc"),
       shortcut: "⌘S",
       keywords: ["save", "store", "persist"],
       action: onSave,
     },
     {
       id: "export-png",
-      label: "Export PNG",
-      description: "Export current scene as PNG image",
+      label: t("commandPalette.exportPng"),
+      description: t("commandPalette.exportPngDesc"),
       shortcut: "⌘E",
       keywords: ["export", "png", "image", "download", "picture"],
       action: onExportPng,
     },
     {
       id: "export-mp4",
-      label: "Export MP4",
-      description: "Export animated scene as MP4 video",
+      label: t("commandPalette.exportMp4"),
+      description: t("commandPalette.exportMp4Desc"),
       shortcut: "⇧⌘E",
       keywords: ["export", "mp4", "video", "movie", "animation"],
       action: onExportMp4,
     },
     {
       id: "export-gif",
-      label: "Export GIF",
-      description: "Export animated scene as GIF",
+      label: t("commandPalette.exportGif"),
+      description: t("commandPalette.exportGifDesc"),
       shortcut: "⇧⌘G",
       keywords: ["export", "gif", "animation", "animated"],
       action: onExportGif,
     },
     {
       id: "copy-png",
-      label: "Copy PNG to Clipboard",
-      description: "Copy current scene as PNG to clipboard",
+      label: t("commandPalette.copyPng"),
+      description: t("commandPalette.copyPngDesc"),
       shortcut: "⇧⌘C",
       keywords: ["copy", "clipboard", "png", "image"],
       action: onCopyPng,
     },
     {
       id: "copy-share-url",
-      label: "Copy Share URL",
-      description: "Copy shareable link with current scene",
+      label: t("commandPalette.copyShareUrl"),
+      description: t("commandPalette.copyShareUrlDesc"),
       shortcut: "⌘L",
       keywords: ["copy", "share", "url", "link"],
       action: onCopyShareUrl,
@@ -161,8 +163,8 @@ function createCommands(
     // === Edit ===
     {
       id: "undo",
-      label: "Undo",
-      description: "Undo last change",
+      label: t("commandPalette.undo"),
+      description: t("commandPalette.undoDesc"),
       shortcut: "⌘Z",
       keywords: ["undo", "back", "revert"],
       action: undo,
@@ -170,8 +172,8 @@ function createCommands(
     },
     {
       id: "redo",
-      label: "Redo",
-      description: "Redo last undone change",
+      label: t("commandPalette.redo"),
+      description: t("commandPalette.redoDesc"),
       shortcut: "⇧⌘Z",
       keywords: ["redo", "forward", "repeat"],
       action: redo,
@@ -179,8 +181,8 @@ function createCommands(
     },
     {
       id: "reset-scene",
-      label: "Reset to Defaults",
-      description: "Clear scene and restore default settings",
+      label: t("commandPalette.resetScene"),
+      description: t("commandPalette.resetSceneDesc"),
       shortcut: "R",
       keywords: ["reset", "default", "clear", "restart"],
       action: resetScene,
@@ -191,8 +193,8 @@ function createCommands(
       const spec = FRAME_SPECS[frame];
       return {
         id: `frame-${frame}`,
-        label: `Frame: ${frame.charAt(0).toUpperCase() + frame.slice(1)}`,
-        description: spec.isOverlay ? "Device overlay with screen cutout" : "CSS-only frame",
+        label: t("commandPalette.frameLabel", { name: frame.charAt(0).toUpperCase() + frame.slice(1) }),
+        description: spec.isOverlay ? t("commandPalette.frameOverlayDesc") : t("commandPalette.frameCssDesc"),
         keywords: ["frame", "device", "mockup", frame],
         action: () => setFrame(frame as any),
       };
@@ -213,7 +215,7 @@ function createCommands(
     // === Backgrounds ===
     ...backgroundPresets.map(bg => ({
       id: `bg-${bg.id}`,
-      label: `Background: ${bg.name}`,
+      label: t("commandPalette.backgroundLabel", { name: bg.name }),
       description: bg.kind === "gradient" ? `${bg.gradientFrom} → ${bg.gradientTo}` : bg.backgroundColor,
       keywords: ["background", "bg", "color", "gradient", "solid", bg.name.toLowerCase()],
       action: () => {
@@ -226,8 +228,8 @@ function createCommands(
     // === Aspect Ratios ===
     ...ASPECT_RATIOS.map(ratio => ({
       id: `ratio-${ratio.replace(/\s/g, "-")}`,
-      label: `Aspect Ratio: ${ratio}`,
-      description: `Set canvas to ${ratio}`,
+      label: t("commandPalette.aspectRatioLabel", { ratio }),
+      description: t("commandPalette.aspectRatioDesc", { ratio }),
       keywords: ["ratio", "aspect", "canvas", "size", ratio],
       action: () => setAspectRatio(ratio),
     })),
@@ -235,8 +237,8 @@ function createCommands(
     // === Layers ===
     {
       id: "layer-add",
-      label: "Add Layer",
-      description: "Add a new media layer",
+      label: t("commandPalette.addLayer"),
+      description: t("commandPalette.addLayerDesc"),
       shortcut: "⌘D",
       keywords: ["layer", "add", "new", "media", "image", "video"],
       action: () => {
@@ -257,8 +259,8 @@ function createCommands(
     },
     {
       id: "layer-duplicate",
-      label: "Duplicate Active Layer",
-      description: "Clone the currently selected layer",
+      label: t("commandPalette.duplicateLayer"),
+      description: t("commandPalette.duplicateLayerDesc"),
       shortcut: "⌘D",
       keywords: ["layer", "duplicate", "clone", "copy"],
       action: () => {
@@ -268,8 +270,8 @@ function createCommands(
     },
     {
       id: "layer-remove",
-      label: "Remove Active Layer",
-      description: "Delete the currently selected layer",
+      label: t("commandPalette.removeLayer"),
+      description: t("commandPalette.removeLayerDesc"),
       keywords: ["layer", "remove", "delete", "trash"],
       action: () => {
         if (activeLayerId && layers.length > 1) removeLayer(activeLayerId);
@@ -278,8 +280,8 @@ function createCommands(
     },
     {
       id: "layer-toggle-hidden",
-      label: "Toggle Layer Visibility",
-      description: "Show/hide the active layer",
+      label: t("commandPalette.toggleLayerVisibility"),
+      description: t("commandPalette.toggleLayerVisibilityDesc"),
       keywords: ["layer", "hide", "show", "visibility", "eye"],
       action: () => {
         if (activeLayerId) toggleLayerHidden(activeLayerId);
@@ -288,8 +290,8 @@ function createCommands(
     },
     ...layers.map(layer => ({
       id: `layer-select-${layer.id}`,
-      label: `Select Layer: ${layer.mediaName || `Layer ${layers.indexOf(layer) + 1}`}`,
-      description: layer.hidden ? "(hidden)" : "Click to select",
+      label: t("commandPalette.selectLayer", { name: layer.mediaName || t("commandPalette.layerNumber", { n: layers.indexOf(layer) + 1 }) }),
+      description: layer.hidden ? t("commandPalette.hidden") : t("commandPalette.clickToSelect"),
       keywords: ["layer", "select", "switch", layer.mediaName || ""],
       action: () => selectLayer(layer.id),
     })),
@@ -297,29 +299,29 @@ function createCommands(
     // === Annotations ===
     {
       id: "anno-text",
-      label: "Add Text Annotation",
-      description: "Add editable text overlay",
+      label: t("commandPalette.addTextAnnotation"),
+      description: t("commandPalette.addTextAnnotationDesc"),
       keywords: ["annotation", "text", "label", "caption"],
       action: () => addAnnotation("text"),
     },
     {
       id: "anno-arrow",
-      label: "Add Arrow Annotation",
-      description: "Add directional arrow overlay",
+      label: t("commandPalette.addArrowAnnotation"),
+      description: t("commandPalette.addArrowAnnotationDesc"),
       keywords: ["annotation", "arrow", "pointer", "direction"],
       action: () => addAnnotation("arrow"),
     },
     {
       id: "anno-rect",
-      label: "Add Rectangle Annotation",
-      description: "Add rectangle highlight overlay",
+      label: t("commandPalette.addRectangleAnnotation"),
+      description: t("commandPalette.addRectangleAnnotationDesc"),
       keywords: ["annotation", "rectangle", "box", "highlight", "shape"],
       action: () => addAnnotation("rectangle"),
     },
     {
       id: "anno-clear",
-      label: "Clear All Annotations",
-      description: "Remove all text, arrows, and rectangles",
+      label: t("commandPalette.clearAnnotations"),
+      description: t("commandPalette.clearAnnotationsDesc"),
       keywords: ["annotation", "clear", "remove", "delete", "all"],
       action: clearAnnotations,
       disabled: scene.annotations.length === 0,
@@ -328,18 +330,18 @@ function createCommands(
     // === Watermark ===
     {
       id: "watermark-toggle",
-      label: scene.watermarkEnabled ? "Disable Watermark" : "Enable Watermark",
-      description: scene.watermarkEnabled ? "Remove Mocksy watermark" : "Add Mocksy watermark",
+      label: scene.watermarkEnabled ? t("commandPalette.disableWatermark") : t("commandPalette.enableWatermark"),
+      description: scene.watermarkEnabled ? t("commandPalette.disableWatermarkDesc") : t("commandPalette.enableWatermarkDesc"),
       keywords: ["watermark", "brand", "logo", "mocksy"],
       action: () => toggleWatermark(!scene.watermarkEnabled),
     },
     {
       id: "watermark-edit",
-      label: "Edit Watermark Text",
-      description: `Current: "${scene.watermarkText}"`,
+      label: t("commandPalette.editWatermarkText"),
+      description: t("commandPalette.watermarkTextDesc", { text: scene.watermarkText }),
       keywords: ["watermark", "text", "edit", "change"],
       action: () => {
-        const text = prompt("Watermark text:", scene.watermarkText);
+        const text = prompt(t("commandPalette.watermarkTextPrompt"), scene.watermarkText);
         if (text !== null) useEditorStore.getState().setWatermarkText(text);
       },
     },
@@ -347,22 +349,22 @@ function createCommands(
     // === Export Scale ===
     {
       id: "export-scale-1x",
-      label: "Export Scale: 1×",
-      description: "Standard resolution export",
+      label: t("commandPalette.exportScale1x"),
+      description: t("commandPalette.exportScale1xDesc"),
       keywords: ["export", "scale", "resolution", "1x"],
       action: () => setExportScale(1),
     },
     {
       id: "export-scale-2x",
-      label: "Export Scale: 2×",
-      description: "High resolution export (default)",
+      label: t("commandPalette.exportScale2x"),
+      description: t("commandPalette.exportScale2xDesc"),
       keywords: ["export", "scale", "resolution", "2x", "retina"],
       action: () => setExportScale(2),
     },
     {
       id: "export-scale-4x",
-      label: "Export Scale: 4×",
-      description: "Ultra high resolution export",
+      label: t("commandPalette.exportScale4x"),
+      description: t("commandPalette.exportScale4xDesc"),
       keywords: ["export", "scale", "resolution", "4x", "print"],
       action: () => setExportScale(4),
     },
@@ -370,22 +372,22 @@ function createCommands(
     // === Theme ===
     {
       id: "theme-light",
-      label: "Theme: Light",
-      description: "Switch to light color scheme",
+      label: t("commandPalette.themeLight"),
+      description: t("commandPalette.themeLightDesc"),
       keywords: ["theme", "light", "day", "bright"],
       action: () => setThemeMode("light"),
     },
     {
       id: "theme-dark",
-      label: "Theme: Dark",
-      description: "Switch to dark color scheme",
+      label: t("commandPalette.themeDark"),
+      description: t("commandPalette.themeDarkDesc"),
       keywords: ["theme", "dark", "night", "dim"],
       action: () => setThemeMode("dark"),
     },
     {
       id: "theme-system",
-      label: "Theme: System",
-      description: "Follow system preference",
+      label: t("commandPalette.themeSystem"),
+      description: t("commandPalette.themeSystemDesc"),
       keywords: ["theme", "system", "auto", "preference"],
       action: () => setThemeMode("system"),
     },
@@ -393,8 +395,8 @@ function createCommands(
     // === Projects ===
     ...projects.map(project => ({
       id: `project-switch-${project.id}`,
-      label: `Switch to Project: ${project.name}`,
-      description: project.id === activeProjectId ? "(current)" : `Updated ${new Date(project.updatedAt).toLocaleDateString()}`,
+      label: t("commandPalette.switchProject", { name: project.name }),
+      description: project.id === activeProjectId ? t("commandPalette.current") : t("commandPalette.updated", { date: new Date(project.updatedAt).toLocaleDateString() }),
       keywords: ["project", "switch", "open", project.name.toLowerCase()],
       action: () => switchProject(project.id),
       disabled: project.id === activeProjectId,
@@ -412,6 +414,7 @@ export function useCommands(
   onCopyShareUrl: () => void,
   onSave: () => void
 ) {
+  const t = useTranslations();
   const scene = useEditorStore(s => s.scene);
   const undo = useEditorStore(s => s.undo);
   const redo = useEditorStore(s => s.redo);
@@ -446,7 +449,7 @@ export function useCommands(
   const setThemeMode = useThemeStore(s => s.setMode);
 
   return useMemo(() => createCommands(
-    scene, undo, redo, pastLength, futureLength, resetScene,
+    t, scene, undo, redo, pastLength, futureLength, resetScene,
     setFrame, setStylePreset, setAnimationPreset,
     setBackgroundSolid, setBackgroundGradient, setBackgroundTransparent, setBackgroundImage,
     setAspectRatio, addLayer, duplicateLayer, removeLayer, toggleLayerHidden,
@@ -456,7 +459,7 @@ export function useCommands(
     themeMode, setThemeMode,
     onExportPng, onExportMp4, onExportGif, onCopyPng, onCopyShareUrl, onSave
   ), [
-    scene, pastLength, futureLength, activeProjectId, projects, themeMode, exportScale,
+    t, scene, pastLength, futureLength, activeProjectId, projects, themeMode, exportScale,
     onExportPng, onExportMp4, onExportGif, onCopyPng, onCopyShareUrl, onSave,
     undo, redo, resetScene,
     setFrame, setStylePreset, setAnimationPreset,
@@ -480,6 +483,7 @@ export function CommandPalette({
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const t = useTranslations();
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -489,12 +493,14 @@ export function CommandPalette({
       .sort((a, b) => scoreMatch(b, searchQuery) - scoreMatch(a, searchQuery));
   }, [commands, searchQuery]);
 
+  const prevOpenRef = useRef(isOpen);
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevOpenRef.current) {
       setSearchQuery("");
       setSelectedIndex(0);
       setTimeout(() => inputRef.current?.focus(), 0);
     }
+    prevOpenRef.current = isOpen;
   }, [isOpen]);
 
   useEffect(() => {
@@ -543,7 +549,7 @@ export function CommandPalette({
         onClick={e => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label="Command palette"
+        aria-label={t("commandPalette.title")}
       >
         <div className="command-palette-header">
           <kbd className="command-palette-kbd">⌘K</kbd>
@@ -556,18 +562,18 @@ export function CommandPalette({
               onSearchChange?.(e.target.value);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Type a command…"
+            placeholder={t("commandPalette.searchPlaceholder")}
             className="command-palette-input"
             autoComplete="off"
             spellCheck={false}
-            aria-label="Search commands"
+            aria-label={t("commandPalette.searchLabel")}
           />
           <kbd className="command-palette-kbd">⎋</kbd>
         </div>
         <div className="command-palette-list" ref={listRef} role="listbox">
           {filteredCommands.length === 0 ? (
             <div className="command-palette-empty" role="option" aria-selected={false}>
-              No commands found
+              {t("commandPalette.noResults")}
             </div>
           ) : (
             filteredCommands.map((cmd, idx) => (
@@ -596,7 +602,7 @@ export function CommandPalette({
           )}
         </div>
         <div className="command-palette-footer">
-          {filteredCommands.length} command{filteredCommands.length !== 1 ? "s" : ""} available
+          {t("commandPalette.commandsAvailable", { count: filteredCommands.length })}
         </div>
       </div>
     </div>

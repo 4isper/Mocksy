@@ -9,6 +9,7 @@ import { TemplatesPanel } from "@/components/editor/TemplatesPanel";
 import { LayersPanel } from "@/components/editor/LayersPanel";
 import { AnnotationsPanel } from "@/components/editor/AnnotationsPanel";
 import { CommandPalette, useCommands } from "@/components/editor/CommandPalette";
+import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { exportImage, copyPngToClipboard } from "@/lib/export/exportImage";
 import { sceneToShareUrl } from "@/lib/state/shareState";
@@ -20,6 +21,7 @@ import { LocaleSwitcher } from "@/components/editor/LocaleSwitcher";
 const AUTOSAVE_DELAY = 500;
 
 export function EditorShell() {
+  const t = useTranslations();
   const scene = useEditorStore((s) => s.scene);
   const setScene = useEditorStore((s) => s.setScene);
   const resetScene = useEditorStore((s) => s.resetScene);
@@ -153,8 +155,12 @@ export function EditorShell() {
     setScene(restored, false);
   }, [setScene]);
 
+  const prevSceneRef = useRef(scene);
   useEffect(() => {
-    setSaved(false);
+    if (prevSceneRef.current !== scene) {
+      setSaved(false);
+    }
+    prevSceneRef.current = scene;
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     autosaveTimer.current = setTimeout(() => {
       // Persist the current scene into the active project (which writes the
@@ -281,27 +287,27 @@ export function EditorShell() {
       <div className="brand">
         <span className="brand-mark" aria-hidden="true" />
         <h1>Mocksy</h1>
-        <span className="tag">Free mockup editor — no subscriptions</span>
+        <span className="tag">{t("editor.tagline")}</span>
       </div>
       <div className="editor-grid">
         <ControlPanel />
         <section style={{ display: "grid", gridTemplateRows: "1fr auto", gap: 12, minHeight: 0, overflow: "hidden" }}>
           <PreviewCanvas scene={scene} />
           <div className="panel toolbar">
-            <button type="button" className="btn" onClick={undo} disabled={pastLength === 0} title="Undo (⌘Z)">
-              Undo
+            <button type="button" className="btn" onClick={undo} disabled={pastLength === 0} title={t("editor.undoTitle")}>
+              {t("shortcuts.undo")}
             </button>
-            <button type="button" className="btn" onClick={redo} disabled={futureLength === 0} title="Redo (⇧⌘Z)">
-              Redo
+            <button type="button" className="btn" onClick={redo} disabled={futureLength === 0} title={t("editor.redoTitle")}>
+              {t("shortcuts.redo")}
             </button>
             <button
               type="button"
               className="btn btn-primary"
               disabled={isExporting}
               onClick={() => setExportOpen(true)}
-              title="Export PNG / MP4 / GIF (⌘E)"
+              title={t("editor.exportTitle")}
             >
-              Export
+              {t("nav.export")}
             </button>
             {videoExportStatus ? (
               <div className="export-status">
@@ -332,16 +338,16 @@ export function EditorShell() {
                 {saveError}
               </span>
             ) : (
-              <span className={`status${saved ? " saved" : ""}`}>{saved ? "Saved" : "Editing…"}</span>
+              <span className={`status${saved ? " saved" : ""}`}>{saved ? t("editor.saved") : t("editor.unsaved")}</span>
             )}
             <span className="spacer" />
-            <div className="segmented" style={{ marginRight: 8 }} role="group" aria-label="Theme">
+            <div className="segmented" style={{ marginRight: 8 }} role="group" aria-label={t("editor.themeLabel")}>
               <button
                 type="button"
                 className={themeMode === "light" ? "is-active" : ""}
                 aria-pressed={themeMode === "light"}
                 onClick={() => setThemeMode("light")}
-                title="Light theme"
+                title={t("editor.lightTheme")}
               >
                 ☀️
               </button>
@@ -350,7 +356,7 @@ export function EditorShell() {
                 className={themeMode === "dark" ? "is-active" : ""}
                 aria-pressed={themeMode === "dark"}
                 onClick={() => setThemeMode("dark")}
-                title="Dark theme"
+                title={t("editor.darkTheme")}
               >
                 🌙
               </button>
@@ -359,27 +365,27 @@ export function EditorShell() {
                 className={themeMode === "system" ? "is-active" : ""}
                 aria-pressed={themeMode === "system"}
                 onClick={() => setThemeMode("system")}
-                title="System theme"
+                title={t("editor.systemTheme")}
               >
                 💻
               </button>
             </div>
-            <button type="button" className="btn" onClick={saveNow} title="Save (⌘S)">
-              Save
+            <button type="button" className="btn" onClick={saveNow} title={t("editor.saveTitle")}>
+              {t("shortcuts.save")}
             </button>
-            <button type="button" className="btn" onClick={copyShareUrl} title="Copy Share URL">
-              Share
+            <button type="button" className="btn" onClick={copyShareUrl} title={t("editor.shareTitle")}>
+              {t("nav.share")}
             </button>
             <button
               type="button"
               className="btn"
               onClick={() => setShortcutsOpen(true)}
-              title="Keyboard shortcuts (?)"
+              title={t("editor.shortcutsTitle")}
             >
-              Shortcuts
+              {t("nav.shortcuts")}
             </button>
-            <button type="button" className="btn" onClick={handleReset} title="Reset (R)">
-              Reset
+            <button type="button" className="btn" onClick={handleReset} title={t("editor.resetBtnTitle")}>
+              {t("editor.resetConfirm")}
             </button>
             <LocaleSwitcher />
           </div>
@@ -399,14 +405,14 @@ export function EditorShell() {
             aria-describedby="reset-desc"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 id="reset-title">Reset editor?</h3>
-            <p id="reset-desc">This clears the current mockup and returns to the default scene. You can undo afterwards.</p>
+            <h3 id="reset-title">{t("editor.resetTitle")}</h3>
+            <p id="reset-desc">{t("editor.resetMessage")}</p>
             <div className="modal-actions">
               <button type="button" className="btn" onClick={cancelReset} autoFocus>
-                Cancel
+                {t("editor.resetCancel")}
               </button>
               <button type="button" className="btn btn-primary" onClick={confirmReset}>
-                Reset
+                {t("editor.resetConfirm")}
               </button>
             </div>
           </div>

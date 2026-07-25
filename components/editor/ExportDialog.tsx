@@ -1,20 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 export type ExportFormat = "png" | "mp4" | "gif";
-
-const FORMATS: { value: ExportFormat; label: string }[] = [
-  { value: "png", label: "PNG" },
-  { value: "mp4", label: "MP4" },
-  { value: "gif", label: "GIF" }
-];
-
-const SCALES: { value: 1 | 2 | 4; label: string }[] = [
-  { value: 1, label: "1×" },
-  { value: 2, label: "2×" },
-  { value: 4, label: "4×" }
-];
 
 export function ExportDialog({
   open,
@@ -33,9 +22,20 @@ export function ExportDialog({
   onCopy: () => void;
   busy?: boolean;
 }) {
+  const t = useTranslations();
+  const FORMATS: { value: ExportFormat; label: string }[] = [
+    { value: "png", label: t("export.png") },
+    { value: "mp4", label: t("export.mp4") },
+    { value: "gif", label: t("export.gif") }
+  ];
+  const SCALES: { value: 1 | 2 | 4; label: string }[] = [
+    { value: 1, label: t("export.scale1x") },
+    { value: 2, label: t("export.scale2x") },
+    { value: 4, label: t("export.scale4x") }
+  ];
   const [format, setFormat] = useState<ExportFormat>("png");
   if (!open) return null;
-  const formatLabel = format === "gif" ? "GIF" : format === "mp4" ? "MP4" : "PNG";
+  const formatLabel = t(`export.${format}`);
   return (
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
       <div
@@ -45,11 +45,11 @@ export function ExportDialog({
         aria-labelledby="export-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 id="export-title">Export</h3>
+        <h3 id="export-title">{t("export.title")}</h3>
         <div className="field-group">
           <label className="field">
-            <span>Format</span>
-            <div className="segmented" role="group" aria-label="Format">
+            <span>{t("export.format")}</span>
+            <div className="segmented" role="group" aria-label={t("export.format")}>
               {FORMATS.map((f) => (
                 <button
                   key={f.value}
@@ -64,8 +64,8 @@ export function ExportDialog({
             </div>
           </label>
           <label className="field">
-            <span>Size</span>
-            <div className="segmented" role="group" aria-label="Size">
+            <span>{t("export.size")}</span>
+            <div className="segmented" role="group" aria-label={t("export.size")}>
               {SCALES.map((s) => (
                 <button
                   key={s.value}
@@ -82,8 +82,8 @@ export function ExportDialog({
         </div>
         <div className="modal-actions">
           {format === "png" ? (
-            <button type="button" className="btn" onClick={onCopy} disabled={busy} title="Copy PNG to clipboard (⌘⇧C)">
-              Copy PNG
+            <button type="button" className="btn" onClick={onCopy} disabled={busy} title={t("shortcuts.copyPng")}>
+              {t("export.copy")}
             </button>
           ) : null}
           <button

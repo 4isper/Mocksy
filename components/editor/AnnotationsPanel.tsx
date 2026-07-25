@@ -1,15 +1,16 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 import type { AnnotationType } from "@/lib/types/editor";
 
-const TYPE_LABELS: Record<AnnotationType, string> = {
-  text: "Text",
-  arrow: "Arrow",
-  rect: "Box"
-};
-
 export function AnnotationsPanel() {
+  const t = useTranslations();
+  const TYPE_LABELS: Record<AnnotationType, string> = {
+    text: t("annotation.text"),
+    arrow: t("annotation.arrow"),
+    rect: t("annotation.rect")
+  };
   const scene = useEditorStore((s) => s.scene);
   const selectedAnnotationId = useEditorStore((s) => s.selectedAnnotationId);
   const addAnnotation = useEditorStore((s) => s.addAnnotation);
@@ -25,22 +26,22 @@ export function AnnotationsPanel() {
       className="panel annotations-panel"
       style={{ padding: 16, display: "grid", gap: 14, minHeight: 0 }}
     >
-      <h2 className="panel-title">Annotations</h2>
-      <div className="segmented" role="group" aria-label="Add annotation">
+      <h2 className="panel-title">{t("editor.annotations")}</h2>
+      <div className="segmented" role="group" aria-label={t("annotation.addAnnotation")}>
         <button type="button" onClick={() => addAnnotation("text")}>
-          + Text
+          {t("editor.addText")}
         </button>
         <button type="button" onClick={() => addAnnotation("arrow")}>
-          + Arrow
+          {t("editor.addArrow")}
         </button>
         <button type="button" onClick={() => addAnnotation("rect")}>
-          + Box
+          {t("editor.addBox")}
         </button>
       </div>
 
       {scene.annotations.length === 0 ? (
         <p style={{ color: "var(--text-faint)", fontSize: 12, margin: 0, lineHeight: 1.5 }}>
-          Add callouts, arrows or boxes to annotate the mockup. Drag them on the canvas to reposition.
+          {t("annotation.addCallouts")}
         </p>
       ) : (
         <div className="field-group">
@@ -62,7 +63,7 @@ export function AnnotationsPanel() {
         <div className="field-group">
           {selected.type === "text" ? (
             <label className="field">
-              <span>Text</span>
+              <span>{t("annotation.text")}</span>
               <textarea
                 value={selected.text}
                 rows={2}
@@ -71,7 +72,7 @@ export function AnnotationsPanel() {
             </label>
           ) : null}
           <label className="field">
-            <span>Color</span>
+            <span>{t("annotation.color")}</span>
             <input
               type="color"
               value={selected.color}
@@ -80,7 +81,7 @@ export function AnnotationsPanel() {
           </label>
           {selected.type === "text" ? (
             <label className="field">
-              <span>Font size ({selected.fontSize}px)</span>
+              <span>{t("annotation.fontSize", { val: selected.fontSize })}</span>
               <input
                 className="range"
                 type="range"
@@ -88,14 +89,14 @@ export function AnnotationsPanel() {
                 max={160}
                 step={1}
                 value={selected.fontSize}
-                aria-label="Font size"
+                aria-label={t("annotation.fontSize", { val: selected.fontSize })}
                 aria-valuetext={`${selected.fontSize} pixels`}
                 onChange={(e) => updateAnnotation(selected.id, { fontSize: Number(e.target.value) })}
               />
             </label>
           ) : (
             <label className="field">
-              <span>Stroke ({selected.strokeWidth}px)</span>
+              <span>{t("annotation.strokeWidth", { val: selected.strokeWidth })}</span>
               <input
                 className="range"
                 type="range"
@@ -103,21 +104,21 @@ export function AnnotationsPanel() {
                 max={24}
                 step={1}
                 value={selected.strokeWidth}
-                aria-label="Stroke width"
+                aria-label={t("annotation.strokeWidth", { val: selected.strokeWidth })}
                 aria-valuetext={`${selected.strokeWidth} pixels`}
                 onChange={(e) => updateAnnotation(selected.id, { strokeWidth: Number(e.target.value) })}
               />
             </label>
           )}
           <button type="button" className="btn btn-sm" onClick={() => removeAnnotation(selected.id)}>
-            Delete
+            {t("annotation.delete")}
           </button>
         </div>
       ) : null}
 
       {scene.annotations.length > 0 ? (
         <button type="button" className="btn btn-sm" onClick={clearAnnotations}>
-          Clear all
+          {t("annotation.clearAll")}
         </button>
       ) : null}
     </div>
