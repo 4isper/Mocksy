@@ -7,7 +7,7 @@ import { useProjectsStore } from "@/lib/state/projectsStore";
 import { useThemeStore } from "@/lib/state/themeStore";
 import { FRAME_ORDER, FRAME_SPECS, ASPECT_RATIOS } from "@/lib/render/frames";
 import { sceneStylePresets, applySceneStylePreset, backgroundPresets } from "@/lib/presets/presets";
-import type { EditorScene, MediaLayer } from "@/lib/types/editor";
+import type { AnnotationType, EditorScene, MediaLayer, MediaType, MockupFrame, Project, StylePreset, AnimationPreset } from "@/lib/types/editor";
 
 export interface Command {
   id: string;
@@ -61,28 +61,28 @@ function createCommands(
   pastLength: number,
   futureLength: number,
   resetScene: () => void,
-  setFrame: (frame: any) => void,
-  setStylePreset: (preset: any) => void,
-  setAnimationPreset: (preset: any) => void,
+  setFrame: (frame: MockupFrame) => void,
+  setStylePreset: (preset: StylePreset) => void,
+  setAnimationPreset: (preset: AnimationPreset) => void,
   setBackgroundSolid: (color: string) => void,
   setBackgroundGradient: (from: string, to: string) => void,
   setBackgroundTransparent: () => void,
   setBackgroundImage: (url: string) => void,
   setAspectRatio: (ratio: string) => void,
-  addLayer: (url: string, type: any, name?: string | null) => void,
+  addLayer: (url: string, type: MediaType, name?: string | null) => void,
   duplicateLayer: (id: string) => void,
   removeLayer: (id: string) => void,
   toggleLayerHidden: (id: string) => void,
   selectLayer: (id: string) => void,
   reorderLayers: (ids: string[]) => void,
-  addAnnotation: (type: any) => void,
+  addAnnotation: (type: AnnotationType) => void,
   clearAnnotations: () => void,
   toggleWatermark: (enabled: boolean) => void,
   setExportScale: (scale: 1 | 2 | 4) => void,
   exportScale: 1 | 2 | 4,
   // Projects
   activeProjectId: string | null,
-  projects: any[],
+  projects: Project[],
   switchProject: (id: string) => void,
   // Theme
   themeMode: "light" | "dark" | "system",
@@ -196,7 +196,7 @@ function createCommands(
         label: t("commandPalette.frameLabel", { name: frame.charAt(0).toUpperCase() + frame.slice(1) }),
         description: spec.isOverlay ? t("commandPalette.frameOverlayDesc") : t("commandPalette.frameCssDesc"),
         keywords: ["frame", "device", "mockup", frame],
-        action: () => setFrame(frame as any),
+        action: () => setFrame(frame),
       };
     }),
 
