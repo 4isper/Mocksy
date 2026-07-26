@@ -7,6 +7,13 @@ import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
  *  media is already stripped, but a large uploaded asset still can blow this. */
 const MAX_SHARE_URL_LENGTH = 16000;
 
+export class ShareUrlTooLarge extends Error {
+  constructor() {
+    super("Share link is too large");
+    this.name = "ShareUrlTooLarge";
+  }
+}
+
 export function sceneToShareUrl(scene: EditorScene): string {
   // The demo media is a long data: URI bundled into the app; encoding it into
   // every share link bloats the URL for no reason since the reader restores
@@ -28,7 +35,7 @@ export function sceneToShareUrl(scene: EditorScene): string {
   if (url.toString().length > MAX_SHARE_URL_LENGTH) {
     // A full-resolution uploaded image/video can't travel in a URL — point the
     // user at the project-file export instead of producing a broken link.
-    throw new Error("Share link is too large — export the project file to share this mockup instead.");
+    throw new ShareUrlTooLarge();
   }
   return url.toString();
 }
@@ -54,4 +61,3 @@ export function readSceneFromUrl(): EditorScene | null {
     return null;
   }
 }
-

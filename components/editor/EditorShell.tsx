@@ -12,7 +12,7 @@ import { CommandPalette, useCommands } from "@/components/editor/CommandPalette"
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { exportImage, copyPngToClipboard } from "@/lib/export/exportImage";
-import { sceneToShareUrl } from "@/lib/state/shareState";
+import { sceneToShareUrl, ShareUrlTooLarge } from "@/lib/state/shareState";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { ProjectsPanel } from "@/components/editor/ProjectsPanel";
 import { useThemeStore } from "@/lib/state/themeStore";
@@ -59,7 +59,11 @@ export function EditorShell() {
       const url = sceneToShareUrl(scene);
       await navigator.clipboard.writeText(url);
     } catch (err) {
-      setExportError(err instanceof Error ? err.message : "Could not create share link");
+      if (err instanceof ShareUrlTooLarge) {
+        setExportError(t("shareUrlTooLarge"));
+      } else {
+        setExportError(err instanceof Error ? err.message : "Could not create share link");
+      }
     }
   }, [scene]);
 

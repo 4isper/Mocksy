@@ -71,8 +71,6 @@
     "bgBlurLabel": "Background blur ({val}px)",
     "removeBgImage": "Remove background image",
     "uploadBgTooltip": "Select a background image file",
-    "fill": "Fill",
-    "fit": "Fit",
     "fillFitLabel": "Fill / Fit",
     "tagline": "Free mockup editor — no subscriptions",
     "resetTitle": "Reset editor?",
@@ -322,6 +320,7 @@
     "title": "Something went wrong",
     "message": "An unexpected error occurred.",
     "tryAgain": "Try again",
-    "lastSceneSafe": "Your last saved scene is safe in this browser."
+    "lastSceneSafe": "Your last saved scene is safe in this browser.",
+    "shareUrlTooLarge": "Share link is too large — export the project file to share this mockup instead."
   }
 }
