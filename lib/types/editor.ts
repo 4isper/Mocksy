@@ -25,6 +25,21 @@ export type MediaType = "none" | "image" | "video";
 export type VideoQuality = "low" | "medium" | "high";
 export type WatermarkPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
 
+/** One device frame instance in a multi-frame scene. When frameInstances exists,
+ *  it takes precedence over scene.frame (which becomes legacy/single-frame mode). */
+export interface FrameInstance {
+  id: string;
+  /** Device frame type. */
+  frame: MockupFrame;
+  /** Position as fraction of canvas (0..1). For a grid: x = (i / (n-1)) for n items. */
+  x: number;
+  y: number;
+  /** Size multiplier relative to the base frame (0.5 = half size, 1 = default, 2 = double). */
+  scale: number;
+  /** Optional layer to render inside this frame; if omitted, uses active layer. */
+  layerId: string | null;
+}
+
 /** A single media item stacked inside the mockup frame. Each layer owns its
  *  own transform, animation and (for video) playback/trim settings. */
 export interface MediaLayer {
@@ -57,6 +72,8 @@ export interface EditorScene {
   /** The layer targeted by scene-level zoom/position/video controls. */
   activeLayerId: string | null;
   frame: MockupFrame;
+  /** Multiple device frames in a grid. When present, overrides scene.frame (single-frame mode). */
+  frameInstances: FrameInstance[];
   stylePreset: StylePreset;
   shadowOpacity: number;
   borderRadius: number;

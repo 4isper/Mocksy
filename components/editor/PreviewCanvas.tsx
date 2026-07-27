@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, DragEvent, ReactNode } from "react";
 import type { Annotation, EditorScene, MediaLayer } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
+import { getFrameSpec, SVG_VIEWBOX_HEIGHT, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";

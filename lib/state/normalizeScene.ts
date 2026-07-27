@@ -3,6 +3,7 @@ import type {
   AnnotationType,
   BackgroundMode,
   EditorScene,
+  FrameInstance,
   MediaLayer,
   MediaType,
   MockupFrame,
@@ -91,6 +92,20 @@ function normalizeLayer(raw: unknown, fallback: MediaLayer): MediaLayer {
   };
 }
 
+/** Normalizes one raw frame instance into a valid FrameInstance. */
+function normalizeFrameInstance(raw: unknown, fallback: FrameInstance): FrameInstance {
+  if (!raw || typeof raw !== "object") return fallback;
+  const r = raw as Record<string, unknown>;
+  return {
+    id: typeof r.id === "string" && r.id.length > 0 ? r.id : `frame-${Date.now().toString(36)}`,
+    frame: pick(r.frame, FRAMES, fallback.frame),
+    x: num(r.x, fallback.x, 0, 1),
+    y: num(r.y, fallback.y, 0, 1),
+    scale: num(r.scale, fallback.scale, 0.1, 5),
+    layerId: typeof r.layerId === "string" ? r.layerId : null
+  };
+}
+
 /**
  * Coerces arbitrary parsed input (localStorage / share URL) into a valid
  * EditorScene. Unknown or malformed fields fall back to the initial scene so a
@@ -108,10 +123,22 @@ export function normalizeScene(raw: unknown): EditorScene {
   const rawLayers = Array.isArray(r.layers) ? r.layers : legacyMedia ? [r] : [];
   const layers = rawLayers.length > 0 ? rawLayers.map((l) => normalizeLayer(l, fallbackLayer)) : [{ ...fallbackLayer }];
 
+  const fallbackFrame: FrameInstance = {
+    id: "frame-single",
+    frame: initialScene.frame,
+    x: 0.5,
+    y: 0.5,
+    scale: 1,
+    layerId: null
+  };
+
   return {
     layers,
     activeLayerId: typeof r.activeLayerId === "string" ? r.activeLayerId : layers[0]?.id ?? null,
     frame: pick(r.frame, FRAMES, initialScene.frame),
+    frameInstances: Array.isArray(r.frameInstances) && r.frameInstances.length > 0
+      ? r.frameInstances.map((fi) => normalizeFrameInstance(fi, fallbackFrame))
+      : [],
     stylePreset: pick(r.stylePreset, STYLE_PRESETS, initialScene.stylePreset),
     shadowOpacity: num(r.shadowOpacity, initialScene.shadowOpacity, 0, 1),
     borderRadius: num(r.borderRadius, initialScene.borderRadius, 0, 200),

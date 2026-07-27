@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { computeFrameBox, renderMockupToCanvas } from "@/lib/export/renderMockup";
+import { computeFrameBox, renderMockupToCanvas, computeFrameInstances } from "@/lib/export/renderMockup";
 import { getFrameSpec, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
 import { initialScene } from "@/lib/state/editorStore";
+import { layoutFrameGrid } from "@/lib/state/editorHelpers";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 
 function layer(overrides: Partial<MediaLayer> = {}): MediaLayer {
@@ -563,5 +564,53 @@ describe("renderMockupToCanvas video media", () => {
     const video = { naturalWidth: 640, naturalHeight: 360 } as unknown as CanvasImageSource;
     renderMockupToCanvas(canvas, { ...initialScene, layers: [] }, video, undefined, undefined, 400, 300, 2);
     expect(captured).not.toBeNull();
+  });
+});
+
+describe("layoutFrameGrid", () => {
+  it("creates a horizontal grid of frame instances", () => {
+    const instances = layoutFrameGrid("iphone", 3, "horizontal");
+    expect(instances.length).toBe(3);
+    expect(instances[0]!.x).toBe(0);
+    expect(instances[1]!.x).toBe(0.5);
+    expect(instances[2]!.x).toBe(1);
+    expect(instances[0]!.y).toBe(0.5); // All centered vertically
+    expect(instances[0]!.scale).toBe(1 / 3);
+  });
+
+  it("creates a vertical grid of frame instances", () => {
+    const instances = layoutFrameGrid("iphone15", 2, "vertical");
+    expect(instances.length).toBe(2);
+    expect(instances[0]!.y).toBe(0);
+    expect(instances[1]!.y).toBe(1);
+    expect(instances[0]!.x).toBe(0.5); // All centered horizontally
+  });
+
+  it("returns empty array for count less than 1", () => {
+    expect(layoutFrameGrid("iphone", 0, "horizontal")).toEqual([]);
+    expect(layoutFrameGrid("iphone", -1, "horizontal")).toEqual([]);
+  });
+});
+
+describe("computeFrameInstances", () => {
+  it("returns empty array when no frameInstances defined", () => {
+    const boxes = computeFrameInstances(initialScene, 800, 600, 2);
+    expect(boxes).toEqual([]);
+  });
+
+  it("computes positions for multiple frames", () => {
+    const sceneWithFrames: EditorScene = {
+      ...initialScene,
+      frameInstances: [
+        { id: "f1", frame: "iphone" as const, x: 0, y: 0.5, scale: 1, layerId: null },
+        { id: "f2", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 1, layerId: null },
+        { id: "f3", frame: "iphone" as const, x: 1, y: 0.5, scale: 1, layerId: null }
+      ]
+    };
+    const boxes = computeFrameInstances(sceneWithFrames, 1000, 800, 2);
+    expect(boxes.length).toBe(3);
+    // First frame should be on left, last on right
+    expect(boxes[0]!.x).toBeLessThan(boxes[1]!.x);
+    expect(boxes[1]!.x).toBeLessThan(boxes[2]!.x);
   });
 });

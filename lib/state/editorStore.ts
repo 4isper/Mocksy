@@ -6,6 +6,7 @@ import type {
   AnnotationType,
   AnimationPreset,
   EditorScene,
+  FrameInstance,
   MediaLayer,
   MediaType,
   MockupFrame,
@@ -22,7 +23,8 @@ import {
   makeDemoLayer,
   nextLayerId,
   patchActive,
-  pushHistory
+  pushHistory,
+  layoutFrameGrid
 } from "@/lib/state/editorHelpers";
 
 export interface EditorStoreState {
@@ -69,6 +71,8 @@ export interface EditorStoreState {
   reorderLayers: (orderedIds: string[]) => void;
   updateActiveLayer: (patch: Partial<MediaLayer>) => void;
   setFrame: (frame: MockupFrame) => void;
+  setFrameInstances: (instances: FrameInstance[]) => void;
+  layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") => void;
   setStylePreset: (stylePreset: StylePreset) => void;
   setAnimationPreset: (animationPreset: AnimationPreset) => void;
   setZoom: (zoom: number) => void;
@@ -107,6 +111,7 @@ export const initialScene: EditorScene = {
   layers: [makeDemoLayer()],
   activeLayerId: null,
   frame: "iphone",
+  frameInstances: [],
   stylePreset: "default",
   shadowOpacity: 0.4,
   borderRadius: 20,
@@ -134,6 +139,7 @@ export function makeDemoScene(): EditorScene {
     layers,
     activeLayerId: layers[0]?.id ?? null,
     frame: initialScene.frame,
+    frameInstances: [],
     stylePreset: initialScene.stylePreset,
     shadowOpacity: initialScene.shadowOpacity,
     borderRadius: initialScene.borderRadius,
@@ -280,6 +286,12 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   setScenePalette: (palette) => set({ scenePalette: palette }),
   setExportScale: (exportScale) => set({ exportScale }),
   setFrame: (frame) => set((s) => pushHistory(s, { ...s.scene, frame })),
+  setFrameInstances: (instances: FrameInstance[]) => set((s) => pushHistory(s, { ...s.scene, frameInstances: instances })),
+  layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") =>
+    set((s) => {
+      const instances = layoutFrameGrid(frame, count, direction);
+      return pushHistory(s, { ...s.scene, frameInstances: instances });
+    }),
   setStylePreset: (stylePreset) => set((s) => pushHistory(s, { ...s.scene, stylePreset })),
   setAnimationPreset: (animationPreset) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationPreset }) }, "animation")),
   setZoom: (zoom) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { zoom }) }, "zoom")),

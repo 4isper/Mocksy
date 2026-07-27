@@ -56,6 +56,8 @@ export function ControlPanel() {
     scenePalette,
     setMedia,
     setFrame,
+    setFrameInstances,
+    layoutFrameGrid,
     setStylePreset,
     setAnimationPreset,
     setZoom,
@@ -171,6 +173,19 @@ export function ControlPanel() {
           options={frames.map((f) => ({ value: f, label: frameLabels[f] }))}
           onChange={setFrame}
         />
+        <div className="field" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.frameGrid")}</span>
+          {[2, 3, 4].map((n) => (
+            <button
+              key={n}
+              type="button"
+              className="btn btn-sm"
+              onClick={() => layoutFrameGrid(scene.frame, n, "horizontal")}
+            >
+              {n} {t("editor.frameGridHorizontal")}
+            </button>
+          ))}
+        </div>
         <Segmented
           label={t("editor.aspectRatio")}
           value={scene.aspectRatio}

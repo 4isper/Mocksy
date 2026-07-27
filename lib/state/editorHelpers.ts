@@ -4,6 +4,12 @@ export function nextLayerId(): string {
   return `layer-${layerSeq}-${Date.now().toString(36)}`;
 }
 
+export let frameInstanceSeq = 0;
+export function nextFrameInstanceId(): string {
+  frameInstanceSeq += 1;
+  return `frame-${frameInstanceSeq}-${Date.now().toString(36)}`;
+}
+
 export let annotationSeq = 0;
 export function nextAnnotationId(): string {
   annotationSeq += 1;
@@ -16,6 +22,7 @@ import type {
   Annotation,
   AnnotationType,
   EditorScene,
+  FrameInstance,
   MediaLayer,
   MediaType,
   MockupFrame,
@@ -118,4 +125,25 @@ export function patchActive(scene: EditorScene, patch: Partial<MediaLayer>): Med
 /** The active layer (or first), or undefined when there are no layers. */
 export function activeOf(scene: EditorScene): MediaLayer | undefined {
   return scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+}
+
+/**
+ * Creates a horizontal or vertical grid of frame instances.
+ * x = (i / (count-1)) for spacing, y = 0.5 (centered vertically).
+ * Each frame gets a layerId pointing to the corresponding layer.
+ */
+export function layoutFrameGrid(
+  frame: MockupFrame,
+  count: number,
+  direction: "horizontal" | "vertical"
+): FrameInstance[] {
+  if (count < 1) return [];
+  return Array.from({ length: count }, (_, i) => ({
+    id: nextFrameInstanceId(),
+    frame,
+    x: direction === "horizontal" ? i / Math.max(1, count - 1) : 0.5,
+    y: direction === "vertical" ? i / Math.max(1, count - 1) : 0.5,
+    scale: 1 / count, // Scale down so N items fit
+    layerId: null // Assigned by the caller
+  }));
 }

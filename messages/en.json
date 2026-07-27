@@ -72,6 +72,8 @@
     "removeBgImage": "Remove background image",
     "uploadBgTooltip": "Select a background image file",
     "fillFitLabel": "Fill / Fit",
+    "frameGrid": "Multi-frame:",
+    "frameGridHorizontal": "side by side",
     "tagline": "Free mockup editor — no subscriptions",
     "resetTitle": "Reset editor?",
     "resetMessage": "This clears the current mockup and returns to the default scene. You can undo afterwards.",

@@ -119,6 +119,64 @@ export function computeFrameBox(
 }
 
 /**
+ * Computes canvas-space geometry for multiple frame instances.
+ * Positions are fractions (x/y 0..1) scaled to canvas size.
+ */
+export function computeFrameInstances(
+  scene: EditorScene,
+  canvasWidth: number,
+  canvasHeight: number,
+  pixelRatio: number,
+  transform?: RenderTransform
+): FrameBox[] {
+  const instances = scene.frameInstances.length > 0 ? scene.frameInstances : [];
+  if (instances.length === 0) return [];
+  const dpiScale = pixelRatio;
+  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const actualZoom = Math.max(0.01, transform?.zoom ?? activeLayer?.zoom ?? 1);
+  const frameAr = 10 / 16; // portrait phone default
+
+  // Compute base frame size so N items fit
+  const n = instances.length;
+  const gap = 0.02; // 2% gap between frames
+  const baseFrameW = Math.min(900, (canvasWidth / dpiScale) * 0.8) * dpiScale * actualZoom;
+  const availableW = canvasWidth * (1 - gap * (n - 1));
+  const frameW = (availableW / n) * actualZoom;
+  const frameH = frameW * frameAr;
+
+  return instances.map((inst, i) => {
+    const spec = getFrameSpec(inst.frame);
+    const instScale = inst.scale ?? 1;
+    const w = frameW * instScale * dpiScale;
+    const h = frameH * instScale * dpiScale;
+
+    // Position based on x/y fraction
+    const x = (canvasWidth - frameW * n * instScale) / 2 + inst.x * (frameW * instScale * (n - 1));
+    const y = (canvasHeight - h) / 2 + inst.y * (canvasHeight - h);
+
+    const cutout = spec.cutout;
+    const padX = cutout ? (cutout.x / SVG_VIEWBOX_WIDTH) * w : spec.padding * dpiScale * actualZoom;
+    const padY = cutout ? (cutout.y / SVG_VIEWBOX_HEIGHT) * h : spec.padding * dpiScale * actualZoom;
+    const outerRadius = spec.isOverlay ? 0 : (scene.frame === "watch" ? Math.min(w, h) / 2 : scene.borderRadius + spec.padding) * dpiScale * actualZoom;
+
+    return {
+      x,
+      y,
+      width: w,
+      height: h,
+      outerRadius,
+      innerX: x + padX,
+      innerY: y + padY,
+      innerW: w - padX * 2,
+      innerH: h - padY * 2,
+      innerRadius: cutout
+        ? Math.max(0, (cutout.rx / cutout.w) * (w - padX * 2), (cutout.rx / cutout.h) * (h - padY * 2))
+        : spec.screenRadius * dpiScale * actualZoom
+    };
+  });
+}
+
+/**
  * Renders the mockup onto a 2D canvas. For overlay frames (SVG device skins)
  * the caller should pass `frameOverlay` so the skin is drawn above the media.
  */
