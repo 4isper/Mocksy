@@ -96,4 +96,12 @@ describe("shareState", () => {
     const scene = withLayer(initialScene, { mediaUrl: dataUrl, mediaType: "image", mediaName: "large.png" });
     expect(() => sceneToShareUrl(scene)).toThrow("Share link is too large");
   });
+
+  it("restores demo media when scene has no media layer", () => {
+    const scene = { ...initialScene, layers: [{ ...initialScene.layers[0]!, mediaUrl: null, mediaType: "none" as const }] };
+    const url = sceneToShareUrl(scene);
+    stubLocation(url);
+    const restored = readSceneFromUrl();
+    expect(restored?.layers[0]!.mediaUrl).toContain("data:image/svg");
+  });
 });

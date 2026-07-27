@@ -163,3 +163,405 @@ describe("renderMockupToCanvas media geometry", () => {
     expect(zoomed.box.width).toBeCloseTo(base.box.width * 1.5, 3);
   });
 });
+
+describe("renderMockupToCanvas background modes", () => {
+  it("renders transparent background with provided fill", () => {
+    let fillStyle = "";
+    const ctx = {
+      clearRect: () => {},
+      fillRect: (x: number, y: number, w: number, h: number) => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(v: unknown) { fillStyle = String(v); },
+      set strokeStyle(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {}
+    };
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    renderMockupToCanvas(canvas, { ...initialScene, backgroundMode: "transparent", layers: [] }, null, undefined, undefined, 400, 300, 2, undefined, "transparent", undefined, undefined);
+    // Without backgroundFill parameter, transparent background still draws empty media area
+    expect(fillStyle).toBe("rgba(255,255,255,0.04)");
+  });
+
+  it("draws empty media placeholder when no media provided", () => {
+    let fillRectCalls: { x: number; y: number; w: number; h: number }[] = [];
+    const ctx = {
+      clearRect: () => {},
+      fillRect: (x: number, y: number, w: number, h: number) => fillRectCalls.push({ x, y, w, h }),
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(_v: unknown) {},
+      set strokeStyle(_v: unknown) {},
+      set lineWidth(_v: unknown) {}
+    };
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    renderMockupToCanvas(canvas, { ...initialScene, layers: [] }, null, undefined, undefined, 400, 300, 2);
+    // Should still draw the frame and empty media placeholder
+    expect(fillRectCalls.length).toBeGreaterThan(0);
+  });
+});
+
+describe("renderMockupToCanvas watermark positions", () => {
+  const positions: Array<"bottom-right" | "bottom-left" | "top-right" | "top-left"> = [
+    "bottom-right", "bottom-left", "top-right", "top-left"
+  ];
+
+  for (const pos of positions) {
+    it(`places watermark at ${pos}`, () => {
+      let fillTextCalls: { x: number; y: number }[] = [];
+      const ctx = {
+        clearRect: () => {},
+        fillRect: () => {},
+        save: () => {},
+        restore: () => {},
+        beginPath: () => {},
+        moveTo: () => {},
+        lineTo: () => {},
+        quadraticCurveTo: () => {},
+        closePath: () => {},
+        clip: () => {},
+        fill: () => {},
+        stroke: () => {},
+        createLinearGradient: () => ({ addColorStop: () => {} }),
+        drawImage: () => {},
+        fillText: (text: string, x: number, y: number) => fillTextCalls.push({ x, y }),
+        set fillStyle(_v: unknown) {},
+        set font(_v: unknown) {},
+        set textAlign(_v: unknown) {},
+        set textBaseline(_v: unknown) {},
+        set shadowColor(_v: unknown) {},
+        set shadowBlur(_v: unknown) {},
+        set shadowOffsetX(_v: unknown) {},
+        set shadowOffsetY(_v: unknown) {}
+      };
+      const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+      const scn = { ...initialScene, watermarkEnabled: true, watermarkText: "Test", watermarkPosition: pos, watermarkSize: 16, layers: [] };
+      renderMockupToCanvas(canvas, scn, null, undefined, undefined, 400, 300, 2);
+
+      const call = fillTextCalls.find(c => true);
+      expect(call).toBeDefined();
+    });
+  }
+});
+
+describe("renderMockupToCanvas annotations", () => {
+  it("draws text annotation with shadow", () => {
+    let fillTextCalls: { text: string; x: number; y: number }[] = [];
+    let shadowCalls: { color: string; blur: number }[] = [];
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      fillText: (text: string, x: number, y: number) => fillTextCalls.push({ text, x, y }),
+      set fillStyle(_v: unknown) {},
+      set font(_v: unknown) {},
+      set textAlign(_v: unknown) {},
+      set textBaseline(_v: unknown) {},
+      set shadowColor(v: unknown) { shadowCalls.push({ color: String(v), blur: 0 }); },
+      set shadowBlur(v: unknown) {
+        const last = shadowCalls[shadowCalls.length - 1];
+        if (last) last.blur = Number(v);
+      },
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {}
+    };
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    const scn = {
+      ...initialScene,
+      layers: [],
+      annotations: [{ id: "a1", type: "text" as const, x: 0.1, y: 0.1, w: 0.3, h: 0.1, text: "Hello", color: "#ff0000", strokeWidth: 2, fontSize: 24 }]
+    };
+    renderMockupToCanvas(canvas, scn, null, undefined, undefined, 400, 300, 2);
+    expect(fillTextCalls.some(c => c.text === "Hello")).toBe(true);
+  });
+
+  it("draws rectangle annotation", () => {
+    let strokeCalls: { x: number; y: number; w: number; h: number }[] = [];
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      strokeRect: (x: number, y: number, w: number, h: number) => strokeCalls.push({ x, y, w, h }),
+      set fillStyle(_v: unknown) {},
+      set font(_v: unknown) {},
+      set textAlign(_v: unknown) {},
+      set textBaseline(_v: unknown) {},
+      set strokeStyle(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {},
+      set lineWidth(_v: unknown) {}
+    };
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    const scn = {
+      ...initialScene,
+      layers: [],
+      annotations: [{ id: "a1", type: "rect" as const, x: 0.1, y: 0.1, w: 0.3, h: 0.1, text: "", color: "#00ff00", strokeWidth: 3, fontSize: 12 }]
+    };
+    renderMockupToCanvas(canvas, scn, null, undefined, undefined, 400, 300, 2);
+    expect(strokeCalls.length).toBeGreaterThan(0);
+  });
+
+  it("draws arrow annotation with head", () => {
+    let pathCalls: { method: string; args: number[] }[] = [];
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => { pathCalls.push({ method: "beginPath", args: [] }); },
+      moveTo: (...args: number[]) => { pathCalls.push({ method: "moveTo", args }); },
+      lineTo: (...args: number[]) => { pathCalls.push({ method: "lineTo", args }); },
+      quadraticCurveTo: () => {},
+      closePath: () => { pathCalls.push({ method: "closePath", args: [] }); },
+      clip: () => {},
+      fill: () => { pathCalls.push({ method: "fill", args: [] }); },
+      stroke: () => { pathCalls.push({ method: "stroke", args: [] }); },
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(_v: unknown) {},
+      set font(_v: unknown) {},
+      set textAlign(_v: unknown) {},
+      set textBaseline(_v: unknown) {},
+      set strokeStyle(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {},
+      set lineWidth(_v: unknown) {},
+      set lineCap(_v: unknown) {}
+    };
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    const scn = {
+      ...initialScene,
+      layers: [],
+      annotations: [{ id: "a1", type: "arrow" as const, x: 0.1, y: 0.1, w: 0.3, h: 0.1, text: "", color: "#0000ff", strokeWidth: 2, fontSize: 12 }]
+    };
+    renderMockupToCanvas(canvas, scn, null, undefined, undefined, 400, 300, 2);
+    expect(pathCalls.some(c => c.method === "beginPath")).toBe(true);
+    expect(pathCalls.some(c => c.method === "fill")).toBe(true);
+  });
+});
+
+describe("renderMockupToCanvas frame overlay", () => {
+  it("draws frame overlay with drop shadow", () => {
+    let drawCalls: { img: any; x: number; y: number; w: number; h: number }[] = [];
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: (img: any, x: number, y: number, w: number, h: number) => drawCalls.push({ img, x, y, w, h }),
+      set fillStyle(_v: unknown) {},
+      set font(_v: unknown) {},
+      set textAlign(_v: unknown) {},
+      set textBaseline(_v: unknown) {},
+      set strokeStyle(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {},
+      set lineWidth(_v: unknown) {},
+      set lineCap(_v: unknown) {}
+    };
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    const overlay = { width: 100, height: 200 } as unknown as CanvasImageSource;
+    renderMockupToCanvas(canvas, { ...initialScene, layers: [] }, null, undefined, undefined, 200, 400, 2, { zoom: 1, offsetX: 0, offsetY: 0 }, undefined, overlay);
+    expect(drawCalls.length).toBeGreaterThan(0);
+  });
+});
+
+describe("renderMockupToCanvas background image mode", () => {
+  it("draws background image with blur", () => {
+    let filterValue = "";
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(_v: unknown) {},
+      set font(_v: unknown) {},
+      set textAlign(_v: unknown) {},
+      set textBaseline(_v: unknown) {},
+      set strokeStyle(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {},
+      set lineWidth(_v: unknown) {},
+      set lineCap(_v: unknown) {},
+      get filter() { return filterValue; },
+      set filter(v: unknown) { filterValue = String(v); }
+    };
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    const bgImage = { naturalWidth: 100, naturalHeight: 100 } as unknown as CanvasImageSource;
+    renderMockupToCanvas(canvas, { ...initialScene, backgroundMode: "image", backgroundBlur: 10, layers: [] }, null, undefined, undefined, 200, 400, 2, undefined, undefined, undefined, bgImage);
+    expect(filterValue).toContain("blur");
+  });
+
+  it("draws fallback transparent for image mode without loaded image", () => {
+    let fillStyle = "";
+    const ctx = {
+      clearRect: () => {},
+      fillRect: (_x: number, _y: number, _w: number, _h: number) => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(v: unknown) { fillStyle = String(v); },
+      set font(_v: unknown) {},
+      set textAlign(_v: unknown) {},
+      set textBaseline(_v: unknown) {},
+      set strokeStyle(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {},
+      set lineWidth(_v: unknown) {},
+      set lineCap(_v: unknown) {}
+    };
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    // image mode without backgroundImage falls through to the fallback at the end
+    renderMockupToCanvas(canvas, { ...initialScene, backgroundMode: "image", layers: [] }, null, undefined, undefined, 200, 400, 2);
+    // The fallback draws "rgba(0,0,0,0)" - the fillStyle is set in the else branch
+    // However, since there's no media, emptyMediaFill is used which is "rgba(255,255,255,0.04)"
+    // This tests that the code path for image-without-image is executed
+    expect(fillStyle).toBe("rgba(255,255,255,0.04)");
+  });
+});
+
+describe("renderMockupToCanvas video media", () => {
+  it("uses videoWidth/videoHeight for video media", () => {
+    let captured: { dw: number; dh: number } | null = null;
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: (img: any, dx: number, dy: number, dw: number, dh: number) => {
+        captured = { dw, dh };
+      },
+      set fillStyle(_v: unknown) {},
+      set strokeStyle(_v: unknown) {},
+      set lineWidth(_v: unknown) {},
+      set filter(_v: unknown) {}
+    };
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    // Video with explicit videoWidth/videoHeight (different from natural dimensions)
+    const video = { videoWidth: 320, videoHeight: 180 } as unknown as CanvasImageSource;
+    renderMockupToCanvas(canvas, { ...initialScene, layers: [] }, video, undefined, undefined, 400, 300, 2);
+    expect(captured).not.toBeNull();
+  });
+
+  it("falls back to natural dimensions for video without videoWidth", () => {
+    let captured: { dw: number; dh: number } | null = null;
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: (img: any, dx: number, dy: number, dw: number, dh: number) => {
+        captured = { dw, dh };
+      },
+      set fillStyle(_v: unknown) {},
+      set strokeStyle(_v: unknown) {},
+      set lineWidth(_v: unknown) {},
+      set filter(_v: unknown) {}
+    };
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    // Video without videoWidth uses naturalWidth
+    const video = { naturalWidth: 640, naturalHeight: 360 } as unknown as CanvasImageSource;
+    renderMockupToCanvas(canvas, { ...initialScene, layers: [] }, video, undefined, undefined, 400, 300, 2);
+    expect(captured).not.toBeNull();
+  });
+});

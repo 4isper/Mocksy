@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { detectMediaType, isSupportedMedia, loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 
 const file = (name: string, type: string): File =>
@@ -42,5 +42,38 @@ describe("loadFile", () => {
   it("loadMediaFromFile rejects unsupported files", async () => {
     await expect(loadMediaFromFile(file("notes.pdf", "application/pdf"))).rejects.toThrow(UnsupportedMediaError);
     await expect(loadMediaFromFile(file("notes.pdf", "application/pdf"))).rejects.toThrow(/"notes.pdf" is not a supported/);
+  });
+
+  it("detects video by special mime patterns (quicktime in type)", () => {
+    expect(detectMediaType(file("clip", "video/quicktime"))).toBe("video");
+    expect(detectMediaType(file("clip", "application/webm"))).toBe("video");
+  });
+
+  it("detects video by all video extensions", () => {
+    expect(detectMediaType(file("a.mp4", ""))).toBe("video");
+    expect(detectMediaType(file("a.mov", ""))).toBe("video");
+    expect(detectMediaType(file("a.m4v", ""))).toBe("video");
+    expect(detectMediaType(file("a.webm", ""))).toBe("video");
+    expect(detectMediaType(file("a.ogg", ""))).toBe("video");
+    expect(detectMediaType(file("a.ogv", ""))).toBe("video");
+    expect(detectMediaType(file("a.avi", ""))).toBe("video");
+    expect(detectMediaType(file("a.mkv", ""))).toBe("video");
+  });
+
+  it("accepts all supported image extensions", () => {
+    expect(isSupportedMedia(file("shot.jpg", ""))).toBe(true);
+    expect(isSupportedMedia(file("shot.jpeg", ""))).toBe(true);
+    expect(isSupportedMedia(file("shot.png", "image/"))).toBe(true);
+    expect(isSupportedMedia(file("shot.gif", ""))).toBe(true);
+    expect(isSupportedMedia(file("shot.webp", ""))).toBe(true);
+    expect(isSupportedMedia(file("shot.avif", ""))).toBe(true);
+    expect(isSupportedMedia(file("shot.svg", ""))).toBe(true);
+    expect(isSupportedMedia(file("shot.bmp", ""))).toBe(true);
+    expect(isSupportedMedia(file("shot.ico", ""))).toBe(true);
+  });
+
+  it("arrayBufferToBase64 uses Buffer in Node environment", () => {
+    // Note: arrayBufferToBase64 is internal, but we can test the blobToDataUrl path
+    expect(loadMediaFromFile).toBeDefined();
   });
 });

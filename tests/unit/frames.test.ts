@@ -42,5 +42,7 @@ describe("FRAME_SPECS", () => {
 
   it("getFrameSpec falls back to none for unknown frames", () => {
     expect(getFrameSpec("iphone15")).toBe(FRAME_SPECS.iphone15);
+    // @ts-expect-error testing fallback for invalid frame
+    expect(getFrameSpec("nonexistent")).toBe(FRAME_SPECS.none);
   });
 });

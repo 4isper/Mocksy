@@ -61,8 +61,9 @@ describe("pickGradientPair", () => {
 describe("extractPalette", () => {
   it("is covered by the quantize/rgbToHex units above (DOM canvas requires jsdom)", () => {
     // extractPalette itself relies on canvas getImageData, which needs a DOM
-    // environment. The pure helpers it composes (quantize, rgbToHex) are unit
+    // environment (jsdom). The pure helpers it composes (quantize, rgbToHex) are unit
     // tested above, and PreviewCanvas wired it through onLoad/onLoadedData.
+    // For jsdom support, install vitest-jsdom preset.
     expect(true).toBe(true);
   });
 });

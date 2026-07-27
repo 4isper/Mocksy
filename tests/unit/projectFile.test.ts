@@ -51,4 +51,17 @@ describe("projectFile", () => {
     Object.defineProperty(oversized, "size", { value: 5 * 1024 * 1024 + 1 });
     await expect(importProjectFromFile(oversized)).rejects.toThrow("too large");
   });
+
+  it("imports a scene payload without explicit scene field", async () => {
+    // Legacy format or partial payload where scene is at root level
+    const file = projectFile({ frame: "tablet" });
+    const imported = await importProjectFromFile(file);
+    expect(imported.scene.frame).toBe("tablet");
+  });
+
+  it("uses filename without extension for name when no name in file", async () => {
+    const file = projectFile({ scene: { ...initialScene } }, "project-name.json");
+    const imported = await importProjectFromFile(file);
+    expect(imported.name).toBe("project-name");
+  });
 });
