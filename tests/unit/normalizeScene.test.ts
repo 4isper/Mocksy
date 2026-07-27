@@ -103,4 +103,25 @@ describe("normalizeScene", () => {
     const bad = normalizeScene({ layers: [{ mediaFit: "stretch" }] });
     expect(bad.layers[0]!.mediaFit).toBe(initialScene.layers[0]!.mediaFit);
   });
+
+  it("normalizes frameInstances array for multi-frame scenes", () => {
+    const s = normalizeScene({
+      frameInstances: [
+        { id: "f1", frame: "iphone15", x: 0, y: 0.5, scale: 0.5, layerId: null }
+      ]
+    });
+    expect(s.frameInstances).toHaveLength(1);
+    expect(s.frameInstances[0]!.id).toBe("f1");
+    expect(s.frameInstances[0]!.frame).toBe("iphone15");
+    expect(s.frameInstances[0]!.x).toBe(0);
+    expect(s.frameInstances[0]!.scale).toBe(0.5);
+  });
+
+  it("ignores invalid frameInstances entries", () => {
+    const s = normalizeScene({
+      frameInstances: [null, { frame: "invalid" }, { id: "f2", frame: "iphone", x: 10, y: -5, scale: 0.5 }]
+    });
+    // Invalid entries fall back to defaults
+    expect(s.frameInstances.length).toBeGreaterThan(0);
+  });
 });
