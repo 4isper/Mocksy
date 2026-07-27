@@ -1,6 +1,6 @@
 "use client";
 
-import type { Annotation, EditorScene } from "@/lib/types/editor";
+import type { Annotation, EditorScene, MediaLayer } from "@/lib/types/editor";
 import { getFrameSpec, SVG_VIEWBOX_HEIGHT, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
 
 function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -203,6 +203,34 @@ export function renderMockupToCanvas(
   const dpiScale = pixelRatio;
   const activeLayerForRender = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   ctx.clearRect(0, 0, width, height);
+
+  // If frameInstances are defined, render a grid of frames instead of a single frame.
+  // Each frame draws media from its associated layer (or the active layer if no layerId).
+  if (scene.frameInstances.length > 0) {
+    const frameBoxes = computeFrameInstances(scene, width, height, pixelRatio, transform);
+    for (let i = 0; i < frameBoxes.length; i++) {
+      const box = frameBoxes[i];
+      const inst = scene.frameInstances[i];
+      if (!box || !inst) continue;
+
+      const layer = scene.layers.find((l) => l.id === inst.layerId) ?? activeLayerForRender;
+      const instSpec = getFrameSpec(inst.frame);
+      const instZoom = transform?.zoom ?? layer?.zoom ?? 1;
+
+      // Load overlay if needed
+      let overlay: HTMLImageElement | null = null;
+      if (instSpec.isOverlay && instSpec.asset && instSpec.asset === spec.asset && frameOverlay) {
+        overlay = frameOverlay as HTMLImageElement;
+      }
+
+      // Draw frame (shadow, border, media) — simplified version for grid
+      drawFrameAndMedia(ctx, scene, layer, box, dpiScale, instZoom, media, overlay);
+    }
+    // Still draw watermark and annotations
+    drawWatermark(ctx, scene, width, height, dpiScale);
+    if (scene.annotations.length > 0) drawAnnotations(ctx, scene.annotations, width, height, dpiScale);
+    return;
+  }
 
   if (scene.backgroundMode === "image" && backgroundImage) {
     // Draw the uploaded background image to cover the canvas, then blur it. The
@@ -435,6 +463,105 @@ function drawAnnotations(
     }
     ctx.restore();
   }
+}
+
+/** Draws a single frame's shadow, border, and media content. Used by multi-frame rendering. */
+function drawFrameAndMedia(
+  ctx: CanvasRenderingContext2D,
+  scene: EditorScene,
+  layer: MediaLayer | undefined,
+  box: FrameBox,
+  dpiScale: number,
+  zoom: number,
+  media: CanvasImageSource | null,
+  overlay: CanvasImageSource | null
+) {
+  const spec = getFrameSpec(scene.frame);
+  const { x, y, width: frameW, height: frameH, outerRadius, innerX, innerY, innerW, innerH, innerRadius } = box;
+
+  // Draw shadow and glass border
+  if (!spec.isOverlay) {
+    ctx.save();
+    ctx.shadowColor = `rgba(0,0,0,${Math.max(0, Math.min(1, scene.shadowOpacity))})`;
+    ctx.shadowBlur = RENDER.shadowBlur * dpiScale * zoom;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = RENDER.shadowOffsetY * dpiScale * zoom;
+    roundedRectPath(ctx, x, y, frameW, frameH, outerRadius);
+    ctx.fillStyle = scene.stylePreset === "glassDark" ? RENDER.glassDarkFill : RENDER.glassLightFill;
+    ctx.fill();
+    ctx.restore();
+
+    if (scene.stylePreset === "outline" || scene.stylePreset.startsWith("glass")) {
+      ctx.save();
+      roundedRectPath(ctx, x, y, frameW, frameH, outerRadius);
+      ctx.lineWidth = (scene.stylePreset === "outline" ? RENDER.outlineStroke : RENDER.glassStroke) * dpiScale * zoom;
+      ctx.strokeStyle = scene.stylePreset === "glassDark" ? RENDER.glassDarkStroke : RENDER.glassLightStroke;
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // Draw media inside the frame
+  ctx.save();
+  roundedRectPath(ctx, innerX, innerY, innerW, innerH, innerRadius);
+  ctx.clip();
+  if (media) {
+    const m = media as { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number; videoWidth?: number; videoHeight?: number };
+    const mw = m.videoWidth || m.naturalWidth || m.width || innerW;
+    const mh = m.videoHeight || m.naturalHeight || m.height || innerH;
+    const fit = layer?.mediaFit ?? "cover";
+    const scale = fit === "contain" ? Math.min(innerW / mw, innerH / mh) : Math.max(innerW / mw, innerH / mh);
+    const dw = mw * scale;
+    const dh = mh * scale;
+    const offsetX = layer?.mediaOffsetX ?? 0;
+    const offsetY = layer?.mediaOffsetY ?? 0;
+    const dx = innerX + (innerW - dw) / 2 + offsetX * (innerW - dw) / 2;
+    const dy = innerY + (innerH - dh) / 2 + offsetY * (innerH - dh) / 2;
+    ctx.drawImage(media, dx, dy, dw, dh);
+  } else {
+    ctx.fillStyle = RENDER.emptyMediaFill;
+    ctx.fillRect(innerX, innerY, innerW, innerH);
+  }
+  ctx.restore();
+
+  // Draw overlay skin if provided
+  if (overlay) {
+    ctx.save();
+    ctx.shadowColor = `rgba(0,0,0,${Math.max(0, Math.min(1, scene.shadowOpacity))})`;
+    ctx.shadowBlur = RENDER.shadowBlur * dpiScale * zoom;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = RENDER.shadowOffsetY * dpiScale * zoom;
+    ctx.drawImage(overlay, x, y, frameW, frameH);
+    ctx.restore();
+  }
+}
+
+/** Watermark drawing extracted for reuse in multi-frame mode. */
+function drawWatermark(
+  ctx: CanvasRenderingContext2D,
+  scene: EditorScene,
+  width: number,
+  height: number,
+  dpiScale: number
+) {
+  if (!scene.watermarkEnabled || !scene.watermarkText) return;
+  const watermarkSize = scene.watermarkSize * dpiScale;
+  const inset = 16 * dpiScale;
+  const onLeft = scene.watermarkPosition === "bottom-left" || scene.watermarkPosition === "top-left";
+  const onTop = scene.watermarkPosition === "top-right" || scene.watermarkPosition === "top-left";
+  const textX = onLeft ? inset : width - inset;
+  const textY = onTop ? inset + watermarkSize : height - inset;
+  ctx.save();
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.font = `500 ${watermarkSize}px Inter, system-ui, sans-serif`;
+  ctx.textAlign = onLeft ? "left" : "right";
+  ctx.textBaseline = onTop ? "top" : "alphabetic";
+  ctx.shadowColor = "rgba(0,0,0,0.6)";
+  ctx.shadowBlur = 3 * dpiScale;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 1 * dpiScale;
+  ctx.fillText(scene.watermarkText, textX, textY);
+  ctx.restore();
 }
 
 export function loadImage(src: string): Promise<HTMLImageElement> {
