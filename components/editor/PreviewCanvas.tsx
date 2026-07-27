@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, DragEvent, ReactNode } from "react";
-import type { Annotation, EditorScene, MediaLayer } from "@/lib/types/editor";
+import type { Annotation, EditorScene, MediaLayer, MockupFrame } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
 import { getFrameSpec, SVG_VIEWBOX_HEIGHT, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
@@ -450,94 +450,115 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             }}
           />
         ) : null}
-        <div
-          ref={frameRef}
-          style={{ ...sceneCss.frame, zIndex: 1, cursor: canPan ? "grab" : undefined, touchAction: canPan ? "none" : undefined }}
-          data-mockup-frame
-          onPointerDown={onPanDown}
-          onPointerMove={onPanMove}
-          onPointerUp={onPanUp}
-          onPointerCancel={onPanUp}
-        >
-          {scene.layers
-            .filter((layer) => !layer.hidden)
-            .map((layer) =>
-            layer.mediaUrl ? (
-              isVideoLayer(layer) ? (
-                  <video
-                    key={layer.id}
-                    ref={videoRef}
-                    src={layer.mediaUrl}
-                    muted={layer.videoMuted}
-                    loop={layer.videoLoop}
-                    autoPlay={layer.videoAutoplay}
-                    playsInline
-                    controls
-                    onLoadedMetadata={(e) => {
-                      const duration = e.currentTarget.duration || 0;
-                      setVideoDuration(duration);
-                      const current = Math.min(layer.videoPosterTime, duration);
-                      e.currentTarget.currentTime = current;
-                      setVideoCurrentTime(current);
-                    }}
-                    onTimeUpdate={(e) => {
-                      // Throttle store writes to ~10fps: playback scrubbing doesn't
-                      // need per-frame precision and the store update re-renders
-                      // every component subscribed to videoCurrentTime.
-                      const t = e.currentTarget.currentTime;
-                      if (Math.abs(t - videoCurrentTime) >= 0.1) setVideoCurrentTime(t);
-                    }}
-                    onLoadedData={(ev) => {
-                      setMediaLoading(false);
-                      analyzeMedia(ev.currentTarget);
-                    }}
-                    style={sceneCss.mediaStyle}
-                  />
-                ) : (
-                  // Local blob/object URLs can't be optimized by next/image.
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    key={layer.id}
-                    src={layer.mediaUrl}
-                    alt="Uploaded media"
-                    style={sceneCss.mediaStyle}
-                    onLoad={(e) => {
-                      setMediaLoading(false);
-                      analyzeMedia(e.currentTarget);
-                    }}
-                  />
-                )
-              )
-            : null
-          )}
-          {scene.layers.every((l) => !l.mediaUrl) ? (
-            <div style={sceneCss.emptyMediaStyle}>Drop image or video to start</div>
-          ) : null}
-          {sceneCss.frameOverlay && (
-            // Local static SVG device skins served from /public. The overlay sits
-            // above the media but its screen cutout is transparent, so the media
-            // (inset to the same cutout) shows through.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={sceneCss.frameOverlay}
-              alt=""
-              aria-hidden
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                pointerEvents: "none",
-                ...sceneCss.overlayStyle
-              }}
-            />
-          )}
-          {isMediaLoading ? (
-            <div className="media-loading" role="status" aria-busy="true" aria-label={t("editor.loadingMedia")}>
-              <span className="spinner" />
+        {scene.frameInstances.length > 0 && sceneCss.frameOverlay ? (
+          // Multi-frame grid mode
+          <>
+            {scene.frameInstances.map((inst, i) => (
+              <FrameInstanceItem
+                key={inst.id}
+                scene={scene}
+                instance={inst}
+                media={activeLayer?.mediaUrl ? null : null}
+                overlay={sceneCss.frameOverlay}
+                zIndex={1 + i}
+              />
+            ))}
+            <div
+              ref={frameRef}
+              style={{ ...sceneCss.frame, zIndex: 1, pointerEvents: "none" }}
+            >
+              {scene.layers.filter((l) => !l.hidden).map((layer) => (
+                layer.mediaUrl ? (
+                  isVideoLayer(layer) ? (
+                    <video key={layer.id} src={layer.mediaUrl} muted playsInline style={sceneCss.mediaStyle} />
+                  ) : (
+                    <img key={layer.id} src={layer.mediaUrl} alt="" style={sceneCss.mediaStyle} onLoad={() => setMediaLoading(false)} />
+                  )
+                ) : null
+              ))}
             </div>
-          ) : null}
-        </div>
+          </>
+        ) : (
+          // Single-frame mode (original)
+          <div
+            ref={frameRef}
+            style={{ ...sceneCss.frame, zIndex: 1, cursor: canPan ? "grab" : undefined, touchAction: canPan ? "none" : undefined }}
+            data-mockup-frame
+            onPointerDown={onPanDown}
+            onPointerMove={onPanMove}
+            onPointerUp={onPanUp}
+            onPointerCancel={onPanUp}
+          >
+            {scene.layers
+              .filter((layer) => !layer.hidden)
+              .map((layer) =>
+              layer.mediaUrl ? (
+                isVideoLayer(layer) ? (
+                    <video
+                      key={layer.id}
+                      ref={videoRef}
+                      src={layer.mediaUrl}
+                      muted={layer.videoMuted}
+                      loop={layer.videoLoop}
+                      autoPlay={layer.videoAutoplay}
+                      playsInline
+                      controls
+                      onLoadedMetadata={(e) => {
+                        const duration = e.currentTarget.duration || 0;
+                        setVideoDuration(duration);
+                        const current = Math.min(layer.videoPosterTime, duration);
+                        e.currentTarget.currentTime = current;
+                        setVideoCurrentTime(current);
+                      }}
+                      onTimeUpdate={(e) => {
+                        const t = e.currentTarget.currentTime;
+                        if (Math.abs(t - videoCurrentTime) >= 0.1) setVideoCurrentTime(t);
+                      }}
+                      onLoadedData={(ev) => {
+                        setMediaLoading(false);
+                        analyzeMedia(ev.currentTarget);
+                      }}
+                      style={sceneCss.mediaStyle}
+                    />
+                  ) : (
+                    <img
+                      key={layer.id}
+                      src={layer.mediaUrl}
+                      alt="Uploaded media"
+                      style={sceneCss.mediaStyle}
+                      onLoad={(e) => {
+                        setMediaLoading(false);
+                        analyzeMedia(e.currentTarget);
+                      }}
+                    />
+                  )
+                ) : null
+              )}
+            {scene.layers.every((l) => !l.mediaUrl) ? (
+              <div style={sceneCss.emptyMediaStyle}>Drop image or video to start</div>
+            ) : null}
+            {sceneCss.frameOverlay && (
+              <img
+                src={sceneCss.frameOverlay}
+                alt=""
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  pointerEvents: "none",
+                  ...sceneCss.overlayStyle
+                }}
+              />
+            )}
+            {isMediaLoading ? (
+              <div className="media-loading" role="status" aria-busy="true" aria-label={t("editor.loadingMedia")}>
+                <span className="spinner" />
+              </div>
+            ) : null}
+          </div>
+        )}
         {scene.annotations.map((a) => (
           <AnnotationItem
             key={a.id}
@@ -574,6 +595,69 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             {dropError}
           </div>
         ) : null}
+      </div>
+    </div>
+  );
+}
+
+/** Renders a single frame instance within a grid. */
+function FrameInstanceItem({
+  scene,
+  instance,
+  media,
+  overlay,
+  zIndex
+}: {
+  scene: EditorScene;
+  instance: { id: string; frame: string; x: number; y: number; scale: number; layerId: string | null };
+  media: CanvasImageSource | null;
+  overlay: string | null;
+  zIndex: number;
+}) {
+  const spec = getFrameSpec(instance.frame as MockupFrame);
+  const frameAr = spec.aspectRatio ? Number(spec.aspectRatio.split("/")[0]) / Number(spec.aspectRatio.split("/")[1]) : 1;
+
+  const mediaStyle: CSSProperties = spec.isOverlay && spec.cutout
+    ? {
+        position: "absolute",
+        left: `${(spec.cutout.x / SVG_VIEWBOX_WIDTH) * 100}%`,
+        top: `${(spec.cutout.y / SVG_VIEWBOX_HEIGHT) * 100}%`,
+        width: `${(spec.cutout.w / SVG_VIEWBOX_WIDTH) * 100}%`,
+        height: `${(spec.cutout.h / SVG_VIEWBOX_HEIGHT) * 100}%`,
+        objectFit: "cover",
+        borderRadius: `${(spec.cutout.rx / spec.cutout.w) * 100}% / ${(spec.cutout.rx / spec.cutout.h) * 100}%`,
+        background: "#0a0a0a"
+      }
+    : {
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+        borderRadius: spec.screenRadius
+      };
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: `${instance.x * 100}%`,
+        top: `${instance.y * 100}%`,
+        width: `${instance.scale * 100}%`,
+        height: "auto",
+        transform: "translate(-50%, -50%)",
+        aspectRatio: `${spec.aspectRatio ?? "9 / 16"}`
+      }}
+    >
+      <div style={{ position: "relative", width: "100%" }}>
+        {media ? (
+          typeof media === "object" && "videoWidth" in media ? (
+            <video src={String((media as { src?: string }).src)} muted playsInline style={mediaStyle} />
+          ) : (
+            <img src={String((media as { src?: string }).src)} alt="" style={mediaStyle} />
+          )
+        ) : (
+          <div style={{ ...mediaStyle, background: "rgba(255,255,255,0.03)" }} />
+        )}
+        {overlay ? <img src={overlay} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} /> : null}
       </div>
     </div>
   );
