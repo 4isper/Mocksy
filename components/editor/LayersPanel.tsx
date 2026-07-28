@@ -48,11 +48,10 @@ export function LayersPanel() {
   };
 
   return (
-    <div className="panel layers-panel" style={{ padding: 16, display: "grid", gap: 10, alignContent: "start" }}>
-      <h2 className="panel-title">{t("editor.layers")}</h2>
-      <label className="file-trigger">
-        {t("editor.addLayer")}
-        <input type="file" accept="image/*,video/*" onChange={handleFile} />
+    <div style={{ padding: 10, display: "grid", gap: 8, alignContent: "start", overflow: "auto", minHeight: 0 }}>
+      <label className="btn" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, padding: "6px 10px", cursor: "pointer" }}>
+        + {t("editor.addLayer")}
+        <input type="file" accept="image/*,video/*" onChange={handleFile} style={{ display: "none" }} />
       </label>
       {error ? (
         <span role="alert" style={{ color: "var(--danger)", fontSize: 13 }}>
@@ -64,122 +63,95 @@ export function LayersPanel() {
           const active = layer.id === scene.activeLayerId;
           const label = layer.mediaName ?? (layer.mediaType === "video" ? t("editor.videoLabel") : t("editor.imageLabel"));
           return (
-            <li
-              key={layer.id}
-              className={active ? "layer-item is-active" : "layer-item"}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "8px 10px",
-                borderRadius: 8,
-                border: active ? "2px solid var(--accent)" : "1px solid var(--panel-border)",
-                background: active ? "rgba(0,217,255,0.08)" : "transparent",
-                cursor: "pointer",
-                opacity: layer.hidden ? 0.5 : 1
-              }}
-              onClick={() => selectLayer(layer.id)}
-            >
-              <span
-                aria-hidden="true"
-                style={{
-                  width: 32,
-                  height: 32,
-                  flex: "0 0 auto",
-                  borderRadius: 6,
-                  overflow: "hidden",
-                  background: "#0a0a0a",
-                  display: "grid",
-                  placeItems: "center",
-                  border: "1px solid var(--panel-border)"
-                }}
-              >
-                {layer.mediaUrl ? (
-                  isVideoLayer(layer) ? (
-                    <video
-                      src={layer.mediaUrl}
-                      muted
-                      playsInline
-                      preload="metadata"
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                  ) : (
-                    // Local blob/object URLs can't be optimized by next/image.
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={layer.mediaUrl}
-                      alt=""
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                  )
-                ) : (
-                  <span style={{ fontSize: 14, color: "var(--text-dim)" }}>∅</span>
-                )}
-              </span>
-              <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {label}
-                {isVideoLayer(layer) ? " 🎬" : ""}
-              </span>
-              <button
-                type="button"
-                className="btn btn-sm"
-                aria-label={layer.hidden ? t("editor.showLayer") : t("editor.hideLayer")}
-                title={layer.hidden ? t("editor.showLayer") : t("editor.hideLayer")}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleLayerHidden(layer.id);
-                }}
-              >
-                {layer.hidden ? "🚫" : "👁"}
-              </button>
-              <button
-                type="button"
-                className="btn btn-sm"
-                aria-label={t("editor.duplicateLayer")}
-                title={t("editor.duplicateLayer")}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  duplicateLayer(layer.id);
-                }}
-              >
-                ⧉
-              </button>
-              <button
-                type="button"
-                className="btn btn-sm"
-                aria-label={t("editor.moveUp")}
-                disabled={index === 0}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  move(layer.id, -1);
-                }}
-              >
-                ↑
-              </button>
-              <button
-                type="button"
-                className="btn btn-sm"
-                aria-label={t("editor.moveDown")}
-                disabled={index === scene.layers.length - 1}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  move(layer.id, 1);
-                }}
-              >
-                ↓
-              </button>
-              <button
-                type="button"
-                className="btn btn-sm"
-                aria-label={t("editor.removeLayer", { label })}
-                disabled={scene.layers.length <= 1}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeLayer(layer.id);
-                }}
-              >
-                ✕
-              </button>
+              <li
+                  key={layer.id}
+                  className={active ? "layer-item is-active" : "layer-item"}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "6px 8px",
+                    borderRadius: 8,
+                    border: active ? "2px solid var(--accent)" : "1px solid var(--panel-border)",
+                    background: active ? "rgba(0,217,255,0.08)" : "transparent",
+                    cursor: "pointer",
+                    opacity: layer.hidden ? 0.5 : 1
+                  }}
+                  onClick={() => selectLayer(layer.id)}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 24,
+                      height: 24,
+                      flex: "0 0 auto",
+                      borderRadius: 5,
+                      overflow: "hidden",
+                      background: "#0a0a0a",
+                      display: "grid",
+                      placeItems: "center",
+                      border: "1px solid var(--panel-border)"
+                    }}
+                  >
+                    {layer.mediaUrl ? (
+                      isVideoLayer(layer) ? (
+                        <video src={layer.mediaUrl} muted playsInline preload="metadata" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <img src={layer.mediaUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      )
+                    ) : (
+                      <span style={{ fontSize: 11, color: "var(--text-dim)" }}>∅</span>
+                    )}
+                  </span>
+                  <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>
+                    {label}
+                    {isVideoLayer(layer) ? " 🎬" : ""}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn-icon"
+                    aria-label={layer.hidden ? t("editor.showLayer") : t("editor.hideLayer")}
+                    title={layer.hidden ? t("editor.showLayer") : t("editor.hideLayer")}
+                    onClick={(e) => { e.stopPropagation(); toggleLayerHidden(layer.id); }}
+                  >
+                    {layer.hidden ? "🚫" : "👁"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-icon"
+                    aria-label={t("editor.duplicateLayer")}
+                    title={t("editor.duplicateLayer")}
+                    onClick={(e) => { e.stopPropagation(); duplicateLayer(layer.id); }}
+                  >
+                    ⧉
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-icon"
+                    aria-label={t("editor.moveUp")}
+                    disabled={index === 0}
+                    onClick={(e) => { e.stopPropagation(); move(layer.id, -1); }}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 10V2M6 2L2 6M6 2L10 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-icon"
+                    aria-label={t("editor.moveDown")}
+                    disabled={index === scene.layers.length - 1}
+                    onClick={(e) => { e.stopPropagation(); move(layer.id, 1); }}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M6 10l4-4M6 10l-4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-icon"
+                    aria-label={t("editor.removeLayer", { label })}
+                    disabled={scene.layers.length <= 1}
+                    onClick={(e) => { e.stopPropagation(); removeLayer(layer.id); }}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  </button>
             </li>
           );
         })}

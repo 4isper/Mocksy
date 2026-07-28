@@ -206,56 +206,61 @@ export function ControlPanel() {
           </div>
         </div>
         {scene.frameInstances.length > 0 && (
-          <div className="field" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <div className="field" style={{ display: "flex", flexDirection: "column", gap: 3 }}>
             <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.frames")}</span>
             {scene.frameInstances.map((inst, i) => {
               const open = expandedFrameId === inst.id;
+              const frameLayer = scene.layers.find((l) => l.id === inst.layerId);
               return (
-                <div key={inst.id} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <div key={inst.id} className="frame-card">
+                  <div className="frame-card-head">
                     <button
                       type="button"
-                      className="btn btn-sm"
+                      className="btn-icon"
                       onClick={() => setExpandedFrameId(open ? null : inst.id)}
-                      style={{ padding: "0 4px", fontSize: 11, lineHeight: "20px" }}
                       aria-label={open ? "Collapse" : "Expand"}
+                      style={{ fontSize: 10 }}
                     >
                       {open ? "▾" : "▸"}
                     </button>
-                    <span style={{ fontSize: 13, minWidth: 18 }}>{i + 1}.</span>
+                    <div className="frame-thumb">
+                      {frameLayer?.mediaUrl ? (
+                        <img src={frameLayer.mediaUrl} alt="" />
+                      ) : (
+                        <span>—</span>
+                      )}
+                    </div>
+                    <span className="frame-idx">{i + 1}</span>
                     <button
                       type="button"
-                      className="btn btn-sm"
+                      className="btn-icon"
                       disabled={i === 0}
                       onClick={() => {
                         const next = [...scene.frameInstances];
                         [next[i - 1], next[i]] = [next[i]!, next[i - 1]!];
                         setFrameInstances(next);
                       }}
-                      style={{ padding: "0 4px", fontSize: 11, lineHeight: "20px" }}
                       aria-label="Move up"
                     >
-                      ↑
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 10V2M6 2L2 6M6 2L10 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </button>
                     <button
                       type="button"
-                      className="btn btn-sm"
+                      className="btn-icon"
                       disabled={i === scene.frameInstances.length - 1}
                       onClick={() => {
                         const next = [...scene.frameInstances];
                         [next[i], next[i + 1]] = [next[i + 1]!, next[i]!];
                         setFrameInstances(next);
                       }}
-                      style={{ padding: "0 4px", fontSize: 11, lineHeight: "20px" }}
                       aria-label="Move down"
                     >
-                      ↓
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M6 10l4-4M6 10l-4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </button>
                     <select
-                      className="select"
+                      className="frame-device"
                       value={inst.frame}
                       onChange={(e) => updateFrameInstance(inst.id, { frame: e.target.value as MockupFrame })}
-                      style={{ flex: 1, fontSize: 13, padding: "2px 4px" }}
                       aria-label={t("editor.frame")}
                     >
                       {frames.map((f) => (
@@ -264,68 +269,38 @@ export function ControlPanel() {
                     </select>
                     <button
                       type="button"
-                      className="btn btn-sm"
+                      className="btn-icon"
                       onClick={() => removeFrameInstance(inst.id)}
                       title={t("editor.removeFrame")}
                       aria-label={t("editor.removeFrame")}
+                      style={{ color: "var(--text-faint)" }}
                     >
-                      ✕
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
                     </button>
                   </div>
                   {open && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingLeft: 32, paddingBottom: 4 }}>
-                      <label className="field" style={{ gap: 4 }}>
-                        <span style={{ fontSize: 12, color: "var(--text-dim)", minWidth: 40 }}>{t("editor.frameX")}</span>
-                        <input
-                          className="range"
-                          type="range"
-                          min={0}
-                          max={1}
-                          step={0.01}
-                          value={inst.x}
-                          aria-label={t("editor.frameX")}
-                          aria-valuetext={`${Math.round(inst.x * 100)}%`}
-                          onChange={(e) => updateFrameInstance(inst.id, { x: Number(e.target.value) })}
-                        />
-                        <span style={{ fontSize: 11, minWidth: 36, textAlign: "right" }}>{Math.round(inst.x * 100)}%</span>
+                    <div className="frame-card-body">
+                      <label className="range-wrap">
+                        <span className="range-label">{t("editor.frameX")}</span>
+                        <input type="range" min={0} max={1} step={0.01} value={inst.x} aria-label={t("editor.frameX")} aria-valuetext={`${Math.round(inst.x * 100)}%`} onChange={(e) => updateFrameInstance(inst.id, { x: Number(e.target.value) })} />
+                        <span className="range-val">{Math.round(inst.x * 100)}%</span>
                       </label>
-                      <label className="field" style={{ gap: 4 }}>
-                        <span style={{ fontSize: 12, color: "var(--text-dim)", minWidth: 40 }}>{t("editor.frameY")}</span>
-                        <input
-                          className="range"
-                          type="range"
-                          min={0}
-                          max={1}
-                          step={0.01}
-                          value={inst.y}
-                          aria-label={t("editor.frameY")}
-                          aria-valuetext={`${Math.round(inst.y * 100)}%`}
-                          onChange={(e) => updateFrameInstance(inst.id, { y: Number(e.target.value) })}
-                        />
-                        <span style={{ fontSize: 11, minWidth: 36, textAlign: "right" }}>{Math.round(inst.y * 100)}%</span>
+                      <label className="range-wrap">
+                        <span className="range-label">{t("editor.frameY")}</span>
+                        <input type="range" min={0} max={1} step={0.01} value={inst.y} aria-label={t("editor.frameY")} aria-valuetext={`${Math.round(inst.y * 100)}%`} onChange={(e) => updateFrameInstance(inst.id, { y: Number(e.target.value) })} />
+                        <span className="range-val">{Math.round(inst.y * 100)}%</span>
                       </label>
-                      <label className="field" style={{ gap: 4 }}>
-                        <span style={{ fontSize: 12, color: "var(--text-dim)", minWidth: 40 }}>{t("editor.frameScale")}</span>
-                        <input
-                          className="range"
-                          type="range"
-                          min={0.1}
-                          max={3}
-                          step={0.01}
-                          value={inst.scale}
-                          aria-label={t("editor.frameScale")}
-                          aria-valuetext={`${Math.round(inst.scale * 100)}%`}
-                          onChange={(e) => updateFrameInstance(inst.id, { scale: Number(e.target.value) })}
-                        />
-                        <span style={{ fontSize: 11, minWidth: 36, textAlign: "right" }}>{Math.round(inst.scale * 100)}%</span>
+                      <label className="range-wrap">
+                        <span className="range-label">{t("editor.frameScale")}</span>
+                        <input type="range" min={0.1} max={3} step={0.01} value={inst.scale} aria-label={t("editor.frameScale")} aria-valuetext={`${Math.round(inst.scale * 100)}%`} onChange={(e) => updateFrameInstance(inst.id, { scale: Number(e.target.value) })} />
+                        <span className="range-val">{Math.round(inst.scale * 100)}%</span>
                       </label>
-                      <label className="field" style={{ gap: 4 }}>
-                        <span style={{ fontSize: 12, color: "var(--text-dim)", minWidth: 40 }}>{t("editor.frameLayer")}</span>
+                      <label className="range-wrap" style={{ display: "grid", gap: 3 }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-dim)" }}>{t("editor.frameLayer")}</span>
                         <select
-                          className="select"
                           value={inst.layerId ?? ""}
                           onChange={(e) => updateFrameInstance(inst.id, { layerId: e.target.value || null })}
-                          style={{ flex: 1, fontSize: 13, padding: "2px 4px" }}
+                          style={{ flex: 1, fontSize: 12, padding: "4px 6px" }}
                         >
                           <option value="">—</option>
                           {scene.layers.map((l, li) => (
@@ -376,73 +351,38 @@ export function ControlPanel() {
         />
         <label className="field">
           <span>{t("editor.zoom")}</span>
-          <input
-            className="range"
-            type="range"
-            min={0.8}
-            max={1.5}
-            step={0.01}
-            value={activeLayer?.zoom ?? 1}
-            aria-label={t("editor.zoom")}
-            aria-valuetext={`${Math.round((activeLayer?.zoom ?? 1) * 100)}%`}
-            onChange={(e) => setZoom(Number(e.target.value))}
-          />
+          <div className="range-wrap">
+            <input type="range" min={0.8} max={1.5} step={0.01} value={activeLayer?.zoom ?? 1} aria-label={t("editor.zoom")} aria-valuetext={`${Math.round((activeLayer?.zoom ?? 1) * 100)}%`} onChange={(e) => setZoom(Number(e.target.value))} />
+            <span className="range-val">{Math.round((activeLayer?.zoom ?? 1) * 100)}%</span>
+          </div>
         </label>
         <label className="field">
           <span>{t("editor.positionX")}</span>
-          <input
-            className="range"
-            type="range"
-            min={-1}
-            max={1}
-            step={0.01}
-            value={activeLayer?.mediaOffsetX ?? 0}
-            aria-label={t("editor.positionX")}
-            aria-valuetext={`${Math.round((activeLayer?.mediaOffsetX ?? 0) * 100)}%`}
-            onChange={(e) => setMediaOffsetX(Number(e.target.value))}
-          />
+          <div className="range-wrap">
+            <input type="range" min={-1} max={1} step={0.01} value={activeLayer?.mediaOffsetX ?? 0} aria-label={t("editor.positionX")} aria-valuetext={`${Math.round((activeLayer?.mediaOffsetX ?? 0) * 100)}%`} onChange={(e) => setMediaOffsetX(Number(e.target.value))} />
+            <span className="range-val">{Math.round((activeLayer?.mediaOffsetX ?? 0) * 100)}%</span>
+          </div>
         </label>
         <label className="field">
           <span>{t("editor.positionY")}</span>
-          <input
-            className="range"
-            type="range"
-            min={-1}
-            max={1}
-            step={0.01}
-            value={activeLayer?.mediaOffsetY ?? 0}
-            aria-label={t("editor.positionY")}
-            aria-valuetext={`${Math.round((activeLayer?.mediaOffsetY ?? 0) * 100)}%`}
-            onChange={(e) => setMediaOffsetY(Number(e.target.value))}
-          />
+          <div className="range-wrap">
+            <input type="range" min={-1} max={1} step={0.01} value={activeLayer?.mediaOffsetY ?? 0} aria-label={t("editor.positionY")} aria-valuetext={`${Math.round((activeLayer?.mediaOffsetY ?? 0) * 100)}%`} onChange={(e) => setMediaOffsetY(Number(e.target.value))} />
+            <span className="range-val">{Math.round((activeLayer?.mediaOffsetY ?? 0) * 100)}%</span>
+          </div>
         </label>
         <label className="field">
           <span>{t("editor.shadowOpacity")}</span>
-          <input
-            className="range"
-            type="range"
-            min={0}
-            max={1}
-            step={0.01}
-            value={scene.shadowOpacity}
-            aria-label={t("editor.shadowOpacity")}
-            aria-valuetext={`${Math.round(scene.shadowOpacity * 100)}%`}
-            onChange={(e) => setShadowOpacity(Number(e.target.value))}
-          />
+          <div className="range-wrap">
+            <input type="range" min={0} max={1} step={0.01} value={scene.shadowOpacity} aria-label={t("editor.shadowOpacity")} aria-valuetext={`${Math.round(scene.shadowOpacity * 100)}%`} onChange={(e) => setShadowOpacity(Number(e.target.value))} />
+            <span className="range-val">{Math.round(scene.shadowOpacity * 100)}%</span>
+          </div>
         </label>
         <label className="field">
           <span>{t("editor.cornerRadius")}</span>
-          <input
-            className="range"
-            type="range"
-            min={0}
-            max={48}
-            step={1}
-            value={scene.borderRadius}
-            aria-label={t("editor.cornerRadius")}
-            aria-valuetext={`${scene.borderRadius} pixels`}
-            onChange={(e) => setBorderRadius(Number(e.target.value))}
-          />
+          <div className="range-wrap">
+            <input type="range" min={0} max={48} step={1} value={scene.borderRadius} aria-label={t("editor.cornerRadius")} aria-valuetext={`${scene.borderRadius}px`} onChange={(e) => setBorderRadius(Number(e.target.value))} />
+            <span className="range-val">{scene.borderRadius}px</span>
+          </div>
         </label>
       </div>
 
@@ -513,17 +453,10 @@ export function ControlPanel() {
           <>
             <label className="field">
               <span>{t("editor.bgBlurLabel", { val: scene.backgroundBlur })}</span>
-              <input
-                className="range"
-                type="range"
-                min={0}
-                max={40}
-                step={1}
-                value={scene.backgroundBlur}
-                aria-label={t("editor.bgBlurLabel", { val: scene.backgroundBlur })}
-                aria-valuetext={`${scene.backgroundBlur} pixels`}
-                onChange={(e) => setBackgroundBlur(Number(e.target.value))}
-              />
+              <div className="range-wrap">
+                <input type="range" min={0} max={40} step={1} value={scene.backgroundBlur} aria-label={t("editor.bgBlurLabel", { val: scene.backgroundBlur })} aria-valuetext={`${scene.backgroundBlur}px`} onChange={(e) => setBackgroundBlur(Number(e.target.value))} />
+                <span className="range-val">{scene.backgroundBlur}px</span>
+              </div>
             </label>
             <button type="button" className="btn btn-sm" onClick={() => setBackgroundTransparent()}>
               {t("editor.removeBgImage")}
@@ -563,17 +496,10 @@ export function ControlPanel() {
         </label>
         <label className="field">
           <span>{t("editor.watermarkSize", { val: scene.watermarkSize })}</span>
-          <input
-            className="range"
-            type="range"
-            min={8}
-            max={64}
-            step={1}
-            value={scene.watermarkSize}
-            aria-label={t("editor.watermarkSize", { val: scene.watermarkSize })}
-            aria-valuetext={`${scene.watermarkSize} pixels`}
-            onChange={(e) => setWatermarkSize(Number(e.target.value))}
-          />
+          <div className="range-wrap">
+            <input type="range" min={8} max={64} step={1} value={scene.watermarkSize} aria-label={t("editor.watermarkSize", { val: scene.watermarkSize })} aria-valuetext={`${scene.watermarkSize}px`} onChange={(e) => setWatermarkSize(Number(e.target.value))} />
+            <span className="range-val">{scene.watermarkSize}px</span>
+          </div>
         </label>
       </div>
     </div>

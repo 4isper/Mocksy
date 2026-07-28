@@ -19,10 +19,8 @@ export function TemplatesPanel() {
   };
 
   return (
-    <div className="panel templates-panel" style={{ padding: 16, display: "grid", gap: 10, alignContent: "start" }}>
-      <h2 className="panel-title">{t("templates.title")}</h2>
-      <div className="templates">
-        {sceneStylePresets.map((preset) => (
+    <div className="templates" style={{ padding: 10, display: "grid", gap: 8, alignContent: "start" }}>
+      {sceneStylePresets.map((preset) => (
           <button
             key={preset.id}
             type="button"
@@ -33,8 +31,7 @@ export function TemplatesPanel() {
           >
             <div className="t-name">{preset.name}</div>
           </button>
-        ))}
+          ))}
       </div>
-    </div>
-  );
-}
+    );
+  }

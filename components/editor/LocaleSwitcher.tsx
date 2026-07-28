@@ -19,15 +19,16 @@ export function LocaleSwitcher() {
   };
 
   return (
-    <div className="locale-switcher">
+    <div className="toolbar-group" style={{ gap: 2 }}>
       {LOCALES.map((locale) => (
         <button
           key={locale}
           type="button"
-          className={`btn-locale ${locale === currentLocale ? "active" : ""}`}
+          className={`btn-tb${locale === currentLocale ? " is-active" : ""}`}
           onClick={() => switchLocale(locale)}
           aria-label={t(locale)}
           aria-pressed={locale === currentLocale}
+          style={{ fontSize: 11, fontWeight: 700, padding: "0 6px", letterSpacing: "0.04em" }}
         >
           {locale === "en" ? "EN" : "РУС"}
         </button>

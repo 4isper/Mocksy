@@ -67,13 +67,12 @@ export function ProjectsPanel() {
   };
 
   return (
-    <div className="panel projects-panel" style={{ padding: 16, display: "grid", gap: 10, alignContent: "start" }}>
-      <h2 className="panel-title">{t("projects.title")}</h2>
-      <div style={{ display: "flex", gap: 8 }}>
-        <button type="button" className="btn btn-sm" onClick={handleNew}>
+    <div style={{ padding: 10, display: "grid", gap: 8, alignContent: "start", overflow: "auto", minHeight: 0 }}>
+      <div style={{ display: "flex", gap: 6 }}>
+        <button type="button" className="btn" style={{ flex: 1, fontSize: 12, padding: "7px 10px" }} onClick={handleNew}>
           {t("projects.newProjectBtn")}
         </button>
-        <label className="btn btn-sm" style={{ cursor: "pointer" }}>
+        <label className="btn" style={{ flex: 1, fontSize: 12, padding: "7px 10px", cursor: "pointer", textAlign: "center" }}>
           {t("projects.import")}
           <input type="file" accept="application/json,.json" onChange={handleImport} style={{ display: "none" }} />
         </label>
@@ -94,8 +93,8 @@ export function ProjectsPanel() {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
-                padding: "8px 10px",
+                gap: 5,
+                padding: "6px 8px",
                 borderRadius: 8,
                 border: active ? "2px solid var(--accent)" : "1px solid var(--panel-border)",
                 background: active ? "rgba(0,217,255,0.08)" : "transparent",
@@ -103,7 +102,7 @@ export function ProjectsPanel() {
               }}
               onClick={() => !editing && switchProject(project.id)}
             >
-              <span style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+              <span style={{ flex: 1, minWidth: 0, overflow: "hidden", fontSize: 12 }}>
                 {editing ? (
                   <input
                     className="project-rename"
@@ -124,60 +123,49 @@ export function ProjectsPanel() {
                       display: "block",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
-                      whiteSpace: "nowrap"
+                      whiteSpace: "nowrap",
+                      fontSize: 12
                     }}
                     title={project.name}
                   >
                     {project.name}
                   </span>
                 )}
-                <span style={{ fontSize: 11, color: "var(--text-dim)" }}>{relativeTime(project.updatedAt)}</span>
+                <span style={{ fontSize: 10, color: "var(--text-dim)" }}>{relativeTime(project.updatedAt)}</span>
               </span>
               <button
                 type="button"
-                className="btn btn-sm"
+                className="btn-icon"
                 aria-label={t("projects.renameLabel", { name: project.name })}
                 disabled={editing}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  startRename(project.id, project.name);
-                }}
+                onClick={(e) => { e.stopPropagation(); startRename(project.id, project.name); }}
               >
-                ✎
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M8.5 1.5l2 2L4 10H2V8l6.5-6.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>
               </button>
               <button
                 type="button"
-                className="btn btn-sm"
+                className="btn-icon"
                 aria-label={t("projects.duplicateLabel", { name: project.name })}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  duplicateProject(project.id);
-                }}
+                onClick={(e) => { e.stopPropagation(); duplicateProject(project.id); }}
               >
                 ⧉
               </button>
               <button
                 type="button"
-                className="btn btn-sm"
+                className="btn-icon"
                 aria-label={t("projects.exportLabel", { name: project.name })}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  exportProjectToFile(project);
-                }}
+                onClick={(e) => { e.stopPropagation(); exportProjectToFile(project); }}
               >
-                ↓
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 2v6M6 8l3-3M6 8l-3-3M2 9v1a1 1 0 001 1h6a1 1 0 001-1V9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
               <button
                 type="button"
-                className="btn btn-sm"
+                className="btn-icon"
                 aria-label={t("projects.deleteLabel", { name: project.name })}
                 disabled={projects.length <= 1}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteProject(project.id);
-                }}
+                onClick={(e) => { e.stopPropagation(); deleteProject(project.id); }}
               >
-                ✕
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
               </button>
             </li>
           );
