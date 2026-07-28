@@ -43,7 +43,7 @@ describe("projectsStore", () => {
     const { projects, activeProjectId } = useProjectsStore.getState();
     expect(projects).toHaveLength(1);
     expect(activeProjectId).toBe(projects[0]!.id);
-    expect(scene.layers).toHaveLength(1);
+    expect(scene.layers).toHaveLength(2);
   });
 
   it("hydrate migrates a legacy AUTOSAVE_KEY into one project", () => {

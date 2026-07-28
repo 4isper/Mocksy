@@ -72,6 +72,8 @@ export interface EditorStoreState {
   updateActiveLayer: (patch: Partial<MediaLayer>) => void;
   setFrame: (frame: MockupFrame) => void;
   setFrameInstances: (instances: FrameInstance[]) => void;
+  updateFrameInstance: (id: string, patch: Partial<FrameInstance>) => void;
+  removeFrameInstance: (id: string) => void;
   layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") => void;
   setStylePreset: (stylePreset: StylePreset) => void;
   setAnimationPreset: (animationPreset: AnimationPreset) => void;
@@ -132,14 +134,25 @@ export const initialScene: EditorScene = {
 initialScene.activeLayerId = initialScene.layers[0]?.id ?? null;
 
 /** A fresh scene seeded with the bundled demo media. Shared by the editor
- *  bootstrap and the projects store so both start from the same default. */
+ *  bootstrap and the projects store so both start from the same default.
+ *  Defaults to a 2-frame horizontal grid so first-time visitors immediately
+ *  see the multi-frame capability. */
 export function makeDemoScene(): EditorScene {
-  const layers = [makeDemoLayer()];
+  const count = 2;
+  const instances = layoutFrameGrid("iphone", count, "horizontal");
+  const layers = Array.from({ length: count }, () => ({
+    ...makeDemoLayer(),
+    id: nextLayerId()
+  }));
+  const instancesWithLayers = instances.map((inst, i) => ({
+    ...inst,
+    layerId: layers[i]?.id ?? null
+  }));
   return {
     layers,
     activeLayerId: layers[0]?.id ?? null,
     frame: initialScene.frame,
-    frameInstances: [],
+    frameInstances: instancesWithLayers,
     stylePreset: initialScene.stylePreset,
     shadowOpacity: initialScene.shadowOpacity,
     borderRadius: initialScene.borderRadius,
@@ -176,12 +189,24 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
       return pushHistory(s, next);
     }),
   resetScene: () =>
-    set((s) =>
-      pushHistory(s, {
+    set((s) => {
+      const count = 2;
+      const instances = layoutFrameGrid("iphone", count, "horizontal");
+      const layers = Array.from({ length: count }, () => ({
+        ...makeDemoLayer(),
+        id: nextLayerId()
+      }));
+      const instancesWithLayers = instances.map((inst, i) => ({
+        ...inst,
+        layerId: layers[i]?.id ?? null
+      }));
+      return pushHistory(s, {
         ...initialScene,
-        layers: [makeDemoLayer()]
-      })
-    ),
+        layers,
+        frameInstances: instancesWithLayers,
+        activeLayerId: layers[0]?.id ?? null
+      });
+    }),
   undo: () =>
     set((s) => {
       if (s.past.length === 0) return {};
@@ -285,12 +310,58 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   setMediaLoading: (loading) => set({ isMediaLoading: loading }),
   setScenePalette: (palette) => set({ scenePalette: palette }),
   setExportScale: (exportScale) => set({ exportScale }),
-  setFrame: (frame) => set((s) => pushHistory(s, { ...s.scene, frame })),
+  setFrame: (frame) =>
+    set((s) => {
+      const nextScene = { ...s.scene, frame };
+      if (nextScene.frameInstances.length > 0) {
+        nextScene.frameInstances = nextScene.frameInstances.map((inst) => ({ ...inst, frame }));
+      }
+      return pushHistory(s, nextScene);
+    }),
   setFrameInstances: (instances: FrameInstance[]) => set((s) => pushHistory(s, { ...s.scene, frameInstances: instances })),
+  removeFrameInstance: (id) =>
+    set((s) => {
+      const inst = s.scene.frameInstances.find((fi) => fi.id === id);
+      if (!inst) return {};
+      const remaining = s.scene.frameInstances.filter((fi) => fi.id !== id);
+      const layers = inst.layerId && !remaining.some((fi) => fi.layerId === inst.layerId)
+        ? s.scene.layers.filter((l) => l.id !== inst.layerId)
+        : s.scene.layers;
+      const activeLayerId = layers.some((l) => l.id === s.scene.activeLayerId)
+        ? s.scene.activeLayerId
+        : layers[0]?.id ?? null;
+      return pushHistory(s, { ...s.scene, layers, frameInstances: remaining, activeLayerId });
+    }),
+  updateFrameInstance: (id, patch) =>
+    set((s) => {
+      const frameInstances = s.scene.frameInstances.map((fi) =>
+        fi.id === id ? { ...fi, ...patch } : fi
+      );
+      return pushHistory(s, { ...s.scene, frameInstances });
+    }),
   layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") =>
     set((s) => {
       const instances = layoutFrameGrid(frame, count, direction);
-      return pushHistory(s, { ...s.scene, frameInstances: instances });
+      // Create new layers for each frame instance (clone from active layer)
+      const activeLayerData = activeLayer(s.scene);
+      const newLayers = instances.map((inst) => ({
+        ...(activeLayerData ?? makeDemoLayer()),
+        id: nextLayerId(),
+        hidden: false,
+        animationPreset: "none" as const
+      }));
+      const allLayers = [...s.scene.layers, ...newLayers];
+      const layerIds = newLayers.map(l => l.id);
+      const instancesWithLayers = instances.map((inst, i) => ({
+        ...inst,
+        layerId: layerIds[i] ?? null
+      }));
+      return pushHistory(s, {
+        ...s.scene,
+        layers: allLayers,
+        frameInstances: instancesWithLayers,
+        activeLayerId: layerIds[0] ?? s.scene.activeLayerId
+      });
     }),
   setStylePreset: (stylePreset) => set((s) => pushHistory(s, { ...s.scene, stylePreset })),
   setAnimationPreset: (animationPreset) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationPreset }) }, "animation")),

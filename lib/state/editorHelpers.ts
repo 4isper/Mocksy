@@ -138,12 +138,15 @@ export function layoutFrameGrid(
   direction: "horizontal" | "vertical"
 ): FrameInstance[] {
   if (count < 1) return [];
+  const gap = 0.02;
+  const s = (1 - gap * (count - 1)) / count;
+  const pitch = s + gap;
   return Array.from({ length: count }, (_, i) => ({
     id: nextFrameInstanceId(),
     frame,
-    x: direction === "horizontal" ? i / Math.max(1, count - 1) : 0.5,
-    y: direction === "vertical" ? i / Math.max(1, count - 1) : 0.5,
-    scale: 1 / count, // Scale down so N items fit
+    x: direction === "horizontal" ? i * pitch + s / 2 : 0.5,
+    y: direction === "vertical" ? i * pitch + s / 2 : 0.5,
+    scale: s,
     layerId: null // Assigned by the caller
   }));
 }

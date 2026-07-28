@@ -2,9 +2,9 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, DragEvent, ReactNode } from "react";
-import type { Annotation, EditorScene, MediaLayer, MockupFrame } from "@/lib/types/editor";
+import type { Annotation, EditorScene, MediaLayer } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
-import { getFrameSpec, SVG_VIEWBOX_HEIGHT, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
+import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
@@ -277,10 +277,10 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
 
   // The whole-mockup zoom/animation is applied to the frame container so the
   // device skin and media scale together, matching the export.
-  const frameRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLDivElement>(null);
-  useFrameTransform(frameRef, activeLayer);
+   const frameRef = useRef<HTMLDivElement>(null);
+   const videoRef = useRef<HTMLVideoElement | null>(null);
+   const canvasRef = useRef<HTMLDivElement>(null);
+   useFrameTransform(frameRef, activeLayer);
 
   // Mirror the Timeline scrubber (driven by VideoOptions) onto the actual
   // <video>. The onTimeUpdate handler also writes videoCurrentTime back to the
@@ -450,33 +450,77 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             }}
           />
         ) : null}
-        {scene.frameInstances.length > 0 && sceneCss.frameOverlay ? (
+        {scene.frameInstances.length > 0 ? (
           // Multi-frame grid mode
           <>
-            {scene.frameInstances.map((inst, i) => (
-              <FrameInstanceItem
-                key={inst.id}
-                scene={scene}
-                instance={inst}
-                media={activeLayer?.mediaUrl ? null : null}
-                overlay={sceneCss.frameOverlay}
-                zIndex={1 + i}
-              />
-            ))}
-            <div
-              ref={frameRef}
-              style={{ ...sceneCss.frame, zIndex: 1, pointerEvents: "none" }}
-            >
-              {scene.layers.filter((l) => !l.hidden).map((layer) => (
-                layer.mediaUrl ? (
-                  isVideoLayer(layer) ? (
-                    <video key={layer.id} src={layer.mediaUrl} muted playsInline style={sceneCss.mediaStyle} />
+            {scene.frameInstances.map((inst, i) => {
+              const layer = scene.layers.find((l) => l.id === inst.layerId) ?? activeLayer;
+              const spec = getFrameSpec(inst.frame);
+              const instCss = buildSceneCss({ ...scene, frame: inst.frame, layers: layer ? [layer] : [] });
+              const zoom = layer?.zoom ?? 1;
+              const offsetX = layer?.mediaOffsetX ?? 0;
+              const offsetY = layer?.mediaOffsetY ?? 0;
+              const zoomStyle = { transform: `scale(${zoom}) translate(${offsetX * 2}px, ${offsetY * 2}px)`, transformOrigin: "center" };
+              return (
+                <div
+                  key={inst.id}
+                  style={{
+                    position: "absolute",
+                    left: `${inst.x * 100}%`,
+                    top: `${inst.y * 100}%`,
+                    width: `${inst.scale * 100}%`,
+                    height: "auto",
+                    transform: "translate(-50%, -50%)",
+                    aspectRatio: spec.aspectRatio ?? (inst.frame === "watch" ? "1" : "9 / 16")
+                  }}
+                >
+                  {spec.isOverlay ? (
+                    // Overlay frame: match single-frame structure so
+                    // drop-shadow and frame CSS (border, backdrop-filter)
+                    // are applied correctly.
+                    <div
+                      style={{
+                        ...instCss.frame,
+                        width: "100%",
+                        height: "100%",
+                        position: "relative",
+                        ...zoomStyle
+                      }}
+                    >
+                      {instCss.frameOverlay ? (
+                        <img src={instCss.frameOverlay} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
+                      ) : null}
+                      {layer?.mediaUrl ? (
+                        isVideoLayer(layer) ? (
+                          <video src={layer.mediaUrl} muted playsInline style={instCss.mediaStyle} />
+                        ) : (
+                          <img src={layer.mediaUrl} alt="" style={instCss.mediaStyle} />
+                        )
+                      ) : null}
+                    </div>
                   ) : (
-                    <img key={layer.id} src={layer.mediaUrl} alt="" style={sceneCss.mediaStyle} onLoad={() => setMediaLoading(false)} />
-                  )
-                ) : null
-              ))}
-            </div>
+                    // CSS frame: media fills frame with optional radius
+                    <div
+                      style={{
+                        ...instCss.frame,
+                        width: "100%",
+                        height: "100%",
+                        position: "relative",
+                        ...zoomStyle
+                      }}
+                    >
+                      {layer?.mediaUrl ? (
+                        isVideoLayer(layer) ? (
+                          <video src={layer.mediaUrl} muted playsInline style={instCss.mediaStyle} />
+                        ) : (
+                          <img src={layer.mediaUrl} alt="" style={instCss.mediaStyle} />
+                        )
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </>
         ) : (
           // Single-frame mode (original)
@@ -595,69 +639,6 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             {dropError}
           </div>
         ) : null}
-      </div>
-    </div>
-  );
-}
-
-/** Renders a single frame instance within a grid. */
-function FrameInstanceItem({
-  scene,
-  instance,
-  media,
-  overlay,
-  zIndex
-}: {
-  scene: EditorScene;
-  instance: { id: string; frame: string; x: number; y: number; scale: number; layerId: string | null };
-  media: CanvasImageSource | null;
-  overlay: string | null;
-  zIndex: number;
-}) {
-  const spec = getFrameSpec(instance.frame as MockupFrame);
-  const frameAr = spec.aspectRatio ? Number(spec.aspectRatio.split("/")[0]) / Number(spec.aspectRatio.split("/")[1]) : 1;
-
-  const mediaStyle: CSSProperties = spec.isOverlay && spec.cutout
-    ? {
-        position: "absolute",
-        left: `${(spec.cutout.x / SVG_VIEWBOX_WIDTH) * 100}%`,
-        top: `${(spec.cutout.y / SVG_VIEWBOX_HEIGHT) * 100}%`,
-        width: `${(spec.cutout.w / SVG_VIEWBOX_WIDTH) * 100}%`,
-        height: `${(spec.cutout.h / SVG_VIEWBOX_HEIGHT) * 100}%`,
-        objectFit: "cover",
-        borderRadius: `${(spec.cutout.rx / spec.cutout.w) * 100}% / ${(spec.cutout.rx / spec.cutout.h) * 100}%`,
-        background: "#0a0a0a"
-      }
-    : {
-        width: "100%",
-        height: "100%",
-        objectFit: "cover",
-        borderRadius: spec.screenRadius
-      };
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: `${instance.x * 100}%`,
-        top: `${instance.y * 100}%`,
-        width: `${instance.scale * 100}%`,
-        height: "auto",
-        transform: "translate(-50%, -50%)",
-        aspectRatio: `${spec.aspectRatio ?? "9 / 16"}`
-      }}
-    >
-      <div style={{ position: "relative", width: "100%" }}>
-        {media ? (
-          typeof media === "object" && "videoWidth" in media ? (
-            <video src={String((media as { src?: string }).src)} muted playsInline style={mediaStyle} />
-          ) : (
-            <img src={String((media as { src?: string }).src)} alt="" style={mediaStyle} />
-          )
-        ) : (
-          <div style={{ ...mediaStyle, background: "rgba(255,255,255,0.03)" }} />
-        )}
-        {overlay ? <img src={overlay} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} /> : null}
       </div>
     </div>
   );

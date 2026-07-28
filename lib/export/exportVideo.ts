@@ -261,7 +261,10 @@ async function captureWebm(
     media = videoInPreview;
   }
 
+  const isMultiFrame = scene.frameInstances.length > 0;
   const frameElement = previewNode.querySelector<HTMLElement>("[data-mockup-frame]");
+  const frameWidth = isMultiFrame ? undefined : frameElement ? Math.max(1, Math.round(frameElement.offsetWidth * pixelRatio)) : undefined;
+  const frameHeight = isMultiFrame ? undefined : frameElement ? Math.max(1, Math.round(frameElement.offsetHeight * pixelRatio)) : undefined;
   let webmBlob: Blob | null = null;
   try {
     webmBlob = await recordCanvasToWebm(scene, canvas, media, frameElement, pixelRatio, onStatus, onProgress);

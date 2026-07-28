@@ -70,6 +70,7 @@ export async function renderSceneToPngBlob(
     const video = node.querySelector("video");
     const img = node.querySelector("img");
     const frameElement = node.querySelector<HTMLElement>("[data-mockup-frame]");
+    const isMultiFrame = scene.frameInstances.length > 0;
     const active = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
     let media: CanvasImageSource | null = null;
 
@@ -83,14 +84,9 @@ export async function renderSceneToPngBlob(
       }
     }
 
-    if (!frameElement) {
-      onError?.("Frame element not found.");
-      return null;
-    }
-
-    const baseFrameWidth = frameElement.offsetWidth;
-    const baseFrameHeight = frameElement.offsetHeight;
-    if (!baseFrameWidth || !baseFrameHeight) {
+    const baseFrameWidth = isMultiFrame ? undefined : frameElement?.offsetWidth;
+    const baseFrameHeight = isMultiFrame ? undefined : frameElement?.offsetHeight;
+    if (!isMultiFrame && (!baseFrameWidth || !baseFrameHeight)) {
       onError?.("Frame has no measurable size.");
       return null;
     }
@@ -113,12 +109,13 @@ export async function renderSceneToPngBlob(
     }
 
     const pixelRatio = typeof scale === "number" && scale > 0 ? scale : Math.max(2, window.devicePixelRatio || 1);
+
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(containerWidth * pixelRatio));
     canvas.height = Math.max(1, Math.round(containerHeight * pixelRatio));
 
-    const frameWidth = Math.max(1, Math.round(baseFrameWidth * pixelRatio));
-    const frameHeight = Math.max(1, Math.round(baseFrameHeight * pixelRatio));
+    const frameWidth = baseFrameWidth ? Math.max(1, Math.round(baseFrameWidth * pixelRatio)) : undefined;
+    const frameHeight = baseFrameHeight ? Math.max(1, Math.round(baseFrameHeight * pixelRatio)) : undefined;
 
     let backgroundImage: HTMLImageElement | null = null;
     if (scene.backgroundMode === "image" && scene.backgroundImageUrl) {
@@ -130,6 +127,36 @@ export async function renderSceneToPngBlob(
     }
 
     const transform = resolveExportTransform(scene);
+
+    // For multi-frame mode, load media for each frame's layer
+    let layerMedias: Map<string, CanvasImageSource | null> | undefined;
+    // For multi-frame mode, load overlay for each frame with isOverlay spec
+    let frameOverlays: Map<string, CanvasImageSource | null> | undefined;
+    if (scene.frameInstances.length > 0) {
+      layerMedias = new Map();
+      frameOverlays = new Map();
+      for (const inst of scene.frameInstances) {
+        const layer = scene.layers.find((l) => l.id === inst.layerId);
+        if (layer?.mediaUrl) {
+          try {
+            const loaded = await loadImage(layer.mediaUrl);
+            layerMedias.set(layer.id, loaded);
+          } catch {
+            layerMedias.set(layer.id, null);
+          }
+        }
+        // Load overlay for this frame instance if it uses an overlay frame
+        const instSpec = getFrameSpec(inst.frame);
+        if (instSpec.isOverlay && instSpec.asset) {
+          try {
+            const ov = await loadImage(instSpec.asset);
+            if (layer?.id) frameOverlays.set(layer.id, ov);
+          } catch {
+            // Overlay failed to load - leave empty
+          }
+        }
+      }
+    }
 
     renderMockupToCanvas(
       canvas,
@@ -143,7 +170,9 @@ export async function renderSceneToPngBlob(
       transform,
       undefined,
       overlay,
-      backgroundImage
+      backgroundImage,
+      layerMedias,
+      frameOverlays
     );
 
     const pngBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));

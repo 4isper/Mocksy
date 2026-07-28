@@ -134,30 +134,24 @@ export function computeFrameInstances(
   const dpiScale = pixelRatio;
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   const actualZoom = Math.max(0.01, transform?.zoom ?? activeLayer?.zoom ?? 1);
-  const frameAr = 10 / 16; // portrait phone default
 
-  // Compute base frame size so N items fit
-  const n = instances.length;
-  const gap = 0.02; // 2% gap between frames
-  const baseFrameW = Math.min(900, (canvasWidth / dpiScale) * 0.8) * dpiScale * actualZoom;
-  const availableW = canvasWidth * (1 - gap * (n - 1));
-  const frameW = (availableW / n) * actualZoom;
-  const frameH = frameW * frameAr;
-
-  return instances.map((inst, i) => {
+  return instances.map((inst) => {
     const spec = getFrameSpec(inst.frame);
     const instScale = inst.scale ?? 1;
-    const w = frameW * instScale * dpiScale;
-    const h = frameH * instScale * dpiScale;
+    const ratioSrc = spec.aspectRatio ?? (inst.frame === "none" ? scene.aspectRatio : "1 / 1");
+    const [rW, rH] = ratioSrc.split("/").map((n) => Number(n.trim()));
+    const instAr = (rH ?? 1) / (rW ?? 1);
 
-    // Position based on x/y fraction
-    const x = (canvasWidth - frameW * n * instScale) / 2 + inst.x * (frameW * instScale * (n - 1));
-    const y = (canvasHeight - h) / 2 + inst.y * (canvasHeight - h);
+    // Match CSS preview: width = scale * 100% of container, centered at (x*100%, y*100%)
+    const w = instScale * canvasWidth * actualZoom;
+    const h = w * instAr;
+    const x = inst.x * canvasWidth - w / 2;
+    const y = inst.y * canvasHeight - h / 2;
 
     const cutout = spec.cutout;
     const padX = cutout ? (cutout.x / SVG_VIEWBOX_WIDTH) * w : spec.padding * dpiScale * actualZoom;
     const padY = cutout ? (cutout.y / SVG_VIEWBOX_HEIGHT) * h : spec.padding * dpiScale * actualZoom;
-    const outerRadius = spec.isOverlay ? 0 : (scene.frame === "watch" ? Math.min(w, h) / 2 : scene.borderRadius + spec.padding) * dpiScale * actualZoom;
+    const outerRadius = spec.isOverlay ? 0 : (inst.frame === "watch" ? Math.min(w, h) / 2 : scene.borderRadius + spec.padding) * dpiScale * actualZoom;
 
     return {
       x,
@@ -179,6 +173,9 @@ export function computeFrameInstances(
 /**
  * Renders the mockup onto a 2D canvas. For overlay frames (SVG device skins)
  * the caller should pass `frameOverlay` so the skin is drawn above the media.
+ * For multi-frame scenes, `layerMedias` maps layer IDs to their pre-loaded media
+ * so each frame can render with its own media content. `frameOverlays` maps
+ * frame instance IDs (or layer IDs) to their pre-loaded overlay images.
  */
 export function renderMockupToCanvas(
   canvas: HTMLCanvasElement,
@@ -192,7 +189,9 @@ export function renderMockupToCanvas(
   transform?: RenderTransform,
   backgroundFill?: string,
   frameOverlay?: CanvasImageSource | null,
-  backgroundImage?: CanvasImageSource | null
+  backgroundImage?: CanvasImageSource | null,
+  layerMedias?: Map<string, CanvasImageSource | null>,
+  frameOverlays?: Map<string, CanvasImageSource | null>
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -207,6 +206,48 @@ export function renderMockupToCanvas(
   // If frameInstances are defined, render a grid of frames instead of a single frame.
   // Each frame draws media from its associated layer (or the active layer if no layerId).
   if (scene.frameInstances.length > 0) {
+    // Draw background first (matches single-frame path)
+    if (scene.backgroundMode === "gradient") {
+      const rad = (RENDER.gradientAngleDeg * Math.PI) / 180;
+      const dx = Math.sin(rad);
+      const dy = -Math.cos(rad);
+      const lineLen = Math.abs(width * dx) + Math.abs(height * dy);
+      const cx = width / 2;
+      const cy = height / 2;
+      const grad = ctx.createLinearGradient(
+        cx - (dx * lineLen) / 2,
+        cy - (dy * lineLen) / 2,
+        cx + (dx * lineLen) / 2,
+        cy + (dy * lineLen) / 2
+      );
+      grad.addColorStop(0, scene.gradientFrom);
+      grad.addColorStop(1, scene.gradientTo);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, width, height);
+    } else if (scene.backgroundMode === "solid") {
+      ctx.fillStyle = scene.backgroundColor;
+      ctx.fillRect(0, 0, width, height);
+    } else if (scene.backgroundMode === "transparent" && backgroundFill) {
+      ctx.fillStyle = backgroundFill;
+      ctx.fillRect(0, 0, width, height);
+    } else if (scene.backgroundMode === "image" && backgroundImage) {
+      const img = backgroundImage as { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number };
+      const iw = img.naturalWidth || img.width || width;
+      const ih = img.naturalHeight || img.height || height;
+      const scale = Math.max(width / iw, height / ih);
+      const dw = iw * scale;
+      const dh = ih * scale;
+      const blur = scene.backgroundBlur * dpiScale;
+      const pad = blur * 2;
+      ctx.save();
+      if (blur > 0) ctx.filter = `blur(${blur}px)`;
+      ctx.drawImage(backgroundImage, (width - dw) / 2 - pad, (height - dh) / 2 - pad, dw + pad * 2, dh + pad * 2);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = "rgba(255,255,255,0.04)";
+      ctx.fillRect(0, 0, width, height);
+    }
+
     const frameBoxes = computeFrameInstances(scene, width, height, pixelRatio, transform);
     for (let i = 0; i < frameBoxes.length; i++) {
       const box = frameBoxes[i];
@@ -217,14 +258,14 @@ export function renderMockupToCanvas(
       const instSpec = getFrameSpec(inst.frame);
       const instZoom = transform?.zoom ?? layer?.zoom ?? 1;
 
-      // Load overlay if needed
-      let overlay: HTMLImageElement | null = null;
-      if (instSpec.isOverlay && instSpec.asset && instSpec.asset === spec.asset && frameOverlay) {
-        overlay = frameOverlay as HTMLImageElement;
-      }
+      // Get media for this frame - from layerMedias map or fall back to shared media
+      const frameMedia = layer?.id ? (layerMedias?.get(layer.id) ?? null) : media;
 
-      // Draw frame (shadow, border, media) — simplified version for grid
-      drawFrameAndMedia(ctx, scene, layer, box, dpiScale, instZoom, media, overlay);
+      // Get overlay for this frame - from frameOverlays map
+      const overlay = layer?.id && instSpec.isOverlay ? (frameOverlays?.get(layer.id) ?? null) : null;
+
+      // Draw frame (shadow, border, media)
+      drawFrameAndMedia(ctx, scene, instSpec, layer, box, dpiScale, instZoom, frameMedia, overlay);
     }
     // Still draw watermark and annotations
     drawWatermark(ctx, scene, width, height, dpiScale);
@@ -407,7 +448,7 @@ export function renderMockupToCanvas(
  * matches the preview pixel-for-pixel. Drawn last, above the frame and
  * watermark, so callouts sit on top of the mockup.
  */
-function drawAnnotations(
+export function drawAnnotations(
   ctx: CanvasRenderingContext2D,
   annotations: Annotation[],
   width: number,
@@ -469,6 +510,7 @@ function drawAnnotations(
 function drawFrameAndMedia(
   ctx: CanvasRenderingContext2D,
   scene: EditorScene,
+  instSpec: ReturnType<typeof getFrameSpec>,
   layer: MediaLayer | undefined,
   box: FrameBox,
   dpiScale: number,
@@ -476,11 +518,10 @@ function drawFrameAndMedia(
   media: CanvasImageSource | null,
   overlay: CanvasImageSource | null
 ) {
-  const spec = getFrameSpec(scene.frame);
   const { x, y, width: frameW, height: frameH, outerRadius, innerX, innerY, innerW, innerH, innerRadius } = box;
 
   // Draw shadow and glass border
-  if (!spec.isOverlay) {
+  if (!instSpec.isOverlay) {
     ctx.save();
     ctx.shadowColor = `rgba(0,0,0,${Math.max(0, Math.min(1, scene.shadowOpacity))})`;
     ctx.shadowBlur = RENDER.shadowBlur * dpiScale * zoom;
@@ -536,8 +577,39 @@ function drawFrameAndMedia(
   }
 }
 
+/** Draws a single frame's media content, loading from layer's media URL. Used by multi-frame rendering when media not pre-loaded. */
+export async function drawFrameMediaFromLayer(
+  ctx: CanvasRenderingContext2D,
+  layer: MediaLayer | undefined,
+  box: FrameBox,
+  dpiScale: number
+): Promise<void> {
+  if (!layer?.mediaUrl) return;
+  const { innerX, innerY, innerW, innerH, innerRadius } = box;
+  try {
+    const media = await loadImage(layer.mediaUrl);
+    ctx.save();
+    roundedRectPath(ctx, innerX, innerY, innerW, innerH, innerRadius);
+    ctx.clip();
+    const fit = layer.mediaFit ?? "cover";
+    const mw = media.width || innerW;
+    const mh = media.height || innerH;
+    const scale = fit === "contain" ? Math.min(innerW / mw, innerH / mh) : Math.max(innerW / mw, innerH / mh);
+    const dw = mw * scale;
+    const dh = mh * scale;
+    const offsetX = layer.mediaOffsetX ?? 0;
+    const offsetY = layer.mediaOffsetY ?? 0;
+    const dx = innerX + (innerW - dw) / 2 + offsetX * (innerW - dw) / 2;
+    const dy = innerY + (innerH - dh) / 2 + offsetY * (innerH - dh) / 2;
+    ctx.drawImage(media, dx, dy, dw, dh);
+    ctx.restore();
+  } catch {
+    // Media load failed - leave empty
+  }
+}
+
 /** Watermark drawing extracted for reuse in multi-frame mode. */
-function drawWatermark(
+export function drawWatermark(
   ctx: CanvasRenderingContext2D,
   scene: EditorScene,
   width: number,

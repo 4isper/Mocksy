@@ -51,12 +51,15 @@ function Segmented<T extends string>({
 export function ControlPanel() {
   const t = useTranslations();
   const [mediaError, setMediaError] = useState<string | null>(null);
+  const [expandedFrameId, setExpandedFrameId] = useState<string | null>(null);
   const {
     scene,
     scenePalette,
     setMedia,
     setFrame,
     setFrameInstances,
+    removeFrameInstance,
+    updateFrameInstance,
     layoutFrameGrid,
     setStylePreset,
     setAnimationPreset,
@@ -175,17 +178,170 @@ export function ControlPanel() {
         />
         <div className="field" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.frameGrid")}</span>
-          {[2, 3, 4].map((n) => (
-            <button
-              key={n}
-              type="button"
-              className="btn btn-sm"
-              onClick={() => layoutFrameGrid(scene.frame, n, "horizontal")}
-            >
-              {n} {t("editor.frameGridHorizontal")}
-            </button>
-          ))}
+          <div style={{ display: "flex", gap: 4, alignItems: "center", width: "100%" }}>
+            <span style={{ fontSize: 13 }}>↔</span>
+            {[2, 3, 4].map((n) => (
+              <button
+                key={`h-${n}`}
+                type="button"
+                className="btn btn-sm"
+                onClick={() => layoutFrameGrid(scene.frame, n, "horizontal")}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 4, alignItems: "center", width: "100%" }}>
+            <span style={{ fontSize: 13 }}>↕</span>
+            {[2, 3, 4].map((n) => (
+              <button
+                key={`v-${n}`}
+                type="button"
+                className="btn btn-sm"
+                onClick={() => layoutFrameGrid(scene.frame, n, "vertical")}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
         </div>
+        {scene.frameInstances.length > 0 && (
+          <div className="field" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.frames")}</span>
+            {scene.frameInstances.map((inst, i) => {
+              const open = expandedFrameId === inst.id;
+              return (
+                <div key={inst.id} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <button
+                      type="button"
+                      className="btn btn-sm"
+                      onClick={() => setExpandedFrameId(open ? null : inst.id)}
+                      style={{ padding: "0 4px", fontSize: 11, lineHeight: "20px" }}
+                      aria-label={open ? "Collapse" : "Expand"}
+                    >
+                      {open ? "▾" : "▸"}
+                    </button>
+                    <span style={{ fontSize: 13, minWidth: 18 }}>{i + 1}.</span>
+                    <button
+                      type="button"
+                      className="btn btn-sm"
+                      disabled={i === 0}
+                      onClick={() => {
+                        const next = [...scene.frameInstances];
+                        [next[i - 1], next[i]] = [next[i]!, next[i - 1]!];
+                        setFrameInstances(next);
+                      }}
+                      style={{ padding: "0 4px", fontSize: 11, lineHeight: "20px" }}
+                      aria-label="Move up"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm"
+                      disabled={i === scene.frameInstances.length - 1}
+                      onClick={() => {
+                        const next = [...scene.frameInstances];
+                        [next[i], next[i + 1]] = [next[i + 1]!, next[i]!];
+                        setFrameInstances(next);
+                      }}
+                      style={{ padding: "0 4px", fontSize: 11, lineHeight: "20px" }}
+                      aria-label="Move down"
+                    >
+                      ↓
+                    </button>
+                    <select
+                      className="select"
+                      value={inst.frame}
+                      onChange={(e) => updateFrameInstance(inst.id, { frame: e.target.value as MockupFrame })}
+                      style={{ flex: 1, fontSize: 13, padding: "2px 4px" }}
+                      aria-label={t("editor.frame")}
+                    >
+                      {frames.map((f) => (
+                        <option key={f} value={f}>{frameLabels[f]}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="btn btn-sm"
+                      onClick={() => removeFrameInstance(inst.id)}
+                      title={t("editor.removeFrame")}
+                      aria-label={t("editor.removeFrame")}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {open && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingLeft: 32, paddingBottom: 4 }}>
+                      <label className="field" style={{ gap: 4 }}>
+                        <span style={{ fontSize: 12, color: "var(--text-dim)", minWidth: 40 }}>{t("editor.frameX")}</span>
+                        <input
+                          className="range"
+                          type="range"
+                          min={0}
+                          max={1}
+                          step={0.01}
+                          value={inst.x}
+                          aria-label={t("editor.frameX")}
+                          aria-valuetext={`${Math.round(inst.x * 100)}%`}
+                          onChange={(e) => updateFrameInstance(inst.id, { x: Number(e.target.value) })}
+                        />
+                        <span style={{ fontSize: 11, minWidth: 36, textAlign: "right" }}>{Math.round(inst.x * 100)}%</span>
+                      </label>
+                      <label className="field" style={{ gap: 4 }}>
+                        <span style={{ fontSize: 12, color: "var(--text-dim)", minWidth: 40 }}>{t("editor.frameY")}</span>
+                        <input
+                          className="range"
+                          type="range"
+                          min={0}
+                          max={1}
+                          step={0.01}
+                          value={inst.y}
+                          aria-label={t("editor.frameY")}
+                          aria-valuetext={`${Math.round(inst.y * 100)}%`}
+                          onChange={(e) => updateFrameInstance(inst.id, { y: Number(e.target.value) })}
+                        />
+                        <span style={{ fontSize: 11, minWidth: 36, textAlign: "right" }}>{Math.round(inst.y * 100)}%</span>
+                      </label>
+                      <label className="field" style={{ gap: 4 }}>
+                        <span style={{ fontSize: 12, color: "var(--text-dim)", minWidth: 40 }}>{t("editor.frameScale")}</span>
+                        <input
+                          className="range"
+                          type="range"
+                          min={0.1}
+                          max={3}
+                          step={0.01}
+                          value={inst.scale}
+                          aria-label={t("editor.frameScale")}
+                          aria-valuetext={`${Math.round(inst.scale * 100)}%`}
+                          onChange={(e) => updateFrameInstance(inst.id, { scale: Number(e.target.value) })}
+                        />
+                        <span style={{ fontSize: 11, minWidth: 36, textAlign: "right" }}>{Math.round(inst.scale * 100)}%</span>
+                      </label>
+                      <label className="field" style={{ gap: 4 }}>
+                        <span style={{ fontSize: 12, color: "var(--text-dim)", minWidth: 40 }}>{t("editor.frameLayer")}</span>
+                        <select
+                          className="select"
+                          value={inst.layerId ?? ""}
+                          onChange={(e) => updateFrameInstance(inst.id, { layerId: e.target.value || null })}
+                          style={{ flex: 1, fontSize: 13, padding: "2px 4px" }}
+                        >
+                          <option value="">—</option>
+                          {scene.layers.map((l, li) => (
+                            <option key={l.id} value={l.id}>
+                              {l.mediaName || t("editor.empty")} #{li + 1}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
         <Segmented
           label={t("editor.aspectRatio")}
           value={scene.aspectRatio}

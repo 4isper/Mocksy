@@ -571,18 +571,20 @@ describe("layoutFrameGrid", () => {
   it("creates a horizontal grid of frame instances", () => {
     const instances = layoutFrameGrid("iphone", 3, "horizontal");
     expect(instances.length).toBe(3);
-    expect(instances[0]!.x).toBe(0);
-    expect(instances[1]!.x).toBe(0.5);
-    expect(instances[2]!.x).toBe(1);
+    // Frames centered with 2% gaps: scale = (1 - 2*0.02) / 3 = 0.32, pitch = 0.34
+    expect(instances[0]!.x).toBeCloseTo(0.16, 5);
+    expect(instances[1]!.x).toBeCloseTo(0.5, 5);
+    expect(instances[2]!.x).toBeCloseTo(0.84, 5);
     expect(instances[0]!.y).toBe(0.5); // All centered vertically
-    expect(instances[0]!.scale).toBe(1 / 3);
+    expect(instances[0]!.scale).toBeCloseTo(0.32, 5);
   });
 
   it("creates a vertical grid of frame instances", () => {
     const instances = layoutFrameGrid("iphone15", 2, "vertical");
     expect(instances.length).toBe(2);
-    expect(instances[0]!.y).toBe(0);
-    expect(instances[1]!.y).toBe(1);
+    // Frames centered with 2% gap: scale = (1 - 0.02) / 2 = 0.49, pitch = 0.51
+    expect(instances[0]!.y).toBeCloseTo(0.245, 5);
+    expect(instances[1]!.y).toBeCloseTo(0.755, 5);
     expect(instances[0]!.x).toBe(0.5); // All centered horizontally
   });
 
@@ -612,5 +614,111 @@ describe("computeFrameInstances", () => {
     // First frame should be on left, last on right
     expect(boxes[0]!.x).toBeLessThan(boxes[1]!.x);
     expect(boxes[1]!.x).toBeLessThan(boxes[2]!.x);
+  });
+
+  it("uses correct aspect ratio from frame spec", () => {
+    // Each frame spec defines its own aspect ratio which computeFrameInstances must respect.
+    const sceneWithFrames: EditorScene = {
+      ...initialScene,
+      frameInstances: [{ id: "f1", frame: "iphone15" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }]
+    };
+    const boxes = computeFrameInstances(sceneWithFrames, 800, 800, 2);
+    expect(boxes.length).toBe(1);
+    // iphone15 has aspectRatio "390/844" (portrait), so width/height = 390/844
+    const ratio = boxes[0]!.width / boxes[0]!.height;
+    expect(ratio).toBeCloseTo(390 / 844, 2);
+  });
+});
+
+describe("renderMockupToCanvas multi-frame mode", () => {
+  it("renders multiple frames with frameInstances", () => {
+    let drawCalls: number = 0;
+    let fillRectCalls: number = 0;
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => { fillRectCalls++; },
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => { drawCalls++; },
+      set fillStyle(_v: unknown) {},
+      set strokeStyle(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {},
+      set lineWidth(_v: unknown) {}
+    };
+    const canvas = { width: 1000, height: 800, getContext: () => ctx } as unknown as HTMLCanvasElement;
+
+    const sceneWithFrames: EditorScene = {
+      ...initialScene,
+      frameInstances: [
+        { id: "f1", frame: "iphone" as const, x: 0, y: 0.5, scale: 1, layerId: null },
+        { id: "f2", frame: "iphone15" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }
+      ]
+    };
+
+    renderMockupToCanvas(canvas, sceneWithFrames, null);
+    // Should draw empty media fill for each frame when no media provided
+    expect(fillRectCalls).toBeGreaterThan(0);
+  });
+
+  it("renders multi-frame with overlay for overlay frames", () => {
+    let drawCalls: number = 0;
+    let overlayDrawCalls: number = 0;
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => { drawCalls++; },
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => { drawCalls++; overlayDrawCalls++; },
+      set fillStyle(_v: unknown) {},
+      set strokeStyle(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {},
+      set lineWidth(_v: unknown) {}
+    };
+    const canvas = { width: 1000, height: 800, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    const layer1 = layer({ id: "layer-1", mediaUrl: null });
+    const layer2 = layer({ id: "layer-2", mediaUrl: "data:image/png;base64,abc" });
+
+    const sceneWithFrames: EditorScene = {
+      ...initialScene,
+      layers: [layer1, layer2],
+      activeLayerId: layer1.id,
+      frameInstances: [
+        { id: "f1", frame: "iphone15" as const, x: 0, y: 0.5, scale: 1, layerId: layer1.id },
+        { id: "f2", frame: "iphone15" as const, x: 1, y: 0.5, scale: 1, layerId: layer2.id }
+      ]
+    };
+    const frameOverlays = new Map<string, CanvasImageSource | null>();
+    frameOverlays.set(layer1.id, { width: 100, height: 200 } as unknown as CanvasImageSource);
+    frameOverlays.set(layer2.id, { width: 100, height: 200 } as unknown as CanvasImageSource);
+
+    renderMockupToCanvas(canvas, sceneWithFrames, null, undefined, undefined, 200, 400, 2, undefined, "transparent", undefined, undefined, frameOverlays);
+    // Should have drawn empty media fill for each frame
+    expect(drawCalls).toBeGreaterThan(0);
+    // Overlay frames should have additional drawImage calls for the overlay skin
+    expect(overlayDrawCalls).toBe(2);
   });
 });
