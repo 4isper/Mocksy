@@ -1,124 +1,201 @@
 # Mocksy
 
-Free alternative to Shots-style mockup editor with no subscriptions.
+Free browser-based mockup editor. No auth, no paywall, no subscriptions.
 
-Reference inspiration: [shots.so](https://shots.so/), [PostSpark device mockup](https://postspark.app/device-mockup).
+Reference: [shots.so](https://shots.so/) · [PostSpark device mockup](https://postspark.app/device-mockup)
 
-## Features
+---
 
-- Multi-panel editor layout (controls, canvas preview, templates, layers, annotations, projects)
-- Undo / redo of every edit (`⌘Z` / `⇧⌘Z`), with keyboard shortcuts and history coalescing (rapid slider drags collapse into one step)
-- Background presets (transparent, solid swatches, gradient palettes, background image with blur)
-- "Auto from media" — generates a gradient from the loaded media's dominant colors
-- Watermark toggle with text, position (4 corners), and size controls
-- Mockup frames: `none`, `iphone`, `iphone15`, `iphone16pro`, `desktop`, `tablet`, `watch` (circular)
-- Overlay phone skins (iphone15/16pro) adopt their native portrait aspect ratio so the SVG is never stretched
-- Mockup styles: default, glass (light/dark), outline — with shadows and corner radius
-- Scene style presets: Dark Studio, Soft Glass, Bold Gradient, Minimal, Warm
-- Animation presets: zoom in, zoom out, parallax
-- Aspect ratio presets: 16:9, 4:3, 3:2, 1:1, 9:16
-- Zoom slider (0.8–1.5×), media position X/Y sliders, shadow opacity, and corner radius controls
-- Per-layer media Fill/Fit toggle (contain vs cover) for image/video layers
-- Layer management: add, duplicate, hide/show, reorder, remove; disabled when only 1 layer remains
-- Text, arrow, and rectangle annotations with color and stroke-width controls; draggable and resizable on canvas
-- The preview canvas keeps the chosen scene aspect ratio (contain), so portrait ratios like 9/16 fit the viewport without stretching or page scroll
-- Drag-to-pan the canvas; pinch-to-zoom on touch devices
-- Drag-and-drop or file picker to load image/video media; Clear media button
-- Unsupported file types are rejected with an inline error instead of a blank canvas
-- Video options (muted/loop/autoplay, poster, timeline, trim, quality) collapse into a togglable accordion
-- Video trim shown as a single dual-range control with a visible selected window
-- Light/dark/system theme toggle in toolbar
-- Command palette (`⌘K`) for keyboard-driven access to all features
-- Export quality selector for MP4/GIF: Low, Medium, High
-- Unified export dialog for PNG/MP4/GIF with size selector (1×, 2×, 4×)
-- PNG export (matches the on-screen preview pixel-for-pixel) with explicit scale selector
-- PNG copy to clipboard (`⇧⌘C`)
-- MP4 export via in-browser recording (MediaRecorder) + FFmpeg (WebM → MP4)
-- GIF export for animated stills (with palette generation for accurate colors)
-- Animated still-image exports run for a visible 3s (zoom/parallax) instead of a 0.2s blink
-- MP4 export attaches the canvas to the DOM while recording so headless/background tabs capture frames reliably
-- Project management: create, switch, rename, duplicate, import, export, and delete projects (persisted in localStorage)
-- Reset confirmation modal (clears the current mockup and returns to the default scene)
-- Opens with an offline demo image so the canvas is never empty
-- Autosave to localStorage (with a Saved indicator) plus explicit Save and Reset
-- Share URL that encodes the full scene as base64 JSON (demo media stripped to keep URLs short); invalid/old payloads are normalized, not trusted blindly
-- Error boundary with "Try again" recovery (your last saved scene is still safe in this browser)
-- No auth, no paywall, no subscription gates
-
-## Stack
-
-- Next.js 15 + TypeScript
-- React 19
-- Zustand for editor state
-- Tailwind CSS v4
-- @ffmpeg/ffmpeg for client-side MP4 conversion
-- Vitest (unit) + Playwright (e2e) test setup
-
-## Run
+## Quick start
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Tests
+Open [http://localhost:3000](http://localhost:3000) and start editing.
 
-```bash
-npm run typecheck   # TypeScript type checking (tsc --noEmit)
-npm run test        # unit tests (Vitest, 501 tests across 34 files)
-npm run test:coverage  # unit tests with coverage report
-npm run test:e2e    # end-to-end tests (Playwright; needs a browser installed)
-```
+---
+
+## Features
+
+### Editor
+
+- Multi-panel layout: controls, canvas preview, layers, annotations, templates, projects
+- Undo/redo (`⌘Z` / `⇧⌘Z`) with keyboard shortcuts; rapid slider drags coalesce into one step
+- Command palette (`⌘K`) for keyboard-driven access to every action
+- Light/dark/system theme toggle in the toolbar
+- Error boundary with recovery (your saved scene stays safe)
+- Save / unsaved status indicator with 500ms autosave debounce
+- Multi-frame grid layout (2–4 frames, horizontal or vertical)
+- Per-frame device select, position (X/Y/scale), and layer assignment
+
+### Mockup frames
+
+| Frame | Type | Notes |
+|-------|------|-------|
+| `none` | CSS | Raw rounded rectangle |
+| `iphone` | CSS | Classic phone shape |
+| `iphone15` | Overlay | SVG skin, native portrait ratio |
+| `iphone16pro` | Overlay | SVG skin, native portrait ratio |
+| `desktop` | CSS | Wide landscape monitor |
+| `tablet` | CSS | Tablet proportions |
+| `watch` | CSS | Circular face |
+
+- Style presets: default, glass (light/dark), outline — with configurable shadow opacity and corner radius
+- Scene style presets: Dark Studio, Soft Glass, Bold Gradient, Minimal, Warm
+- Aspect ratios: 16:9, 4:3, 3:2, 1:1, 9:16
+
+### Media & layers
+
+- Image and video support (drag-drop or file picker)
+- Zoom (0.8–1.5x), position X/Y, and fill/fit toggle
+- Layer management: add, duplicate, hide/show, reorder, remove
+- Unsupported file types rejected with inline error
+- Opens with an offline demo image
+
+### Annotations
+
+- Text, arrow, and rectangle annotations
+- Color picker and stroke-width controls
+- Draggable and resizable on canvas
+
+### Video
+
+- Mute / loop / autoplay toggles
+- Poster frame selector
+- Timeline scrubber
+- Trim with dual-range control
+- Export quality: Low, Medium, High
+
+### Background
+
+- Solid colors, gradient presets, transparent mode
+- Background image upload with blur control
+- Auto from media — generates a gradient from the loaded media's dominant colors
+
+### Watermark
+
+- Toggle on/off
+- Custom text
+- 4-corner positioning
+- Size control (8–64px)
+
+### Export
+
+| Format | Scale | Notes |
+|--------|-------|-------|
+| PNG | 1x, 2x, 4x | Pixel-for-pixel match with preview; copy to clipboard |
+| MP4 | 1x, 2x, 4x | In-browser MediaRecorder + FFmpeg WebM→MP4 |
+| GIF | 1x, 2x, 4x | Palette generation for accurate colors |
+
+- Animated exports run for a visible 3s (zoom/parallax) instead of a blink
+- MP4 attaches the canvas to the DOM during recording for reliable frame capture in background tabs
+
+### Projects
+
+- Create, switch, rename, duplicate, import, export, delete
+- All projects persisted to localStorage
+- Share URL encodes the full scene as base64 JSON (demo media stripped); invalid payloads are normalized
+- Reset confirmation modal before clearing
+
+---
+
+## Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 15 |
+| UI | React 19 |
+| State | Zustand |
+| Styling | Tailwind CSS v4 |
+| Video | @ffmpeg/ffmpeg (client-side WebM→MP4) |
+| Unit tests | Vitest (501 tests, 34 files) |
+| E2E tests | Playwright |
+| Language | TypeScript (strict) |
+
+---
 
 ## Project layout
 
-- `app/` — Next.js app router entry (`layout.tsx`, `page.tsx`, `error.tsx`)
-- `components/editor/` — `EditorShell`, `ControlPanel`, `PreviewCanvas`, `TemplatesPanel`, `LayersPanel`, `AnnotationsPanel`, `ExportDialog`, `ShortcutsDialog`, `ProjectsPanel`, `VideoOptions`, `VideoTrimControl`, `CommandPalette`, `ErrorBoundary`, `ThemeProvider`, `LocaleSwitcher`
-- `lib/state/` — Zustand stores (`editorStore`, `projectsStore`), scene normalization (`normalizeScene`), share-URL (de)serialization (`shareState`), project file I/O (`projectFile`)
-- `lib/render/` — frame specs (`frames`), media type detection (`mediaKind`), CSS/canvas geometry (`mockupRenderer`), video timeline (`videoComposer`)
-- `lib/export/` — PNG (`exportImage`), MP4/GIF (`exportVideo`), canvas mockup rendering (`renderMockup`)
-- `lib/media/` — file loading (`loadFile`), built-in demo image (`demoMedia`), dominant-color palette extraction (`palette`)
-- `lib/presets/` — background swatches and scene style presets (`presets`)
-- `lib/types/` — TypeScript type definitions (`editor`)
-- `public/devices/` — SVG device skins for overlay frames
-- `tests/unit/` — Vitest unit tests (pure functions, stores, utilities)
-- `tests/components/` — Vitest component tests (16 editor components, 501 tests)
-- `tests/e2e/` — Playwright end-to-end tests
+```
+app/                    Next.js router (layout, page, error boundary)
+components/editor/      16 React components
+  EditorShell            Main orchestrator with keyboard shortcuts
+  ControlPanel           Frame, style, media, background, watermark controls
+  PreviewCanvas          Canvas renderer with drag/pan/pinch/annotations
+  CommandPalette         ⌘K action search palette
+  LayersPanel            Layer list with hide/reorder/remove
+  AnnotationsPanel       Annotation CRUD and editor
+  TemplatesPanel         Scene style preset gallery
+  ProjectsPanel          Project CRUD
+  ExportDialog           PNG/MP4/GIF export modal
+  ShortcutsDialog        Keyboard shortcuts cheat sheet
+  VideoOptions           Video playback + trim + quality
+  VideoTrimControl       Dual-range trim slider
+  RightPanel             Tabbed panel (templates / layers / annotations / projects)
+  ErrorBoundary          Crash recovery with retry
+  ThemeProvider          Light/dark/system theme
+  LocaleSwitcher         EN / RU toggle
+lib/
+  state/                 Zustand stores + normalization + share URL
+  render/                Frame specs, CSS geometry, video timeline
+  export/                PNG, MP4/GIF, canvas rendering
+  media/                 File loading, demo image, palette extraction
+  presets/               Background swatches, scene style presets
+  types/                 TypeScript interfaces
+public/devices/          SVG device skins for overlay frames
+tests/
+  unit/                  Pure function and store tests
+  components/            Component tests (16 components)
+  e2e/                   Playwright end-to-end tests
+```
 
-## Responsive layout
+---
 
-The editor locks to the viewport height (`100dvh`) and never scrolls the page:
-the preview stays fully visible at any aspect ratio (including portrait 9/16),
-and the side panels scroll internally when they overflow. Below 980px wide the
-multi-panel editor (controls / preview / templates / layers / annotations /
-projects) collapses to a single stacked column so it stays usable on tablets
-and phones.
+## Scripts
 
-The preview canvas uses container-query units (`cqw`/`cqh`) for aspect-ratio-based
-sizing, `touch-action: none` to prevent browser zoom on pinch, and supports
-pinch-to-zoom and drag-to-pan via pointer events.
+```bash
+npm run typecheck       # TypeScript strict check
+npm run test            # Vitest (501 tests, 34 files)
+npm run test:coverage   # Unit tests with coverage report
+npm run test:e2e        # Playwright (requires browser install)
+npm run lint            # ESLint (Next.js core-web-vitals)
+```
 
-The UI uses a dark theme with glass panels (`backdrop-filter: blur(14px)`)
-throughout. An error boundary with a "Try again" button recovers from crashes
-without losing your last saved scene.
+---
 
 ## Keyboard shortcuts
 
-Press `?` (or the **Shortcuts** button) for an in-app cheat sheet. `⌘`
-is Cmd on macOS and Ctrl on Windows/Linux.
+Press `?` in the editor (or click the Shortcuts button) for the in-app cheat sheet. `⌘` is Cmd on macOS, Ctrl on Windows/Linux.
 
-| Shortcut          | Action                                              |
-| ----------------- | --------------------------------------------------- |
-| `?`               | Open keyboard shortcuts cheat sheet                 |
-| `⌘K` / `Ctrl+K`   | Open command palette                                |
-| `⌘Z` / `Ctrl+Z`   | Undo                                                |
-| `⇧⌘Z` / `Ctrl+Y`  | Redo                                                |
-| `⌘S` / `Ctrl+S`   | Save to localStorage                                |
-| `⌘E` / `Ctrl+E`   | Export PNG                                          |
-| `⇧⌘C` / `Ctrl+⇧C` | Copy PNG to clipboard                               |
-| `⇧⌘E` / `Ctrl+⇧E` | Export MP4                                          |
-| `⇧⌘G` / `Ctrl+⇧G` | Export GIF                                          |
-| `⌘D` / `Ctrl+D`   | Duplicate active layer (ignored while typing)       |
-| `⌘↑` / `⌘↓`       | Move active layer up / down (ignored while typing)  |
-| `⌘[` / `⌘]`       | Select previous / next layer (ignored while typing) |
-| `R`               | Reset to defaults (ignored while typing in a field) |
+| Shortcut | Action |
+|----------|--------|
+| `?` | Open shortcuts cheat sheet |
+| `⌘K` / `Ctrl+K` | Open command palette |
+| `⌘Z` / `Ctrl+Z` | Undo |
+| `⇧⌘Z` / `Ctrl+Y` | Redo |
+| `⌘S` / `Ctrl+S` | Save to localStorage |
+| `⌘E` / `Ctrl+E` | Export PNG |
+| `⇧⌘C` / `Ctrl+⇧C` | Copy PNG to clipboard |
+| `⇧⌘E` / `Ctrl+⇧E` | Export MP4 |
+| `⇧⌘G` / `Ctrl+⇧G` | Export GIF |
+| `⌘D` / `Ctrl+D` | Duplicate active layer |
+| `⌘↑` / `⌘↓` | Move active layer up/down |
+| `⌘[` / `⌘]` | Select previous / next layer |
+| `R` | Reset to defaults |
+
+All layer shortcuts are ignored while typing in a text field.
+
+---
+
+## Responsive design
+
+The editor locks to the viewport height (`100dvh`) and never scrolls as a page. The preview stays fully visible at any aspect ratio (including portrait 9/16). Side panels scroll internally when content overflows.
+
+Below 980px wide the layout collapses to a single stacked column for tablets and phones.
+
+The preview canvas uses:
+- Container-query units (`cqw`/`cqh`) for aspect-ratio sizing
+- `touch-action: none` to prevent browser zoom on pinch
+- Pointer events for drag-to-pan and pinch-to-zoom
