@@ -148,7 +148,7 @@ select {
 .control-panel,
 .templates-panel,
 .projects-panel,
-.layers-panel
+.layers-panel,
 .right-panel {
   overflow-y: auto;
   min-height: 0;

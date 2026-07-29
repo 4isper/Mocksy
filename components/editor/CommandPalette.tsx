@@ -240,7 +240,6 @@ function createCommands(
       id: "layer-add",
       label: t("commandPalette.addLayer"),
       description: t("commandPalette.addLayerDesc"),
-      shortcut: "⌘D",
       keywords: ["layer", "add", "new", "media", "image", "video"],
       action: () => {
         // Opens file picker via control panel

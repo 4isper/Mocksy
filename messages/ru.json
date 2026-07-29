@@ -40,7 +40,7 @@
     "clearMedia": "Очистить медиа",
     "resetScene": "Сбросить сцену",
     "resetConfirm_title": "Сбросить сцену",
-    "resetConfirm_message": "Текущий mockup будет очищен и вернётся к сцене по умолчанию. Отмена действия недоступна.",
+    "resetConfirm_message": "Текущий mockup будет очищен и вернётся к сцене по умолчанию. Отмена действия доступна.",
     "resetConfirm_cancel": "Отмена",
     "resetConfirm_confirm": "Сбросить",
     "saved": "Сохранено",

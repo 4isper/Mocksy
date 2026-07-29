@@ -20,7 +20,7 @@ export function VideoOptions() {
   } = useEditorStore();
   const videoCurrentTime = useEditorStore((s) => s.videoCurrentTime);
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
-  if (!activeLayer) return null;
+  if (!activeLayer || activeLayer.mediaType !== "video") return null;
 
   return (
     <div className="field-group video-options">
