@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { ControlPanel } from "@/components/editor/ControlPanel";
 import { ExportDialog } from "@/components/editor/ExportDialog";
 import { ShortcutsDialog } from "@/components/editor/ShortcutsDialog";
@@ -14,6 +15,7 @@ import { sceneToShareUrl, ShareUrlTooLarge } from "@/lib/state/shareState";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { useThemeStore } from "@/lib/state/themeStore";
 import { LocaleSwitcher } from "@/components/editor/LocaleSwitcher";
+import { ErrorBoundary } from "@/components/editor/ErrorBoundary";
 
 const AUTOSAVE_DELAY = 500;
 
@@ -43,6 +45,10 @@ export function EditorShell() {
   const [exportOpen, setExportOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const hasOpenModalRef = useRef(false);
+  hasOpenModalRef.current = confirmResetOpen || exportOpen || shortcutsOpen || commandPaletteOpen;
+  const resetTrapRef = useFocusTrap(confirmResetOpen);
+
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Callbacks must be defined before useCommands
@@ -131,6 +137,15 @@ export function EditorShell() {
 
   const cancelReset = useCallback(() => setConfirmResetOpen(false), []);
 
+  useEffect(() => {
+    if (!confirmResetOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") cancelReset();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [confirmResetOpen, cancelReset]);
+
   // Clear the transient "Copied" status after a moment so it doesn't
   // linger in the toolbar like the persistent Saved indicator.
   useEffect(() => {
@@ -185,6 +200,8 @@ export function EditorShell() {
       const target = event.target as HTMLElement | null;
       const typing =
         !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT");
+      // Skip shortcuts when a modal dialog is open.
+      if (hasOpenModalRef.current) return;
       if ((event.key === "?" || (event.code === "Slash" && event.shiftKey)) && !typing) {
         event.preventDefault();
         setShortcutsOpen(true);
@@ -274,6 +291,30 @@ export function EditorShell() {
         if (id) st.selectLayer(id);
         return;
       }
+      // Arrow keys nudge the selected frame instance on the canvas.
+      if (!modifier && !typing && event.key.startsWith("Arrow")) {
+        event.preventDefault();
+        const st = useEditorStore.getState();
+        let id = st.activeFrameInstanceId;
+        if (!id && st.scene.frameInstances.length > 0) {
+          id = st.scene.frameInstances[0]!.id;
+          st.selectFrameInstance(id);
+        }
+        const inst = st.scene.frameInstances.find((fi) => fi.id === id);
+        if (!inst) return;
+        const step = event.shiftKey ? 0.05 : 0.01;
+        const dirs: Record<string, [number, number]> = {
+          ArrowUp: [0, -step],
+          ArrowDown: [0, step],
+          ArrowLeft: [-step, 0],
+          ArrowRight: [step, 0]
+        };
+        const [dx, dy] = dirs[event.key] ?? [0, 0];
+        const x = Math.max(0, Math.min(1, inst.x + dx));
+        const y = Math.max(0, Math.min(1, inst.y + dy));
+        st.updateFrameInstance(id!, { x, y });
+        return;
+      }
       if (event.key.toLowerCase() === "r" && !modifier) {
         if (typing) return;
         event.preventDefault();
@@ -294,7 +335,7 @@ export function EditorShell() {
       <div className="editor-grid">
         <ControlPanel />
         <section style={{ display: "grid", gridTemplateRows: "1fr auto", gap: 12, minHeight: 0, overflow: "hidden" }}>
-          <PreviewCanvas scene={scene} />
+          <ErrorBoundary><PreviewCanvas scene={scene} /></ErrorBoundary>
           <div className="panel toolbar">
             <div className="toolbar-group">
               <button type="button" className="btn-tb btn-tb-icon" onClick={undo} disabled={pastLength === 0} title={t("editor.undoTitle")}>
@@ -404,6 +445,7 @@ export function EditorShell() {
         <div className="modal-backdrop" role="presentation" onClick={cancelReset}>
           <div
             className="modal"
+            ref={resetTrapRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="reset-title"

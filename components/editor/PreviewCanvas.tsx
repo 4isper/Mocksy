@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, DragEvent, ReactNode } from "react";
+import type { ChangeEvent, CSSProperties, DragEvent, ReactNode } from "react";
 import type { Annotation, EditorScene, MediaLayer } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
 import { getFrameSpec } from "@/lib/render/frames";
@@ -232,6 +232,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const dragDepth = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dropError, setDropError] = useState<string | null>(null);
+  const [canvasFileInputKey, setCanvasFileInputKey] = useState(0);
   const setMedia = useEditorStore((s) => s.setMedia);
   const addLayer = useEditorStore((s) => s.addLayer);
   const setVideoDuration = useEditorStore((s) => s.setVideoDuration);
@@ -243,6 +244,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const selectedAnnotationId = useEditorStore((s) => s.selectedAnnotationId);
   const selectAnnotation = useEditorStore((s) => s.selectAnnotation);
   const updateAnnotation = useEditorStore((s) => s.updateAnnotation);
+  const activeFrameInstanceId = useEditorStore((s) => s.activeFrameInstanceId);
+  const selectFrameInstance = useEditorStore((s) => s.selectFrameInstance);
 
   // Sample the active layer's media for a dominant-color palette once it has
   // decoded, so the "match background" control can suggest a gradient. Runs
@@ -274,6 +277,14 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene.activeLayerId]);
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const frameInstanceCssMap = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof buildSceneCss>>();
+    for (const inst of scene.frameInstances) {
+      const layer = scene.layers.find((l) => l.id === inst.layerId) ?? activeLayer;
+      map.set(inst.id, buildSceneCss({ ...scene, frame: inst.frame, layers: layer ? [layer] : [] }));
+    }
+    return map;
+  }, [scene, activeLayer]);
 
   // The whole-mockup zoom/animation is applied to the frame container so the
   // device skin and media scale together, matching the export.
@@ -380,6 +391,20 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
     }
   };
 
+  const handleCanvasFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const { url, mediaType, mediaName } = await loadMediaFromFile(file);
+      setDropError(null);
+      addLayer(url, mediaType, mediaName);
+    } catch (err) {
+      setDropError(err instanceof UnsupportedMediaError ? err.message : t("editor.uploadError"));
+    } finally {
+      setCanvasFileInputKey((k) => k + 1);
+    }
+  };
+
   const [arW, arH] = scene.aspectRatio.split("/").map((n) => Number(n.trim()));
 
   return (
@@ -453,10 +478,13 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         {scene.frameInstances.length > 0 ? (
           // Multi-frame grid mode
           <>
-            {scene.frameInstances.map((inst, i) => {
+            {scene.frameInstances.filter((inst) => {
+              const layer = scene.layers.find((l) => l.id === inst.layerId) ?? activeLayer;
+              return !layer?.hidden;
+            }).map((inst, i) => {
               const layer = scene.layers.find((l) => l.id === inst.layerId) ?? activeLayer;
               const spec = getFrameSpec(inst.frame);
-              const instCss = buildSceneCss({ ...scene, frame: inst.frame, layers: layer ? [layer] : [] });
+              const instCss = frameInstanceCssMap.get(inst.id)!;
               const zoom = layer?.zoom ?? 1;
               const offsetX = layer?.mediaOffsetX ?? 0;
               const offsetY = layer?.mediaOffsetY ?? 0;
@@ -464,6 +492,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
               return (
                 <div
                   key={inst.id}
+                  onClick={() => selectFrameInstance(inst.id)}
                   style={{
                     position: "absolute",
                     left: `${inst.x * 100}%`,
@@ -471,7 +500,11 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
                     width: `${inst.scale * 100}%`,
                     height: "auto",
                     transform: "translate(-50%, -50%)",
-                    aspectRatio: spec.aspectRatio ?? (inst.frame === "watch" ? "1" : "9 / 16")
+                    aspectRatio: spec.aspectRatio ?? (inst.frame === "watch" ? "1" : "9 / 16"),
+                    cursor: "pointer",
+                    outline: activeFrameInstanceId === inst.id ? "2px solid var(--accent)" : undefined,
+                    outlineOffset: 4,
+                    borderRadius: 4
                   }}
                 >
                   {spec.isOverlay ? (
@@ -568,7 +601,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
                     <img
                       key={layer.id}
                       src={layer.mediaUrl}
-                      alt="Uploaded media"
+                      alt={t("editor.uploadedMediaAlt")}
                       style={sceneCss.mediaStyle}
                       onLoad={(e) => {
                         setMediaLoading(false);
@@ -579,7 +612,10 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
                 ) : null
               )}
             {scene.layers.every((l) => !l.mediaUrl) ? (
-              <div style={sceneCss.emptyMediaStyle}>Drop image or video to start</div>
+              <label style={sceneCss.emptyMediaStyle}>
+                <span>{t("editor.dropToStart")}</span>
+                <input type="file" accept="image/*,video/*" onChange={handleCanvasFile} key={canvasFileInputKey} style={{ display: "none" }} />
+              </label>
             ) : null}
             {sceneCss.frameOverlay && (
               <img
@@ -629,9 +665,13 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             {scene.watermarkText}
           </span>
         )}
-        {activeLayer ? (
-          <button type="button" className="preview-chip" onClick={() => setMedia(null, "none", null)}>
-            Clear media
+        <label className="preview-chip" style={{ top: 8 }}>
+          <span>{t("editor.uploadMedia")}</span>
+          <input type="file" accept="image/*,video/*" onChange={handleCanvasFile} key={canvasFileInputKey} style={{ display: "none" }} />
+        </label>
+        {activeLayer?.mediaUrl ? (
+          <button type="button" className="preview-chip" style={{ top: 40 }} onClick={() => setMedia(null, "none", null)}>
+            {t("editor.clearMedia")}
           </button>
         ) : null}
         {dropError ? (

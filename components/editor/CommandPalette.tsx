@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { useThemeStore } from "@/lib/state/themeStore";
@@ -486,6 +487,7 @@ export function CommandPalette({
   const t = useTranslations();
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const trapRef = useFocusTrap(isOpen, false);
 
   const filteredCommands = useMemo(() => {
     return commands
@@ -546,6 +548,7 @@ export function CommandPalette({
     <div className="command-palette-backdrop" onClick={onClose}>
       <div
         className="command-palette"
+        ref={trapRef}
         onClick={e => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

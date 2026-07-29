@@ -60,6 +60,7 @@ export function ControlPanel() {
     setFrameInstances,
     removeFrameInstance,
     updateFrameInstance,
+    selectFrameInstance,
     layoutFrameGrid,
     setStylePreset,
     setAnimationPreset,
@@ -217,7 +218,7 @@ export function ControlPanel() {
                     <button
                       type="button"
                       className="btn-icon"
-                      onClick={() => setExpandedFrameId(open ? null : inst.id)}
+                      onClick={() => { setExpandedFrameId(open ? null : inst.id); selectFrameInstance(open ? null : inst.id); }}
                       aria-label={open ? "Collapse" : "Expand"}
                       style={{ fontSize: 10 }}
                     >

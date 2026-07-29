@@ -37,6 +37,10 @@ export interface EditorStoreState {
   /** Id of the annotation currently selected for editing; kept out of `scene`
    *  so selecting doesn't churn undo history or serialize into share URLs. */
   selectedAnnotationId: string | null;
+  /** Id of the frame instance currently selected for editing/nudging; kept out
+   *  of `scene` so selecting doesn't churn undo history or serialize into share
+   *  URLs. */
+  activeFrameInstanceId: string | null;
   /** Pixel multiplier used when exporting/copying PNG (1×/2×/4×). Kept out of
    *  `scene` so it doesn't churn undo history or serialize into share URLs. */
   exportScale: 1 | 2 | 4;
@@ -97,6 +101,7 @@ export interface EditorStoreState {
   updateAnnotation: (id: string, patch: Partial<Annotation>) => void;
   removeAnnotation: (id: string) => void;
   selectAnnotation: (id: string | null) => void;
+  selectFrameInstance: (id: string | null) => void;
   clearAnnotations: () => void;
   setVideoMuted: (muted: boolean) => void;
   setVideoLoop: (loop: boolean) => void;
@@ -177,6 +182,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   future: [],
   videoCurrentTime: 0,
   selectedAnnotationId: null,
+  activeFrameInstanceId: null,
   lastHistoryKey: null,
   lastHistoryAt: 0,
   isMediaLoading: false,
@@ -291,7 +297,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
       const activeLayerId = s.scene.activeLayerId === id ? layers[0]?.id ?? null : s.scene.activeLayerId;
       return pushHistory(s, { ...s.scene, layers, activeLayerId });
     }),
-  selectLayer: (id) => set((s) => ({ scene: { ...s.scene, activeLayerId: id } })),
+  selectLayer: (id) => set((s) => pushHistory(s, { ...s.scene, activeLayerId: id })),
   reorderLayers: (orderedIds) =>
     set((s) => {
       const byId = new Map(s.scene.layers.map((l) => [l.id, l]));
@@ -409,6 +415,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
       };
     }),
   selectAnnotation: (id) => set({ selectedAnnotationId: id }),
+  selectFrameInstance: (id) => set({ activeFrameInstanceId: id }),
   clearAnnotations: () => set((s) => ({ ...pushHistory(s, { ...s.scene, annotations: [] }), selectedAnnotationId: null })),
   setVideoMuted: (videoMuted) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoMuted }) })),
   setVideoLoop: (videoLoop) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoLoop }) })),

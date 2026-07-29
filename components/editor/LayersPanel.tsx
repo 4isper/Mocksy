@@ -105,7 +105,7 @@ export function LayersPanel() {
                   </span>
                   <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>
                     {label}
-                    {isVideoLayer(layer) ? " 🎬" : ""}
+                    {isVideoLayer(layer) ? <span role="img" aria-label={t("editor.videoLabel")}> 🎬</span> : null}
                   </span>
                   <button
                     type="button"

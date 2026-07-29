@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 
 type Shortcut = { keys: string[]; label: string };
 type ShortcutGroup = { title: string; items: Shortcut[] };
@@ -44,6 +45,8 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
     }
   ];
 
+  const trapRef = useFocusTrap(open);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -58,6 +61,7 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
       <div
         className="modal shortcuts"
+        ref={trapRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="shortcuts-title"

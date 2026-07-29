@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 
 export type ExportFormat = "png" | "mp4" | "gif";
 
@@ -34,12 +35,24 @@ export function ExportDialog({
     { value: 4, label: t("export.scale4x") }
   ];
   const [format, setFormat] = useState<ExportFormat>("png");
+  const trapRef = useFocusTrap(open);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   if (!open) return null;
   const formatLabel = t(`export.${format}`);
   return (
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
       <div
         className="modal"
+        ref={trapRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="export-title"
@@ -91,9 +104,9 @@ export function ExportDialog({
             className="btn btn-primary"
             disabled={busy}
             onClick={() => onExport(format)}
-            title={`Export ${formatLabel} (⌘E)`}
+            title={t("export.exportActionShortcut", { format: formatLabel })}
           >
-            Export {formatLabel}
+            {t("export.exportAction", { format: formatLabel })}
           </button>
         </div>
       </div>
