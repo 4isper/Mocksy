@@ -246,4 +246,117 @@ describe("projectsStore", () => {
     expect(useProjectsStore.getState().projects).toHaveLength(1);
     expect(result).toBeDefined();
   });
+
+  it("handles malformed projects data (non-array projects)", () => {
+    storage.setItem("mocksy-projects", JSON.stringify({ projects: "not-an-array", activeProjectId: null }));
+    useProjectsStore.getState().hydrate();
+    expect(useProjectsStore.getState().projects).toHaveLength(1);
+  });
+
+  it("handles null entries in projects array", () => {
+    storage.setItem("mocksy-projects", JSON.stringify({ projects: [null, { id: "p1", name: "Valid", scene: makeDemoScene(), updatedAt: 1 }], activeProjectId: "p1" }));
+    useProjectsStore.getState().hydrate();
+    expect(useProjectsStore.getState().projects).toHaveLength(1);
+  });
+
+  it("regenerates non-string project ids", () => {
+    storage.setItem("mocksy-projects", JSON.stringify({ projects: [{ id: 123, name: "Numeric id", scene: makeDemoScene(), updatedAt: 1 }], activeProjectId: "123" }));
+    useProjectsStore.getState().hydrate();
+    const p = useProjectsStore.getState().projects[0]!;
+    expect(typeof p.id).toBe("string");
+  });
+
+  it("defaults empty project name to Untitled", () => {
+    storage.setItem("mocksy-projects", JSON.stringify({ projects: [{ id: "p1", name: "", scene: makeDemoScene(), updatedAt: 1 }], activeProjectId: "p1" }));
+    useProjectsStore.getState().hydrate();
+    expect(useProjectsStore.getState().projects[0]!.name).toBe("Untitled");
+  });
+
+  it("falls back to Date.now for non-number updatedAt", () => {
+    const now = Date.now();
+    storage.setItem("mocksy-projects", JSON.stringify({ projects: [{ id: "p1", name: "P1", scene: makeDemoScene(), updatedAt: "yesterday" }], activeProjectId: "p1" }));
+    useProjectsStore.getState().hydrate();
+    const p = useProjectsStore.getState().projects[0]!;
+    expect(typeof p.updatedAt).toBe("number");
+    expect(p.updatedAt).toBeGreaterThanOrEqual(now);
+  });
+
+  it("handles empty projects array in storage by falling back to demo project", () => {
+    storage.setItem("mocksy-projects", JSON.stringify({ projects: [], activeProjectId: null }));
+    useProjectsStore.getState().hydrate();
+    expect(useProjectsStore.getState().projects).toHaveLength(1);
+    expect(useProjectsStore.getState().activeProjectId).toBe(useProjectsStore.getState().projects[0]!.id);
+  });
+
+  it("createProject defaults to Untitled when name omitted", () => {
+    useProjectsStore.getState().hydrate();
+    const id = useProjectsStore.getState().createProject();
+    expect(useProjectsStore.getState().projects.find((p) => p.id === id)?.name).toBe("Untitled");
+  });
+
+  it("createProject defaults to Untitled for empty string name", () => {
+    useProjectsStore.getState().hydrate();
+    const id = useProjectsStore.getState().createProject("");
+    expect(useProjectsStore.getState().projects.find((p) => p.id === id)?.name).toBe("Untitled");
+  });
+
+  it("switchProject is a no-op for non-existent id", () => {
+    useProjectsStore.getState().hydrate();
+    const current = useProjectsStore.getState().activeProjectId;
+    useProjectsStore.getState().switchProject("nonexistent");
+    expect(useProjectsStore.getState().activeProjectId).toBe(current);
+  });
+
+  it("renameProject is a no-op for empty name", () => {
+    useProjectsStore.getState().hydrate();
+    const id = useProjectsStore.getState().activeProjectId!;
+    const nameBefore = useProjectsStore.getState().projects.find((p) => p.id === id)!.name;
+    useProjectsStore.getState().renameProject(id, "   ");
+    expect(useProjectsStore.getState().projects.find((p) => p.id === id)!.name).toBe(nameBefore);
+  });
+
+  it("renameProject leaves other projects unchanged", () => {
+    useProjectsStore.getState().hydrate();
+    const a = useProjectsStore.getState().createProject("A");
+    const b = useProjectsStore.getState().createProject("B");
+    useProjectsStore.getState().renameProject(a, "Renamed A");
+    expect(useProjectsStore.getState().projects.find((p) => p.id === b)!.name).toBe("B");
+  });
+
+  it("duplicateProject is a no-op for non-existent source", () => {
+    useProjectsStore.getState().hydrate();
+    const before = useProjectsStore.getState().projects.length;
+    useProjectsStore.getState().duplicateProject("nonexistent");
+    expect(useProjectsStore.getState().projects).toHaveLength(before);
+  });
+
+  it("updateActiveProjectScene is a no-op when there is no active project", () => {
+    useProjectsStore.setState({ projects: [], activeProjectId: null, hydrated: true });
+    useProjectsStore.getState().updateActiveProjectScene(initialScene);
+    expect(useProjectsStore.getState().projects).toHaveLength(0);
+  });
+
+  it("updateActiveProjectScene only updates the active project in multi-project", () => {
+    useProjectsStore.getState().hydrate();
+    const b = useProjectsStore.getState().activeProjectId!;
+    const a = useProjectsStore.getState().createProject("A");
+    useProjectsStore.getState().switchProject(b);
+    useProjectsStore.getState().updateActiveProjectScene({ ...initialScene, frame: "watch" as const });
+    expect(useProjectsStore.getState().projects.find((p) => p.id === a)!.scene.frame).toBe(initialScene.frame);
+    expect(useProjectsStore.getState().projects.find((p) => p.id === b)!.scene.frame).toBe("watch");
+  });
+
+  it("sets saveError for Firefox NS_ERROR_DOM_QUOTA_REACHED", () => {
+    const quotaError = new DOMException("Storage full", "NS_ERROR_DOM_QUOTA_REACHED");
+    const origSetItem = storage.setItem;
+    storage.setItem = (_k: string, _v: string) => {
+      throw quotaError;
+    };
+    useProjectsStore.getState().hydrate();
+    useProjectsStore.getState().createProject("Will fail");
+    storage.setItem = origSetItem;
+    expect(useProjectsStore.getState().saveError).toBe(
+      "Storage full — recent changes may not be saved"
+    );
+  });
 });

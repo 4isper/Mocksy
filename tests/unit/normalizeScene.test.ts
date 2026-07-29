@@ -160,4 +160,24 @@ describe("normalizeScene", () => {
     expect(s.layers).toHaveLength(1);
     expect(s.layers[0]!.mediaUrl).toBe(initialScene.layers[0]!.mediaUrl);
   });
+
+  it("replaces null entries in layers array with demo layer", () => {
+    const s = normalizeScene({ layers: [null, { mediaUrl: "data:image/png;base64,x" }] });
+    expect(s.layers).toHaveLength(2);
+    expect(s.layers[0]!.mediaUrl).toBe(initialScene.layers[0]!.mediaUrl);
+    expect(s.layers[1]!.mediaUrl).toBe("data:image/png;base64,x");
+  });
+
+  it("replaces null entries in annotations array with a default annotation", () => {
+    const s = normalizeScene({ annotations: [null, { type: "arrow" }] });
+    expect(s.annotations).toHaveLength(2);
+    expect(s.annotations[0]!.type).toBe("rect");
+    expect(s.annotations[1]!.type).toBe("arrow");
+  });
+
+  it("generates an id for annotation with empty string id", () => {
+    const s = normalizeScene({ annotations: [{ id: "", type: "rect" }] });
+    expect(s.annotations[0]!.id.length).toBeGreaterThan(0);
+    expect(s.annotations[0]!.id).not.toBe("");
+  });
 });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { initialScene } from "@/lib/state/editorStore";
+import { activePosterTime, makeDemoLayer, patchActive } from "@/lib/state/editorHelpers";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 import type { EditorStoreState } from "@/lib/state/editorStore";
 
@@ -38,6 +39,8 @@ describe("editorStore", () => {
     expect(store().videoCurrentTime).toBe(0);
   });
 
+
+
   it("setVideoDuration clamps existing trim end to duration", () => {
     store().setVideoTrimEnd(10);
     store().setVideoDuration(6);
@@ -70,6 +73,8 @@ describe("editorStore", () => {
     store().setVideoDuration(8);
     expect(store().scene.layers[0]!.videoDuration).toBe(8);
   });
+
+
 
   it("setVideoTrimStart never exceeds trim end", () => {
     store().setVideoTrimEnd(5);
@@ -158,6 +163,13 @@ describe("editorStore", () => {
     useEditorStore.setState({ past: [], future: [], scene: { ...initialScene } });
     store().undo();
     expect(store().scene).toEqual(initialScene);
+  });
+
+  it("redo is a no-op when future is empty", () => {
+    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene } });
+    const before = store().scene;
+    store().redo();
+    expect(store().scene).toBe(before);
   });
 
   it("a new mutation clears the redo stack", () => {
@@ -287,6 +299,17 @@ describe("annotations", () => {
     expect(a.type).toBe("arrow");
   });
 
+  it("updateAnnotation leaves non-targeted annotations unchanged", () => {
+    reset();
+    store().addAnnotation("text");
+    store().addAnnotation("arrow");
+    const textId = store().scene.annotations[0]!.id;
+    const arrowId = store().scene.annotations[1]!.id;
+    store().updateAnnotation(textId, { color: "#ff0000" });
+    expect(store().scene.annotations[0]!.color).toBe("#ff0000");
+    expect(store().scene.annotations[1]!.id).toBe(arrowId);
+  });
+
   it("removeAnnotation drops the annotation and clears selection", () => {
     reset();
     store().addAnnotation("rect");
@@ -389,6 +412,16 @@ describe("layer management", () => {
     expect(store().scene.layers[0]!.hidden).toBe(false);
   });
 
+  it("toggleLayerHidden leaves other layers unchanged", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    const l1Id = store().scene.layers[0]!.id;
+    const l2Id = store().scene.layers[1]!.id;
+    store().toggleLayerHidden(l1Id);
+    expect(store().scene.layers.find((l) => l.id === l1Id)!.hidden).toBe(true);
+    expect(store().scene.layers.find((l) => l.id === l2Id)!.hidden).toBe(false);
+  });
+
   it("removeLayer removes the named layer and selects the first remaining", () => {
     reset();
     store().addLayer("data:image/png;base64,l2", "image");
@@ -472,6 +505,17 @@ describe("layer management", () => {
     expect(store().past.length).toBe(1);
   });
 
+  it("updateActiveLayer leaves non-active layers unchanged", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    const l1Id = store().scene.layers[0]!.id;
+    const l2Id = store().scene.layers[1]!.id;
+    store().selectLayer(l2Id);
+    store().updateActiveLayer({ zoom: 2 });
+    expect(store().scene.layers.find((l) => l.id === l2Id)!.zoom).toBe(2);
+    expect(store().scene.layers.find((l) => l.id === l1Id)!.zoom).toBe(1);
+  });
+
   it("updateActiveLayer is a no-op when there is no active layer", () => {
     reset();
     useEditorStore.setState({ scene: { ...initialScene, layers: [], activeLayerId: null } });
@@ -531,6 +575,17 @@ describe("frame control", () => {
     store().updateFrameInstance("fi1", { x: 0.25, scale: 0.8 });
     expect(store().scene.frameInstances[0]!.x).toBe(0.25);
     expect(store().scene.frameInstances[0]!.scale).toBe(0.8);
+  });
+
+  it("updateFrameInstance leaves other instances unchanged", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0, scale: 1, layerId: null },
+      { id: "fi2", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }
+    ]);
+    store().updateFrameInstance("fi1", { x: 0.25 });
+    expect(store().scene.frameInstances[0]!.x).toBe(0.25);
+    expect(store().scene.frameInstances[1]!.x).toBe(0.5);
   });
 
   it("removeFrameInstance removes the instance and its orphaned layer", () => {
@@ -594,6 +649,13 @@ describe("frame control", () => {
     expect(store().scene.frameInstances.length).toBe(2);
     expect(store().scene.layers.length).toBe(2);
     expect(store().scene.layers[0]!.mediaUrl).toContain("data:image/svg");
+  });
+
+  it("layoutFrameGrid with count=0 adds no layers and keeps activeLayerId", () => {
+    reset();
+    store().layoutFrameGrid("iphone", 0, "horizontal");
+    expect(store().scene.frameInstances).toHaveLength(0);
+    expect(store().scene.activeLayerId).toBe(store().scene.layers[0]!.id);
   });
 
   it("selectFrameInstance sets activeFrameInstanceId without history", () => {
@@ -812,6 +874,35 @@ describe("scene-wide settings", () => {
     store().setVideoQuality("high");
     expect(store().scene.layers[0]!.videoQuality).toBe("high");
   });
+
+  it("setMedia seeds a demo layer when there are no layers", () => {
+    useEditorStore.setState({ scene: { ...initialScene, layers: [], activeLayerId: null } });
+    store().setMedia("data:image/png;base64,first", "image", "first.png");
+    expect(store().scene.layers).toHaveLength(1);
+    expect(store().scene.layers[0]!.mediaUrl).toBe("data:image/png;base64,first");
+  });
+
+  it("setMedia preserves non-active layers unchanged", () => {
+    useEditorStore.setState({ scene: { ...initialScene } });
+    store().addLayer("data:image/png;base64,l2", "image");
+    const l1Id = store().scene.layers[0]!.id;
+    const l2Id = store().scene.layers[1]!.id;
+    store().selectLayer(l1Id);
+    store().setMedia("data:image/png;base64,new", "image", "new.png");
+    expect(store().scene.layers.find((l) => l.id === l2Id)!.mediaUrl).toBe("data:image/png;base64,l2");
+  });
+
+  it("setVideoDuration only updates the target layer", () => {
+    useEditorStore.setState({ scene: { ...initialScene, layers: [], activeLayerId: null } });
+    store().addLayer("data:image/png;base64,l1", "image");
+    store().addLayer("data:image/png;base64,l2", "image");
+    const l1Id = store().scene.layers[0]!.id;
+    const l2Id = store().scene.layers[1]!.id;
+    store().selectLayer(l2Id);
+    store().setVideoDuration(10);
+    expect(store().scene.layers.find((l) => l.id === l1Id)!.videoDuration).toBe(0);
+    expect(store().scene.layers.find((l) => l.id === l2Id)!.videoDuration).toBe(10);
+  });
 });
 
 describe("media fit + PNG export scale", () => {
@@ -846,5 +937,25 @@ describe("media fit + PNG export scale", () => {
     expect(store().exportScale).toBe(4);
     store().setExportScale(1);
     expect(store().exportScale).toBe(1);
+  });
+});
+
+describe("editorHelpers", () => {
+  it("activePosterTime returns 0 when there are no layers", () => {
+    expect(activePosterTime({ ...initialScene, layers: [] })).toBe(0);
+  });
+
+  it("patchActive leaves non-active layers unchanged", () => {
+    const scene: EditorScene = {
+      ...initialScene,
+      layers: [
+        { ...makeDemoLayer(), id: "a", zoom: 1 },
+        { ...makeDemoLayer(), id: "b", zoom: 1 }
+      ],
+      activeLayerId: "a"
+    };
+    const result = patchActive(scene, { zoom: 2 });
+    expect(result.find((l) => l.id === "a")!.zoom).toBe(2);
+    expect(result.find((l) => l.id === "b")!.zoom).toBe(1);
   });
 });

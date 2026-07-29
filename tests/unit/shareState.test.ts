@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { initialScene } from "@/lib/state/editorStore";
 import { readSceneFromUrl, sceneToShareUrl } from "@/lib/state/shareState";
+import { makeDemoLayer } from "@/lib/state/editorHelpers";
 import { DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 
@@ -103,5 +104,24 @@ describe("shareState", () => {
     stubLocation(url);
     const restored = readSceneFromUrl();
     expect(restored?.layers[0]!.mediaUrl).toContain("data:image/svg");
+  });
+
+  it("handles mixed demo and non-demo layers in share URL", () => {
+    const scene: EditorScene = {
+      ...initialScene,
+      layers: [
+        { ...makeDemoLayer(), id: "a", mediaUrl: DEMO_MEDIA_URL, mediaType: "image" },
+        { ...makeDemoLayer(), id: "b", mediaUrl: "blob:abc", mediaType: "image", mediaName: "shot.png" }
+      ],
+      activeLayerId: "a"
+    };
+    const url = sceneToShareUrl(scene);
+    const raw = decodeURIComponent(new URL(url).searchParams.get("scene") ?? "");
+    expect(raw).not.toContain(DEMO_MEDIA_URL);
+    expect(raw).toContain("blob:abc");
+    stubLocation(url);
+    const restored = readSceneFromUrl();
+    expect(restored?.layers.find((l) => l.id === "a")!.mediaUrl).toBe(DEMO_MEDIA_URL);
+    expect(restored?.layers.find((l) => l.id === "b")!.mediaUrl).toBe("blob:abc");
   });
 });
