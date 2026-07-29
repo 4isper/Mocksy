@@ -1115,12 +1115,12 @@ describe("renderMockupToCanvas multi-frame mode", () => {
   });
 
 
-  it("renders multi-frame with overlay for overlay frames", () => {
-    let drawCalls: number = 0;
-    let overlayDrawCalls: number = 0;
+  it("renders multi-frame with overlay using mediaFit contain", () => {
+    let shadowColorCalls = 0;
+    let drawImageCalled = false;
     const ctx = {
       clearRect: () => {},
-      fillRect: () => { drawCalls++; },
+      fillRect: () => {},
       save: () => {},
       restore: () => {},
       beginPath: () => {},
@@ -1132,10 +1132,54 @@ describe("renderMockupToCanvas multi-frame mode", () => {
       fill: () => {},
       stroke: () => {},
       createLinearGradient: () => ({ addColorStop: () => {} }),
-      drawImage: () => { drawCalls++; overlayDrawCalls++; },
+      drawImage: () => { drawImageCalled = true; },
       set fillStyle(_v: unknown) {},
       set strokeStyle(_v: unknown) {},
-      set shadowColor(_v: unknown) {},
+      set shadowColor(_v: unknown) { shadowColorCalls++; },
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {},
+      set lineWidth(_v: unknown) {}
+    };
+    const canvas = { width: 1000, height: 800, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    const l = layer({ id: "layer-c", mediaFit: "contain" });
+    const sceneWithFrames: EditorScene = {
+      ...initialScene,
+      layers: [l],
+      activeLayerId: l.id,
+      frameInstances: [
+        { id: "f1", frame: "iphone15" as const, x: 0.5, y: 0.5, scale: 1, layerId: l.id }
+      ]
+    };
+    const frameOverlays = new Map<string, CanvasImageSource | null>();
+    frameOverlays.set(l.id, { width: 100, height: 200 } as unknown as CanvasImageSource);
+    const layerMedias = new Map<string, CanvasImageSource | null>();
+    layerMedias.set(l.id, { width: 200, height: 400 } as unknown as CanvasImageSource);
+    renderMockupToCanvas(canvas, sceneWithFrames, null, undefined, undefined, 200, 400, 2, undefined, "transparent", undefined, undefined, layerMedias, frameOverlays);
+    expect(shadowColorCalls).toBe(1);
+    expect(drawImageCalled).toBe(true);
+  });
+
+  it("renders multi-frame with overlay for overlay frames", () => {
+    let shadowColorCalls = 0;
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(_v: unknown) {},
+      set strokeStyle(_v: unknown) {},
+      set shadowColor(_v: unknown) { shadowColorCalls++; },
       set shadowBlur(_v: unknown) {},
       set shadowOffsetX(_v: unknown) {},
       set shadowOffsetY(_v: unknown) {},
@@ -1157,11 +1201,13 @@ describe("renderMockupToCanvas multi-frame mode", () => {
     const frameOverlays = new Map<string, CanvasImageSource | null>();
     frameOverlays.set(layer1.id, { width: 100, height: 200 } as unknown as CanvasImageSource);
     frameOverlays.set(layer2.id, { width: 100, height: 200 } as unknown as CanvasImageSource);
+    const layerMedias = new Map<string, CanvasImageSource | null>();
+    layerMedias.set(layer1.id, null);
+    layerMedias.set(layer2.id, { width: 200, height: 400 } as unknown as CanvasImageSource);
 
-    renderMockupToCanvas(canvas, sceneWithFrames, null, undefined, undefined, 200, 400, 2, undefined, "transparent", undefined, undefined, frameOverlays);
-    // Should have drawn empty media fill for each frame
-    expect(drawCalls).toBeGreaterThan(0);
-    // Overlay frames should have additional drawImage calls for the overlay skin
-    expect(overlayDrawCalls).toBe(2);
+    renderMockupToCanvas(canvas, sceneWithFrames, null, undefined, undefined, 200, 400, 2, undefined, "transparent", undefined, undefined, layerMedias, frameOverlays);
+    // Each overlay frame sets shadowColor once in the overlay block (lines 569-576).
+    // The non-overlay shadow block (lines 524-533) is skipped for overlay frames.
+    expect(shadowColorCalls).toBe(2);
   });
 });

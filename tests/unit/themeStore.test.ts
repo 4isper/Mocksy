@@ -142,4 +142,34 @@ describe("themeStore", () => {
     useThemeStore.getState().initialize();
     expect(mediaQuery.addEventListener).not.toHaveBeenCalled();
   });
+
+  it("media query change handler updates resolvedTheme when mode is system", () => {
+    useThemeStore.setState({ mode: "system", resolvedTheme: "dark" });
+    useThemeStore.getState().initialize();
+    const handler = (mediaQuery.addEventListener as any).mock.calls[0][1] as () => void;
+    mediaQuery.matches = true;
+    handler();
+    const state = useThemeStore.getState();
+    expect(state.resolvedTheme).toBe("dark");
+    expect(docRoot.classList.add).toHaveBeenCalledWith("dark");
+  });
+
+  it("media query change handler does not update when mode is not system", () => {
+    useThemeStore.setState({ mode: "system", resolvedTheme: "light" });
+    useThemeStore.getState().initialize();
+    const handler = (mediaQuery.addEventListener as any).mock.calls[0][1] as () => void;
+    useThemeStore.setState({ mode: "light" });
+    mediaQuery.matches = true;
+    handler();
+    const state = useThemeStore.getState();
+    expect(state.resolvedTheme).toBe("light");
+  });
+
+  it("__themeCleanup is set on window and removes the listener", () => {
+    useThemeStore.setState({ mode: "system", resolvedTheme: "dark" });
+    useThemeStore.getState().initialize();
+    expect((window as any).__themeCleanup).toBeTypeOf("function");
+    (window as any).__themeCleanup();
+    expect(mediaQuery.removeEventListener).toHaveBeenCalled();
+  });
 });

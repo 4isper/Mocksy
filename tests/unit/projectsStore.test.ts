@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { initialScene, makeDemoScene } from "@/lib/state/editorStore";
+import { sceneToShareUrl } from "@/lib/state/shareState";
 import type { EditorScene, Project } from "@/lib/types/editor";
 
 const ORIGINAL_WINDOW = globalThis.window;
@@ -221,5 +222,28 @@ describe("projectsStore", () => {
     expect(copy!.id).not.toBe(sourceId);
     expect(copy!.scene).toEqual(source.scene);
     expect(state.activeProjectId).toBe(copy!.id);
+  });
+
+  it("hydrate creates shared mockup project from URL scene parameter", () => {
+    const scene: EditorScene = { ...initialScene, frame: "desktop" };
+    const url = sceneToShareUrl(scene);
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: { localStorage: storage, location: { href: url } }
+    });
+    const result = useProjectsStore.getState().hydrate();
+    const { projects, activeProjectId } = useProjectsStore.getState();
+    expect(projects).toHaveLength(1);
+    expect(projects[0]!.name).toBe("Shared mockup");
+    expect(activeProjectId).toBe(projects[0]!.id);
+    expect(result.frame).toBe("desktop");
+    expect(result.layers.some((l) => l.mediaUrl)).toBe(true);
+  });
+
+  it("handles corrupted localStorage gracefully", () => {
+    storage.setItem("mocksy-projects", "not-valid-json");
+    const result = useProjectsStore.getState().hydrate();
+    expect(useProjectsStore.getState().projects).toHaveLength(1);
+    expect(result).toBeDefined();
   });
 });

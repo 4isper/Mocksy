@@ -76,4 +76,20 @@ describe("loadFile", () => {
     // Note: arrayBufferToBase64 is internal, but we can test the blobToDataUrl path
     expect(loadMediaFromFile).toBeDefined();
   });
+
+  it("loadMediaFromFile handles large buffer without Buffer API using chunked loop", async () => {
+    vi.stubGlobal("Buffer", undefined);
+    const size = 0x8001;
+    const arr = new Uint8Array(size).fill(65);
+    const largeFile = new File([arr], "large.png", { type: "image/png" });
+    const result = await loadMediaFromFile(largeFile);
+    expect(result.url).toMatch(/^data:image\/png;base64,/);
+    vi.unstubAllGlobals();
+  });
+
+it("blobToDataUrl falls back to application/octet-stream when blob type is empty", async () => {
+  const fileWithEmptyType = new File(["abc"], "test.png", { type: "" });
+  const result = await loadMediaFromFile(fileWithEmptyType);
+  expect(result.url).toMatch(/^data:application\/octet-stream;base64,/);
+});
 });

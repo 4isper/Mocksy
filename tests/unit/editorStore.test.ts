@@ -454,6 +454,16 @@ describe("layer management", () => {
     expect(store().scene.layers.map(l => l.id)).toEqual([ids[1], ids[0]]);
   });
 
+  it("reorderLayers keeps ordered layers when all IDs are mentioned", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    store().addLayer("data:image/png;base64,l3", "image");
+    const ids = store().scene.layers.map(l => l.id);
+    store().reorderLayers([ids[2]!, ids[0]!, ids[1]!]);
+    // All layers are mentioned, so none are appended — order matches
+    expect(store().scene.layers.map(l => l.id)).toEqual([ids[2], ids[0], ids[1]]);
+  });
+
   it("updateActiveLayer patches the active layer and coalesces", () => {
     reset();
     store().updateActiveLayer({ zoom: 1.5 });
@@ -744,6 +754,34 @@ describe("scene-wide settings", () => {
     store().setVideoTrimEnd(0);
     // videoDuration defaults to 0, so videoTrimEnd becomes 0
     expect(store().scene.layers[0]!.videoTrimEnd).toBe(0);
+  });
+
+  it("setVideoDuration with empty layers does not crash", () => {
+    reset();
+    useEditorStore.setState({ scene: { ...initialScene, layers: [], activeLayerId: null } });
+    store().setVideoDuration(8);
+    expect(store().scene.layers).toEqual([]);
+  });
+
+  it("setVideoTrimStart with empty layers and null activeLayerId does not crash", () => {
+    reset();
+    useEditorStore.setState({ scene: { ...initialScene, layers: [], activeLayerId: null } });
+    store().setVideoTrimStart(5);
+    expect(store().scene.layers).toEqual([]);
+  });
+
+  it("setVideoTrimEnd with empty layers and null activeLayerId does not crash", () => {
+    reset();
+    useEditorStore.setState({ scene: { ...initialScene, layers: [], activeLayerId: null } });
+    store().setVideoTrimEnd(0);
+    expect(store().scene.layers).toEqual([]);
+  });
+
+  it("setVideoTrimEnd with empty layers and positive value does not crash", () => {
+    reset();
+    useEditorStore.setState({ scene: { ...initialScene, layers: [], activeLayerId: null } });
+    store().setVideoTrimEnd(5);
+    expect(store().scene.layers).toEqual([]);
   });
 
   it("setMediaLoading updates the loading flag without history", () => {

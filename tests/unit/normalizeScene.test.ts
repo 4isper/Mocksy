@@ -124,4 +124,40 @@ describe("normalizeScene", () => {
     // Invalid entries fall back to defaults
     expect(s.frameInstances.length).toBeGreaterThan(0);
   });
+
+  it("activeLayerId falls back to first layer id when not a string", () => {
+    const s = normalizeScene({ layers: [{ id: "my-layer" }], activeLayerId: 123 });
+    expect(s.activeLayerId).toBe("my-layer");
+  });
+
+  it("accepts explicit string values for background and watermark fields", () => {
+    const s = normalizeScene({
+      backgroundColor: "#ff0000",
+      gradientFrom: "#00ff00",
+      gradientTo: "#0000ff",
+      watermarkText: "Custom",
+      aspectRatio: "1 / 1"
+    });
+    expect(s.backgroundColor).toBe("#ff0000");
+    expect(s.gradientFrom).toBe("#00ff00");
+    expect(s.gradientTo).toBe("#0000ff");
+    expect(s.watermarkText).toBe("Custom");
+    expect(s.aspectRatio).toBe("1 / 1");
+  });
+
+  it("accepts explicit gradient angle", () => {
+    const s = normalizeScene({ gradientAngle: 90 });
+    expect(s.gradientAngle).toBe(90);
+  });
+
+  it("accepts explicit background image URL", () => {
+    const s = normalizeScene({ backgroundImageUrl: "data:image/png;base64,abc" });
+    expect(s.backgroundImageUrl).toBe("data:image/png;base64,abc");
+  });
+
+  it("fills a fallback layer when layers array is empty", () => {
+    const s = normalizeScene({ layers: [], activeLayerId: null });
+    expect(s.layers).toHaveLength(1);
+    expect(s.layers[0]!.mediaUrl).toBe(initialScene.layers[0]!.mediaUrl);
+  });
 });
