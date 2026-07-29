@@ -22,7 +22,7 @@ export function AnnotationsPanel() {
   const selected = scene.annotations.find((a) => a.id === selectedAnnotationId) ?? null;
 
   return (
-    <div style={{ padding: 10, display: "grid", gap: 10, overflow: "auto", minHeight: 0 }}>
+    <div style={{ padding: 10, display: "grid", gap: 10, overflow: "auto", minHeight: 0, minWidth: 0 }}>
       <div className="segmented" role="group" aria-label={t("annotation.addAnnotation")}>
         <button type="button" onClick={() => addAnnotation("text")}>
           {t("editor.addText")}

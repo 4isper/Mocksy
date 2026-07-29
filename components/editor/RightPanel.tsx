@@ -60,7 +60,7 @@ export function RightPanel() {
   };
 
   return (
-    <div className="right-panel panel" style={{ padding: 0, display: "grid", gridTemplateRows: "auto 1fr", overflow: "hidden" }}>
+    <div className="right-panel panel" style={{ padding: 0, display: "grid", gridTemplateRows: "auto 1fr", gridTemplateColumns: "minmax(0, 1fr)", overflow: "hidden" }}>
       <div className="right-panel-tabs" role="tablist">
         {tabs.map((tab) => {
           const count = tab.id === "layers" ? layersCount : tab.id === "annotations" ? annotationsCount : null;

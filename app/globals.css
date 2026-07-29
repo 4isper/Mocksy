@@ -113,6 +113,7 @@ select {
   gap: 14px;
   align-items: stretch;
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -147,7 +148,8 @@ select {
 .control-panel,
 .templates-panel,
 .projects-panel,
-.layers-panel {
+.layers-panel
+.right-panel {
   overflow-y: auto;
   min-height: 0;
   /* Let grid/flex items shrink below their content min-width on narrow
@@ -609,6 +611,7 @@ select {
 /* ---- Section divider / groups ---- */
 .field-group {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   /* Shrink below the widest control's min-content on narrow screens. */
   min-width: 0;
@@ -753,6 +756,7 @@ select {
 .right-panel {
   overflow: hidden;
   min-height: 0;
+  min-width: 0;
 }
 
 .right-panel-tabs {
@@ -775,8 +779,8 @@ select {
   cursor: pointer;
   position: relative;
   transition: color 0.12s ease, background 0.12s ease;
-  white-space: nowrap;
   flex: 1;
+  min-width: 0; /* критично: позволяет сжиматься ниже intrinsic-ширины контента */
   text-align: center;
   display: flex;
   align-items: center;
@@ -819,6 +823,10 @@ select {
 
 .right-panel-tabs .tab-label {
   line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .right-panel-tabs .tab-badge {
@@ -845,6 +853,7 @@ select {
 .right-panel-content {
   overflow-y: auto;
   min-height: 0;
+  min-width: 0;
   animation: tabFadeIn 0.12s ease;
 }
 

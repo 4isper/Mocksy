@@ -48,7 +48,7 @@ export function LayersPanel() {
   };
 
   return (
-    <div style={{ padding: 10, display: "grid", gap: 8, alignContent: "start", overflow: "auto", minHeight: 0 }}>
+    <div style={{ padding: 10, display: "grid", gap: 8, alignContent: "start", overflow: "auto", minHeight: 0, minWidth: 0 }}>
       <label className="btn" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, padding: "6px 10px", cursor: "pointer" }}>
         + {t("editor.addLayer")}
         <input type="file" accept="image/*,video/*" onChange={handleFile} style={{ display: "none" }} />
@@ -58,7 +58,7 @@ export function LayersPanel() {
           {error}
         </span>
       ) : null}
-      <ul className="layers-list" style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
+      <ul className="layers-list" style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 6,  minWidth: 0 }}>
         {scene.layers.map((layer, index) => {
           const active = layer.id === scene.activeLayerId;
           const label = layer.mediaName ?? (layer.mediaType === "video" ? t("editor.videoLabel") : t("editor.imageLabel"));
@@ -75,7 +75,8 @@ export function LayersPanel() {
                     border: active ? "2px solid var(--accent)" : "1px solid var(--panel-border)",
                     background: active ? "rgba(0,217,255,0.08)" : "transparent",
                     cursor: "pointer",
-                    opacity: layer.hidden ? 0.5 : 1
+                    opacity: layer.hidden ? 0.5 : 1,
+                    minWidth: 0
                   }}
                   onClick={() => selectLayer(layer.id)}
                 >
