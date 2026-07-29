@@ -146,6 +146,7 @@ export function normalizeScene(raw: unknown): EditorScene {
     backgroundColor: str(r.backgroundColor, initialScene.backgroundColor) ?? initialScene.backgroundColor,
     gradientFrom: str(r.gradientFrom, initialScene.gradientFrom) ?? initialScene.gradientFrom,
     gradientTo: str(r.gradientTo, initialScene.gradientTo) ?? initialScene.gradientTo,
+    gradientAngle: num(r.gradientAngle, initialScene.gradientAngle, 0, 360),
     backgroundImageUrl: str(r.backgroundImageUrl, initialScene.backgroundImageUrl),
     backgroundBlur: num(r.backgroundBlur, initialScene.backgroundBlur, 0, 40),
     watermarkText: str(r.watermarkText, initialScene.watermarkText) ?? initialScene.watermarkText,

@@ -9,9 +9,14 @@
 /** Maximum pixels per axis we sample; keeps the pixel read cheap on 4K media. */
 const SAMPLE_MAX = 96;
 
+export interface QuantizedColor {
+  hex: string;
+  count: number;
+}
+
 export interface PaletteResult {
   /** Sorted by dominance, light→dark is NOT guaranteed; first is most common. */
-  colors: string[];
+  colors: QuantizedColor[];
   /** Average color of the whole image, handy as a single solid fallback. */
   average: string;
 }
@@ -39,6 +44,11 @@ export function rgbToHex(r: number, g: number, b: number): string {
   return `#${h(r)}${h(g)}${h(b)}`;
 }
 
+export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  return m ? { r: parseInt(m[1]!, 16), g: parseInt(m[2]!, 16), b: parseInt(m[3]!, 16) } : null;
+}
+
 interface Bucket {
   count: number;
   r: number;
@@ -50,7 +60,7 @@ interface Bucket {
  * Buckets pixels into a coarse 4-bit-per-channel grid, then returns the N most
  * populated buckets as hex colors. Returns [] when no pixels are readable.
  */
-export function quantize(data: Uint8ClampedArray, count: number): string[] {
+export function quantize(data: Uint8ClampedArray, count: number): QuantizedColor[] {
   const buckets = new Map<number, Bucket>();
   let totalR = 0;
   let totalG = 0;
@@ -83,7 +93,7 @@ export function quantize(data: Uint8ClampedArray, count: number): string[] {
   if (total === 0) return [];
 
   const sorted = [...buckets.values()].sort((a, b) => b.count - a.count);
-  const colors = sorted.slice(0, count).map((b) => rgbToHex(b.r / b.count, b.g / b.count, b.b / b.count));
+  const colors = sorted.slice(0, count).map((b) => ({ hex: rgbToHex(b.r / b.count, b.g / b.count, b.b / b.count), count: b.count }));
   return colors;
 }
 
@@ -118,6 +128,63 @@ export function extractPalette(
 }
 
 /**
+ * Merges multiple weighted palettes into one by aggregating colors into
+ * quantized bins weighted by per-color count × source weight. The result
+ * is sorted by total weight descending, then deduplicated to the top 5.
+ * Average color is a weighted mean of all source averages.
+ */
+export function mergeWeightedPalettes(
+  palettes: { colors: QuantizedColor[]; average: string; weight: number }[]
+): PaletteResult {
+  if (palettes.length === 0) return { colors: [], average: "#000000" };
+
+  type Bin = { r: number; g: number; b: number; weight: number };
+  const binMap = new Map<number, Bin>();
+  let totalWeight = 0;
+  let avgR = 0;
+  let avgG = 0;
+  let avgB = 0;
+
+  for (const p of palettes) {
+    if (p.weight <= 0) continue;
+    totalWeight += p.weight;
+    const avg = hexToRgb(p.average);
+    if (avg) {
+      avgR += avg.r * p.weight;
+      avgG += avg.g * p.weight;
+      avgB += avg.b * p.weight;
+    }
+    for (const c of p.colors) {
+      const rgb = hexToRgb(c.hex);
+      if (!rgb) continue;
+      const binKey = ((rgb.r >> 4) << 8) | ((rgb.g >> 4) << 4) | (rgb.b >> 4);
+      const w = c.count * p.weight;
+      const existing = binMap.get(binKey);
+      if (existing) {
+        existing.r += rgb.r * w;
+        existing.g += rgb.g * w;
+        existing.b += rgb.b * w;
+        existing.weight += w;
+      } else {
+        binMap.set(binKey, { r: rgb.r * w, g: rgb.g * w, b: rgb.b * w, weight: w });
+      }
+    }
+  }
+
+  if (totalWeight === 0) return { colors: [], average: "#000000" };
+
+  const mergedColors = [...binMap.entries()]
+    .map(([, v]) => ({ hex: rgbToHex(v.r / v.weight, v.g / v.weight, v.b / v.weight), count: Math.round(v.weight) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  return {
+    colors: mergedColors,
+    average: rgbToHex(avgR / totalWeight, avgG / totalWeight, avgB / totalWeight)
+  };
+}
+
+/**
  * Picks two well-separated colors from a palette to form a pleasant gradient:
  * the most saturated color and the average, or the two most distant hues.
  * Falls back to a flat pair when fewer than two colors are available.
@@ -125,10 +192,15 @@ export function extractPalette(
 export function pickGradientPair(colors: string[]): [string, string] {
   if (colors.length === 0) return ["#1d4ed8", "#7c3aed"];
   if (colors.length === 1) {
-    // Shift lightness a touch so a single color still reads as a gradient.
-    return [colors[0] ?? "#1d4ed8", colors[0] ?? "#7c3aed"];
+    return [colors[0]!, colors[0]!];
   }
-  // Use the first (most dominant) as the start and the last as the end so the
-  // gradient spans the palette's extremes rather than two near-identical hues.
-  return [colors[0] ?? "#1d4ed8", colors[colors.length - 1] ?? "#7c3aed"];
+  return [colors[0]!, colors[colors.length - 1]!];
+}
+
+/**
+ * Converts a PaletteResult (with QuantizedColor[] colors) to a flat hex string
+ * array for use with store / pickGradientPair.
+ */
+export function paletteColorsFlat(result: PaletteResult): string[] {
+  return result.colors.map((c) => c.hex);
 }

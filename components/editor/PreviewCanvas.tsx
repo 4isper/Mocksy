@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, CSSProperties, DragEvent, ReactNode } from "react";
 import type { Annotation, EditorScene, MediaLayer } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
@@ -8,7 +8,8 @@ import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
-import { extractPalette } from "@/lib/media/palette";
+import { extractPalette, mergeWeightedPalettes, paletteColorsFlat } from "@/lib/media/palette";
+import type { PaletteResult } from "@/lib/media/palette";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 
@@ -247,35 +248,86 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const activeFrameInstanceId = useEditorStore((s) => s.activeFrameInstanceId);
   const selectFrameInstance = useEditorStore((s) => s.selectFrameInstance);
 
-  // Sample the active layer's media for a dominant-color palette once it has
-  // decoded, so the "match background" control can suggest a gradient. Runs
-  // whenever the active layer's media changes; failures (e.g. tainted
-  // cross-origin video) are swallowed so the rest of the preview still works.
-  const analyzeMedia = (el: HTMLImageElement | HTMLVideoElement) => {
-    try {
-      const { colors } = extractPalette(el, 5);
-      setScenePalette(colors.length ? colors : null);
-    } catch {
-      setScenePalette(null);
+  // Cache palette results per media URL so we don't re-analyse the same media
+  // when it appears in multiple frame instances or across layer switches.
+  const paletteCacheRef = useRef(new Map<string, PaletteResult>());
+
+  // Recompute a merged palette from all visible media, applying area-based
+  // weighting in multi-frame mode. Stores a flat hex string array for the
+  // store (compatible with pickGradientPair / ControlPanel).
+  const computeMergedPalette = useCallback(() => {
+    const isMultiFrame = scene.frameInstances.length > 0;
+    if (!isMultiFrame) {
+      // Single-frame mode: use the active layer's media palette.
+      const active = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+      const cached = active?.mediaUrl ? paletteCacheRef.current.get(active.mediaUrl) : null;
+      setScenePalette(cached ? paletteColorsFlat(cached) : null);
+      return;
     }
+    // Multi-frame mode: collect cached palettes from all visible frame
+    // instances and merge them weighted by on-screen area (scale²).
+    const inputs: { colors: PaletteResult["colors"]; average: string; weight: number }[] = [];
+    for (const inst of scene.frameInstances) {
+      const layer = scene.layers.find((l) => l.id === inst.layerId);
+      if (!layer || layer.hidden || !layer.mediaUrl) continue;
+      const cached = paletteCacheRef.current.get(layer.mediaUrl);
+      if (!cached) continue;
+      inputs.push({ colors: cached.colors, average: cached.average, weight: inst.scale * inst.scale });
+    }
+    if (inputs.length === 0) {
+      setScenePalette(null);
+      return;
+    }
+    const merged = mergeWeightedPalettes(inputs);
+    setScenePalette(merged.colors.length > 0 ? paletteColorsFlat(merged) : null);
+  }, [scene, setScenePalette]);
+
+  // Extract palette from a loaded media element, cache by its src URL, then
+  // recompute the merged palette for the current scene mode.
+  const analyzeMedia = (el: HTMLImageElement | HTMLVideoElement) => {
+    const src = (el as HTMLImageElement).currentSrc || (el as HTMLVideoElement).currentSrc || (el as HTMLVideoElement).src;
+    if (!src) return;
+    try {
+      const result = extractPalette(el, 5);
+      paletteCacheRef.current.set(src, result);
+    } catch {
+      paletteCacheRef.current.delete(src);
+    }
+    computeMergedPalette();
   };
 
-  // When the active layer changes (e.g. via the layers panel), recompute the
-  // palette from that layer's media already in the DOM — the onLoad hook only
-  // fires on a fresh decode, so switching layers would otherwise keep the
-  // previous layer's palette. Skips while the new layer is still loading.
+  // When the active layer changes in single-frame mode, try to re-extract the
+  // palette from the DOM element (onLoad won't re-fire for a cached image).
   useEffect(() => {
+    const isMultiFrame = scene.frameInstances.length > 0;
+    if (isMultiFrame) return;
     const frame = document.querySelector<HTMLElement>("[data-mockup-frame]");
     if (!frame) return;
     const el = frame.querySelector<HTMLImageElement | HTMLVideoElement>("img, video");
     if (!el) {
+      // If no element is rendered but the active layer has a cached palette,
+      // use that rather than clearing — makes layer switches instant.
+      const active = scene.layers.find((l) => l.id === scene.activeLayerId);
+      if (active?.mediaUrl && paletteCacheRef.current.has(active.mediaUrl)) {
+        computeMergedPalette();
+        return;
+      }
       setScenePalette(null);
       return;
     }
     const ready = el instanceof HTMLVideoElement ? el.readyState >= 2 : el.complete && el.naturalWidth > 0;
     if (ready) analyzeMedia(el);
+    else computeMergedPalette();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene.activeLayerId]);
+
+  // Recompute the merged palette whenever visible frame instances or layer
+  // media/hidden state changes (e.g. adding/removing a frame instance,
+  // toggling visibility, replacing a layer's media).
+  useEffect(() => {
+    computeMergedPalette();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scene.frameInstances, scene.layers.map((l) => (l.mediaUrl ?? "") + l.hidden).join("|")]);
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   const frameInstanceCssMap = useMemo(() => {
     const map = new Map<string, ReturnType<typeof buildSceneCss>>();
@@ -525,9 +577,9 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
                       ) : null}
                       {layer?.mediaUrl ? (
                         isVideoLayer(layer) ? (
-                          <video src={layer.mediaUrl} muted playsInline style={instCss.mediaStyle} />
+                          <video src={layer.mediaUrl} muted playsInline style={instCss.mediaStyle} onLoadedData={(e) => analyzeMedia(e.currentTarget)} />
                         ) : (
-                          <img src={layer.mediaUrl} alt="" style={instCss.mediaStyle} />
+                          <img src={layer.mediaUrl} alt="" style={instCss.mediaStyle} onLoad={(e) => analyzeMedia(e.currentTarget)} />
                         )
                       ) : null}
                     </div>
@@ -544,9 +596,9 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
                     >
                       {layer?.mediaUrl ? (
                         isVideoLayer(layer) ? (
-                          <video src={layer.mediaUrl} muted playsInline style={instCss.mediaStyle} />
+                          <video src={layer.mediaUrl} muted playsInline style={instCss.mediaStyle} onLoadedData={(e) => analyzeMedia(e.currentTarget)} />
                         ) : (
-                          <img src={layer.mediaUrl} alt="" style={instCss.mediaStyle} />
+                          <img src={layer.mediaUrl} alt="" style={instCss.mediaStyle} onLoad={(e) => analyzeMedia(e.currentTarget)} />
                         )
                       ) : null}
                     </div>

@@ -98,6 +98,13 @@ describe("editorStore", () => {
     expect(store().scene.backgroundMode).toBe("gradient");
     expect(store().scene.gradientFrom).toBe("#1d4ed8");
     expect(store().scene.gradientTo).toBe("#7c3aed");
+    // angle defaults to the existing scene angle when not passed
+    expect(store().scene.gradientAngle).toBe(120);
+  });
+
+  it("setBackgroundGradient stores angle when provided", () => {
+    store().setBackgroundGradient("#1d4ed8", "#7c3aed", 45);
+    expect(store().scene.gradientAngle).toBe(45);
   });
 
   it("setScene merges onto the initial scene", () => {

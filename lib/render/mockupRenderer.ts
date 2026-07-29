@@ -30,7 +30,7 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
     scene.backgroundMode === "solid"
       ? scene.backgroundColor
       : scene.backgroundMode === "gradient"
-        ? `linear-gradient(120deg, ${scene.gradientFrom}, ${scene.gradientTo})`
+        ? `linear-gradient(${scene.gradientAngle}deg, ${scene.gradientFrom}, ${scene.gradientTo})`
         : scene.backgroundMode === "image"
           ? "#0a0a0f"
           : "transparent";

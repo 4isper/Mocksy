@@ -88,7 +88,7 @@ export interface EditorStoreState {
   setShadowOpacity: (shadowOpacity: number) => void;
   setBorderRadius: (radius: number) => void;
   setBackgroundSolid: (color: string) => void;
-  setBackgroundGradient: (from: string, to: string) => void;
+  setBackgroundGradient: (from: string, to: string, angle?: number) => void;
   setBackgroundTransparent: () => void;
   setBackgroundImage: (url: string) => void;
   setBackgroundBlur: (blur: number) => void;
@@ -126,6 +126,7 @@ export const initialScene: EditorScene = {
   backgroundColor: "#111827",
   gradientFrom: "#1d4ed8",
   gradientTo: "#7c3aed",
+  gradientAngle: 120,
   backgroundImageUrl: null,
   backgroundBlur: 0,
   annotations: [],
@@ -165,6 +166,7 @@ export function makeDemoScene(): EditorScene {
     backgroundColor: initialScene.backgroundColor,
     gradientFrom: initialScene.gradientFrom,
     gradientTo: initialScene.gradientTo,
+    gradientAngle: initialScene.gradientAngle,
     watermarkText: initialScene.watermarkText,
     watermarkEnabled: initialScene.watermarkEnabled,
     watermarkPosition: initialScene.watermarkPosition,
@@ -378,7 +380,8 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   setShadowOpacity: (shadowOpacity) => set((s) => pushHistory(s, { ...s.scene, shadowOpacity }, "shadow")),
   setBorderRadius: (borderRadius) => set((s) => pushHistory(s, { ...s.scene, borderRadius }, "radius")),
   setBackgroundSolid: (backgroundColor) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "solid", backgroundColor })),
-  setBackgroundGradient: (gradientFrom, gradientTo) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "gradient", gradientFrom, gradientTo })),
+  setBackgroundGradient: (gradientFrom, gradientTo, gradientAngle) =>
+    set((s) => pushHistory(s, { ...s.scene, backgroundMode: "gradient", gradientFrom, gradientTo, ...(gradientAngle !== undefined ? { gradientAngle } : {}) })),
   setBackgroundTransparent: () => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "transparent" })),
   setBackgroundImage: (backgroundImageUrl) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "image", backgroundImageUrl })),
   setBackgroundBlur: (backgroundBlur) => set((s) => pushHistory(s, { ...s.scene, backgroundBlur: Math.max(0, Math.min(40, Math.round(backgroundBlur))) }, "bgBlur")),

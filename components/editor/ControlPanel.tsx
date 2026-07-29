@@ -403,7 +403,9 @@ export function ControlPanel() {
           onClick={() => {
             if (!scenePalette || scenePalette.length < 1) return;
             const [from, to] = pickGradientPair(scenePalette);
-            setBackgroundGradient(from, to);
+            const angles = [0, 45, 90, 135, 180];
+            const angle = angles[Math.floor(Math.random() * angles.length)]!;
+            setBackgroundGradient(from, to, angle);
           }}
         >
           {t("editor.autoBackground")}

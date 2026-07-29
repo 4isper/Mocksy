@@ -81,6 +81,7 @@ export interface EditorScene {
   backgroundColor: string;
   gradientFrom: string;
   gradientTo: string;
+  gradientAngle: number;
   /** data: URL of an uploaded background image, or null when none. */
   backgroundImageUrl: string | null;
   /** Blur radius (px) applied to the background image. Range [0, 40]. */

@@ -208,7 +208,7 @@ export function renderMockupToCanvas(
   if (scene.frameInstances.length > 0) {
     // Draw background first (matches single-frame path)
     if (scene.backgroundMode === "gradient") {
-      const rad = (RENDER.gradientAngleDeg * Math.PI) / 180;
+      const rad = ((scene.gradientAngle ?? RENDER.gradientAngleDeg) * Math.PI) / 180;
       const dx = Math.sin(rad);
       const dy = -Math.cos(rad);
       const lineLen = Math.abs(width * dx) + Math.abs(height * dy);
@@ -297,7 +297,7 @@ export function renderMockupToCanvas(
     // the color spread matches the preview exactly. CSS 0deg points up and the
     // angle increases clockwise; in canvas coords (y down) the direction unit
     // vector is (sin a, -cos a).
-    const rad = (RENDER.gradientAngleDeg * Math.PI) / 180;
+    const rad = ((scene.gradientAngle ?? RENDER.gradientAngleDeg) * Math.PI) / 180;
     const dx = Math.sin(rad);
     const dy = -Math.cos(rad);
     const lineLen = Math.abs(width * dx) + Math.abs(height * dy);
