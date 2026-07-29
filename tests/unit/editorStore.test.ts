@@ -58,6 +58,19 @@ describe("editorStore", () => {
     expect(store().scene.layers[0]!.videoTrimEnd).toBe(5);
   });
 
+  it("setVideoDuration uses duration directly when trimEnd is zero (unset)", () => {
+    useEditorStore.setState({ scene: { ...initialScene } });
+    store().setVideoTrimEnd(0);
+    store().setVideoDuration(12);
+    expect(store().scene.layers[0]!.videoTrimEnd).toBe(12);
+  });
+
+  it("setVideoDuration handles null activeLayerId", () => {
+    useEditorStore.setState({ scene: { ...initialScene, activeLayerId: null } });
+    store().setVideoDuration(8);
+    expect(store().scene.layers[0]!.videoDuration).toBe(8);
+  });
+
   it("setVideoTrimStart never exceeds trim end", () => {
     store().setVideoTrimEnd(5);
     store().setVideoTrimStart(9);
@@ -294,6 +307,18 @@ describe("annotations", () => {
     expect(store().past.length).toBe(pastBefore);
   });
 
+  it("removeAnnotation preserves selection when removing a different annotation", () => {
+    reset();
+    store().addAnnotation("rect");
+    const selectedId = store().selectedAnnotationId!;
+    store().addAnnotation("arrow");
+    const otherId = store().scene.annotations[store().scene.annotations.length - 1]!.id;
+    store().selectAnnotation(selectedId);
+    store().removeAnnotation(otherId);
+    expect(store().scene.annotations.length).toBe(1);
+    expect(store().selectedAnnotationId).toBe(selectedId);
+  });
+
   it("clearAnnotations empties the list and selection", () => {
     reset();
     store().addAnnotation("text");
@@ -301,6 +326,453 @@ describe("annotations", () => {
     store().clearAnnotations();
     expect(store().scene.annotations.length).toBe(0);
     expect(store().selectedAnnotationId).toBeNull();
+  });
+});
+
+describe("layer management", () => {
+  function reset() {
+    useEditorStore.setState({
+      past: [],
+      future: [],
+      scene: { ...initialScene },
+      selectedAnnotationId: null,
+      activeFrameInstanceId: null,
+      lastHistoryKey: null,
+      lastHistoryAt: 0
+    });
+  }
+
+  it("addLayer appends a new layer and makes it active", () => {
+    reset();
+    const before = store().scene.layers.length;
+    store().addLayer("data:image/png;base64,new", "image", "new.png");
+    expect(store().scene.layers.length).toBe(before + 1);
+    const added = store().scene.layers[store().scene.layers.length - 1]!;
+    expect(added.mediaUrl).toBe("data:image/png;base64,new");
+    expect(added.mediaName).toBe("new.png");
+    expect(store().scene.activeLayerId).toBe(added.id);
+  });
+
+  it("addLayer sets isMediaLoading while media decodes", () => {
+    reset();
+    store().addLayer("data:image/png;base64,loading", "image");
+    expect(store().isMediaLoading).toBe(true);
+  });
+
+  it("duplicateLayer clones the source with a fresh id", () => {
+    reset();
+    const source = store().scene.layers[0]!;
+    store().duplicateLayer(source.id);
+    const clone = store().scene.layers[store().scene.layers.length - 1]!;
+    expect(clone.id).not.toBe(source.id);
+    expect(clone.mediaUrl).toBe(source.mediaUrl);
+    expect(clone.mediaType).toBe(source.mediaType);
+    expect(clone.zoom).toBe(source.zoom);
+    expect(clone.mediaFit).toBe(source.mediaFit);
+    expect(store().scene.activeLayerId).toBe(clone.id);
+  });
+
+  it("duplicateLayer returns empty when source not found", () => {
+    reset();
+    const pastBefore = store().past.length;
+    store().duplicateLayer("nonexistent");
+    expect(store().past.length).toBe(pastBefore);
+  });
+
+  it("toggleLayerHidden flips the hidden flag", () => {
+    reset();
+    const id = store().scene.layers[0]!.id;
+    expect(store().scene.layers[0]!.hidden).toBe(false);
+    store().toggleLayerHidden(id);
+    expect(store().scene.layers[0]!.hidden).toBe(true);
+    store().toggleLayerHidden(id);
+    expect(store().scene.layers[0]!.hidden).toBe(false);
+  });
+
+  it("removeLayer removes the named layer and selects the first remaining", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    const layer2 = store().scene.layers[1]!;
+    store().removeLayer(layer2.id);
+    expect(store().scene.layers.length).toBe(1);
+    expect(store().scene.activeLayerId).toBe(store().scene.layers[0]!.id);
+  });
+
+  it("removeLayer switches active layer when removing the active one", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    const first = store().scene.layers[0]!.id;
+    store().removeLayer(first);
+    expect(store().scene.layers.some(l => l.id === first)).toBe(false);
+    expect(store().scene.activeLayerId).toBe(store().scene.layers[0]!.id);
+  });
+
+  it("removeLayer is a no-op when only 1 layer remains", () => {
+    reset();
+    const pastBefore = store().past.length;
+    store().removeLayer(store().scene.layers[0]!.id);
+    expect(store().scene.layers.length).toBe(1);
+    expect(store().past.length).toBe(pastBefore);
+  });
+
+  it("selectLayer changes active layer and records history", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    const first = store().scene.layers[0]!.id;
+    const second = store().scene.layers[1]!.id;
+    store().selectLayer(first);
+    expect(store().scene.activeLayerId).toBe(first);
+    store().selectLayer(second);
+    expect(store().scene.activeLayerId).toBe(second);
+  });
+
+  it("reorderLayers respects the supplied order", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    store().addLayer("data:image/png;base64,l3", "image");
+    const ids = store().scene.layers.map(l => l.id);
+    const reversed = [...ids].reverse();
+    store().reorderLayers(reversed);
+    expect(store().scene.layers.map(l => l.id)).toEqual(reversed);
+  });
+
+  it("reorderLayers adds missing layers defensively", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    const ids = store().scene.layers.map(l => l.id);
+    // Only reorder the first layer — the second should be appended
+    store().reorderLayers([ids[0]!]);
+    expect(store().scene.layers.map(l => l.id)).toEqual([ids[0], ids[1]]);
+  });
+
+  it("reorderLayers filters out non-existent layer IDs", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    const ids = store().scene.layers.map(l => l.id);
+    store().reorderLayers(["nonexistent", ids[1]!, ids[0]!]);
+    // "nonexistent" should be filtered out silently
+    expect(store().scene.layers.map(l => l.id)).toEqual([ids[1], ids[0]]);
+  });
+
+  it("updateActiveLayer patches the active layer and coalesces", () => {
+    reset();
+    store().updateActiveLayer({ zoom: 1.5 });
+    expect(store().scene.layers[0]!.zoom).toBe(1.5);
+    store().updateActiveLayer({ zoom: 1.8 });
+    expect(store().past.length).toBe(1);
+  });
+
+  it("updateActiveLayer is a no-op when there is no active layer", () => {
+    reset();
+    useEditorStore.setState({ scene: { ...initialScene, layers: [], activeLayerId: null } });
+    const pastBefore = store().past.length;
+    store().updateActiveLayer({ zoom: 2 });
+    expect(store().past.length).toBe(pastBefore);
+  });
+});
+
+describe("frame control", () => {
+  function reset() {
+    useEditorStore.setState({
+      past: [],
+      future: [],
+      scene: { ...initialScene },
+      selectedAnnotationId: null,
+      activeFrameInstanceId: null,
+      lastHistoryKey: null,
+      lastHistoryAt: 0
+    });
+  }
+
+  it("setFrame updates the frame and all frameInstances", () => {
+    reset();
+    store().setFrame("desktop");
+    expect(store().scene.frame).toBe("desktop");
+    store().setFrame("none");
+    expect(store().scene.frame).toBe("none");
+  });
+
+  it("setFrame with existing frameInstances updates their frame field", () => {
+    reset();
+    const instances = [
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0.5, scale: 0.5, layerId: null },
+      { id: "fi2", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 0.5, layerId: null }
+    ];
+    store().setFrameInstances(instances);
+    store().setFrame("desktop");
+    expect(store().scene.frameInstances.every(i => i.frame === "desktop")).toBe(true);
+  });
+
+  it("setFrameInstances overwrites the frame instance list and records history", () => {
+    reset();
+    const instances = [
+      { id: "fi1", frame: "iphone15" as const, x: 0, y: 0.5, scale: 0.5, layerId: null }
+    ];
+    store().setFrameInstances(instances);
+    expect(store().scene.frameInstances).toEqual(instances);
+    expect(store().past.length).toBe(1);
+  });
+
+  it("updateFrameInstance patches a single frame instance", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0.5, scale: 1, layerId: null }
+    ]);
+    store().updateFrameInstance("fi1", { x: 0.25, scale: 0.8 });
+    expect(store().scene.frameInstances[0]!.x).toBe(0.25);
+    expect(store().scene.frameInstances[0]!.scale).toBe(0.8);
+  });
+
+  it("removeFrameInstance removes the instance and its orphaned layer", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    const layerId = store().scene.layers[1]!.id;
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0.5, scale: 1, layerId: store().scene.layers[0]!.id },
+      { id: "fi2", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 1, layerId }
+    ]);
+    store().removeFrameInstance("fi2");
+    expect(store().scene.frameInstances.length).toBe(1);
+    expect(store().scene.layers.some(l => l.id === layerId)).toBe(false);
+  });
+
+  it("removeFrameInstance is a no-op when instance not found", () => {
+    reset();
+    const pastBefore = store().past.length;
+    store().removeFrameInstance("nonexistent");
+    expect(store().past.length).toBe(pastBefore);
+  });
+
+  it("removeFrameInstance keeps layer when still referenced by other instance", () => {
+    reset();
+    const sharedId = store().scene.layers[0]!.id;
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0.5, scale: 1, layerId: sharedId },
+      { id: "fi2", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 1, layerId: sharedId }
+    ]);
+    store().removeFrameInstance("fi1");
+    // Layer shared across instances should NOT be orphaned
+    expect(store().scene.layers.some(l => l.id === sharedId)).toBe(true);
+    expect(store().scene.frameInstances.length).toBe(1);
+  });
+
+  it("removeFrameInstance handles null layerId", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0.5, scale: 1, layerId: null }
+    ]);
+    const pastBefore = store().past.length;
+    store().removeFrameInstance("fi1");
+    // No layer to orphan, instance removed
+    expect(store().scene.frameInstances.length).toBe(0);
+    expect(store().past.length).toBeGreaterThan(pastBefore);
+  });
+
+  it("layoutFrameGrid creates new layers for each frame instance", () => {
+    reset();
+    const layersBefore = store().scene.layers.length;
+    store().layoutFrameGrid("iphone", 3, "horizontal");
+    expect(store().scene.frameInstances.length).toBe(3);
+    expect(store().scene.layers.length).toBe(layersBefore + 3);
+    expect(store().scene.activeLayerId).toBe(store().scene.frameInstances[0]!.layerId);
+  });
+
+  it("layoutFrameGrid falls back to demo layer when no active layer", () => {
+    reset();
+    useEditorStore.setState({ scene: { ...initialScene, layers: [], activeLayerId: null } });
+    store().layoutFrameGrid("iphone", 2, "vertical");
+    expect(store().scene.frameInstances.length).toBe(2);
+    expect(store().scene.layers.length).toBe(2);
+    expect(store().scene.layers[0]!.mediaUrl).toContain("data:image/svg");
+  });
+
+  it("selectFrameInstance sets activeFrameInstanceId without history", () => {
+    reset();
+    expect(store().activeFrameInstanceId).toBeNull();
+    store().selectFrameInstance("fi-test");
+    expect(store().activeFrameInstanceId).toBe("fi-test");
+    expect(store().past.length).toBe(0);
+  });
+});
+
+describe("scene-wide settings", () => {
+  function reset() {
+    useEditorStore.setState({
+      past: [],
+      future: [],
+      scene: { ...initialScene },
+      lastHistoryKey: null,
+      lastHistoryAt: 0
+    });
+  }
+
+  it("setStylePreset updates the style preset", () => {
+    reset();
+    store().setStylePreset("glassDark");
+    expect(store().scene.stylePreset).toBe("glassDark");
+    store().setStylePreset("outline");
+    expect(store().scene.stylePreset).toBe("outline");
+  });
+
+  it("setAnimationPreset updates the active layer animation and coalesces", () => {
+    reset();
+    store().setAnimationPreset("zoomIn");
+    expect(store().scene.layers[0]!.animationPreset).toBe("zoomIn");
+    store().setAnimationPreset("parallax");
+    expect(store().past.length).toBe(1);
+  });
+
+  it("setZoom coalesces rapid calls", () => {
+    reset();
+    store().setZoom(1.1);
+    store().setZoom(1.2);
+    store().setZoom(1.3);
+    expect(store().past.length).toBe(1);
+    expect(store().scene.layers[0]!.zoom).toBe(1.3);
+  });
+
+  it("setMediaOffsetX coalesces and updates position", () => {
+    reset();
+    store().setMediaOffsetX(0.3);
+    store().setMediaOffsetX(0.5);
+    expect(store().past.length).toBe(1);
+    expect(store().scene.layers[0]!.mediaOffsetX).toBe(0.5);
+  });
+
+  it("setMediaOffsetY coalesces and updates position", () => {
+    reset();
+    store().setMediaOffsetY(-0.2);
+    store().setMediaOffsetY(0.1);
+    expect(store().past.length).toBe(1);
+    expect(store().scene.layers[0]!.mediaOffsetY).toBe(0.1);
+  });
+
+  it("setAspectRatio changes the canvas ratio", () => {
+    reset();
+    store().setAspectRatio("1 / 1");
+    expect(store().scene.aspectRatio).toBe("1 / 1");
+    store().setAspectRatio("9 / 16");
+    expect(store().scene.aspectRatio).toBe("9 / 16");
+  });
+
+  it("toggleWatermark enables or disables the watermark", () => {
+    reset();
+    expect(store().scene.watermarkEnabled).toBe(false);
+    store().toggleWatermark(true);
+    expect(store().scene.watermarkEnabled).toBe(true);
+    store().toggleWatermark(false);
+    expect(store().scene.watermarkEnabled).toBe(false);
+  });
+
+  it("setWatermarkText updates the watermark text", () => {
+    reset();
+    store().setWatermarkText("My Brand");
+    expect(store().scene.watermarkText).toBe("My Brand");
+  });
+
+  it("setBorderRadius coalesces and clamps", () => {
+    reset();
+    store().setBorderRadius(30);
+    store().setBorderRadius(40);
+    expect(store().past.length).toBe(1);
+    expect(store().scene.borderRadius).toBe(40);
+  });
+
+  it("setShadowOpacity coalesces and updates", () => {
+    reset();
+    store().setShadowOpacity(0.5);
+    store().setShadowOpacity(0.8);
+    expect(store().past.length).toBe(1);
+    expect(store().scene.shadowOpacity).toBe(0.8);
+  });
+
+  it("setVideoMuted toggles the muted flag", () => {
+    reset();
+    expect(store().scene.layers[0]!.videoMuted).toBe(true);
+    store().setVideoMuted(false);
+    expect(store().scene.layers[0]!.videoMuted).toBe(false);
+  });
+
+  it("setVideoLoop toggles the loop flag", () => {
+    reset();
+    expect(store().scene.layers[0]!.videoLoop).toBe(true);
+    store().setVideoLoop(false);
+    expect(store().scene.layers[0]!.videoLoop).toBe(false);
+  });
+
+  it("setVideoAutoplay toggles the autoplay flag", () => {
+    reset();
+    expect(store().scene.layers[0]!.videoAutoplay).toBe(true);
+    store().setVideoAutoplay(false);
+    expect(store().scene.layers[0]!.videoAutoplay).toBe(false);
+  });
+
+  it("setVideoPosterTime coalesces and records history", () => {
+    reset();
+    store().setVideoPosterTime(2);
+    store().setVideoPosterTime(3);
+    expect(store().past.length).toBe(1);
+    expect(store().scene.layers[0]!.videoPosterTime).toBe(3);
+  });
+
+  it("setVideoTrimStart coalesces with trimStart key and clamps to trimEnd", () => {
+    reset();
+    store().setVideoTrimEnd(10);
+    store().setVideoTrimStart(1);
+    store().setVideoTrimStart(2);
+    expect(store().scene.layers[0]!.videoTrimStart).toBe(2);
+    expect(store().scene.layers[0]!.videoTrimStart).toBeLessThanOrEqual(store().scene.layers[0]!.videoTrimEnd);
+  });
+
+  it("setVideoTrimStart without trimEnd set clamps to zero", () => {
+    reset();
+    store().setVideoTrimStart(5);
+    // trimEnd defaults to 0, so trimStart is clamped to Math.min(5, 0) = 0
+    expect(store().scene.layers[0]!.videoTrimStart).toBe(0);
+  });
+
+  it("setVideoTrimEnd coalesces with trimEnd key and clamps to trimStart", () => {
+    reset();
+    store().setVideoTrimEnd(8);
+    store().setVideoTrimEnd(6);
+    expect(store().scene.layers[0]!.videoTrimEnd).toBe(6);
+    expect(store().past.length).toBe(1);
+  });
+
+  it("setVideoTrimEnd with zero value clamps to zero when no duration set", () => {
+    reset();
+    store().setVideoTrimEnd(0);
+    // videoDuration defaults to 0, so videoTrimEnd becomes 0
+    expect(store().scene.layers[0]!.videoTrimEnd).toBe(0);
+  });
+
+  it("setMediaLoading updates the loading flag without history", () => {
+    reset();
+    store().setMediaLoading(true);
+    expect(store().isMediaLoading).toBe(true);
+    store().setMediaLoading(false);
+    expect(store().isMediaLoading).toBe(false);
+    expect(store().past.length).toBe(0);
+  });
+
+  it("setScenePalette updates palette without history", () => {
+    reset();
+    store().setScenePalette(["#ff0000", "#00ff00"]);
+    expect(store().scenePalette).toEqual(["#ff0000", "#00ff00"]);
+    expect(store().past.length).toBe(0);
+  });
+
+  it("setScene with recordHistory=false does not push to history", () => {
+    reset();
+    store().setScene({ frame: "tablet" }, false);
+    expect(store().scene.frame).toBe("tablet");
+    expect(store().past.length).toBe(0);
+  });
+
+  it("setVideoQuality updates layer quality and records history", () => {
+    reset();
+    store().setVideoQuality("high");
+    expect(store().scene.layers[0]!.videoQuality).toBe("high");
   });
 });
 

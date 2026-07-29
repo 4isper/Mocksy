@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { hexToRgb, mergeWeightedPalettes, pickGradientPair, quantize, rgbToHex } from "@/lib/media/palette";
-import type { QuantizedColor } from "@/lib/media/palette";
+import { describe, expect, it, vi } from "vitest";
+import { hexToRgb, mergeWeightedPalettes, paletteColorsFlat, pickGradientPair, quantize, rgbToHex, extractPalette } from "@/lib/media/palette";
+import type { PaletteResult, QuantizedColor } from "@/lib/media/palette";
 
 describe("rgbToHex", () => {
   it("formats channels with leading zeros", () => {
@@ -114,10 +114,180 @@ describe("mergeWeightedPalettes", () => {
     const r = mergeWeightedPalettes(inputs);
     expect(r.colors.length).toBeLessThanOrEqual(5);
   });
+
+  it("merges overlapping color bins from different palettes", () => {
+    // Both palettes have the same color (#ff0000 = red) - should merge into one bin
+    const r = mergeWeightedPalettes([
+      { colors: [{ hex: "#ff0000", count: 100 }], average: "#ff0000", weight: 2 },
+      { colors: [{ hex: "#ff0000", count: 50 }], average: "#885555", weight: 1 }
+    ]);
+    // Only one unique color in result
+    expect(r.colors.length).toBe(1);
+    expect(r.colors[0]!.hex).toBe("#ff0000");
+  });
+
+  it("skips palette entries with zero or negative weight", () => {
+    const r = mergeWeightedPalettes([
+      { colors: [{ hex: "#ff0000", count: 100 }], average: "#ff0000", weight: 0 },
+      { colors: [{ hex: "#0000ff", count: 80 }], average: "#0000ff", weight: 1 }
+    ]);
+    expect(r.colors.some(c => c.hex === "#0000ff")).toBe(true);
+    expect(r.colors.some(c => c.hex === "#ff0000")).toBe(false);
+  });
+
+  it("returns empty when total weight is zero", () => {
+    const r = mergeWeightedPalettes([
+      { colors: [{ hex: "#ff0000", count: 100 }], average: "#ff0000", weight: -1 }
+    ]);
+    expect(r.colors).toEqual([]);
+    expect(r.average).toBe("#000000");
+  });
+
+  it("skips colors with invalid hex codes", () => {
+    const r = mergeWeightedPalettes([
+      { colors: [{ hex: "not-a-color", count: 100 }, { hex: "#00ff00", count: 50 }], average: "#000000", weight: 1 }
+    ]);
+    expect(r.colors.every(c => c.hex.length === 7)).toBe(true);
+    expect(r.colors.some(c => c.hex === "#00ff00")).toBe(true);
+  });
+
+  it("handles null average color gracefully", () => {
+    const r = mergeWeightedPalettes([
+      { colors: [{ hex: "#ff0000", count: 100 }], average: "invalid", weight: 1 }
+    ]);
+    expect(r.colors.length).toBeGreaterThan(0);
+    expect(r.colors[0]!.hex).toBe("#ff0000");
+  });
+});
+
+describe("paletteColorsFlat", () => {
+  it("converts QuantizedColor[] to a flat hex string array", () => {
+    const result: PaletteResult = {
+      colors: [
+        { hex: "#ff0000", count: 10 },
+        { hex: "#00ff00", count: 5 },
+        { hex: "#0000ff", count: 3 }
+      ],
+      average: "#888888"
+    };
+    expect(paletteColorsFlat(result)).toEqual(["#ff0000", "#00ff00", "#0000ff"]);
+  });
+
+  it("returns empty array for empty colors", () => {
+    const result: PaletteResult = { colors: [], average: "#000000" };
+    expect(paletteColorsFlat(result)).toEqual([]);
+  });
 });
 
 describe("extractPalette", () => {
-  it("is covered by the quantize/rgbToHex units above (DOM canvas requires jsdom)", () => {
-    expect(true).toBe(true);
+  it("extracts palette from a canvas-backed image element", () => {
+    vi.stubGlobal("HTMLCanvasElement", class {});
+    vi.stubGlobal("HTMLVideoElement", class {});
+
+    // Build fake pixel data: 4 red pixels, 4 blue pixels in a 2x4 grid
+    const pixels = new Uint8ClampedArray(32);
+    for (let i = 0; i < 16; i += 4) { pixels[i] = 255; pixels[i + 1] = 0; pixels[i + 2] = 0; pixels[i + 3] = 255; } // red
+    for (let i = 16; i < 32; i += 4) { pixels[i] = 0; pixels[i + 1] = 0; pixels[i + 2] = 255; pixels[i + 3] = 255; } // blue
+
+    const fakeCtx = {
+      drawImage: vi.fn(),
+      getImageData: vi.fn(() => ({ data: pixels, width: 2, height: 4 }))
+    };
+
+    const fakeCanvas = { width: 2, height: 4, getContext: vi.fn(() => fakeCtx) } as unknown as HTMLCanvasElement;
+
+    vi.stubGlobal("document", {
+      createElement: vi.fn(() => fakeCanvas)
+    });
+
+    const img = {
+      naturalWidth: 200,
+      naturalHeight: 400
+    } as unknown as HTMLImageElement;
+
+    const result = extractPalette(img, 3);
+    expect(result.colors.length).toBeGreaterThan(0);
+    expect(result.colors.some(c => c.hex === "#ff0000")).toBe(true);
+    expect(result.colors.some(c => c.hex === "#0000ff")).toBe(true);
+    expect(typeof result.average).toBe("string");
+    expect(result.average).toMatch(/^#[0-9a-f]{6}$/);
+    vi.unstubAllGlobals();
+  });
+
+  it("throws for unreadable media", () => {
+    vi.stubGlobal("HTMLVideoElement", class {});
+    const img = { naturalWidth: 0, naturalHeight: 0 } as unknown as HTMLImageElement;
+    expect(() => extractPalette(img, 3)).toThrow("Media has no readable dimensions yet.");
+    vi.unstubAllGlobals();
+  });
+
+  it("extracts palette from video element using videoWidth/videoHeight", () => {
+    class HTMLVideoElementStub {}
+    const fakeCtx = {
+      drawImage: vi.fn(),
+      getImageData: vi.fn(() => ({ data: new Uint8ClampedArray([255, 0, 0, 255, 0, 0, 255, 255]), width: 1, height: 2 }))
+    };
+    const fakeCanvas = { width: 1, height: 1, getContext: vi.fn(() => fakeCtx) } as unknown as HTMLCanvasElement;
+    vi.stubGlobal("HTMLCanvasElement", class {});
+    vi.stubGlobal("HTMLVideoElement", HTMLVideoElementStub as unknown as typeof HTMLVideoElement);
+    vi.stubGlobal("document", { createElement: vi.fn(() => fakeCanvas) });
+    const video = Object.setPrototypeOf({ videoWidth: 1920, videoHeight: 1080 }, HTMLVideoElementStub.prototype);
+    expect(() => extractPalette(video as unknown as HTMLVideoElement, 3)).not.toThrow();
+    vi.unstubAllGlobals();
+  });
+
+  it("throws when canvas 2d context cannot be created", () => {
+    vi.stubGlobal("HTMLCanvasElement", class {});
+    vi.stubGlobal("HTMLVideoElement", class {});
+    const fakeCanvas = { width: 1, height: 1, getContext: vi.fn(() => null) } as unknown as HTMLCanvasElement;
+    vi.stubGlobal("document", { createElement: vi.fn(() => fakeCanvas) });
+    const img = { naturalWidth: 200, naturalHeight: 200 } as unknown as HTMLImageElement;
+    expect(() => extractPalette(img, 3)).toThrow("Could not read media pixels.");
+    vi.unstubAllGlobals();
+  });
+
+  it("throws when second getContext call fails in extractPalette", () => {
+    const fakeCtx = { drawImage: vi.fn() };
+    const getContextMock = vi.fn()
+      .mockReturnValueOnce(fakeCtx)  // loadElementImage succeeds
+      .mockReturnValueOnce(null);     // extractPalette fails
+    const fakeCanvas = { width: 1, height: 1, getContext: getContextMock } as unknown as HTMLCanvasElement;
+    vi.stubGlobal("HTMLCanvasElement", class {});
+    vi.stubGlobal("HTMLVideoElement", class {});
+    vi.stubGlobal("document", { createElement: vi.fn(() => fakeCanvas) });
+    const img = { naturalWidth: 200, naturalHeight: 200 } as unknown as HTMLImageElement;
+    expect(() => extractPalette(img, 3)).toThrow("Could not read media pixels.");
+    vi.unstubAllGlobals();
+  });
+
+  it("returns empty palette when all pixels are transparent", () => {
+    vi.stubGlobal("HTMLCanvasElement", class {});
+    vi.stubGlobal("HTMLVideoElement", class {});
+
+    // All transparent pixels (alpha < 125)
+    const pixels = new Uint8ClampedArray(16);
+    for (let i = 0; i < 16; i += 4) {
+      pixels[i] = 255;
+      pixels[i + 1] = 0;
+      pixels[i + 2] = 0;
+      pixels[i + 3] = 0; // fully transparent
+    }
+
+    const fakeCtx = {
+      drawImage: vi.fn(),
+      getImageData: vi.fn(() => ({ data: pixels, width: 2, height: 2 }))
+    };
+
+    const fakeCanvas = { width: 2, height: 2, getContext: vi.fn(() => fakeCtx) } as unknown as HTMLCanvasElement;
+
+    vi.stubGlobal("document", {
+      createElement: vi.fn(() => fakeCanvas)
+    });
+
+    const img = { naturalWidth: 200, naturalHeight: 200 } as unknown as HTMLImageElement;
+    const result = extractPalette(img, 3);
+    expect(result.colors).toEqual([]);
+    expect(result.average).toBe("#000000");
+    vi.unstubAllGlobals();
   });
 });

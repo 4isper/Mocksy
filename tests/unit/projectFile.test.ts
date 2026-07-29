@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { importProjectFromFile } from "@/lib/state/projectFile";
+import { describe, expect, it, vi } from "vitest";
+import { exportProjectToFile, importProjectFromFile } from "@/lib/state/projectFile";
 import { initialScene } from "@/lib/state/editorStore";
 import type { EditorScene, Project } from "@/lib/types/editor";
 
@@ -63,5 +63,49 @@ describe("projectFile", () => {
     const file = projectFile({ scene: { ...initialScene } }, "project-name.json");
     const imported = await importProjectFromFile(file);
     expect(imported.name).toBe("project-name");
+  });
+});
+
+describe("exportProjectToFile", () => {
+  it("creates a downloadable JSON file with the project name", () => {
+    const project = { id: "p1", name: "My Mockup", scene: { ...initialScene }, updatedAt: Date.now() };
+    let createdUrl = "";
+    const link = {
+      href: "",
+      download: "",
+      click: vi.fn()
+    };
+    vi.stubGlobal("URL", {
+      createObjectURL: vi.fn((b: Blob) => {
+        createdUrl = "blob:mock-download";
+        return "blob:mock-download";
+      }),
+      revokeObjectURL: vi.fn()
+    });
+    vi.stubGlobal("document", {
+      createElement: vi.fn((tag: string) => {
+        if (tag === "a") return link;
+        return null;
+      }),
+      body: { appendChild: vi.fn(), removeChild: vi.fn() }
+    });
+    exportProjectToFile(project);
+    expect(link.download).toBe("My_Mockup.json");
+    expect(link.click).toHaveBeenCalled();
+    expect(createdUrl).toBe("blob:mock-download");
+    vi.unstubAllGlobals();
+  });
+
+  it("falls back to mocksy-project for empty name after sanitization", () => {
+    const project = { id: "p2", name: "", scene: { ...initialScene }, updatedAt: Date.now() };
+    const link = { href: "", download: "", click: vi.fn() };
+    vi.stubGlobal("URL", { createObjectURL: vi.fn(() => "blob:"), revokeObjectURL: vi.fn() });
+    vi.stubGlobal("document", {
+      createElement: vi.fn(() => link),
+      body: { appendChild: vi.fn(), removeChild: vi.fn() }
+    });
+    exportProjectToFile(project);
+    expect(link.download).toBe("mocksy-project.json");
+    vi.unstubAllGlobals();
   });
 });

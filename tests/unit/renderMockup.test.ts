@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { computeFrameBox, renderMockupToCanvas, computeFrameInstances } from "@/lib/export/renderMockup";
 import { getFrameSpec, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
 import { initialScene } from "@/lib/state/editorStore";
@@ -222,6 +222,37 @@ describe("renderMockupToCanvas background modes", () => {
     // Should still draw the frame and empty media placeholder
     expect(fillRectCalls.length).toBeGreaterThan(0);
   });
+
+  it("renders solid background mode in single-frame", () => {
+    const fillStyles: string[] = [];
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(v: unknown) { fillStyles.push(String(v)); },
+      get fillStyle() { return fillStyles[fillStyles.length - 1] ?? ""; },
+      set strokeStyle(_v: unknown) {},
+      set lineWidth(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {}
+    };
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    renderMockupToCanvas(canvas, { ...initialScene, backgroundMode: "solid", backgroundColor: "#ff0000", layers: [] }, null, undefined, undefined, 400, 300, 2);
+    expect(fillStyles).toContain("#ff0000");
+  });
 });
 
 describe("renderMockupToCanvas watermark positions", () => {
@@ -426,6 +457,71 @@ describe("renderMockupToCanvas frame overlay", () => {
   });
 });
 
+describe("renderMockupToCanvas style presets", () => {
+  it("draws outline style preset border in single-frame mode", () => {
+    let strokeCalls = 0;
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => { strokeCalls++; },
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(_v: unknown) {},
+      set strokeStyle(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {},
+      set lineWidth(_v: unknown) {}
+    };
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    renderMockupToCanvas(canvas, { ...initialScene, stylePreset: "outline", layers: [] }, null, undefined, undefined, 400, 300, 2);
+    expect(strokeCalls).toBeGreaterThan(0);
+  });
+
+  it("draws glassDark style preset border in single-frame mode", () => {
+    let strokeCalls = 0;
+    let fillStyle = "";
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => { strokeCalls++; },
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(v: unknown) { fillStyle = String(v); },
+      get fillStyle() { return fillStyle; },
+      set strokeStyle(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {},
+      set lineWidth(_v: unknown) {}
+    };
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    renderMockupToCanvas(canvas, { ...initialScene, stylePreset: "glassDark", layers: [] }, null, undefined, undefined, 400, 300, 2);
+    expect(strokeCalls).toBeGreaterThan(0);
+    expect(fillStyle).toContain("rgba");
+  });
+});
+
 describe("renderMockupToCanvas background image mode", () => {
   it("draws background image with blur", () => {
     let filterValue = "";
@@ -567,6 +663,162 @@ describe("renderMockupToCanvas video media", () => {
   });
 });
 
+describe("drawFrameMediaFromLayer", () => {
+  function mockCtx() {
+    const calls: Record<string, unknown[]> = {};
+    const track = (name: string) => (...args: unknown[]) => { calls[name] = args; };
+    const setters: Record<string, unknown> = {};
+    return {
+      ctx: {
+        save: track("save"),
+        restore: track("restore"),
+        beginPath: track("beginPath"),
+        moveTo: track("moveTo"),
+        lineTo: track("lineTo"),
+        quadraticCurveTo: track("quadraticCurveTo"),
+        closePath: track("closePath"),
+        clip: track("clip"),
+        drawImage: track("drawImage"),
+        set fillStyle(v: unknown) { setters.fillStyle = v; },
+        get fillStyle() { return setters.fillStyle; }
+      } as unknown as CanvasRenderingContext2D,
+      calls,
+      setters
+    };
+  }
+
+  it("returns early when layer has no mediaUrl", async () => {
+    const { ctx, calls } = mockCtx();
+    const box = { x: 0, y: 0, width: 400, height: 300, outerRadius: 0, innerX: 0, innerY: 0, innerW: 400, innerH: 300, innerRadius: 10 };
+    const { drawFrameMediaFromLayer } = await import("@/lib/export/renderMockup");
+    await drawFrameMediaFromLayer(ctx, { id: "l1" } as any, box, 2);
+    expect(calls.save).toBeUndefined();
+  });
+
+  it("returns early when layer is undefined", async () => {
+    const { ctx, calls } = mockCtx();
+    const box = { x: 0, y: 0, width: 400, height: 300, outerRadius: 0, innerX: 0, innerY: 0, innerW: 400, innerH: 300, innerRadius: 10 };
+    const { drawFrameMediaFromLayer } = await import("@/lib/export/renderMockup");
+    await drawFrameMediaFromLayer(ctx, undefined, box, 2);
+    expect(calls.save).toBeUndefined();
+  });
+
+  it("loads and draws media for a layer with mediaUrl", async () => {
+    vi.stubGlobal("Image", class {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      width = 800;
+      height = 600;
+      set src(_v: string) {
+        this.onload?.();
+      }
+    } as any);
+    const { ctx, calls } = mockCtx();
+    const box = { x: 0, y: 0, width: 400, height: 300, outerRadius: 0, innerX: 10, innerY: 10, innerW: 400, innerH: 300, innerRadius: 10 };
+    const { drawFrameMediaFromLayer } = await import("@/lib/export/renderMockup");
+    await drawFrameMediaFromLayer(ctx, { id: "l1", mediaUrl: "test.png", mediaFit: "cover", mediaOffsetX: 0, mediaOffsetY: 0 } as any, box, 2);
+    expect(calls.save).toBeDefined();
+    expect(calls.clip).toBeDefined();
+    expect(calls.drawImage).toBeDefined();
+    vi.unstubAllGlobals();
+  });
+
+  it("catches load failure without throwing", async () => {
+    vi.stubGlobal("Image", class {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      set src(_v: string) {
+        this.onerror?.();
+      }
+    } as any);
+    const { ctx } = mockCtx();
+    const box = { x: 0, y: 0, width: 400, height: 300, outerRadius: 0, innerX: 10, innerY: 10, innerW: 400, innerH: 300, innerRadius: 10 };
+    const { drawFrameMediaFromLayer } = await import("@/lib/export/renderMockup");
+    await expect(drawFrameMediaFromLayer(ctx, { id: "l1", mediaUrl: "broken.png" } as any, box, 2)).resolves.toBeUndefined();
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("drawWatermark", () => {
+  function mockCtx() {
+    return {
+      save: vi.fn(),
+      restore: vi.fn(),
+      fillText: vi.fn(),
+      set fillStyle(_v: unknown) {},
+      set font(_v: unknown) {},
+      set textAlign(_v: unknown) {},
+      set textBaseline(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {}
+    } as unknown as CanvasRenderingContext2D;
+  }
+
+  it("returns early when watermark is disabled", async () => {
+    const { drawWatermark } = await import("@/lib/export/renderMockup");
+    const ctx = mockCtx();
+    drawWatermark(ctx, { watermarkEnabled: false, watermarkText: "Test" } as any, 800, 600, 2);
+    expect(ctx.fillText).not.toHaveBeenCalled();
+  });
+
+  it("returns early when watermark text is empty", async () => {
+    const { drawWatermark } = await import("@/lib/export/renderMockup");
+    const ctx = mockCtx();
+    drawWatermark(ctx, { watermarkEnabled: true, watermarkText: "" } as any, 800, 600, 2);
+    expect(ctx.fillText).not.toHaveBeenCalled();
+  });
+
+  it("draws text at all four positions", async () => {
+    const { drawWatermark } = await import("@/lib/export/renderMockup");
+    for (const pos of ["bottom-right", "bottom-left", "top-right", "top-left"] as const) {
+      const ctx = mockCtx();
+      drawWatermark(ctx, { watermarkEnabled: true, watermarkText: "Brand", watermarkPosition: pos, watermarkSize: 16 } as any, 800, 600, 2);
+      expect(ctx.fillText).toHaveBeenCalledWith("Brand", expect.any(Number), expect.any(Number));
+    }
+  });
+
+  it("draws watermark in multi-frame mode", async () => {
+    const { renderMockupToCanvas } = await import("@/lib/export/renderMockup");
+    let fillTextCalls = 0;
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      fillText: () => { fillTextCalls++; },
+      set fillStyle(_v: unknown) {},
+      set font(_v: unknown) {},
+      set textAlign(_v: unknown) {},
+      set textBaseline(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {}
+    } as unknown as CanvasRenderingContext2D;
+    const canvas = { width: 1000, height: 800, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    const sceneWithFrames = {
+      ...initialScene,
+      watermarkEnabled: true,
+      watermarkText: "Mocksy",
+      frameInstances: [{ id: "f1", frame: "none" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }]
+    };
+    renderMockupToCanvas(canvas, sceneWithFrames, null);
+    expect(fillTextCalls).toBeGreaterThan(0);
+  });
+});
+
 describe("layoutFrameGrid", () => {
   it("creates a horizontal grid of frame instances", () => {
     const instances = layoutFrameGrid("iphone", 3, "horizontal");
@@ -671,6 +923,197 @@ describe("renderMockupToCanvas multi-frame mode", () => {
     // Should draw empty media fill for each frame when no media provided
     expect(fillRectCalls).toBeGreaterThan(0);
   });
+
+  it("renders multi-frame with outline style preset border", () => {
+    let strokeCalls = 0;
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => { strokeCalls++; },
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(_v: unknown) {},
+      set strokeStyle(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {},
+      set lineWidth(_v: unknown) {}
+    };
+    const canvas = { width: 1000, height: 800, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    renderMockupToCanvas(canvas, { ...initialScene, stylePreset: "outline", frameInstances: [{ id: "f1", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }] }, null);
+    expect(strokeCalls).toBeGreaterThan(0);
+  });
+
+  it("renders multi-frame with image background mode", () => {
+    let filterVal = "";
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(_v: unknown) {},
+      set strokeStyle(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {},
+      set lineWidth(_v: unknown) {},
+      get filter() { return filterVal; },
+      set filter(v: unknown) { filterVal = String(v); }
+    };
+    const canvas = { width: 1000, height: 800, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    const bgImage = { naturalWidth: 100, naturalHeight: 100 } as unknown as CanvasImageSource;
+    renderMockupToCanvas(canvas, { ...initialScene, backgroundMode: "image", backgroundBlur: 5, frameInstances: [{ id: "f1", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }] }, null, undefined, undefined, 200, 400, 2, undefined, undefined, undefined, bgImage);
+    expect(filterVal).toContain("blur");
+  });
+
+  it("renders multi-frame with fallback background for unhandled mode", () => {
+    const fillStyles: string[] = [];
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(v: unknown) { fillStyles.push(String(v)); },
+      get fillStyle() { return fillStyles[fillStyles.length - 1] ?? ""; },
+      set strokeStyle(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {},
+      set lineWidth(_v: unknown) {}
+    };
+    const canvas = { width: 1000, height: 800, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    // image mode without a loaded image hits the else fallback
+    renderMockupToCanvas(canvas, { ...initialScene, backgroundMode: "image", frameInstances: [{ id: "f1", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }] }, null);
+    expect(fillStyles.some(s => s.includes("rgba(255,255,255,0.04)"))).toBe(true);
+  });
+
+  it("renders multi-frame with glassDark style preset border", () => {
+    let strokeCalls = 0;
+    let fillStyle = "";
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => { strokeCalls++; },
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(v: unknown) { fillStyle = String(v); },
+      get fillStyle() { return fillStyle; },
+      set strokeStyle(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {},
+      set lineWidth(_v: unknown) {}
+    };
+    const canvas = { width: 1000, height: 800, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    renderMockupToCanvas(canvas, { ...initialScene, stylePreset: "glassDark", frameInstances: [{ id: "f1", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }] }, null);
+    expect(strokeCalls).toBeGreaterThan(0);
+    expect(fillStyle).toContain("rgba");
+  });
+
+  it("renders multi-frame with solid background", () => {
+    const fillStyles: string[] = [];
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(v: unknown) { fillStyles.push(String(v)); },
+      get fillStyle() { return fillStyles[fillStyles.length - 1] ?? ""; },
+      set strokeStyle(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {},
+      set lineWidth(_v: unknown) {}
+    };
+    const canvas = { width: 1000, height: 800, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    renderMockupToCanvas(canvas, { ...initialScene, backgroundMode: "solid", backgroundColor: "#ff0000", frameInstances: [{ id: "f1", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }] }, null);
+    expect(fillStyles).toContain("#ff0000");
+  });
+
+  it("renders multi-frame with transparent background", () => {
+    const fillStyles: string[] = [];
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(v: unknown) { fillStyles.push(String(v)); },
+      get fillStyle() { return fillStyles[fillStyles.length - 1] ?? ""; },
+      set strokeStyle(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {},
+      set lineWidth(_v: unknown) {}
+    };
+    const canvas = { width: 1000, height: 800, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    renderMockupToCanvas(canvas, { ...initialScene, backgroundMode: "transparent", frameInstances: [{ id: "f1", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }] }, null, undefined, undefined, 200, 400, 2, undefined, "rgba(255,255,255,0.5)");
+    expect(fillStyles.some(s => s.includes("rgba(255,255,255"))).toBe(true);
+  });
+
 
   it("renders multi-frame with overlay for overlay frames", () => {
     let drawCalls: number = 0;

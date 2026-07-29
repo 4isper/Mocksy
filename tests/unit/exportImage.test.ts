@@ -124,6 +124,7 @@ function setupDOMMocks({
     }
   });
 
+  vi.stubGlobal("window", { devicePixelRatio: 2 });
   vi.stubGlobal("Image", class {
     onload: (() => void) | null = null;
     onerror: (() => void) | null = null;
@@ -160,6 +161,10 @@ describe("renderSceneToPngBlob", () => {
   });
 
   it("returns null when canvas cannot produce blob", async () => {
+    vi.stubGlobal("window", { devicePixelRatio: 2 });
+    vi.stubGlobal("HTMLCanvasElement", class {});
+    vi.stubGlobal("HTMLVideoElement", class {});
+    vi.stubGlobal("HTMLImageElement", class {});
     vi.stubGlobal("document", {
       getElementById: () => ({ clientWidth: 800, clientHeight: 600, querySelector: () => null }),
       createElement: () => ({
@@ -183,6 +188,161 @@ describe("copyPngToClipboard", () => {
     const onError = vi.fn();
     await copyPngToClipboard(initialScene, "preview", onError);
     expect(onError).toHaveBeenCalledWith("Clipboard isn't available here (open over https or localhost).");
+  });
+
+  it("returns early when ClipboardItem is undefined", async () => {
+    vi.stubGlobal("navigator", { clipboard: { write: vi.fn() } });
+    vi.stubGlobal("ClipboardItem", undefined);
+    const { copyPngToClipboard } = await import("@/lib/export/exportImage");
+    const onError = vi.fn();
+    await copyPngToClipboard(initialScene, "preview", onError);
+    expect(onError).toHaveBeenCalledWith("Clipboard isn't available here (open over https or localhost).");
+  });
+
+  it("copies PNG to clipboard when APIs are available", async () => {
+    let writtenBlob: Blob | null = null;
+    vi.stubGlobal("window", { devicePixelRatio: 2 });
+    vi.stubGlobal("HTMLCanvasElement", class {});
+    vi.stubGlobal("HTMLVideoElement", class {});
+    vi.stubGlobal("HTMLImageElement", class {});
+    vi.stubGlobal("navigator", {
+      clipboard: {
+        write: vi.fn().mockImplementation((items: Array<{ items: Record<string, Blob> }>) => {
+          writtenBlob = items[0]?.items?.["image/png"] as Blob;
+          return Promise.resolve();
+        })
+      }
+    });
+    vi.stubGlobal("ClipboardItem", class {
+      items: Record<string, Blob>;
+      constructor(data: Record<string, Blob>) {
+        this.items = data;
+        for (const [k, v] of Object.entries(data)) {
+          (this as Record<string, unknown>)[k] = v;
+        }
+      }
+    });
+    vi.stubGlobal("URL", { createObjectURL: () => "", revokeObjectURL: vi.fn() });
+    const ctx: Record<string, unknown> = {
+      clearRect: vi.fn(),
+      fillRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      quadraticCurveTo: vi.fn(),
+      closePath: vi.fn(),
+      clip: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+      createLinearGradient: () => ({ addColorStop: vi.fn() }),
+      drawImage: vi.fn(),
+    };
+    const setters = ["fillStyle", "font", "textAlign", "textBaseline", "strokeStyle", "shadowColor", "shadowBlur", "shadowOffsetX", "shadowOffsetY", "lineWidth", "lineCap", "filter"];
+    for (const s of setters) {
+      Object.defineProperty(ctx, s, { set: vi.fn(), get: () => "" });
+    }
+    vi.stubGlobal("document", {
+      getElementById: () => ({
+        clientWidth: 800,
+        clientHeight: 600,
+        querySelector: (sel: string) => {
+          if (sel === "[data-mockup-frame]") return { offsetWidth: 400, offsetHeight: 300 };
+          return null;
+        }
+      }),
+      createElement: (tag: string) => {
+        if (tag === "canvas") return {
+          width: 1600,
+          height: 1200,
+          getContext: () => ctx,
+          toBlob: (cb: (b: Blob | null) => void) => cb(new Blob(["png"]))
+        } as unknown as HTMLCanvasElement;
+        return null;
+      }
+    });
+    vi.stubGlobal("Image", class {
+      onload: (() => void) | null = null;
+      set src(_v: string) { setTimeout(() => this.onload?.(), 0); }
+      naturalWidth = 100;
+      naturalHeight = 100;
+    });
+    const { copyPngToClipboard } = await import("@/lib/export/exportImage");
+    const onStatus = vi.fn();
+    const onError = vi.fn();
+    await copyPngToClipboard(initialScene, "preview", onError, onStatus);
+    if (onError.mock.calls.length > 0) {
+      throw new Error(`copyPngToClipboard onError: ${onError.mock.calls[0]![0]}`);
+    }
+    expect(writtenBlob).toBeInstanceOf(Blob);
+    expect(onStatus).toHaveBeenCalledWith("Copied PNG to clipboard");
+  });
+
+  it("reports clipboard write failure through onError", async () => {
+    vi.stubGlobal("window", { devicePixelRatio: 2 });
+    vi.stubGlobal("HTMLCanvasElement", class {});
+    vi.stubGlobal("HTMLVideoElement", class {});
+    vi.stubGlobal("HTMLImageElement", class {});
+    vi.stubGlobal("navigator", {
+      clipboard: {
+        write: vi.fn().mockRejectedValue(new Error("Permission denied"))
+      }
+    });
+    vi.stubGlobal("ClipboardItem", class {
+      items: Record<string, Blob>;
+      constructor(data: Record<string, Blob>) { this.items = data; }
+    });
+    vi.stubGlobal("URL", { createObjectURL: () => "", revokeObjectURL: vi.fn() });
+    const ctx: Record<string, unknown> = {
+      clearRect: vi.fn(),
+      fillRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      quadraticCurveTo: vi.fn(),
+      closePath: vi.fn(),
+      clip: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+      createLinearGradient: () => ({ addColorStop: vi.fn() }),
+      drawImage: vi.fn(),
+    };
+    const setters = ["fillStyle", "font", "textAlign", "textBaseline", "strokeStyle", "shadowColor", "shadowBlur", "shadowOffsetX", "shadowOffsetY", "lineWidth", "lineCap", "filter"];
+    for (const s of setters) {
+      Object.defineProperty(ctx, s, { set: vi.fn(), get: () => "" });
+    }
+    vi.stubGlobal("document", {
+      getElementById: () => ({
+        clientWidth: 800,
+        clientHeight: 600,
+        querySelector: (sel: string) => {
+          if (sel === "[data-mockup-frame]") return { offsetWidth: 400, offsetHeight: 300 };
+          return null;
+        }
+      }),
+      createElement: (tag: string) => {
+        if (tag === "canvas") return {
+          width: 1600,
+          height: 1200,
+          getContext: () => ctx,
+          toBlob: (cb: (b: Blob | null) => void) => cb(new Blob(["png"]))
+        } as unknown as HTMLCanvasElement;
+        return null;
+      }
+    });
+    vi.stubGlobal("Image", class {
+      onload: (() => void) | null = null;
+      set src(_v: string) { setTimeout(() => this.onload?.(), 0); }
+      naturalWidth = 100;
+      naturalHeight = 100;
+    });
+    const { copyPngToClipboard } = await import("@/lib/export/exportImage");
+    const onError = vi.fn();
+    await copyPngToClipboard(initialScene, "preview", onError);
+    expect(onError).toHaveBeenCalledWith("Permission denied");
   });
 });
 

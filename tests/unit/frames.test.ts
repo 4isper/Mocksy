@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FRAME_ORDER, FRAME_SPECS, getFrameSpec } from "@/lib/render/frames";
+import { ANIMATION_PRESETS, ASPECT_RATIOS, FRAME_ORDER, FRAME_SPECS, getFrameSpec } from "@/lib/render/frames";
 
 describe("FRAME_SPECS", () => {
   it("registers overlay assets for iphone15 / iphone16pro", () => {
@@ -44,5 +44,21 @@ describe("FRAME_SPECS", () => {
     expect(getFrameSpec("iphone15")).toBe(FRAME_SPECS.iphone15);
     // @ts-expect-error testing fallback for invalid frame
     expect(getFrameSpec("nonexistent")).toBe(FRAME_SPECS.none);
+  });
+});
+
+describe("ANIMATION_PRESETS", () => {
+  it("lists all known animation presets including none", () => {
+    expect(ANIMATION_PRESETS).toEqual(["none", "zoomIn", "zoomOut", "parallax"]);
+  });
+});
+
+describe("ASPECT_RATIOS", () => {
+  it("lists all standard aspect ratios", () => {
+    expect(ASPECT_RATIOS).toEqual(["16 / 9", "4 / 3", "3 / 2", "1 / 1", "9 / 16"]);
+  });
+
+  it("includes 16/9 as the first entry (default)", () => {
+    expect(ASPECT_RATIOS[0]).toBe("16 / 9");
   });
 });
