@@ -27,6 +27,8 @@ Reference inspiration: [shots.so](https://shots.so/), [PostSpark device mockup](
 - Unsupported file types are rejected with an inline error instead of a blank canvas
 - Video options (muted/loop/autoplay, poster, timeline, trim, quality) collapse into a togglable accordion
 - Video trim shown as a single dual-range control with a visible selected window
+- Light/dark/system theme toggle in toolbar
+- Command palette (`⌘K`) for keyboard-driven access to all features
 - Export quality selector for MP4/GIF: Low, Medium, High
 - Unified export dialog for PNG/MP4/GIF with size selector (1×, 2×, 4×)
 - PNG export (matches the on-screen preview pixel-for-pixel) with explicit scale selector
@@ -62,7 +64,8 @@ npm run dev
 ## Tests
 
 ```bash
-npm run test        # unit tests (Vitest)
+npm run typecheck   # TypeScript type checking (tsc --noEmit)
+npm run test        # unit tests (Vitest, 501 tests across 34 files)
 npm run test:coverage  # unit tests with coverage report
 npm run test:e2e    # end-to-end tests (Playwright; needs a browser installed)
 ```
@@ -70,7 +73,7 @@ npm run test:e2e    # end-to-end tests (Playwright; needs a browser installed)
 ## Project layout
 
 - `app/` — Next.js app router entry (`layout.tsx`, `page.tsx`, `error.tsx`)
-- `components/editor/` — `EditorShell`, `ControlPanel`, `PreviewCanvas`, `TemplatesPanel`, `LayersPanel`, `AnnotationsPanel`, `ExportDialog`, `ShortcutsDialog`, `ProjectsPanel`, `VideoOptions`, `VideoTrimControl`
+- `components/editor/` — `EditorShell`, `ControlPanel`, `PreviewCanvas`, `TemplatesPanel`, `LayersPanel`, `AnnotationsPanel`, `ExportDialog`, `ShortcutsDialog`, `ProjectsPanel`, `VideoOptions`, `VideoTrimControl`, `CommandPalette`, `ErrorBoundary`, `ThemeProvider`, `LocaleSwitcher`
 - `lib/state/` — Zustand stores (`editorStore`, `projectsStore`), scene normalization (`normalizeScene`), share-URL (de)serialization (`shareState`), project file I/O (`projectFile`)
 - `lib/render/` — frame specs (`frames`), media type detection (`mediaKind`), CSS/canvas geometry (`mockupRenderer`), video timeline (`videoComposer`)
 - `lib/export/` — PNG (`exportImage`), MP4/GIF (`exportVideo`), canvas mockup rendering (`renderMockup`)
@@ -78,7 +81,9 @@ npm run test:e2e    # end-to-end tests (Playwright; needs a browser installed)
 - `lib/presets/` — background swatches and scene style presets (`presets`)
 - `lib/types/` — TypeScript type definitions (`editor`)
 - `public/devices/` — SVG device skins for overlay frames
-- `tests/unit/`, `tests/e2e/` — Vitest and Playwright suites
+- `tests/unit/` — Vitest unit tests (pure functions, stores, utilities)
+- `tests/components/` — Vitest component tests (16 editor components, 501 tests)
+- `tests/e2e/` — Playwright end-to-end tests
 
 ## Responsive layout
 
@@ -105,6 +110,7 @@ is Cmd on macOS and Ctrl on Windows/Linux.
 | Shortcut          | Action                                              |
 | ----------------- | --------------------------------------------------- |
 | `?`               | Open keyboard shortcuts cheat sheet                 |
+| `⌘K` / `Ctrl+K`   | Open command palette                                |
 | `⌘Z` / `Ctrl+Z`   | Undo                                                |
 | `⇧⌘Z` / `Ctrl+Y`  | Redo                                                |
 | `⌘S` / `Ctrl+S`   | Save to localStorage                                |
