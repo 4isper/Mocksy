@@ -4,9 +4,12 @@ import { ThemeProvider } from "@/components/editor/ThemeProvider";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 
+const VALID_LOCALES = ["en", "ru"];
+
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
-  const messages = await getMessages({ locale });
+  const resolvedLocale = VALID_LOCALES.includes(locale) ? locale : "en";
+  const messages = await getMessages({ locale: resolvedLocale });
   const t = messages.metadata;
   return {
     title: t?.title ?? "Mocksy — Free mockup editor",
@@ -22,10 +25,11 @@ export default async function LocaleLayout({
   params: Promise<{ locale: string }>;
 }>) {
   const { locale } = await params;
-  const messages = await getMessages({ locale });
+  const resolvedLocale = VALID_LOCALES.includes(locale) ? locale : "en";
+  const messages = await getMessages({ locale: resolvedLocale });
 
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html lang={resolvedLocale} suppressHydrationWarning>
       <body>
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider>{children}</ThemeProvider>
