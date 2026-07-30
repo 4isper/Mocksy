@@ -12,6 +12,7 @@ interface BackgroundControlsProps {
   backgroundColor: string;
   gradientFrom: string;
   gradientTo: string;
+  gradientAngle: number;
   backgroundBlur: number;
   setBackgroundSolid: (color: string) => void;
   setBackgroundGradient: (from: string, to: string, angle?: number) => void;
@@ -26,6 +27,7 @@ export function BackgroundControls({
   backgroundColor,
   gradientFrom,
   gradientTo,
+  gradientAngle,
   backgroundBlur,
   setBackgroundSolid,
   setBackgroundGradient,
@@ -134,6 +136,34 @@ export function BackgroundControls({
           );
         })}
       </div>
+      {backgroundMode === "solid" ? (
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+          <span>{t("editor.customColor")}</span>
+          <input type="color" value={backgroundColor} onChange={(e) => setBackgroundSolid(e.target.value)}
+            style={{ width: 32, height: 28, padding: 0, border: "1px solid var(--panel-border)", borderRadius: 6, cursor: "pointer", background: "none" }} />
+        </label>
+      ) : null}
+      {backgroundMode === "gradient" ? (
+        <>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+            <span>{t("editor.gradientFrom")}</span>
+            <input type="color" value={gradientFrom} onChange={(e) => setBackgroundGradient(e.target.value, gradientTo, gradientAngle)}
+              style={{ width: 32, height: 28, padding: 0, border: "1px solid var(--panel-border)", borderRadius: 6, cursor: "pointer", background: "none" }} />
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+            <span>{t("editor.gradientTo")}</span>
+            <input type="color" value={gradientTo} onChange={(e) => setBackgroundGradient(gradientFrom, e.target.value, gradientAngle)}
+              style={{ width: 32, height: 28, padding: 0, border: "1px solid var(--panel-border)", borderRadius: 6, cursor: "pointer", background: "none" }} />
+          </label>
+          <label className="field">
+            <span>{t("editor.gradientAngle", { val: gradientAngle })}</span>
+            <div className="range-wrap">
+              <input type="range" min={0} max={360} step={1} value={gradientAngle} aria-label={t("editor.gradientAngle", { val: gradientAngle })} aria-valuetext={`${gradientAngle}°`} onChange={(e) => setBackgroundGradient(gradientFrom, gradientTo, Number(e.target.value))} />
+              <span className="range-val">{gradientAngle}°</span>
+            </div>
+          </label>
+        </>
+      ) : null}
       <label className="file-trigger">
         {t("editor.uploadBgImage")}
         <input type="file" accept="image/*" onChange={handleBgFile} />

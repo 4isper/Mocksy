@@ -109,6 +109,10 @@
     "loadingMedia": "Загрузка медиа",
     "themeLabel": "Тема",
     "mediaPalette": "Палитра медиа",
+    "customColor": "Свой",
+    "gradientFrom": "От",
+    "gradientTo": "До",
+    "gradientAngle": "Угол ({val}°)",
     "collapse": "Свернуть",
     "expand": "Развернуть"
   },

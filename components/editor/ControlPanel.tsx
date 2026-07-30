@@ -249,6 +249,7 @@ export function ControlPanel() {
         backgroundColor={scene.backgroundColor}
         gradientFrom={scene.gradientFrom}
         gradientTo={scene.gradientTo}
+        gradientAngle={scene.gradientAngle}
         backgroundBlur={scene.backgroundBlur}
         setBackgroundSolid={setBackgroundSolid}
         setBackgroundGradient={setBackgroundGradient}

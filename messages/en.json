@@ -109,6 +109,10 @@
     "loadingMedia": "Loading media",
     "themeLabel": "Theme",
     "mediaPalette": "Media palette",
+    "customColor": "Custom",
+    "gradientFrom": "From",
+    "gradientTo": "To",
+    "gradientAngle": "Angle ({val}°)",
     "collapse": "Collapse",
     "expand": "Expand"
   },
