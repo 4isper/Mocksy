@@ -1,8 +1,10 @@
 # Mocksy
 
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Free browser-based mockup editor. No auth, no paywall, no subscriptions.
 
-Reference: [shots.so](https://shots.so/) · [PostSpark device mockup](https://postspark.app/device-mockup)
+Inspired by [shots.so](https://shots.so/) · [PostSpark device mockup](https://postspark.app/device-mockup)
 
 ---
 
@@ -38,6 +40,8 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 | `iphone` | CSS | Classic phone shape |
 | `iphone15` | Overlay | SVG skin, native portrait ratio |
 | `iphone16pro` | Overlay | SVG skin, native portrait ratio |
+| `pixel8pro` | Overlay | SVG skin, native portrait ratio |
+| `galaxy24` | Overlay | SVG skin, native portrait ratio |
 | `desktop` | CSS | Wide landscape monitor |
 | `tablet` | CSS | Tablet proportions |
 | `watch` | CSS | Circular face |
@@ -57,7 +61,7 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 ### Annotations
 
 - Text, arrow, and rectangle annotations
-- Color picker and stroke-width controls
+- Color picker, stroke-width, and font family selection
 - Draggable and resizable on canvas
 
 ### Video
@@ -110,7 +114,7 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 | State | Zustand |
 | Styling | Tailwind CSS v4 |
 | Video | @ffmpeg/ffmpeg (client-side WebM→MP4) |
-| Unit tests | Vitest (501 tests, 34 files) |
+| Unit tests | Vitest (512 tests, 34 files) |
 | E2E tests | Playwright |
 | Language | TypeScript (strict) |
 
