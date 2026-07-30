@@ -3,7 +3,7 @@
 import type { ChangeEvent } from "react";
 import { useTranslations } from "next-intl";
 import { loadMediaFromFile } from "@/lib/media/loadFile";
-import { pickGradientPair } from "@/lib/media/palette";
+import { pickBestSolid, pickGradientPair } from "@/lib/media/palette";
 import { backgroundPresets } from "@/lib/presets/presets";
 
 interface BackgroundControlsProps {
@@ -54,25 +54,39 @@ export function BackgroundControls({
   return (
     <div className="field-group">
       <span style={{ color: "var(--text-dim)", fontSize: 12, fontWeight: 500 }}>{t("editor.background")}</span>
-      <button
-        type="button"
-        className="auto-bg-btn"
-        disabled={!scenePalette || scenePalette.length < 1}
-        title={
-          scenePalette && scenePalette.length >= 1
-            ? t("editor.autoBgTooltip")
-            : t("editor.autoBgDisabled")
-        }
-        onClick={() => {
-          if (!scenePalette || scenePalette.length < 1) return;
-          const [from, to] = pickGradientPair(scenePalette);
-          const angles = [0, 45, 90, 135, 180];
-          const angle = angles[Math.floor(Math.random() * angles.length)]!;
-          setBackgroundGradient(from, to, angle);
-        }}
-      >
-        {t("editor.autoBackground")}
-      </button>
+      <div style={{ display: "flex", gap: 6 }}>
+        <button
+          type="button"
+          className="auto-bg-btn"
+          disabled={!scenePalette || scenePalette.length < 1}
+          title={
+            scenePalette && scenePalette.length >= 1
+              ? t("editor.autoBgTooltip")
+              : t("editor.autoBgDisabled")
+          }
+          onClick={() => {
+            if (!scenePalette || scenePalette.length < 1) return;
+            const [from, to] = pickGradientPair(scenePalette);
+            const angles = [0, 45, 90, 135, 180];
+            const angle = angles[Math.floor(Math.random() * angles.length)]!;
+            setBackgroundGradient(from, to, angle);
+          }}
+        >
+          {t("editor.autoBackground")}
+        </button>
+        <button
+          type="button"
+          className="auto-bg-btn"
+          disabled={!scenePalette || scenePalette.length < 1}
+          title={t("editor.autoSolidTooltip")}
+          onClick={() => {
+            if (!scenePalette || scenePalette.length < 1) return;
+            setBackgroundSolid(pickBestSolid(scenePalette));
+          }}
+        >
+          {t("editor.autoSolid")}
+        </button>
+      </div>
       {scenePalette && scenePalette.length > 0 ? (
         <>
           <span style={{ color: "var(--text-dim)", fontSize: 11 }}>{t("editor.mediaPalette")}</span>

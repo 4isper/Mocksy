@@ -184,17 +184,72 @@ export function mergeWeightedPalettes(
   };
 }
 
+export function hexToHsl(hex: string): { h: number; s: number; l: number } {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return { h: 0, s: 0, l: 0 };
+  const r = rgb.r / 255;
+  const g = rgb.g / 255;
+  const b = rgb.b / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return { h: 0, s: 0, l: Math.round(l * 100) };
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h = 0;
+  switch (max) {
+    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+    case g: h = ((b - r) / d + 2) / 6; break;
+    case b: h = ((r - g) / d + 4) / 6; break;
+  }
+  return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+}
+
+function hueDistance(a: number, b: number): number {
+  const d = Math.abs(a - b);
+  return Math.min(d, 360 - d);
+}
+
 /**
- * Picks two well-separated colors from a palette to form a pleasant gradient:
- * the most saturated color and the average, or the two most distant hues.
- * Falls back to a flat pair when fewer than two colors are available.
+ * Picks two well-separated colors from a palette to form a pleasant gradient.
+ * Uses HSL to find the color closest to complementary (hue + 180°) of the
+ * dominant color, preferring vibrant and balanced colors. Falls back to the
+ * palette extremes when no good harmonic pair is found.
  */
 export function pickGradientPair(colors: string[]): [string, string] {
   if (colors.length === 0) return ["#1d4ed8", "#7c3aed"];
-  if (colors.length === 1) {
-    return [colors[0]!, colors[0]!];
+  if (colors.length === 1) return [colors[0]!, colors[0]!];
+
+  const hslList = colors.map(c => ({ hex: c, ...hexToHsl(c) }));
+  const dominant = hslList[0]!;
+  const targetHue = (dominant.h + 180) % 360;
+
+  let best = hslList[1]!;
+  let bestScore = -Infinity;
+  for (const c of hslList) {
+    if (c.hex === dominant.hex) continue;
+    const hueDist = hueDistance(c.h, targetHue);
+    const hueScore = 1 - hueDist / 180;
+    const satScore = c.s / 100;
+    const lightScore = 1 - Math.abs(c.l - 50) / 50;
+    const score = hueScore * 0.6 + satScore * 0.2 + lightScore * 0.2;
+    if (score > bestScore) {
+      bestScore = score;
+      best = c;
+    }
   }
-  return [colors[0]!, colors[colors.length - 1]!];
+
+  if (best.hex === dominant.hex) return [dominant.hex, colors[colors.length - 1]!];
+  return [dominant.hex, best.hex];
+}
+
+/**
+ * Returns the best solid color from the palette — the most dominant color.
+ * Useful for one-click solid backgrounds matched to media.
+ */
+export function pickBestSolid(colors: string[]): string {
+  if (colors.length === 0) return "#1d4ed8";
+  return colors[0]!;
 }
 
 /**

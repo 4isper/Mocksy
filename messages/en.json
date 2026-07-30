@@ -67,6 +67,8 @@
     "uploadError": "Could not load that file.",
     "autoBgTooltip": "Generate a gradient from the media's colors",
     "autoBgDisabled": "Upload an image or video first",
+    "autoSolid": "Solid",
+    "autoSolidTooltip": "Set background to the media's dominant color",
     "positionX": "Position X",
     "positionY": "Position Y",
     "uploadBgImage": "Upload background image",

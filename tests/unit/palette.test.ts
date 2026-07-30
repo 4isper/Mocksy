@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { hexToRgb, mergeWeightedPalettes, paletteColorsFlat, pickGradientPair, quantize, rgbToHex, extractPalette } from "@/lib/media/palette";
+import { hexToHsl, hexToRgb, mergeWeightedPalettes, paletteColorsFlat, pickBestSolid, pickGradientPair, quantize, rgbToHex, extractPalette } from "@/lib/media/palette";
 import type { PaletteResult, QuantizedColor } from "@/lib/media/palette";
 
 describe("rgbToHex", () => {
@@ -55,6 +55,46 @@ describe("quantize", () => {
   });
 });
 
+describe("hexToHsl", () => {
+  it("converts pure red", () => {
+    expect(hexToHsl("#ff0000")).toEqual({ h: 0, s: 100, l: 50 });
+  });
+
+  it("converts pure green", () => {
+    expect(hexToHsl("#00ff00")).toEqual({ h: 120, s: 100, l: 50 });
+  });
+
+  it("converts pure blue", () => {
+    expect(hexToHsl("#0000ff")).toEqual({ h: 240, s: 100, l: 50 });
+  });
+
+  it("converts white", () => {
+    expect(hexToHsl("#ffffff")).toEqual({ h: 0, s: 0, l: 100 });
+  });
+
+  it("converts black", () => {
+    expect(hexToHsl("#000000")).toEqual({ h: 0, s: 0, l: 0 });
+  });
+
+  it("converts grayscale", () => {
+    expect(hexToHsl("#888888")).toEqual({ h: 0, s: 0, l: 53 });
+  });
+
+  it("returns zeros for invalid input", () => {
+    expect(hexToHsl("not-a-color")).toEqual({ h: 0, s: 0, l: 0 });
+  });
+});
+
+describe("pickBestSolid", () => {
+  it("returns the dominant color from the palette", () => {
+    expect(pickBestSolid(["#ff0000", "#00ff00", "#0000ff"])).toBe("#ff0000");
+  });
+
+  it("falls back to a default when empty", () => {
+    expect(pickBestSolid([])).toBe("#1d4ed8");
+  });
+});
+
 describe("pickGradientPair", () => {
   it("falls back to a default gradient when empty", () => {
     expect(pickGradientPair([])).toEqual(["#1d4ed8", "#7c3aed"]);
@@ -64,7 +104,21 @@ describe("pickGradientPair", () => {
     expect(pickGradientPair(["#abcdef"])).toEqual(["#abcdef", "#abcdef"]);
   });
 
-  it("spans the palette extremes for two or more colors", () => {
+  it("picks complementary colors for red (+180° = cyan)", () => {
+    const [from, to] = pickGradientPair(["#ff0000", "#00ff00", "#00ffff"]);
+    expect(from).toBe("#ff0000");
+    // The complement of red (h=0) is cyan (h=180), so #00ffff should win
+    expect(to).toBe("#00ffff");
+  });
+
+  it("picks complementary colors for blue (+180° = yellow)", () => {
+    const [from, to] = pickGradientPair(["#0000ff", "#ff0000", "#ffff00"]);
+    expect(from).toBe("#0000ff");
+    // The complement of blue (h=240) is yellow (h=60), so #ffff00 should win
+    expect(to).toBe("#ffff00");
+  });
+
+  it("spans grayscale extremes when no complementary hue exists", () => {
     const [from, to] = pickGradientPair(["#111111", "#222222", "#333333"]);
     expect(from).toBe("#111111");
     expect(to).toBe("#333333");
