@@ -1,227 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { ChangeEvent, CSSProperties, DragEvent, ReactNode } from "react";
-import type { Annotation, EditorScene, MediaLayer } from "@/lib/types/editor";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ChangeEvent, DragEvent } from "react";
+import type { EditorScene } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
-import { getFrameSpec } from "@/lib/render/frames";
-import { isVideoLayer } from "@/lib/render/mediaKind";
-import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { extractPalette, mergeWeightedPalettes, paletteColorsFlat } from "@/lib/media/palette";
 import type { PaletteResult } from "@/lib/media/palette";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
+import { useFrameTransform } from "@/lib/hooks/useFrameTransform";
+import { AnnotationItem } from "@/components/editor/AnnotationItem";
+import { useScenePalette } from "@/lib/hooks/useScenePalette";
+import { FrameInstanceGrid } from "@/components/editor/FrameInstanceGrid";
+import { SingleFrameView } from "@/components/editor/SingleFrameView";
 
 /** Duration of one animation loop in the preview, matching the video export. */
 const ANIMATION_DURATION_MS = 3000;
-
-/**
- * Drives the frame's zoomIn/zoomOut/parallax in the live preview by writing
- * the transform straight to the frame DOM via rAF — no React re-render per
- * frame, and buildSceneCss (the expensive part) is untouched. The sampled
- * transform mirrors sampleVideoTransform used by the video export, so what you
- * see previews what you export. Zoom/animation scale the whole mockup (device
- * + media together), matching the export where the frame box is multiplied by
- * the zoom.
- */
-function useFrameTransform(node: React.RefObject<HTMLDivElement | null>, layer: MediaLayer | undefined) {
-  const layerRef = useRef(layer);
-  useEffect(() => {
-    layerRef.current = layer;
-  });
-  const animates = !!layer && layer.animationPreset !== "none";
-
-  useEffect(() => {
-    const el = node.current;
-    if (!el) return;
-    const apply = (zoom: number, x: number, y: number) => {
-      el.style.setProperty("transform", `scale(${zoom}) translate(${x * 2}px, ${y * 2}px)`);
-    };
-    if (!animates) {
-      const base = sampleVideoTransform(layerRef.current ?? ({} as MediaLayer), 0);
-      apply(base.zoom, base.x, base.y);
-      return;
-    }
-    let raf = 0;
-    const start = performance.now();
-    const tick = () => {
-      const progress = ((performance.now() - start) % ANIMATION_DURATION_MS) / ANIMATION_DURATION_MS;
-      const { zoom, x, y } = sampleVideoTransform(layerRef.current ?? ({} as MediaLayer), progress);
-      apply(zoom, x, y);
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-    // Re-seed when the preset, zoom, or pan changes so the static branch
-    // re-applies, and the rAF loop picks up fresh values.
-  }, [node, animates, layer?.animationPreset, layer?.zoom, layer?.mediaOffsetX, layer?.mediaOffsetY]);
-}
-
-interface AnnotationItemProps {
-  annotation: Annotation;
-  selected: boolean;
-  canvasRef: React.RefObject<HTMLDivElement | null>;
-  onSelect: (id: string) => void;
-  onUpdate: (id: string, patch: Partial<Annotation>) => void;
-}
-
-/**
- * One annotation overlay in the live preview. Coordinates are fractions of the
- * canvas, so the element is positioned with percentages and the SVG arrow is
- * drawn at measured pixel size (read from the canvas after layout) so its
- * stroke width and arrowhead match the exported PNG exactly.
- */
-function AnnotationItem({ annotation, selected, canvasRef, onSelect, onUpdate }: AnnotationItemProps) {
-  const t = useTranslations();
-  const moveRef = useRef<{ x: number; y: number; ax: number; ay: number } | null>(null);
-  const resizeRef = useRef<{ x: number; y: number; aw: number; ah: number } | null>(null);
-  // Measured canvas size, captured after layout so the arrow renders at the
-  // correct pixel scale on first paint (the ref is null during the initial
-  // render, before the canvas has been laid out).
-  const [size, setSize] = useState({ w: 0, h: 0 });
-  useLayoutEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas) setSize({ w: canvas.clientWidth, h: canvas.clientHeight });
-  }, [canvasRef, annotation.x, annotation.y, annotation.w, annotation.h, annotation.type]);
-
-  const onBodyDown = (e: React.PointerEvent) => {
-    e.stopPropagation();
-    onSelect(annotation.id);
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    moveRef.current = { x: e.clientX, y: e.clientY, ax: annotation.x, ay: annotation.y };
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-  const onBodyMove = (e: React.PointerEvent) => {
-    const m = moveRef.current;
-    const canvas = canvasRef.current;
-    if (!m || !canvas) return;
-    const w = canvas.clientWidth || 1;
-    const h = canvas.clientHeight || 1;
-    const nx = Math.max(-1, Math.min(2, m.ax + (e.clientX - m.x) / w));
-    const ny = Math.max(-1, Math.min(2, m.ay + (e.clientY - m.y) / h));
-    onUpdate(annotation.id, { x: nx, y: ny });
-  };
-  const onBodyUp = (e: React.PointerEvent) => {
-    moveRef.current = null;
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
-  };
-
-  const onResizeDown = (e: React.PointerEvent) => {
-    e.stopPropagation();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    resizeRef.current = { x: e.clientX, y: e.clientY, aw: annotation.w, ah: annotation.h };
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-  const onResizeMove = (e: React.PointerEvent) => {
-    const r = resizeRef.current;
-    const canvas = canvasRef.current;
-    if (!r || !canvas) return;
-    const w = canvas.clientWidth || 1;
-    const h = canvas.clientHeight || 1;
-    const nw = Math.max(-2, Math.min(2, r.aw + (e.clientX - r.x) / w));
-    const nh = Math.max(-2, Math.min(2, r.ah + (e.clientY - r.y) / h));
-    onUpdate(annotation.id, { w: nw, h: nh });
-  };
-  const onResizeUp = (e: React.PointerEvent) => {
-    resizeRef.current = null;
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
-  };
-
-  const bx = Math.min(annotation.x, annotation.x + annotation.w);
-  const by = Math.min(annotation.y, annotation.y + annotation.h);
-  const bw = Math.abs(annotation.w) || 1e-4;
-  const bh = Math.abs(annotation.h) || 1e-4;
-
-  const boxStyle: CSSProperties = {
-    position: "absolute",
-    left: `${bx * 100}%`,
-    top: `${by * 100}%`,
-    width: `${bw * 100}%`,
-    height: annotation.type === "text" ? "auto" : `${bh * 100}%`,
-    cursor: "move",
-    touchAction: "none",
-    outline: selected ? "1px solid var(--accent)" : "1px dashed transparent",
-    outlineOffset: 2,
-    zIndex: 2
-  };
-
-  let content: ReactNode = null;
-  if (annotation.type === "text") {
-    content = (
-      <div
-        style={{
-          fontSize: annotation.fontSize,
-          color: annotation.color,
-          lineHeight: 1.2,
-          fontWeight: 600,
-          whiteSpace: "pre-wrap",
-          textShadow: "0 1px 3px rgba(0,0,0,0.5)"
-        }}
-      >
-        {annotation.text}
-      </div>
-    );
-  } else if (annotation.type === "rect") {
-    content = (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          border: `${annotation.strokeWidth}px solid ${annotation.color}`,
-          borderRadius: 4,
-          boxSizing: "border-box"
-        }}
-      />
-    );
-  } else {
-    const cw = size.w || 1;
-    const ch = size.h || 1;
-    const startX = (annotation.x - bx) * cw;
-    const startY = (annotation.y - by) * ch;
-    const endX = startX + annotation.w * cw;
-    const endY = startY + annotation.h * ch;
-    const angle = Math.atan2(endY - startY, endX - startX);
-    const head = 14;
-    const a1 = angle + Math.PI - 0.45;
-    const a2 = angle + Math.PI + 0.45;
-    content = (
-      <svg width={bw * cw} height={bh * ch} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-        <line x1={startX} y1={startY} x2={endX} y2={endY} stroke={annotation.color} strokeWidth={annotation.strokeWidth} strokeLinecap="round" />
-        <polygon points={`${endX},${endY} ${endX + head * Math.cos(a1)},${endY + head * Math.sin(a1)} ${endX + head * Math.cos(a2)},${endY + head * Math.sin(a2)}`} fill={annotation.color} />
-      </svg>
-    );
-  }
-
-  return (
-    <div style={boxStyle} onPointerDown={onBodyDown} onPointerMove={onBodyMove} onPointerUp={onBodyUp} onPointerCancel={onBodyUp}>
-      {content}
-      {selected ? (
-        <span
-          aria-label={t("editor.resizeAnnotation")}
-          onPointerDown={onResizeDown}
-          onPointerMove={onResizeMove}
-          onPointerUp={onResizeUp}
-          onPointerCancel={onResizeUp}
-          style={{
-            position: "absolute",
-            right: -6,
-            bottom: -6,
-            width: 12,
-            height: 12,
-            borderRadius: "50%",
-            background: "var(--accent)",
-            border: "2px solid #07070a",
-            cursor: "nwse-resize",
-            touchAction: "none"
-          }}
-        />
-      ) : null}
-    </div>
-  );
-}
 
 interface PreviewCanvasProps {
   scene: EditorScene;
@@ -528,168 +323,33 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           />
         ) : null}
         {scene.frameInstances.length > 0 ? (
-          // Multi-frame grid mode
-          <>
-            {scene.frameInstances.filter((inst) => {
-              const layer = scene.layers.find((l) => l.id === inst.layerId) ?? activeLayer;
-              return !layer?.hidden;
-            }).map((inst, i) => {
-              const layer = scene.layers.find((l) => l.id === inst.layerId) ?? activeLayer;
-              const spec = getFrameSpec(inst.frame);
-              const instCss = frameInstanceCssMap.get(inst.id)!;
-              const zoom = layer?.zoom ?? 1;
-              const offsetX = layer?.mediaOffsetX ?? 0;
-              const offsetY = layer?.mediaOffsetY ?? 0;
-              const zoomStyle = { transform: `scale(${zoom}) translate(${offsetX * 2}px, ${offsetY * 2}px)`, transformOrigin: "center" };
-              return (
-                <div
-                  key={inst.id}
-                  onClick={() => selectFrameInstance(inst.id)}
-                  style={{
-                    position: "absolute",
-                    left: `${inst.x * 100}%`,
-                    top: `${inst.y * 100}%`,
-                    width: `${inst.scale * 100}%`,
-                    height: "auto",
-                    transform: "translate(-50%, -50%)",
-                    aspectRatio: spec.aspectRatio ?? (inst.frame === "watch" ? "1" : "9 / 16"),
-                    cursor: "pointer",
-                    outline: activeFrameInstanceId === inst.id ? "2px solid var(--accent)" : undefined,
-                    outlineOffset: 4,
-                    borderRadius: 4
-                  }}
-                >
-                  {spec.isOverlay ? (
-                    // Overlay frame: match single-frame structure so
-                    // drop-shadow and frame CSS (border, backdrop-filter)
-                    // are applied correctly.
-                    <div
-                      style={{
-                        ...instCss.frame,
-                        width: "100%",
-                        height: "100%",
-                        position: "relative",
-                        ...zoomStyle
-                      }}
-                    >
-                      {instCss.frameOverlay ? (
-                        <img src={instCss.frameOverlay} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
-                      ) : null}
-                      {layer?.mediaUrl ? (
-                        isVideoLayer(layer) ? (
-                          <video src={layer.mediaUrl} muted playsInline style={instCss.mediaStyle} onLoadedData={(e) => analyzeMedia(e.currentTarget)} />
-                        ) : (
-                          <img src={layer.mediaUrl} alt="" style={instCss.mediaStyle} onLoad={(e) => analyzeMedia(e.currentTarget)} />
-                        )
-                      ) : null}
-                    </div>
-                  ) : (
-                    // CSS frame: media fills frame with optional radius
-                    <div
-                      style={{
-                        ...instCss.frame,
-                        width: "100%",
-                        height: "100%",
-                        position: "relative",
-                        ...zoomStyle
-                      }}
-                    >
-                      {layer?.mediaUrl ? (
-                        isVideoLayer(layer) ? (
-                          <video src={layer.mediaUrl} muted playsInline style={instCss.mediaStyle} onLoadedData={(e) => analyzeMedia(e.currentTarget)} />
-                        ) : (
-                          <img src={layer.mediaUrl} alt="" style={instCss.mediaStyle} onLoad={(e) => analyzeMedia(e.currentTarget)} />
-                        )
-                      ) : null}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </>
+          <FrameInstanceGrid
+            scene={scene}
+            activeLayer={activeLayer}
+            frameInstanceCssMap={frameInstanceCssMap}
+            activeFrameInstanceId={activeFrameInstanceId}
+            selectFrameInstance={selectFrameInstance}
+            analyzeMedia={analyzeMedia}
+          />
         ) : (
-          // Single-frame mode (original)
-          <div
-            ref={frameRef}
-            style={{ ...sceneCss.frame, zIndex: 1, cursor: canPan ? "grab" : undefined, touchAction: canPan ? "none" : undefined }}
-            data-mockup-frame
-            onPointerDown={onPanDown}
-            onPointerMove={onPanMove}
-            onPointerUp={onPanUp}
-            onPointerCancel={onPanUp}
-          >
-            {scene.layers
-              .filter((layer) => !layer.hidden)
-              .map((layer) =>
-              layer.mediaUrl ? (
-                isVideoLayer(layer) ? (
-                    <video
-                      key={layer.id}
-                      ref={videoRef}
-                      src={layer.mediaUrl}
-                      muted={layer.videoMuted}
-                      loop={layer.videoLoop}
-                      autoPlay={layer.videoAutoplay}
-                      playsInline
-                      controls
-                      onLoadedMetadata={(e) => {
-                        const duration = e.currentTarget.duration || 0;
-                        setVideoDuration(duration);
-                        const current = Math.min(layer.videoPosterTime, duration);
-                        e.currentTarget.currentTime = current;
-                        setVideoCurrentTime(current);
-                      }}
-                      onTimeUpdate={(e) => {
-                        const t = e.currentTarget.currentTime;
-                        if (Math.abs(t - videoCurrentTime) >= 0.1) setVideoCurrentTime(t);
-                      }}
-                      onLoadedData={(ev) => {
-                        setMediaLoading(false);
-                        analyzeMedia(ev.currentTarget);
-                      }}
-                      style={sceneCss.mediaStyle}
-                    />
-                  ) : (
-                    <img
-                      key={layer.id}
-                      src={layer.mediaUrl}
-                      alt={t("editor.uploadedMediaAlt")}
-                      style={sceneCss.mediaStyle}
-                      onLoad={(e) => {
-                        setMediaLoading(false);
-                        analyzeMedia(e.currentTarget);
-                      }}
-                    />
-                  )
-                ) : null
-              )}
-            {scene.layers.every((l) => !l.mediaUrl) ? (
-              <label style={sceneCss.emptyMediaStyle}>
-                <span>{t("editor.dropToStart")}</span>
-                <input type="file" accept="image/*,video/*" onChange={handleCanvasFile} key={canvasFileInputKey} style={{ display: "none" }} />
-              </label>
-            ) : null}
-            {sceneCss.frameOverlay && (
-              <img
-                src={sceneCss.frameOverlay}
-                alt=""
-                aria-hidden
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  width: "100%",
-                  height: "100%",
-                  pointerEvents: "none",
-                  ...sceneCss.overlayStyle
-                }}
-              />
-            )}
-            {isMediaLoading ? (
-              <div className="media-loading" role="status" aria-busy="true" aria-label={t("editor.loadingMedia")}>
-                <span className="spinner" />
-              </div>
-            ) : null}
-          </div>
+          <SingleFrameView
+            scene={scene}
+            sceneCss={sceneCss}
+            canPan={canPan}
+            frameRef={frameRef}
+            videoRef={videoRef}
+            onPanDown={onPanDown}
+            onPanMove={onPanMove}
+            onPanUp={onPanUp}
+            analyzeMedia={analyzeMedia}
+            handleCanvasFile={handleCanvasFile}
+            canvasFileInputKey={canvasFileInputKey}
+            isMediaLoading={isMediaLoading}
+            setVideoDuration={setVideoDuration}
+            setVideoCurrentTime={setVideoCurrentTime}
+            setMediaLoading={setMediaLoading}
+            videoCurrentTime={videoCurrentTime}
+          />
         )}
         {scene.annotations.map((a) => (
           <AnnotationItem

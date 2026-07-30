@@ -125,3 +125,14 @@ export interface Project {
   updatedAt: number;
 }
 
+/** A searchable command shown in the command palette. */
+export interface Command {
+  id: string;
+  label: string;
+  description?: string;
+  shortcut?: string;
+  keywords: string[];
+  action: () => void;
+  disabled?: boolean;
+}
+

@@ -6,6 +6,7 @@ import type { ErrorInfo, ReactNode } from "react";
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  message?: string;
 }
 
 interface State {
@@ -42,7 +43,7 @@ export class ErrorBoundary extends Component<Props, State> {
               textAlign: "center"
             }}
           >
-            <span>Something went wrong in the preview.</span>
+            <span>{this.props.message ?? "Something went wrong"}</span>
             <button
               className="btn"
               onClick={() => this.setState({ hasError: false, error: null })}

@@ -107,7 +107,9 @@
     "addBox": "+ Box",
     "resizeAnnotation": "Resize annotation",
     "loadingMedia": "Loading media",
-    "themeLabel": "Theme"
+    "themeLabel": "Theme",
+    "collapse": "Collapse",
+    "expand": "Expand"
   },
   "frame": {
     "none": "None",

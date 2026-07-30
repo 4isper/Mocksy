@@ -14,7 +14,7 @@ describe("ErrorBoundary", () => {
   it("renders default fallback on error", () => {
     const Bomb = () => { throw new Error("💥"); };
     render(<ErrorBoundary><Bomb /></ErrorBoundary>);
-    expect(screen.getByText("Something went wrong in the preview.")).toBeInTheDocument();
+    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
   });
 
   it("renders custom fallback when provided", () => {

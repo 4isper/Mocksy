@@ -7,7 +7,8 @@ import { ExportDialog } from "@/components/editor/ExportDialog";
 import { ShortcutsDialog } from "@/components/editor/ShortcutsDialog";
 import { PreviewCanvas } from "@/components/editor/PreviewCanvas";
 import { RightPanel } from "@/components/editor/RightPanel";
-import { CommandPalette, useCommands } from "@/components/editor/CommandPalette";
+import { CommandPalette } from "@/components/editor/CommandPalette";
+import { useCommands } from "@/lib/hooks/useCommands";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { exportImage, copyPngToClipboard } from "@/lib/export/exportImage";
@@ -46,7 +47,9 @@ export function EditorShell() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const hasOpenModalRef = useRef(false);
-  hasOpenModalRef.current = confirmResetOpen || exportOpen || shortcutsOpen || commandPaletteOpen;
+  useEffect(() => {
+    hasOpenModalRef.current = confirmResetOpen || exportOpen || shortcutsOpen || commandPaletteOpen;
+  }, [confirmResetOpen, exportOpen, shortcutsOpen, commandPaletteOpen]);
   const resetTrapRef = useFocusTrap(confirmResetOpen);
 
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -68,7 +71,7 @@ export function EditorShell() {
         setExportError(err instanceof Error ? err.message : "Could not create share link");
       }
     }
-  }, [scene]);
+  }, [scene, t]);
 
   const handleExportPng = useCallback(() => {
     setExportError(null);
@@ -333,9 +336,9 @@ export function EditorShell() {
         <span className="tag">{t("editor.tagline")}</span>
       </div>
       <div className="editor-grid">
-        <ControlPanel />
+        <ErrorBoundary message={t("errors.message")}><ControlPanel /></ErrorBoundary>
         <section style={{ display: "grid", gridTemplateRows: "1fr auto", gap: 12, minHeight: 0, overflow: "hidden" }}>
-          <ErrorBoundary><PreviewCanvas scene={scene} /></ErrorBoundary>
+          <ErrorBoundary message={t("errors.message")}><PreviewCanvas scene={scene} /></ErrorBoundary>
           <div className="panel toolbar">
             <div className="toolbar-group">
               <button type="button" className="btn-tb btn-tb-icon" onClick={undo} disabled={pastLength === 0} title={t("editor.undoTitle")}>
@@ -439,7 +442,7 @@ export function EditorShell() {
             </div>
           </div>
         </section>
-        <RightPanel />
+        <ErrorBoundary message={t("errors.message")}><RightPanel /></ErrorBoundary>
       </div>
       {confirmResetOpen ? (
         <div className="modal-backdrop" role="presentation" onClick={cancelReset}>

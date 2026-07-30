@@ -107,7 +107,9 @@
     "addBox": "+ Рамка",
     "resizeAnnotation": "Изменить размер аннотации",
     "loadingMedia": "Загрузка медиа",
-    "themeLabel": "Тема"
+    "themeLabel": "Тема",
+    "collapse": "Свернуть",
+    "expand": "Развернуть"
   },
   "frame": {
     "none": "Без рамки",

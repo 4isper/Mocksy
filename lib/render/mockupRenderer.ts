@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { getFrameSpec, SVG_VIEWBOX_HEIGHT, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
 
-interface SceneCss {
+export interface SceneCss {
   container: CSSProperties;
   frame: CSSProperties;
   /** When set, the frame is an SVG overlay drawn above the media. */

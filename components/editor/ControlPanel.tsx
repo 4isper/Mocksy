@@ -4,49 +4,20 @@ import type { ChangeEvent } from "react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
-import type { AnimationPreset, EditorScene, MockupFrame, StylePreset } from "@/lib/types/editor";
+import type { AnimationPreset, MockupFrame, StylePreset } from "@/lib/types/editor";
 import { FRAME_ORDER, ANIMATION_PRESETS, ASPECT_RATIOS } from "@/lib/render/frames";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { isVideoLayer } from "@/lib/render/mediaKind";
-import { backgroundPresets } from "@/lib/presets/presets";
-import { pickGradientPair } from "@/lib/media/palette";
 import { VideoOptions } from "@/components/editor/VideoOptions";
+import { Segmented } from "@/components/editor/Segmented";
+import { FrameInstanceList } from "@/components/editor/FrameInstanceList";
+import { BackgroundControls } from "@/components/editor/BackgroundControls";
+import { WatermarkControls } from "@/components/editor/WatermarkControls";
 
 const frames: MockupFrame[] = FRAME_ORDER;
 const styles: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
 const animations = ANIMATION_PRESETS;
 const aspectRatios = ASPECT_RATIOS;
-
-function Segmented<T extends string>({
-  label,
-  value,
-  options,
-  onChange
-}: {
-  label: string;
-  value: T;
-  options: { value: T; label: string }[];
-  onChange: (v: T) => void;
-}) {
-  return (
-    <label className="field">
-      <span>{label}</span>
-      <div className="segmented" role="group" aria-label={label}>
-        {options.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            aria-pressed={value === opt.value}
-            className={value === opt.value ? "is-active" : undefined}
-            onClick={() => onChange(opt.value)}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-    </label>
-  );
-}
 
 export function ControlPanel() {
   const t = useTranslations();
@@ -125,20 +96,6 @@ export function ControlPanel() {
 
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
 
-  const handleBgFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    try {
-      const { url } = await loadMediaFromFile(file);
-      setBackgroundImage(url);
-    } catch {
-      // Background images are images only; ignore unsupported files silently
-      // rather than surfacing the media-error banner here.
-    } finally {
-      event.target.value = "";
-    }
-  };
-
   return (
     <div className="panel control-panel" style={{ padding: 16, display: "grid", gap: 16 }}>
       <h2 className="panel-title">{t("editor.controls")}</h2>
@@ -206,118 +163,15 @@ export function ControlPanel() {
             ))}
           </div>
         </div>
-        {scene.frameInstances.length > 0 && (
-          <div className="field" style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.frames")}</span>
-            {scene.frameInstances.map((inst, i) => {
-              const open = expandedFrameId === inst.id;
-              const frameLayer = scene.layers.find((l) => l.id === inst.layerId);
-              return (
-                <div key={inst.id} className="frame-card">
-                  <div className="frame-card-head">
-                    <button
-                      type="button"
-                      className="btn-icon"
-                      onClick={() => { setExpandedFrameId(open ? null : inst.id); selectFrameInstance(open ? null : inst.id); }}
-                      aria-label={open ? "Collapse" : "Expand"}
-                      style={{ fontSize: 10 }}
-                    >
-                      {open ? "▾" : "▸"}
-                    </button>
-                    <div className="frame-thumb">
-                      {frameLayer?.mediaUrl ? (
-                        <img src={frameLayer.mediaUrl} alt="" />
-                      ) : (
-                        <span>—</span>
-                      )}
-                    </div>
-                    <span className="frame-idx">{i + 1}</span>
-                    <button
-                      type="button"
-                      className="btn-icon"
-                      disabled={i === 0}
-                      onClick={() => {
-                        const next = [...scene.frameInstances];
-                        [next[i - 1], next[i]] = [next[i]!, next[i - 1]!];
-                        setFrameInstances(next);
-                      }}
-                      aria-label="Move up"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 10V2M6 2L2 6M6 2L10 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-icon"
-                      disabled={i === scene.frameInstances.length - 1}
-                      onClick={() => {
-                        const next = [...scene.frameInstances];
-                        [next[i], next[i + 1]] = [next[i + 1]!, next[i]!];
-                        setFrameInstances(next);
-                      }}
-                      aria-label="Move down"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M6 10l4-4M6 10l-4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    </button>
-                    <select
-                      className="frame-device"
-                      value={inst.frame}
-                      onChange={(e) => updateFrameInstance(inst.id, { frame: e.target.value as MockupFrame })}
-                      aria-label={t("editor.frame")}
-                    >
-                      {frames.map((f) => (
-                        <option key={f} value={f}>{frameLabels[f]}</option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      className="btn-icon"
-                      onClick={() => removeFrameInstance(inst.id)}
-                      title={t("editor.removeFrame")}
-                      aria-label={t("editor.removeFrame")}
-                      style={{ color: "var(--text-faint)" }}
-                    >
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
-                    </button>
-                  </div>
-                  {open && (
-                    <div className="frame-card-body">
-                      <label className="range-wrap">
-                        <span className="range-label">{t("editor.frameX")}</span>
-                        <input type="range" min={0} max={1} step={0.01} value={inst.x} aria-label={t("editor.frameX")} aria-valuetext={`${Math.round(inst.x * 100)}%`} onChange={(e) => updateFrameInstance(inst.id, { x: Number(e.target.value) })} />
-                        <span className="range-val">{Math.round(inst.x * 100)}%</span>
-                      </label>
-                      <label className="range-wrap">
-                        <span className="range-label">{t("editor.frameY")}</span>
-                        <input type="range" min={0} max={1} step={0.01} value={inst.y} aria-label={t("editor.frameY")} aria-valuetext={`${Math.round(inst.y * 100)}%`} onChange={(e) => updateFrameInstance(inst.id, { y: Number(e.target.value) })} />
-                        <span className="range-val">{Math.round(inst.y * 100)}%</span>
-                      </label>
-                      <label className="range-wrap">
-                        <span className="range-label">{t("editor.frameScale")}</span>
-                        <input type="range" min={0.1} max={3} step={0.01} value={inst.scale} aria-label={t("editor.frameScale")} aria-valuetext={`${Math.round(inst.scale * 100)}%`} onChange={(e) => updateFrameInstance(inst.id, { scale: Number(e.target.value) })} />
-                        <span className="range-val">{Math.round(inst.scale * 100)}%</span>
-                      </label>
-                      <label className="range-wrap" style={{ display: "grid", gap: 3 }}>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-dim)" }}>{t("editor.frameLayer")}</span>
-                        <select
-                          value={inst.layerId ?? ""}
-                          onChange={(e) => updateFrameInstance(inst.id, { layerId: e.target.value || null })}
-                          style={{ flex: 1, fontSize: 12, padding: "4px 6px" }}
-                        >
-                          <option value="">—</option>
-                          {scene.layers.map((l, li) => (
-                            <option key={l.id} value={l.id}>
-                              {l.mediaName || t("editor.empty")} #{li + 1}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <FrameInstanceList
+          scene={scene}
+          expandedFrameId={expandedFrameId}
+          setExpandedFrameId={setExpandedFrameId}
+          selectFrameInstance={selectFrameInstance}
+          setFrameInstances={setFrameInstances}
+          updateFrameInstance={updateFrameInstance}
+          removeFrameInstance={removeFrameInstance}
+        />
         <Segmented
           label={t("editor.aspectRatio")}
           value={scene.aspectRatio}
@@ -389,122 +243,32 @@ export function ControlPanel() {
 
       <div className="divider" />
 
-      <div className="field-group">
-        <span style={{ color: "var(--text-dim)", fontSize: 12, fontWeight: 500 }}>{t("editor.background")}</span>
-        <button
-          type="button"
-          className="auto-bg-btn"
-          disabled={!scenePalette || scenePalette.length < 1}
-          title={
-            scenePalette && scenePalette.length >= 1
-              ? t("editor.autoBgTooltip")
-              : t("editor.autoBgDisabled")
-          }
-          onClick={() => {
-            if (!scenePalette || scenePalette.length < 1) return;
-            const [from, to] = pickGradientPair(scenePalette);
-            const angles = [0, 45, 90, 135, 180];
-            const angle = angles[Math.floor(Math.random() * angles.length)]!;
-            setBackgroundGradient(from, to, angle);
-          }}
-        >
-          {t("editor.autoBackground")}
-        </button>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {backgroundPresets.map((preset) => {
-            const active =
-              (preset.kind === "transparent" && scene.backgroundMode === "transparent") ||
-              (preset.kind === "solid" && scene.backgroundMode === "solid" && scene.backgroundColor === preset.backgroundColor) ||
-              (preset.kind === "gradient" &&
-                scene.backgroundMode === "gradient" &&
-                scene.gradientFrom === preset.gradientFrom &&
-                scene.gradientTo === preset.gradientTo);
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                title={preset.name}
-                aria-pressed={active}
-                onClick={() => {
-                  if (preset.kind === "transparent") setBackgroundTransparent();
-                  else if (preset.kind === "solid" && preset.backgroundColor) setBackgroundSolid(preset.backgroundColor);
-                  else if (preset.kind === "gradient" && preset.gradientFrom && preset.gradientTo)
-                    setBackgroundGradient(preset.gradientFrom, preset.gradientTo);
-                }}
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 8,
-                  cursor: "pointer",
-                  border: active ? "2px solid var(--accent)" : "1px solid var(--panel-border)",
-                  background:
-                    preset.swatch === "transparent"
-                      ? "repeating-conic-gradient(#3f3f46 0% 25%, #18181b 0% 50%) 50% / 12px 12px"
-                      : preset.kind === "gradient"
-                        ? `linear-gradient(135deg, ${preset.gradientFrom}, ${preset.gradientTo})`
-                        : preset.swatch
-                }}
-              />
-            );
-          })}
-        </div>
-        <label className="file-trigger">
-          {t("editor.uploadBgImage")}
-          <input type="file" accept="image/*" onChange={handleBgFile} />
-        </label>
-        {scene.backgroundMode === "image" ? (
-          <>
-            <label className="field">
-              <span>{t("editor.bgBlurLabel", { val: scene.backgroundBlur })}</span>
-              <div className="range-wrap">
-                <input type="range" min={0} max={40} step={1} value={scene.backgroundBlur} aria-label={t("editor.bgBlurLabel", { val: scene.backgroundBlur })} aria-valuetext={`${scene.backgroundBlur}px`} onChange={(e) => setBackgroundBlur(Number(e.target.value))} />
-                <span className="range-val">{scene.backgroundBlur}px</span>
-              </div>
-            </label>
-            <button type="button" className="btn btn-sm" onClick={() => setBackgroundTransparent()}>
-              {t("editor.removeBgImage")}
-            </button>
-          </>
-        ) : null}
-      </div>
+      <BackgroundControls
+        scenePalette={scenePalette}
+        backgroundMode={scene.backgroundMode}
+        backgroundColor={scene.backgroundColor}
+        gradientFrom={scene.gradientFrom}
+        gradientTo={scene.gradientTo}
+        backgroundBlur={scene.backgroundBlur}
+        setBackgroundSolid={setBackgroundSolid}
+        setBackgroundGradient={setBackgroundGradient}
+        setBackgroundTransparent={setBackgroundTransparent}
+        setBackgroundImage={setBackgroundImage}
+        setBackgroundBlur={setBackgroundBlur}
+      />
 
       <div className="divider" />
 
-      <div className="field-group">
-        <label className="toggle">
-          <input
-            type="checkbox"
-            checked={scene.watermarkEnabled}
-            onChange={(e) => toggleWatermark(e.target.checked)}
-          />
-          <span className="track" aria-hidden="true" />
-          <span>{t("editor.watermark")}</span>
-        </label>
-        <label className="field">
-          <span>{t("editor.watermarkText")}</span>
-          <input value={scene.watermarkText} onChange={(e) => setWatermarkText(e.target.value)} />
-        </label>
-        <label className="field">
-          <span>{t("editor.watermarkPosition")}</span>
-          <select
-            className="select"
-            value={scene.watermarkPosition}
-            onChange={(e) => setWatermarkPosition(e.target.value as EditorScene["watermarkPosition"])}
-          >
-            <option value="bottom-right">{t("editor.posBottomRight")}</option>
-            <option value="bottom-left">{t("editor.posBottomLeft")}</option>
-            <option value="top-right">{t("editor.posTopRight")}</option>
-            <option value="top-left">{t("editor.posTopLeft")}</option>
-          </select>
-        </label>
-        <label className="field">
-          <span>{t("editor.watermarkSize", { val: scene.watermarkSize })}</span>
-          <div className="range-wrap">
-            <input type="range" min={8} max={64} step={1} value={scene.watermarkSize} aria-label={t("editor.watermarkSize", { val: scene.watermarkSize })} aria-valuetext={`${scene.watermarkSize}px`} onChange={(e) => setWatermarkSize(Number(e.target.value))} />
-            <span className="range-val">{scene.watermarkSize}px</span>
-          </div>
-        </label>
-      </div>
+      <WatermarkControls
+        watermarkEnabled={scene.watermarkEnabled}
+        watermarkText={scene.watermarkText}
+        watermarkPosition={scene.watermarkPosition}
+        watermarkSize={scene.watermarkSize}
+        toggleWatermark={toggleWatermark}
+        setWatermarkText={setWatermarkText}
+        setWatermarkPosition={setWatermarkPosition}
+        setWatermarkSize={setWatermarkSize}
+      />
     </div>
   );
 }
