@@ -44,6 +44,24 @@ export const FRAME_SPECS: Record<MockupFrame, FrameSpec> = {
     // viewBox 390x844; screen rect x14 y14 w362 h816 rx48
     cutout: { x: 14, y: 14, w: 362, h: 816, rx: 48 }
   },
+  pixel8pro: {
+    asset: "/devices/pixel8pro.svg",
+    padding: 14,
+    screenRadius: 44,
+    isOverlay: true,
+    aspectRatio: "390 / 844",
+    // viewBox 390x844; screen rect x14 y14 w362 h816 rx44
+    cutout: { x: 14, y: 14, w: 362, h: 816, rx: 44 }
+  },
+  galaxy24: {
+    asset: "/devices/galaxy24.svg",
+    padding: 12,
+    screenRadius: 32,
+    isOverlay: true,
+    aspectRatio: "390 / 844",
+    // viewBox 390x844; screen rect x12 y12 w366 h820 rx32
+    cutout: { x: 12, y: 12, w: 366, h: 820, rx: 32 }
+  },
   desktop: { asset: null, padding: 10, screenRadius: 8, isOverlay: false, aspectRatio: "16 / 10", cutout: null },
   tablet: { asset: null, padding: 14, screenRadius: 24, isOverlay: false, aspectRatio: "4 / 3", cutout: null },
   watch: { asset: null, padding: 18, screenRadius: 999, isOverlay: false, aspectRatio: "1 / 1", cutout: null }
@@ -58,6 +76,8 @@ export const FRAME_ORDER: MockupFrame[] = [
   "iphone",
   "iphone15",
   "iphone16pro",
+  "pixel8pro",
+  "galaxy24",
   "desktop",
   "tablet",
   "watch"

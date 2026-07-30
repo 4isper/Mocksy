@@ -32,6 +32,8 @@ export function FrameInstanceList({
     iphone: t("frame.iphone"),
     iphone15: t("frame.iphone15"),
     iphone16pro: t("frame.iphone16pro"),
+    pixel8pro: t("frame.pixel8pro"),
+    galaxy24: t("frame.galaxy24"),
     desktop: t("frame.desktop"),
     tablet: t("frame.tablet"),
     watch: t("frame.watch")

@@ -2,11 +2,15 @@ import { describe, expect, it } from "vitest";
 import { ANIMATION_PRESETS, ASPECT_RATIOS, FRAME_ORDER, FRAME_SPECS, getFrameSpec } from "@/lib/render/frames";
 
 describe("FRAME_SPECS", () => {
-  it("registers overlay assets for iphone15 / iphone16pro", () => {
+  it("registers overlay assets for iphone15 / iphone16pro / pixel8pro / galaxy24", () => {
     expect(FRAME_SPECS.iphone15.isOverlay).toBe(true);
     expect(FRAME_SPECS.iphone15.asset).toMatch(/iphone15\.svg$/);
     expect(FRAME_SPECS.iphone16pro.isOverlay).toBe(true);
     expect(FRAME_SPECS.iphone16pro.asset).toMatch(/iphone16pro\.svg$/);
+    expect(FRAME_SPECS.pixel8pro.isOverlay).toBe(true);
+    expect(FRAME_SPECS.pixel8pro.asset).toMatch(/pixel8pro\.svg$/);
+    expect(FRAME_SPECS.galaxy24.isOverlay).toBe(true);
+    expect(FRAME_SPECS.galaxy24.asset).toMatch(/galaxy24\.svg$/);
   });
 
   it("keeps CSS-only frames non-overlay", () => {
@@ -19,6 +23,8 @@ describe("FRAME_SPECS", () => {
   it("gives each device frame its own native aspect ratio", () => {
     expect(FRAME_SPECS.iphone15.aspectRatio).toBe("390 / 844");
     expect(FRAME_SPECS.iphone16pro.aspectRatio).toBe("390 / 844");
+    expect(FRAME_SPECS.pixel8pro.aspectRatio).toBe("390 / 844");
+    expect(FRAME_SPECS.galaxy24.aspectRatio).toBe("390 / 844");
     expect(FRAME_SPECS.iphone.aspectRatio).toBe("390 / 844");
     expect(FRAME_SPECS.desktop.aspectRatio).toBe("16 / 10");
     expect(FRAME_SPECS.tablet.aspectRatio).toBe("4 / 3");
@@ -33,6 +39,8 @@ describe("FRAME_SPECS", () => {
       "iphone",
       "iphone15",
       "iphone16pro",
+      "pixel8pro",
+      "galaxy24",
       "desktop",
       "tablet",
       "watch"

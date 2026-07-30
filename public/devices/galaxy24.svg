@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844" fill="none">
+  <defs>
+    <linearGradient id="bezelGalaxy" x1="0" y1="0" x2="390" y2="844" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6b6b70"/>
+      <stop offset="0.5" stop-color="#2a2a2d"/>
+      <stop offset="1" stop-color="#4a4a4f"/>
+    </linearGradient>
+    <mask id="screenGalaxy">
+      <rect x="0" y="0" width="390" height="844" fill="white"/>
+      <rect x="12" y="12" width="366" height="820" rx="32" ry="32" fill="black"/>
+    </mask>
+  </defs>
+  <!-- Outer body (squared corners distinctive to Galaxy) -->
+  <rect x="4" y="4" width="382" height="836" rx="36" ry="36" fill="url(#bezelGalaxy)" stroke="#0a0a0a" stroke-width="2" mask="url(#screenGalaxy)"/>
+  <!-- Screen edge highlight -->
+  <rect x="12" y="12" width="366" height="820" rx="32" ry="32" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
+  <!-- Centered punch-hole camera -->
+  <circle cx="195" cy="30" r="6" fill="#0a0a0a"/>
+  <circle cx="195" cy="30" r="3.5" fill="#1c1c1e"/>
+  <!-- Power / Bixby button (right) -->
+  <rect x="386" y="192" width="4" height="50" rx="2" fill="#4a4a4f"/>
+  <rect x="386" y="260" width="4" height="28" rx="2" fill="#4a4a4f"/>
+  <!-- Volume buttons (left) -->
+  <rect x="0" y="180" width="4" height="26" rx="2" fill="#4a4a4f"/>
+  <rect x="0" y="218" width="4" height="26" rx="2" fill="#4a4a4f"/>
+</svg>
