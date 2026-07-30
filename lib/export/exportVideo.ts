@@ -167,7 +167,6 @@ async function recordCanvasToWebm(
       if (bgTracks.length > 0) {
         const videoTrack = stream.getVideoTracks()[0];
         if (videoTrack) {
-          stream.getTracks().forEach((t) => t.stop());
           stream = new MediaStream([videoTrack, ...bgTracks]);
         }
       }
@@ -181,7 +180,6 @@ async function recordCanvasToWebm(
       if (audioTracks.length > 0) {
         const videoTrack = stream.getVideoTracks()[0];
         if (videoTrack) {
-          stream.getTracks().forEach((t) => t.stop());
           stream = new MediaStream([videoTrack, ...audioTracks]);
         }
       }
@@ -294,7 +292,15 @@ async function captureWebm(
     sourceVideo.muted = activeLayer?.videoMuted !== false;
     sourceVideo.playsInline = true;
     await new Promise<void>((resolve, reject) => {
-      sourceVideo!.onloadedmetadata = () => resolve();
+      sourceVideo!.onloadedmetadata = () => {
+        const start = Math.max(0, activeLayer?.videoTrimStart || 0);
+        if (start > 0) {
+          sourceVideo!.currentTime = start;
+          sourceVideo!.onseeked = () => resolve();
+        } else {
+          resolve();
+        }
+      };
       sourceVideo!.onerror = () => reject(new Error("Unable to load video for export"));
     });
     media = sourceVideo;

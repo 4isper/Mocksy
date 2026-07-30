@@ -68,6 +68,7 @@ export function SingleFrameView({
                 autoPlay={layer.videoAutoplay}
                 playsInline
                 controls
+                crossOrigin="anonymous"
                 onLoadedMetadata={(e) => {
                   const duration = e.currentTarget.duration || 0;
                   setVideoDuration(duration);
