@@ -88,6 +88,10 @@ export interface EditorScene {
   backgroundImageUrl: string | null;
   /** Blur radius (px) applied to the background image. Range [0, 40]. */
   backgroundBlur: number;
+  /** data: URL of an uploaded background audio track, or null when none. */
+  backgroundAudioUrl: string | null;
+  /** Original filename of the background audio, for display. */
+  backgroundAudioName: string | null;
   watermarkText: string;
   watermarkEnabled: boolean;
   watermarkPosition: WatermarkPosition;

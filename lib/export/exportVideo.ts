@@ -152,9 +152,29 @@ async function recordCanvasToWebm(
     throw err;
   }
 
-  // If the active video layer has audio enabled, capture its audio track and
-  // combine it with the canvas video track so the exported MP4 carries sound.
-  if (media instanceof HTMLVideoElement && activeForCapture.videoMuted === false) {
+  // Background audio: if the user uploaded an audio track, capture it and
+  // use it instead of any video-layer audio (replaces, not mixes).
+  let bgAudioEl: HTMLAudioElement | null = null;
+  if (scene.backgroundAudioUrl) {
+    try {
+      bgAudioEl = document.createElement("audio");
+      bgAudioEl.src = scene.backgroundAudioUrl;
+      bgAudioEl.loop = true;
+      bgAudioEl.crossOrigin = "anonymous";
+      await bgAudioEl.play();
+      const bgStream = (bgAudioEl as HTMLAudioElement & { captureStream: () => MediaStream }).captureStream();
+      const bgTracks = bgStream.getAudioTracks();
+      if (bgTracks.length > 0) {
+        const videoTrack = stream.getVideoTracks()[0];
+        if (videoTrack) {
+          stream.getTracks().forEach((t) => t.stop());
+          stream = new MediaStream([videoTrack, ...bgTracks]);
+        }
+      }
+    } catch {
+      // background audio not supported — export video-only
+    }
+  } else if (media instanceof HTMLVideoElement && activeForCapture.videoMuted === false) {
     try {
       const audioMs = (media as HTMLVideoElement & { captureStream: () => MediaStream }).captureStream();
       const audioTracks = audioMs.getAudioTracks();
@@ -230,6 +250,10 @@ async function recordCanvasToWebm(
   // Free the capture stream's tracks so the canvas track doesn't leak between
   // exports.
   stream.getTracks().forEach((track) => track.stop());
+  if (bgAudioEl) {
+    bgAudioEl.pause();
+    bgAudioEl.remove();
+  }
   return new Blob(chunks, { type: "video/webm" });
 }
 

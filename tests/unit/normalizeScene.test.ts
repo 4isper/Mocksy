@@ -155,6 +155,21 @@ describe("normalizeScene", () => {
     expect(s.backgroundImageUrl).toBe("data:image/png;base64,abc");
   });
 
+  it("normalizes background audio fields", () => {
+    const s = normalizeScene({
+      backgroundAudioUrl: "data:audio/mp3;base64,xyz",
+      backgroundAudioName: "song.mp3"
+    });
+    expect(s.backgroundAudioUrl).toBe("data:audio/mp3;base64,xyz");
+    expect(s.backgroundAudioName).toBe("song.mp3");
+  });
+
+  it("falls back to null for invalid background audio fields", () => {
+    const s = normalizeScene({ backgroundAudioUrl: 42, backgroundAudioName: true });
+    expect(s.backgroundAudioUrl).toBeNull();
+    expect(s.backgroundAudioName).toBeNull();
+  });
+
   it("fills a fallback layer when layers array is empty", () => {
     const s = normalizeScene({ layers: [], activeLayerId: null });
     expect(s.layers).toHaveLength(1);

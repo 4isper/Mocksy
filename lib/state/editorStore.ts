@@ -112,6 +112,8 @@ export interface EditorStoreState {
   setVideoTrimStart: (time: number) => void;
   setVideoTrimEnd: (time: number) => void;
   setVideoQuality: (quality: VideoQuality) => void;
+  setBackgroundAudio: (url: string, name: string) => void;
+  clearBackgroundAudio: () => void;
 }
 
 export const initialScene: EditorScene = {
@@ -129,6 +131,8 @@ export const initialScene: EditorScene = {
   gradientAngle: 120,
   backgroundImageUrl: null,
   backgroundBlur: 0,
+  backgroundAudioUrl: null,
+  backgroundAudioName: null,
   annotations: [],
   watermarkText: "Mocksy",
   watermarkEnabled: false,
@@ -174,6 +178,8 @@ export function makeDemoScene(): EditorScene {
     aspectRatio: initialScene.aspectRatio,
     backgroundImageUrl: initialScene.backgroundImageUrl,
     backgroundBlur: initialScene.backgroundBlur,
+    backgroundAudioUrl: null,
+    backgroundAudioName: null,
     annotations: []
   };
 }
@@ -460,5 +466,9 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
         })
       }, "trimEnd")
     ),
-  setVideoQuality: (videoQuality) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoQuality }) }))
+  setVideoQuality: (videoQuality) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoQuality }) })),
+  setBackgroundAudio: (backgroundAudioUrl, backgroundAudioName) =>
+    set((s) => pushHistory(s, { ...s.scene, backgroundAudioUrl, backgroundAudioName })),
+  clearBackgroundAudio: () =>
+    set((s) => pushHistory(s, { ...s.scene, backgroundAudioUrl: null, backgroundAudioName: null }))
 }));

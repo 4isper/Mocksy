@@ -267,6 +267,34 @@ describe("background image + blur", () => {
   });
 });
 
+describe("background audio", () => {
+  function reset() {
+    useEditorStore.setState({
+      past: [],
+      future: [],
+      scene: { ...initialScene },
+      selectedAnnotationId: null,
+      lastHistoryKey: null,
+      lastHistoryAt: 0
+    });
+  }
+
+  it("setBackgroundAudio stores the url and name", () => {
+    reset();
+    store().setBackgroundAudio("data:audio/mp3;base64,abc", "track.mp3");
+    expect(store().scene.backgroundAudioUrl).toBe("data:audio/mp3;base64,abc");
+    expect(store().scene.backgroundAudioName).toBe("track.mp3");
+  });
+
+  it("clearBackgroundAudio removes the url and name", () => {
+    reset();
+    store().setBackgroundAudio("data:audio/mp3;base64,abc", "track.mp3");
+    store().clearBackgroundAudio();
+    expect(store().scene.backgroundAudioUrl).toBeNull();
+    expect(store().scene.backgroundAudioName).toBeNull();
+  });
+});
+
 describe("annotations", () => {
   function reset() {
     useEditorStore.setState({

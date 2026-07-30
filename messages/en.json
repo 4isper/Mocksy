@@ -165,7 +165,10 @@
     "exportQuality": "Export quality",
     "qualityLow": "Low (smaller file)",
     "qualityMedium": "Medium",
-    "qualityHigh": "High (best detail)"
+    "qualityHigh": "High (best detail)",
+    "backgroundAudio": "Background audio",
+    "uploadAudio": "Upload audio",
+    "removeAudio": "Remove audio"
   },
   "videoTrim": {
     "trim": "Trim",

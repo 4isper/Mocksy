@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { detectMediaType, isSupportedMedia, loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
+import { detectMediaType, isAudioFile, isSupportedMedia, loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 
 const file = (name: string, type: string): File =>
   new File([new Uint8Array([1, 2, 3])], name, { type });
@@ -91,5 +91,28 @@ it("blobToDataUrl falls back to application/octet-stream when blob type is empty
   const fileWithEmptyType = new File(["abc"], "test.png", { type: "" });
   const result = await loadMediaFromFile(fileWithEmptyType);
   expect(result.url).toMatch(/^data:application\/octet-stream;base64,/);
+});
+
+it("detects audio files by mime type", () => {
+  expect(isAudioFile(file("track.mp3", "audio/mp3"))).toBe(true);
+  expect(isAudioFile(file("track.wav", "audio/wav"))).toBe(true);
+  expect(isAudioFile(file("track.ogg", "audio/ogg"))).toBe(true);
+  expect(isAudioFile(file("track.flac", "audio/flac"))).toBe(true);
+  expect(isAudioFile(file("track.m4a", "audio/mp4"))).toBe(true);
+});
+
+it("detects audio files by extension when mime is empty", () => {
+  expect(isAudioFile(file("track.mp3", ""))).toBe(true);
+  expect(isAudioFile(file("track.wav", ""))).toBe(true);
+  expect(isAudioFile(file("track.ogg", ""))).toBe(true);
+  expect(isAudioFile(file("track.aac", ""))).toBe(true);
+  expect(isAudioFile(file("track.flac", ""))).toBe(true);
+  expect(isAudioFile(file("track.m4a", ""))).toBe(true);
+});
+
+it("rejects non-audio files", () => {
+  expect(isAudioFile(file("shot.png", "image/png"))).toBe(false);
+  expect(isAudioFile(file("clip.mp4", "video/mp4"))).toBe(false);
+  expect(isAudioFile(file("notes.txt", "text/plain"))).toBe(false);
 });
 });

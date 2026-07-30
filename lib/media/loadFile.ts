@@ -1,6 +1,7 @@
 import type { MediaType } from "@/lib/types/editor";
 
 const VIDEO_EXT = /\.(mp4|mov|m4v|webm|ogg|ogv|avi|mkv)$/i;
+const AUDIO_EXT = /\.(mp3|wav|ogg|aac|flac|m4a|wma)$/i;
 const SUPPORTED_IMAGE_EXT = /\.(png|jpe?g|gif|webp|avif|svg|bmp|ico)$/i;
 
 export function detectMediaType(file: File): MediaType {
@@ -8,6 +9,11 @@ export function detectMediaType(file: File): MediaType {
   if (file.type.includes("mp4") || file.type.includes("quicktime") || file.type.includes("webm")) return "video";
   if (VIDEO_EXT.test(file.name)) return "video";
   return "image";
+}
+
+export function isAudioFile(file: File): boolean {
+  if (file.type.startsWith("audio/")) return true;
+  return AUDIO_EXT.test(file.name);
 }
 
 export interface LoadedMedia {
@@ -35,7 +41,7 @@ export function isSupportedMedia(file: File): boolean {
  *  a self-contained, same-origin-clean string: it survives a localStorage
  *  round-trip and embeds directly into a share URL, unlike a one-shot
  *  `blob:` URL which dies on reload and can't travel to another device. */
-async function blobToDataUrl(blob: Blob): Promise<string> {
+export async function blobToDataUrl(blob: Blob): Promise<string> {
   const buf = await blob.arrayBuffer();
   const base64 = arrayBufferToBase64(buf);
   const mime = blob.type || "application/octet-stream";

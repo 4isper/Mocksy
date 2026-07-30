@@ -155,6 +155,7 @@ describe("exportVideo orchestration", () => {
         if (tag === "canvas") return canvas;
         if (tag === "a") return { click: vi.fn(), set href(_v: string) {}, get href() { return ""; } };
         if (tag === "video") return { src: "", crossOrigin: "", muted: false, playsInline: false, onloadedmetadata: null, onerror: null, play: vi.fn(), pause: vi.fn(), remove: vi.fn(), captureStream: vi.fn().mockReturnValue({ getAudioTracks: () => [], getVideoTracks: () => [] }) };
+        if (tag === "audio") return { src: "", crossOrigin: "", loop: false, play: vi.fn().mockResolvedValue(undefined), pause: vi.fn(), remove: vi.fn(), captureStream: vi.fn().mockReturnValue({ getAudioTracks: () => [] }) };
         return {};
       }),
       body: { appendChild: vi.fn(), removeChild: vi.fn() }

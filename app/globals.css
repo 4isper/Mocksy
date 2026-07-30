@@ -565,6 +565,29 @@ select {
   border-top: 1px solid var(--panel-border);
 }
 
+.video-options .audio-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.video-options .audio-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.video-options .upload-audio-btn {
+  cursor: pointer;
+}
+
+.video-options .upload-audio-btn .hidden {
+  display: none;
+}
+
 /* ---- Export progress (video) ---- */
 .export-status {
   display: flex;

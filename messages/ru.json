@@ -165,7 +165,10 @@
     "exportQuality": "Качество экспорта",
     "qualityLow": "Низкое",
     "qualityMedium": "Среднее",
-    "qualityHigh": "Высокое"
+    "qualityHigh": "Высокое",
+    "backgroundAudio": "Фоновая аудиодорожка",
+    "uploadAudio": "Загрузить аудио",
+    "removeAudio": "Удалить аудио"
   },
   "videoTrim": {
     "trim": "Обрезка",

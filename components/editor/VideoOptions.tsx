@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { VideoTrimControl } from "@/components/editor/VideoTrimControl";
+import { isAudioFile, blobToDataUrl } from "@/lib/media/loadFile";
 
 export function VideoOptions() {
   const t = useTranslations();
@@ -16,11 +17,20 @@ export function VideoOptions() {
     setVideoAutoplay,
     setVideoPosterTime,
     setVideoCurrentTime,
-    setVideoQuality
+    setVideoQuality,
+    setBackgroundAudio,
+    clearBackgroundAudio
   } = useEditorStore();
   const videoCurrentTime = useEditorStore((s) => s.videoCurrentTime);
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   if (!activeLayer || activeLayer.mediaType !== "video") return null;
+
+  async function handleAudioUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !isAudioFile(file)) return;
+    const url = await blobToDataUrl(file);
+    setBackgroundAudio(url, file.name);
+  }
 
   return (
     <div className="field-group video-options">
@@ -93,6 +103,27 @@ export function VideoOptions() {
               <option value="high">{t("video.qualityHigh")}</option>
             </select>
           </label>
+          <div className="field-group">
+            <span className="field-label">{t("video.backgroundAudio")}</span>
+            {scene.backgroundAudioUrl ? (
+              <div className="audio-info">
+                <span className="audio-name">{scene.backgroundAudioName}</span>
+                <button type="button" className="btn btn-sm" onClick={clearBackgroundAudio}>
+                  {t("video.removeAudio")}
+                </button>
+              </div>
+            ) : (
+              <label className="btn btn-sm upload-audio-btn">
+                {t("video.uploadAudio")}
+                <input
+                  type="file"
+                  accept="audio/*,.mp3,.wav,.ogg,.aac,.flac,.m4a"
+                  className="hidden"
+                  onChange={handleAudioUpload}
+                />
+              </label>
+            )}
+          </div>
         </div>
       ) : null}
     </div>

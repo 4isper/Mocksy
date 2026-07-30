@@ -150,6 +150,8 @@ export function normalizeScene(raw: unknown): EditorScene {
     gradientAngle: num(r.gradientAngle, initialScene.gradientAngle, 0, 360),
     backgroundImageUrl: str(r.backgroundImageUrl, initialScene.backgroundImageUrl),
     backgroundBlur: num(r.backgroundBlur, initialScene.backgroundBlur, 0, 40),
+    backgroundAudioUrl: str(r.backgroundAudioUrl, initialScene.backgroundAudioUrl),
+    backgroundAudioName: str(r.backgroundAudioName, initialScene.backgroundAudioName),
     watermarkText: str(r.watermarkText, initialScene.watermarkText) ?? initialScene.watermarkText,
     watermarkEnabled: r.watermarkEnabled === true,
     aspectRatio: str(r.aspectRatio, initialScene.aspectRatio) ?? initialScene.aspectRatio,
