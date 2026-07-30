@@ -62,7 +62,8 @@ function normalizeAnnotation(raw: unknown, fallback: Annotation): Annotation {
     text: str(r.text, fallback.text) ?? "",
     color: str(r.color, fallback.color) ?? fallback.color,
     strokeWidth: num(r.strokeWidth, fallback.strokeWidth, 0, 40),
-    fontSize: num(r.fontSize, fallback.fontSize, 8, 200)
+    fontSize: num(r.fontSize, fallback.fontSize, 8, 200),
+    fontFamily: str(r.fontFamily, null) ?? fallback.fontFamily
   };
 }
 

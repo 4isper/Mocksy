@@ -104,6 +104,7 @@ export function AnnotationItem({ annotation, selected, canvasRef, onSelect, onUp
           color: annotation.color,
           lineHeight: 1.2,
           fontWeight: 600,
+          fontFamily: annotation.fontFamily ?? "Inter, system-ui, sans-serif",
           whiteSpace: "pre-wrap",
           textShadow: "0 1px 3px rgba(0,0,0,0.5)"
         }}

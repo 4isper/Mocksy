@@ -147,6 +147,7 @@
     "rect": "Box",
     "addAnnotation": "Add annotation",
     "addCallouts": "Add callouts, arrows or boxes to annotate the mockup. Drag them on the canvas to reposition.",
+    "font": "Font",
     "fontSize": "Font size ({val}px)",
     "strokeWidth": "Stroke ({val}px)",
     "color": "Color",

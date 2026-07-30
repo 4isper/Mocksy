@@ -464,7 +464,7 @@ export function drawAnnotations(
     if (a.type === "text") {
       const fontSize = a.fontSize * dpiScale;
       ctx.fillStyle = a.color;
-      ctx.font = `600 ${fontSize}px Inter, system-ui, sans-serif`;
+      ctx.font = `600 ${fontSize}px ${a.fontFamily ?? "Inter, system-ui, sans-serif"}`;
       ctx.textBaseline = "top";
       ctx.textAlign = "left";
       ctx.shadowColor = "rgba(0,0,0,0.5)";

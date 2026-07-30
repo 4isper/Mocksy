@@ -77,6 +77,24 @@ export function AnnotationsPanel() {
           </label>
           {selected.type === "text" ? (
             <label className="field">
+              <span>{t("annotation.font")}</span>
+              <select
+                value={selected.fontFamily ?? "Inter, system-ui, sans-serif"}
+                onChange={(e) => updateAnnotation(selected.id, { fontFamily: e.target.value })}
+              >
+                <option value="Inter, system-ui, sans-serif">Inter</option>
+                <option value="system-ui">System UI</option>
+                <option value="Arial, Helvetica, sans-serif">Arial</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="'Courier New', monospace">Courier New</option>
+                <option value="Roboto, sans-serif">Roboto</option>
+                <option value="'Times New Roman', serif">Times New Roman</option>
+                <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+              </select>
+            </label>
+          ) : null}
+          {selected.type === "text" ? (
+            <label className="field">
               <span>{t("annotation.fontSize", { val: selected.fontSize })}</span>
               <input
                 className="range"
