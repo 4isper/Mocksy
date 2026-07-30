@@ -141,7 +141,7 @@ describe("exportVideo orchestration", () => {
       width: 0,
       height: 0,
       style: {},
-      captureStream: vi.fn().mockReturnValue({ getTracks: () => [] }),
+      captureStream: vi.fn().mockReturnValue({ getTracks: () => [], getVideoTracks: () => [] }),
       remove: vi.fn(),
       getContext: vi.fn().mockReturnValue({})
     };
@@ -154,7 +154,7 @@ describe("exportVideo orchestration", () => {
       createElement: vi.fn().mockImplementation((tag: string) => {
         if (tag === "canvas") return canvas;
         if (tag === "a") return { click: vi.fn(), set href(_v: string) {}, get href() { return ""; } };
-        if (tag === "video") return { src: "", crossOrigin: "", muted: false, playsInline: false, onloadedmetadata: null, onerror: null, play: vi.fn(), pause: vi.fn(), remove: vi.fn() };
+        if (tag === "video") return { src: "", crossOrigin: "", muted: false, playsInline: false, onloadedmetadata: null, onerror: null, play: vi.fn(), pause: vi.fn(), remove: vi.fn(), captureStream: vi.fn().mockReturnValue({ getAudioTracks: () => [], getVideoTracks: () => [] }) };
         return {};
       }),
       body: { appendChild: vi.fn(), removeChild: vi.fn() }

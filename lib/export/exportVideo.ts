@@ -133,6 +133,14 @@ async function recordCanvasToWebm(
   canvas.style.pointerEvents = "none";
   document.body.appendChild(canvas);
 
+  // Resolve the active layer before stream setup so the audio capture branch
+  // below can check its muted state.
+  const activeForCapture = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  if (!activeForCapture) {
+    canvas.remove();
+    throw new Error("Cannot export a scene with no layers.");
+  }
+
   let stream: MediaStream;
   try {
     stream = canvas.captureStream(fps);
@@ -143,20 +151,31 @@ async function recordCanvasToWebm(
     }
     throw err;
   }
+
+  // If the active video layer has audio enabled, capture its audio track and
+  // combine it with the canvas video track so the exported MP4 carries sound.
+  if (media instanceof HTMLVideoElement && activeForCapture.videoMuted === false) {
+    try {
+      const audioMs = (media as HTMLVideoElement & { captureStream: () => MediaStream }).captureStream();
+      const audioTracks = audioMs.getAudioTracks();
+      if (audioTracks.length > 0) {
+        const videoTrack = stream.getVideoTracks()[0];
+        if (videoTrack) {
+          stream.getTracks().forEach((t) => t.stop());
+          stream = new MediaStream([videoTrack, ...audioTracks]);
+        }
+      }
+    } catch {
+      // audio capture not supported — export video-only
+    }
+  }
+
   const chunks: BlobPart[] = [];
   const mimeType = chooseWebmMimeType();
   const recorder = new MediaRecorder(stream, { mimeType });
   recorder.ondataavailable = (e) => {
     if (e.data.size > 0) chunks.push(e.data);
   };
-
-  // Trimming is driven by the active video layer (captureWebm resolves the
-  // detached <video> from that layer), so read its trim window here.
-  const activeForCapture = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
-  if (!activeForCapture) {
-    canvas.remove();
-    throw new Error("Cannot export a scene with no layers.");
-  }
   const start = Math.max(0, activeForCapture.videoTrimStart || 0);
   const end = activeForCapture.videoTrimEnd > start ? activeForCapture.videoTrimEnd : activeForCapture.videoDuration;
   const isVideo = media instanceof HTMLVideoElement;
@@ -171,7 +190,7 @@ async function recordCanvasToWebm(
     const startedAt = performance.now();
     if (media instanceof HTMLVideoElement) {
       media.currentTime = start;
-      media.muted = true;
+      media.muted = activeForCapture?.videoMuted !== false;
       media.play().catch(() => null);
     }
 
@@ -248,7 +267,7 @@ async function captureWebm(
     sourceVideo = document.createElement("video");
     sourceVideo.src = activeLayer.mediaUrl;
     sourceVideo.crossOrigin = "anonymous";
-    sourceVideo.muted = true;
+    sourceVideo.muted = activeLayer?.videoMuted !== false;
     sourceVideo.playsInline = true;
     await new Promise<void>((resolve, reject) => {
       sourceVideo!.onloadedmetadata = () => resolve();
