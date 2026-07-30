@@ -19,7 +19,7 @@ interface SingleFrameViewProps {
   handleCanvasFile: (event: ChangeEvent<HTMLInputElement>) => Promise<void>;
   canvasFileInputKey: number;
   isMediaLoading: boolean;
-  setVideoDuration: (duration: number) => void;
+  setVideoDuration: (duration: number, layerId?: string) => void;
   setVideoCurrentTime: (time: number) => void;
   setMediaLoading: (loading: boolean) => void;
   videoCurrentTime: number;
@@ -71,7 +71,7 @@ export function SingleFrameView({
                 crossOrigin="anonymous"
                 onLoadedMetadata={(e) => {
                   const duration = e.currentTarget.duration || 0;
-                  setVideoDuration(duration);
+                  setVideoDuration(duration, layer.id);
                   const current = Math.min(layer.videoPosterTime, duration);
                   e.currentTarget.currentTime = current;
                   setVideoCurrentTime(current);

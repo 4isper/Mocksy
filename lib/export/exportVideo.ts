@@ -90,7 +90,9 @@ async function recordCanvasToWebm(
   frameElement: HTMLElement | null,
   pixelRatio: number,
   onStatus?: (message: string) => void,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
+  layerMedias?: Map<string, CanvasImageSource | null>,
+  frameOverlays?: Map<string, CanvasImageSource | null>
 ) {
   const spec = getFrameSpec(scene.frame);
   let overlay: CanvasImageSource | null = null;
@@ -223,7 +225,7 @@ async function recordCanvasToWebm(
       if (media instanceof HTMLVideoElement) {
         if (media.currentTime >= end || elapsed >= duration) {
           media.pause();
-          renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay);
+          renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays);
           recorder.stop();
           cancelAnimationFrame(raf);
           onProgress?.(100);
@@ -236,7 +238,7 @@ async function recordCanvasToWebm(
         return;
       }
 
-      renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage);
+      renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays);
       raf = requestAnimationFrame(tick);
     };
 
@@ -314,9 +316,53 @@ async function captureWebm(
   const frameElement = previewNode.querySelector<HTMLElement>("[data-mockup-frame]");
   const frameWidth = isMultiFrame ? undefined : frameElement ? Math.max(1, Math.round(frameElement.offsetWidth * pixelRatio)) : undefined;
   const frameHeight = isMultiFrame ? undefined : frameElement ? Math.max(1, Math.round(frameElement.offsetHeight * pixelRatio)) : undefined;
+
+  // For multi-frame mode, load media for each frame's layer and per-instance overlays
+  let layerMedias: Map<string, CanvasImageSource | null> | undefined;
+  let frameOverlays: Map<string, CanvasImageSource | null> | undefined;
+  if (isMultiFrame) {
+    layerMedias = new Map();
+    frameOverlays = new Map();
+    for (const inst of scene.frameInstances) {
+      const layer = scene.layers.find((l) => l.id === inst.layerId);
+      if (layer?.mediaUrl) {
+        try {
+          const isVideo = isVideoLayer(layer);
+          if (isVideo) {
+            // Create a detached video element for the export
+            const v = document.createElement("video");
+            v.src = layer.mediaUrl;
+            v.crossOrigin = "anonymous";
+            v.muted = true;
+            v.playsInline = true;
+            await new Promise<void>((resolve, reject) => {
+              v.onloadedmetadata = () => resolve();
+              v.onerror = () => reject();
+            });
+            layerMedias.set(layer.id, v);
+          } else {
+            const img = await loadImage(layer.mediaUrl);
+            layerMedias.set(layer.id, img);
+          }
+        } catch {
+          layerMedias.set(layer.id, null);
+        }
+      }
+      const instSpec = getFrameSpec(inst.frame);
+      if (instSpec.isOverlay && instSpec.asset) {
+        try {
+          const ov = await loadImage(instSpec.asset);
+          if (layer?.id) frameOverlays.set(layer.id, ov);
+        } catch {
+          // overlay failed to load
+        }
+      }
+    }
+  }
+
   let webmBlob: Blob | null = null;
   try {
-    webmBlob = await recordCanvasToWebm(scene, canvas, media, frameElement, pixelRatio, onStatus, onProgress);
+    webmBlob = await recordCanvasToWebm(scene, canvas, media, frameElement, pixelRatio, onStatus, onProgress, layerMedias, frameOverlays);
   } finally {
     if (sourceVideo) {
       sourceVideo.pause();
@@ -373,7 +419,7 @@ export async function exportVideo(
   link.href = URL.createObjectURL(blob);
   link.download = sanitizeFilename(((scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0])?.mediaName || "mocksy-export").replace(/\.[^.]+$/, "")) + ".mp4";
   link.click();
-  URL.revokeObjectURL(link.href);
+  setTimeout(() => URL.revokeObjectURL(link.href), 200);
   await ffmpeg.deleteFile(inputName);
   await ffmpeg.deleteFile(outputName);
   onStatus?.("Done");
@@ -447,10 +493,10 @@ export async function exportGif(
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = sanitizeFilename(((scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0])?.mediaName || "mocksy-export").replace(/\.[^.]+$/, "")) + ".gif";
-    link.click();
-    URL.revokeObjectURL(link.href);
-    await ffmpeg.deleteFile(inputName);
-    await ffmpeg.deleteFile(paletteName);
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 200);
+  await ffmpeg.deleteFile(inputName);
+  await ffmpeg.deleteFile(paletteName);
     await ffmpeg.deleteFile(outputName);
     onStatus?.("Done");
     onProgress?.(100);

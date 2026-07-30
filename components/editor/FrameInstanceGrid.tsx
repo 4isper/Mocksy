@@ -72,7 +72,7 @@ export function FrameInstanceGrid({
                 ) : null}
                 {layer?.mediaUrl ? (
                   isVideoLayer(layer) ? (
-                    <video src={layer.mediaUrl} muted playsInline style={instCss.mediaStyle} onLoadedData={(e) => analyzeMedia(e.currentTarget)} />
+                    <video src={layer.mediaUrl} muted playsInline controls loop={layer.videoLoop} autoPlay={layer.videoAutoplay} crossOrigin="anonymous" style={instCss.mediaStyle} onLoadedData={(e) => analyzeMedia(e.currentTarget)} />
                   ) : (
                     <img src={layer.mediaUrl} alt="" style={instCss.mediaStyle} onLoad={(e) => analyzeMedia(e.currentTarget)} />
                   )
@@ -91,7 +91,7 @@ export function FrameInstanceGrid({
               >
                 {layer?.mediaUrl ? (
                   isVideoLayer(layer) ? (
-                    <video src={layer.mediaUrl} muted playsInline style={instCss.mediaStyle} onLoadedData={(e) => analyzeMedia(e.currentTarget)} />
+                    <video src={layer.mediaUrl} muted playsInline controls loop={layer.videoLoop} autoPlay={layer.videoAutoplay} crossOrigin="anonymous" style={instCss.mediaStyle} onLoadedData={(e) => analyzeMedia(e.currentTarget)} />
                   ) : (
                     <img src={layer.mediaUrl} alt="" style={instCss.mediaStyle} onLoad={(e) => analyzeMedia(e.currentTarget)} />
                   )

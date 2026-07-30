@@ -107,7 +107,7 @@ export interface EditorStoreState {
   setVideoLoop: (loop: boolean) => void;
   setVideoAutoplay: (autoplay: boolean) => void;
   setVideoPosterTime: (time: number) => void;
-  setVideoDuration: (time: number) => void;
+  setVideoDuration: (time: number, layerId?: string) => void;
   setVideoCurrentTime: (time: number) => void;
   setVideoTrimStart: (time: number) => void;
   setVideoTrimEnd: (time: number) => void;
@@ -430,12 +430,13 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   setVideoLoop: (videoLoop) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoLoop }) })),
   setVideoAutoplay: (videoAutoplay) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoAutoplay }) })),
   setVideoPosterTime: (videoPosterTime) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoPosterTime }) }, "poster")),
-  setVideoDuration: (videoDuration) =>
-    set((s) =>
-      pushHistory(s, {
+  setVideoDuration: (videoDuration, layerId) =>
+    set((s) => {
+      const targetId = layerId ?? s.scene.activeLayerId ?? s.scene.layers[0]?.id;
+      return pushHistory(s, {
         ...s.scene,
         layers: s.scene.layers.map((l) =>
-          l.id === (s.scene.activeLayerId ?? s.scene.layers[0]?.id)
+          l.id === targetId
             ? {
                 ...l,
                 videoDuration,
@@ -443,8 +444,8 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
               }
             : l
         )
-      })
-    ),
+      });
+    }),
   setVideoCurrentTime: (videoCurrentTime) => set({ videoCurrentTime }),
   setVideoTrimStart: (videoTrimStart) =>
     set((s) =>
