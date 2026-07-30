@@ -71,6 +71,31 @@ export function BackgroundControls({
       >
         {t("editor.autoBackground")}
       </button>
+      {scenePalette && scenePalette.length > 0 ? (
+        <>
+          <span style={{ color: "var(--text-dim)", fontSize: 11 }}>{t("editor.mediaPalette")}</span>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {scenePalette.map((color) => (
+              <button
+                key={color}
+                type="button"
+                aria-pressed={backgroundMode === "solid" && backgroundColor === color}
+                title={color}
+                onClick={() => setBackgroundSolid(color)}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 8,
+                  cursor: "pointer",
+                  border: backgroundMode === "solid" && backgroundColor === color
+                    ? "2px solid var(--accent)" : "1px solid var(--panel-border)",
+                  background: color
+                }}
+              />
+            ))}
+          </div>
+        </>
+      ) : null}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {backgroundPresets.map((preset) => {
           const active =
