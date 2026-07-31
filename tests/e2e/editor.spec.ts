@@ -1273,6 +1273,23 @@ test("grid controls are translated per locale", async ({ page }) => {
   await expectGridLabels("ar", "شبكة", "خطوط الشبكة");
 });
 
+test("skip link navigates to main content on Enter", async ({ page }) => {
+  await page.goto("/");
+  const skipLink = page.locator(".skip-link");
+  await expect(skipLink).toHaveAttribute("href", "#main-content");
+  await skipLink.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#main-content")).toBeFocused();
+});
+
+test("frame instances have keyboard-accessible role and tabindex", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("[data-mockup-frame]")).toBeVisible();
+  const frame = page.locator(".frame-instance").first();
+  await expect(frame).toHaveAttribute("role", "button");
+  await expect(frame).toHaveAttribute("tabindex", "0");
+});
+
 
 
 

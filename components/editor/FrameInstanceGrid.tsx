@@ -43,7 +43,16 @@ export function FrameInstanceGrid({
         return (
           <div
             key={inst.id}
+            className="frame-instance"
+            role="button"
+            tabIndex={0}
             onClick={() => selectFrameInstance(inst.id)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                selectFrameInstance(inst.id);
+              }
+            }}
             style={{
               position: "absolute",
               left: `${inst.x * 100}%`,

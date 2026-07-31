@@ -82,7 +82,7 @@ export function CommandPalette({
   if (!isOpen) return null;
 
   return (
-    <div className="command-palette-backdrop" onClick={onClose}>
+    <div className="command-palette-backdrop" role="presentation" onClick={onClose}>
       <div
         className="command-palette"
         ref={trapRef}

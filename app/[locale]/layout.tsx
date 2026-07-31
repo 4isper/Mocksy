@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/editor/ThemeProvider";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { PwaRegister } from "@/components/editor/PwaRegister";
+import { SkipLink } from "@/components/editor/SkipLink";
 import { isRtlLocale } from "@/i18n/request";
 
 const VALID_LOCALES = ["en", "ru", "de", "es", "fr", "pt", "it", "ja", "ko", "zh", "tr", "pl", "nl", "uk", "ar", "hi", "id", "vi", "th", "sv", "no", "da", "fi", "cs", "bg", "el", "et", "he", "hr", "lt", "ro", "sl", "sr", "bn", "pa", "ms", "sw", "fa", "te", "mr", "ta", "ur", "gu", "kn", "am", "tl", "hu", "lv", "is", "ga", "cy", "sq", "hy", "ka", "az", "kk", "ne"];
@@ -42,6 +43,7 @@ export default async function LocaleLayout({
   return (
     <html lang={resolvedLocale} dir={isRtlLocale(resolvedLocale) ? "rtl" : "ltr"} suppressHydrationWarning>
       <body>
+        <SkipLink />
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider>{children}</ThemeProvider>
         </NextIntlClientProvider>

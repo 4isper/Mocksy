@@ -95,6 +95,7 @@ export function BackgroundControls({
               <button
                 key={color}
                 type="button"
+                aria-label={color}
                 aria-pressed={backgroundMode === "solid" && backgroundColor === color}
                 title={color}
                 onClick={() => setBackgroundSolid(color)}

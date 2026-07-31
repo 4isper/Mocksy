@@ -72,7 +72,7 @@ export function Toolbar({
         </button>
       </div>
       {videoExportStatus ? (
-        <div className="export-status">
+        <div className="export-status" aria-live="polite">
           <span className="label">{videoExportStatus}</span>
           <div className="progress">
             <div style={{ width: `${videoExportProgress}%` }} />
@@ -81,7 +81,7 @@ export function Toolbar({
         </div>
       ) : null}
       {gifExportStatus ? (
-        <div className="export-status">
+        <div className="export-status" aria-live="polite">
           <span className="label">{gifExportStatus}</span>
           <div className="progress">
             <div style={{ width: `${gifExportProgress}%` }} />
@@ -90,7 +90,7 @@ export function Toolbar({
         </div>
       ) : null}
       {copyStatus ? (
-        <span className="status saved">{copyStatus}</span>
+        <span className="status saved" aria-live="polite">{copyStatus}</span>
       ) : exportError ? (
         <span className="error" role="alert">
           {exportError}
@@ -100,7 +100,7 @@ export function Toolbar({
           {saveError}
         </span>
       ) : (
-        <span className={`status${saved ? " saved" : ""}`}>{saved ? t("editor.saved") : t("editor.unsaved")}</span>
+        <span className={`status${saved ? " saved" : ""}`} aria-live="polite">{saved ? t("editor.saved") : t("editor.unsaved")}</span>
       )}
       <span className="spacer" />
       <div className="toolbar-group">

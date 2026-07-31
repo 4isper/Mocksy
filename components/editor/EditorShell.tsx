@@ -422,7 +422,7 @@ export function EditorShell() {
   }, [saveNow, handleReset, handleExportPng, handleExportMp4, handleExportGif, handleCopyPng, setShortcutsOpen, setCommandPaletteOpen]);
 
   return (
-    <main className="editor-shell">
+    <main className="editor-shell" id="main-content" tabIndex={-1}>
       <div className="brand">
         <span className="brand-mark" aria-hidden="true" />
         <h1>Mocksy</h1>
