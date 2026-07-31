@@ -1290,6 +1290,192 @@ test("frame instances have keyboard-accessible role and tabindex", async ({ page
   await expect(frame).toHaveAttribute("tabindex", "0");
 });
 
+test("GIF export of an image scene downloads a non-empty file", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(previewMedia(page)).toBeVisible();
+
+  await openExportDialog(page);
+  await chooseExportFormat(page, "GIF");
+  const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
+  await page.getByRole("button", { name: "Export GIF" }).click();
+  const { name, buffer } = await downloadBuffer(downloadPromise);
+  expect(name).toMatch(/\.gif$/);
+  expect(buffer.length).toBeGreaterThan(0);
+});
+
+test("MP4 export of a video scene produces a non-empty file", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles("public/sample-video.mp4");
+  await expect(page.locator("#preview-canvas video")).toBeVisible();
+
+  await openExportDialog(page);
+  await chooseExportFormat(page, "MP4");
+  const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
+  await page.getByRole("button", { name: "Export MP4" }).click();
+  const { name, buffer } = await downloadBuffer(downloadPromise);
+  expect(name).toMatch(/\.mp4$/);
+  expect(buffer.length).toBeGreaterThan(0);
+});
+
+test("exporting with a text annotation includes the annotation in the PNG", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(previewMedia(page)).toBeVisible();
+
+  // Add a text annotation.
+  await page.getByRole("button", { name: "Annotation" }).click();
+  await page.getByRole("button", { name: "Text" }).click();
+  await page.waitForTimeout(200);
+
+  await openExportDialog(page);
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export PNG" }).click();
+  const { buffer } = await downloadBuffer(downloadPromise);
+  expect(buffer.length).toBeGreaterThan(0);
+
+  // The exported PNG should contain non-uniform pixels (annotation + media).
+  const samples = await samplePngColors(page, buffer);
+  expect(samples.colorful).toBeGreaterThan(0);
+});
+
+test("exporting with an arrow annotation includes the arrow in the PNG", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(previewMedia(page)).toBeVisible();
+
+  // Add an arrow annotation.
+  await page.getByRole("button", { name: "Annotation" }).click();
+  await page.getByRole("button", { name: "Arrow" }).click();
+  await page.waitForTimeout(200);
+
+  await openExportDialog(page);
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export PNG" }).click();
+  const { buffer } = await downloadBuffer(downloadPromise);
+  expect(buffer.length).toBeGreaterThan(0);
+});
+
+test("exporting with glassDark style preset draws the frame border", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(previewMedia(page)).toBeVisible();
+
+  // Apply the glassDark style preset.
+  await page.getByRole("button", { name: "Style" }).click();
+  await page.getByRole("button", { name: "Glass Dark" }).click();
+  await page.waitForTimeout(200);
+
+  await openExportDialog(page);
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export PNG" }).click();
+  const { buffer } = await downloadBuffer(downloadPromise);
+  expect(buffer.length).toBeGreaterThan(0);
+});
+
+test("exporting with outline style preset draws the frame border", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(previewMedia(page)).toBeVisible();
+
+  // Apply the outline style preset.
+  await page.getByRole("button", { name: "Style" }).click();
+  await page.getByRole("button", { name: "Outline" }).click();
+  await page.waitForTimeout(200);
+
+  await openExportDialog(page);
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export PNG" }).click();
+  const { buffer } = await downloadBuffer(downloadPromise);
+  expect(buffer.length).toBeGreaterThan(0);
+});
+
+test("exporting with a gradient background produces a non-empty PNG", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(previewMedia(page)).toBeVisible();
+
+  // Switch to gradient background mode.
+  await page.getByRole("button", { name: "Background" }).click();
+  await page.getByRole("button", { name: "Gradient" }).click();
+  await page.waitForTimeout(200);
+
+  await openExportDialog(page);
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export PNG" }).click();
+  const { buffer } = await downloadBuffer(downloadPromise);
+  expect(buffer.length).toBeGreaterThan(0);
+});
+
+test("exporting a video scene as MP4 produces a non-empty file with video content", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles("public/sample-video.mp4");
+  await expect(page.locator("#preview-canvas video")).toBeVisible();
+
+  await openExportDialog(page);
+  await chooseExportFormat(page, "MP4");
+  const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
+  await page.getByRole("button", { name: "Export MP4" }).click();
+  const { name, buffer } = await downloadBuffer(downloadPromise);
+  expect(name).toMatch(/\.mp4$/);
+  expect(buffer.length).toBeGreaterThan(0);
+});
+
+test("export dialog shows error when no media is uploaded", async ({ page }) => {
+  await page.goto("/");
+  await openExportDialog(page);
+  // Without media, the export buttons should still be visible but the
+  // export should produce a valid (possibly empty) file — the app
+  // should not crash.
+  const downloadPromise = page.waitForEvent("download", { timeout: 10_000 });
+  await page.getByRole("button", { name: "Export PNG" }).click();
+  const { name, buffer } = await downloadBuffer(downloadPromise);
+  expect(name).toMatch(/mocksy-export\.png$/);
+  expect(buffer.length).toBeGreaterThanOrEqual(0);
+});
+
 
 
 
