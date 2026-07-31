@@ -8,6 +8,7 @@ import { GRID_DIVISION_OPTIONS } from "@/lib/render/grid";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
+import { Check } from "lucide-react";
 import { useFrameTransform } from "@/lib/hooks/useFrameTransform";
 import { useScenePalette } from "@/lib/hooks/useScenePalette";
 import { AnnotationItem } from "@/components/editor/AnnotationItem";
@@ -336,7 +337,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           aria-label={t("editor.grid")}
           onClick={() => setShowGrid(!showGrid)}
         >
-          {showGrid ? "✓ " : ""}{t("editor.grid")}
+          {showGrid ? <Check size={12} /> : ""}{t("editor.grid")}
         </button>
         {showGrid ? (
           <select

@@ -3,6 +3,7 @@
 import type { ChangeEvent, DragEvent } from "react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { Circle, Video } from "lucide-react";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { isVideoLayer } from "@/lib/render/mediaKind";
@@ -179,12 +180,12 @@ export function LayersPanel() {
                         <img src={layer.mediaUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       )
                     ) : (
-                      <span style={{ fontSize: 11, color: "var(--text-dim)" }}>∅</span>
+                      <span style={{ fontSize: 11, color: "var(--text-dim)" }}><Circle size={10} /></span>
                     )}
                   </span>
                   <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>
                     {label}
-                    {isVideoLayer(layer) ? <span role="img" aria-label={t("editor.videoLabel")}> 🎬</span> : null}
+                    {isVideoLayer(layer) ? <Video size={10} style={{ marginLeft: 4 }} aria-label={t("editor.videoLabel")} /> : null}
                   </span>
                   <button
                     type="button"
