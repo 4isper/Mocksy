@@ -1236,6 +1236,43 @@ test("RTL locales render with dir=rtl and LTR locales with dir=ltr", async ({ pa
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
 });
 
+test("locale switcher switches the UI language end-to-end", async ({ page }) => {
+  await page.goto("/");
+  const switcher = page.locator("select.locale-select");
+  await expect(switcher).toHaveValue("en");
+
+  await switcher.selectOption({ label: "Русский" });
+  await expect(page).toHaveURL(/\/ru$/);
+  await expect(page.locator("html")).toHaveAttribute("lang", "ru");
+  await expect(page.getByRole("button", { name: "Экспорт", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Сетка")).toBeVisible();
+
+  await page.locator("select.locale-select").selectOption({ label: "English" });
+  await expect(page).toHaveURL(/\/en$/);
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.getByRole("button", { name: "Export", exact: true })).toBeVisible();
+});
+
+test("Russian locale renders translated UI strings", async ({ page }) => {
+  await page.goto("/ru");
+  await expect(page.locator("html")).toHaveAttribute("lang", "ru");
+  await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
+  await expect(page.getByRole("button", { name: "Экспорт", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Сетка")).toBeVisible();
+});
+
+test("grid controls are translated per locale", async ({ page }) => {
+  const expectGridLabels = async (locale: string, gridLabel: string, divisionsLabel: string) => {
+    await page.goto(`/${locale}`);
+    await page.getByLabel(gridLabel).click();
+    await expect(page.getByLabel(divisionsLabel)).toBeVisible();
+  };
+
+  await expectGridLabels("ru", "Сетка", "Линий сетки");
+  await expectGridLabels("de", "Raster", "Rasterlinien");
+  await expectGridLabels("ar", "شبكة", "خطوط الشبكة");
+});
+
 
 
 
