@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildSvgMarkup } from "@/lib/export/exportSvg";
-import { computeFrameBox } from "@/lib/export/renderMockup";
+import { computeFrameBox } from "@/lib/render/frameGeometry";
 import { initialScene } from "@/lib/state/editorStore";
 import type { EditorScene } from "@/lib/types/editor";
 

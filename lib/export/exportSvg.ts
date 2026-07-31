@@ -1,7 +1,8 @@
 "use client";
 
 import type { EditorScene } from "@/lib/types/editor";
-import { computeFrameBox, computeFrameInstances, loadVideoFrame, type FrameBox } from "@/lib/export/renderMockup";
+import { computeFrameBox, computeFrameInstances, type FrameBox } from "@/lib/render/frameGeometry";
+import { loadVideoFrame } from "@/lib/render/canvasMedia";
 import { frameViewBox, getFrameSpec, DEFAULT_VIEWBOX } from "@/lib/render/frames";
 import { resolveExportTransform, waitForImage } from "@/lib/export/exportImage";
 import { isVideoLayer } from "@/lib/render/mediaKind";

@@ -358,7 +358,7 @@ describe("loadImage", () => {
       }
     }
     vi.stubGlobal("Image", MockImage);
-    const { loadImage } = await import("@/lib/export/renderMockup");
+    const { loadImage } = await import("@/lib/render/canvasMedia");
     const promise = loadImage("test.png");
     loadCallbacks[loadCallbacks.length - 1]?.();
     const img = await promise;
@@ -374,7 +374,7 @@ describe("loadImage", () => {
       }
     }
     vi.stubGlobal("Image", MockImage);
-    const { loadImage } = await import("@/lib/export/renderMockup");
+    const { loadImage } = await import("@/lib/render/canvasMedia");
     await expect(loadImage("broken.png")).rejects.toThrow("Failed to load image: broken.png");
   });
 });
@@ -402,7 +402,7 @@ describe("loadVideoFrame", () => {
   it("seeks to the requested poster time and resolves when the frame is ready", async () => {
     const video = mockVideo();
     stubDocumentWithVideo(video);
-    const { loadVideoFrame } = await import("@/lib/export/renderMockup");
+    const { loadVideoFrame } = await import("@/lib/render/canvasMedia");
     const promise = loadVideoFrame("blob:vid", 3);
     (video.onloadedmetadata as () => void)();
     expect(video.currentTime).toBe(3);
@@ -414,7 +414,7 @@ describe("loadVideoFrame", () => {
   it("seeks near the start when no poster time is set", async () => {
     const video = mockVideo();
     stubDocumentWithVideo(video);
-    const { loadVideoFrame } = await import("@/lib/export/renderMockup");
+    const { loadVideoFrame } = await import("@/lib/render/canvasMedia");
     const promise = loadVideoFrame("blob:vid");
     (video.onloadedmetadata as () => void)();
     expect(video.currentTime).toBe(0.001);
@@ -425,7 +425,7 @@ describe("loadVideoFrame", () => {
   it("falls back to a small seek when the poster time is past the end", async () => {
     const video = mockVideo({ duration: 5 });
     stubDocumentWithVideo(video);
-    const { loadVideoFrame } = await import("@/lib/export/renderMockup");
+    const { loadVideoFrame } = await import("@/lib/render/canvasMedia");
     const promise = loadVideoFrame("blob:vid", 99);
     (video.onloadedmetadata as () => void)();
     expect(video.currentTime).toBe(0.001);
@@ -436,7 +436,7 @@ describe("loadVideoFrame", () => {
   it("rejects on load error", async () => {
     const video = mockVideo();
     stubDocumentWithVideo(video);
-    const { loadVideoFrame } = await import("@/lib/export/renderMockup");
+    const { loadVideoFrame } = await import("@/lib/render/canvasMedia");
     const promise = loadVideoFrame("blob:bad");
     (video.onerror as () => void)();
     await expect(promise).rejects.toThrow("Failed to load video: blob:bad");

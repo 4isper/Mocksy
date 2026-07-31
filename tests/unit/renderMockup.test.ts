@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { computeFrameBox, renderMockupToCanvas, computeFrameInstances } from "@/lib/export/renderMockup";
+import { computeFrameBox, computeFrameInstances } from "@/lib/render/frameGeometry";
+import { renderMockupToCanvas } from "@/lib/render/renderMockup";
 import { getFrameSpec, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
 import { initialScene } from "@/lib/state/editorStore";
 import { layoutFrameGrid } from "@/lib/state/editorHelpers";
@@ -704,7 +705,7 @@ describe("drawFrameMediaFromLayer", () => {
   it("returns early when layer has no mediaUrl", async () => {
     const { ctx, calls } = mockCtx();
     const box = { x: 0, y: 0, width: 400, height: 300, outerRadius: 0, innerX: 0, innerY: 0, innerW: 400, innerH: 300, innerRadius: 10 };
-    const { drawFrameMediaFromLayer } = await import("@/lib/export/renderMockup");
+    const { drawFrameMediaFromLayer } = await import("@/lib/render/canvasMedia");
     await drawFrameMediaFromLayer(ctx, { id: "l1" } as any, box, 2);
     expect(calls.save).toBeUndefined();
   });
@@ -712,7 +713,7 @@ describe("drawFrameMediaFromLayer", () => {
   it("returns early when layer is undefined", async () => {
     const { ctx, calls } = mockCtx();
     const box = { x: 0, y: 0, width: 400, height: 300, outerRadius: 0, innerX: 0, innerY: 0, innerW: 400, innerH: 300, innerRadius: 10 };
-    const { drawFrameMediaFromLayer } = await import("@/lib/export/renderMockup");
+    const { drawFrameMediaFromLayer } = await import("@/lib/render/canvasMedia");
     await drawFrameMediaFromLayer(ctx, undefined, box, 2);
     expect(calls.save).toBeUndefined();
   });
@@ -729,7 +730,7 @@ describe("drawFrameMediaFromLayer", () => {
     } as any);
     const { ctx, calls } = mockCtx();
     const box = { x: 0, y: 0, width: 400, height: 300, outerRadius: 0, innerX: 10, innerY: 10, innerW: 400, innerH: 300, innerRadius: 10 };
-    const { drawFrameMediaFromLayer } = await import("@/lib/export/renderMockup");
+    const { drawFrameMediaFromLayer } = await import("@/lib/render/canvasMedia");
     await drawFrameMediaFromLayer(ctx, { id: "l1", mediaUrl: "test.png", mediaFit: "cover", mediaOffsetX: 0, mediaOffsetY: 0 } as any, box, 2);
     expect(calls.save).toBeDefined();
     expect(calls.clip).toBeDefined();
@@ -747,7 +748,7 @@ describe("drawFrameMediaFromLayer", () => {
     } as any);
     const { ctx } = mockCtx();
     const box = { x: 0, y: 0, width: 400, height: 300, outerRadius: 0, innerX: 10, innerY: 10, innerW: 400, innerH: 300, innerRadius: 10 };
-    const { drawFrameMediaFromLayer } = await import("@/lib/export/renderMockup");
+    const { drawFrameMediaFromLayer } = await import("@/lib/render/canvasMedia");
     await expect(drawFrameMediaFromLayer(ctx, { id: "l1", mediaUrl: "broken.png" } as any, box, 2)).resolves.toBeUndefined();
     vi.unstubAllGlobals();
   });
@@ -771,21 +772,21 @@ describe("drawWatermark", () => {
   }
 
   it("returns early when watermark is disabled", async () => {
-    const { drawWatermark } = await import("@/lib/export/renderMockup");
+    const { drawWatermark } = await import("@/lib/render/canvasDrawing");
     const ctx = mockCtx();
     drawWatermark(ctx, { watermarkEnabled: false, watermarkText: "Test" } as any, 800, 600, 2);
     expect(ctx.fillText).not.toHaveBeenCalled();
   });
 
   it("returns early when watermark text is empty", async () => {
-    const { drawWatermark } = await import("@/lib/export/renderMockup");
+    const { drawWatermark } = await import("@/lib/render/canvasDrawing");
     const ctx = mockCtx();
     drawWatermark(ctx, { watermarkEnabled: true, watermarkText: "" } as any, 800, 600, 2);
     expect(ctx.fillText).not.toHaveBeenCalled();
   });
 
   it("draws text at all four positions", async () => {
-    const { drawWatermark } = await import("@/lib/export/renderMockup");
+    const { drawWatermark } = await import("@/lib/render/canvasDrawing");
     for (const pos of ["bottom-right", "bottom-left", "top-right", "top-left"] as const) {
       const ctx = mockCtx();
       drawWatermark(ctx, { watermarkEnabled: true, watermarkText: "Brand", watermarkPosition: pos, watermarkSize: 16 } as any, 800, 600, 2);
@@ -794,7 +795,7 @@ describe("drawWatermark", () => {
   });
 
   it("draws watermark in multi-frame mode", async () => {
-    const { renderMockupToCanvas } = await import("@/lib/export/renderMockup");
+    const { renderMockupToCanvas } = await import("@/lib/render/renderMockup");
     let fillTextCalls = 0;
     const ctx = {
       clearRect: () => {},

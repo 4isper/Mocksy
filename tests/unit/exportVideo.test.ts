@@ -4,9 +4,12 @@ import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 
 // renderMockup pulls in canvas APIs we don't need for the export orchestration
 // test; stub it so the suite runs under node.
-vi.mock("@/lib/export/renderMockup", () => ({
+vi.mock("@/lib/render/renderMockup", () => ({
   renderMockupToCanvas: vi.fn(function () {}),
-  loadImage: vi.fn().mockResolvedValue(null)
+}));
+vi.mock("@/lib/render/canvasMedia", () => ({
+  loadImage: vi.fn().mockResolvedValue(null),
+  loadVideoFrame: vi.fn().mockResolvedValue(null),
 }));
 
 // FFmpeg WASM can't run in node; stub the heavy lifetime.

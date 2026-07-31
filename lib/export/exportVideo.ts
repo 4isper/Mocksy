@@ -2,7 +2,9 @@
 
 import type { EditorScene, MediaLayer, VideoQuality } from "@/lib/types/editor";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { loadImage, renderMockupToCanvas, type RenderTransform } from "@/lib/export/renderMockup";
+import { loadImage } from "@/lib/render/canvasMedia";
+import { renderMockupToCanvas } from "@/lib/render/renderMockup";
+import type { RenderTransform } from "@/lib/render/frameGeometry";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";

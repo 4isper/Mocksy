@@ -1,7 +1,9 @@
 "use client";
 
 import type { EditorScene } from "@/lib/types/editor";
-import { loadImage, loadVideoFrame, renderMockupToCanvas, type RenderTransform } from "@/lib/export/renderMockup";
+import { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
+import { renderMockupToCanvas } from "@/lib/render/renderMockup";
+import type { RenderTransform } from "@/lib/render/frameGeometry";
 import { getFrameSpec } from "@/lib/render/frames";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { isVideoLayer } from "@/lib/render/mediaKind";
