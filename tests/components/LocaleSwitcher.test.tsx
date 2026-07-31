@@ -8,39 +8,101 @@ import { mockPathname, mockPush } from "./setup";
 afterEach(cleanup);
 
 describe("LocaleSwitcher", () => {
-  it("renders both locale buttons", () => {
+  it("renders the locale select", () => {
     render(<LocaleSwitcher />);
-    expect(screen.getByText("EN")).toBeInTheDocument();
-    expect(screen.getByText("РУС")).toBeInTheDocument();
+    expect(screen.getByRole("combobox")).toBeInTheDocument();
   });
 
-  it("marks the current locale as active", () => {
+  it("shows the current locale as selected", () => {
     render(<LocaleSwitcher />);
-    const en = screen.getByRole("button", { name: "English" });
-    const ru = screen.getByRole("button", { name: "Русский" });
-    expect(en).toHaveAttribute("aria-pressed", "true");
-    expect(ru).toHaveAttribute("aria-pressed", "false");
+    const select = screen.getByRole("combobox") as HTMLSelectElement;
+    expect(select.value).toBe("en");
   });
 
-  it("adds is-active class to current locale", () => {
+  it("has the correct aria-label", () => {
     render(<LocaleSwitcher />);
-    const en = screen.getByRole("button", { name: "English" });
-    const ru = screen.getByRole("button", { name: "Русский" });
-    expect(en.className).toContain("is-active");
-    expect(ru.className).not.toContain("is-active");
+    expect(screen.getByLabelText("Language")).toBeInTheDocument();
   });
 
-  it("navigates on locale switch click", async () => {
+  it("lists all available locales", () => {
+    render(<LocaleSwitcher />);
+    const select = screen.getByRole("combobox") as HTMLSelectElement;
+    const options = select.querySelectorAll("option");
+    expect(options.length).toBe(57);
+    const texts = Array.from(options).map((o) => o.textContent);
+    expect(texts).toEqual([
+      "English",
+      "Русский",
+      "Deutsch",
+      "Español",
+      "Français",
+      "Português",
+      "Italiano",
+      "日本語",
+      "한국어",
+      "中文",
+      "Türkçe",
+      "Polski",
+      "Nederlands",
+      "Українська",
+      "العربية",
+      "हिन्दी",
+      "Indonesia",
+      "Tiếng Việt",
+      "ไทย",
+      "Svenska",
+      "Norsk",
+      "Dansk",
+      "Suomi",
+      "Čeština",
+      "Български",
+      "Ελληνικά",
+      "Eesti",
+      "עברית",
+      "Hrvatski",
+      "Lietuvių",
+      "Română",
+      "Slovenščina",
+      "Српски",
+      "বাংলা",
+      "ਪੰਜਾਬੀ",
+      "Bahasa Melayu",
+      "Kiswahili",
+      "فارسی",
+      "తెలుగు",
+      "मराठी",
+      "தமிழ்",
+      "اردو",
+      "ગુજરાતી",
+      "ಕನ್ನಡ",
+      "አማርኛ",
+      "Filipino",
+      "Magyar",
+      "Latviešu",
+      "Íslenska",
+      "Gaeilge",
+      "Cymraeg",
+      "Shqip",
+      "Հայերեն",
+      "ქართული",
+      "Azərbaycan",
+      "Қазақша",
+      "नेपाली"
+    ]);
+  });
+
+  it("navigates on locale change", async () => {
     mockPush.mockClear();
     render(<LocaleSwitcher />);
-    await userEvent.click(screen.getByRole("button", { name: "Русский" }));
+    const select = screen.getByRole("combobox") as HTMLSelectElement;
+    await userEvent.selectOptions(select, "ru");
     expect(mockPush).toHaveBeenCalledWith("/ru");
   });
 
   it("falls back to en when pathname has no locale", () => {
     mockPathname.mockReturnValue("/");
     render(<LocaleSwitcher />);
-    expect(screen.getByRole("button", { name: "English" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Русский" })).toHaveAttribute("aria-pressed", "false");
+    const select = screen.getByRole("combobox") as HTMLSelectElement;
+    expect(select.value).toBe("en");
   });
 });

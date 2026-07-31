@@ -5,7 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { PwaRegister } from "@/components/editor/PwaRegister";
 
-const VALID_LOCALES = ["en", "ru"];
+const VALID_LOCALES = ["en", "ru", "de", "es", "fr", "pt", "it", "ja", "ko", "zh", "tr", "pl", "nl", "uk", "ar", "hi", "id", "vi", "th", "sv", "no", "da", "fi", "cs", "bg", "el", "et", "he", "hr", "lt", "ro", "sl", "sr", "bn", "pa", "ms", "sw", "fa", "te", "mr", "ta", "ur", "gu", "kn", "am", "tl", "hu", "lv", "is", "ga", "cy", "sq", "hy", "ka", "az", "kk", "ne"];
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
