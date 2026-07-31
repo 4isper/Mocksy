@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { useTranslations } from "next-intl";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
@@ -25,6 +26,7 @@ export function FrameInstanceGrid({
   analyzeMedia,
   setVideoDuration
 }: FrameInstanceGridProps) {
+  const t = useTranslations();
   return (
     <>
       {scene.frameInstances.filter((inst) => {
@@ -61,6 +63,7 @@ export function FrameInstanceGrid({
               // drop-shadow and frame CSS (border, backdrop-filter)
               // are applied correctly.
               <div
+                data-mockup-frame
                 style={{
                   ...instCss.frame,
                   width: "100%",
@@ -70,7 +73,7 @@ export function FrameInstanceGrid({
                 }}
               >
                 {instCss.frameOverlay ? (
-                  <img src={instCss.frameOverlay} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
+                  <img src={instCss.frameOverlay} alt="" aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
                 ) : null}
                 {layer?.mediaUrl ? (
                   isVideoLayer(layer) ? (
@@ -87,13 +90,14 @@ export function FrameInstanceGrid({
                     onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration || 0, layer.id)}
                   />
                   ) : (
-                    <img src={layer.mediaUrl} alt="" style={instCss.mediaStyle} onLoad={(e) => analyzeMedia(e.currentTarget)} />
+                    <img src={layer.mediaUrl} alt={t("editor.uploadedMediaAlt")} style={instCss.mediaStyle} onLoad={(e) => analyzeMedia(e.currentTarget)} />
                   )
                 ) : null}
               </div>
             ) : (
               // CSS frame: media fills frame with optional radius
               <div
+                data-mockup-frame
                 style={{
                   ...instCss.frame,
                   width: "100%",
@@ -117,7 +121,7 @@ export function FrameInstanceGrid({
                     onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration || 0, layer.id)}
                   />
                   ) : (
-                    <img src={layer.mediaUrl} alt="" style={instCss.mediaStyle} onLoad={(e) => analyzeMedia(e.currentTarget)} />
+                    <img src={layer.mediaUrl} alt={t("editor.uploadedMediaAlt")} style={instCss.mediaStyle} onLoad={(e) => analyzeMedia(e.currentTarget)} />
                   )
                 ) : null}
               </div>

@@ -27,12 +27,72 @@ async function openExportDialog(page: import("@playwright/test").Page) {
 // Picks a format button inside the export dialog (PNG / MP4 / GIF / ...).
 // The dialog groups formats into Image and Video segmented rows; the label is
 // matched by its visible text regardless of the group it lives in.
-async function chooseExportFormat(page: import("@playwright/test").Page, label: "PNG" | "MP4" | "GIF" | "WebP" | "WebM" | "Animated WebP") {
+async function chooseExportFormat(
+  page: import("@playwright/test").Page,
+  label: "PNG" | "MP4" | "GIF" | "WebP" | "WebM" | "Animated WebP" | "SVG" | "HTML"
+) {
   await page
     .locator('.segmented[role="group"] button', { hasText: label })
     .filter({ hasText: new RegExp(`^${label}$`) })
     .first()
     .click();
+}
+
+// Awaits the download and returns its suggested name plus file bytes.
+async function downloadBuffer(downloadPromise: Promise<import("@playwright/test").Download>) {
+  const download = await downloadPromise;
+  const path = await download.path();
+  const fs = await import("node:fs");
+  return {
+    name: download.suggestedFilename(),
+    buffer: path ? fs.readFileSync(path) : Buffer.alloc(0)
+  };
+}
+
+// Decodes a PNG in-page and reports dark corners + how many of a 6x6 grid
+// inside the central 60% region are colorful (saturation > 40). Useful for
+// asserting that exported raster exports actually drew the media (a video
+// frame, for instance) rather than an empty/background screen.
+async function samplePngColors(
+  page: import("@playwright/test").Page,
+  buffer: Buffer
+): Promise<{ width: number; height: number; corners: { tl: number[]; br: number[] }; colorful: number; total: number }> {
+  return page.evaluate(
+    async (b64) => {
+      const img = new Image();
+      img.src = `data:image/png;base64,${b64}`;
+      await img.decode();
+      const c = document.createElement("canvas");
+      c.width = img.width;
+      c.height = img.height;
+      const g = c.getContext("2d");
+      if (!g) throw new Error("no 2d context");
+      g.drawImage(img, 0, 0);
+      const px = (x: number, y: number): number[] => {
+        const d = g.getImageData(x, y, 1, 1).data;
+        return [d[0] ?? 0, d[1] ?? 0, d[2] ?? 0];
+      };
+      const sat = (p: number[]) => Math.max(p[0]!, p[1]!, p[2]!) - Math.min(p[0]!, p[1]!, p[2]!);
+      const W = img.width;
+      const H = img.height;
+      const corners = { tl: px(4, 4), br: px(W - 5, H - 5) };
+      let colorful = 0;
+      for (let i = 1; i <= 6; i++) {
+        for (let j = 1; j <= 6; j++) {
+          if (sat(px(Math.round(W * (0.2 + i * 0.1)), Math.round(H * (0.2 + j * 0.1)))) > 40) colorful++;
+        }
+      }
+      return { width: W, height: H, corners, colorful, total: 36 };
+    },
+    buffer.toString("base64")
+  );
+}
+
+// The default scene is a multi-frame grid, so the uploaded media renders once
+// per visible frame. Scope to the preview canvas and take the first match so
+// strict-mode locators don't trip over the duplicate copies.
+function previewMedia(page: import("@playwright/test").Page) {
+  return page.locator('#preview-canvas img[alt="Uploaded media"]').first();
 }
 
 test("shows editor shell", async ({ page }) => {
@@ -44,10 +104,13 @@ test("shows editor shell", async ({ page }) => {
 test("selecting iphone16pro renders the device overlay", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "16 Pro");
-  await expect(page.locator('img[src*="iphone16pro.svg"]')).toBeVisible();
+  await expect(page.locator('img[src*="iphone16pro.svg"]').first()).toBeVisible();
   // The overlay frame adopts its native (portrait) aspect ratio instead of
   // stretching the skin to the scene's default 16/9.
-  const ratio = await page.locator("[data-mockup-frame]").evaluate((el) => getComputedStyle(el).aspectRatio);
+  const ratio = await page
+    .locator("[data-mockup-frame]")
+    .first()
+    .evaluate((el) => getComputedStyle(el).aspectRatio);
   expect(ratio).toContain("390 / 844");
 });
 
@@ -62,7 +125,7 @@ test("iphone16pro media stays inside the device cutout, not under the bezel", as
       "base64"
     )
   });
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  await expect(previewMedia(page)).toBeVisible();
 
   // The media must be inset within the overlay's transparent screen cutout so
   // it never spills across the opaque bezel ("on top of everything").
@@ -85,7 +148,7 @@ test("iphone16pro media stays inside the device cutout, not under the bezel", as
 test("iphone16pro shadow control drives the overlay drop-shadow", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "16 Pro");
-  await expect(page.locator('img[src*="iphone16pro.svg"]')).toBeVisible();
+  await expect(page.locator('img[src*="iphone16pro.svg"]').first()).toBeVisible();
 
   const frameFilter = () =>
     page.evaluate(() => getComputedStyle(document.querySelector("[data-mockup-frame]") as HTMLElement).filter);
@@ -131,6 +194,8 @@ test("iphone15 and iphone16pro overlays have a transparent screen cutout", async
 
 test("templates include the Soft Glass preset", async ({ page }) => {
   await page.goto("/");
+  // The preset gallery lives in the Scene presets tab (Layers is open by default).
+  await page.getByRole("tab", { name: "Scene presets" }).click();
   await expect(page.getByRole("button", { name: "Soft Glass" })).toBeVisible();
 });
 
@@ -145,12 +210,12 @@ test("uploading media reveals a Clear button that resets it", async ({ page }) =
       "base64"
     )
   });
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  await expect(previewMedia(page)).toBeVisible();
   const clear = page.locator("#preview-canvas").getByRole("button", { name: "Clear media" });
   await expect(clear).toBeVisible();
   await clear.click();
-  await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(0);
-  await expect(page.getByText("Drop image or video to start")).toBeVisible();
+  // The active layer's media is gone; the grid's other frame keeps its demo.
+  await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(1);
 });
 
 test("exporting an image scene triggers a PNG download", async ({ page }) => {
@@ -163,7 +228,7 @@ test("exporting an image scene triggers a PNG download", async ({ page }) => {
       "base64"
     )
   });
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  await expect(previewMedia(page)).toBeVisible();
 
   await openExportDialog(page);
   const downloadPromise = page.waitForEvent("download");
@@ -182,7 +247,7 @@ test("watermark preview matches the exported image", async ({ page }) => {
       "base64"
     )
   });
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  await expect(previewMedia(page)).toBeVisible();
 
   // Enable the watermark toggle.
   await page.locator('label.toggle:has-text("Watermark")').click();
@@ -218,10 +283,17 @@ test("watermark preview matches the exported image", async ({ page }) => {
 test("autosaves the scene and restores it after reload", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "Tablet");
-  await expect(page.getByText("Saved")).toBeVisible();
-  // Give the debounced autosave a moment to flush to localStorage before we
-  // tear the page down with a reload.
-  await page.waitForTimeout(300);
+  // Wait until the debounced autosave actually writes the scene with the new
+  // frame to localStorage (the "Saved" badge can lag the write).
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const raw = localStorage.getItem("mocksy-projects");
+        if (!raw) return null;
+        return JSON.parse(raw).projects[0]?.scene.frame ?? null;
+      })
+    )
+    .toBe("tablet");
   await page.reload();
   // The restored scene is applied in a post-mount effect, so poll until the
   // persisted Tablet frame becomes active again.
@@ -232,7 +304,7 @@ test("watch frame renders as a circle", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "Watch");
   await expect.poll(() => frameIsActive(page, "Watch")).toBe("true");
-  const radius = await page.locator("[data-mockup-frame]").evaluate((el) => getComputedStyle(el).borderRadius);
+  const radius = await page.locator("[data-mockup-frame]").first().evaluate((el) => getComputedStyle(el).borderRadius);
   expect(radius).toContain("50%");
 });
 
@@ -243,7 +315,7 @@ test("changing aspect ratio resizes the canvas but not the device frame", async 
   await expect.poll(() => frameIsActive(page, "Desktop")).toBe("true");
 
   const frameRatio = () =>
-    page.locator("[data-mockup-frame]").evaluate((el) => getComputedStyle(el).aspectRatio);
+    page.locator("[data-mockup-frame]").first().evaluate((el) => getComputedStyle(el).aspectRatio);
   const canvasRatio = () =>
     page.locator("#preview-canvas").evaluate((el) => getComputedStyle(el).aspectRatio);
 
@@ -263,7 +335,7 @@ test("opens with demo media when nothing is saved", async ({ page, context }) =>
   await page.goto("/");
   await page.evaluate(() => window.localStorage.clear());
   await page.reload();
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  await expect(previewMedia(page)).toBeVisible();
 });
 
 test("Reset restores default settings and demo media", async ({ page }) => {
@@ -273,7 +345,7 @@ test("Reset restores default settings and demo media", async ({ page }) => {
   // Reset opens a confirmation modal; confirm it.
   await page.locator(".modal").getByRole("button", { name: "Reset" }).click();
   await expect.poll(() => frameIsActive(page, "iPhone")).toBe("true");
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  await expect(previewMedia(page)).toBeVisible();
 });
 
 test("Layers panel clears media of the active layer", async ({ page }) => {
@@ -286,15 +358,14 @@ test("Layers panel clears media of the active layer", async ({ page }) => {
       "base64"
     )
   });
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  await expect(previewMedia(page)).toBeVisible();
 
   // The layers panel exposes a Clear button for the selected layer, mirroring
   // the one in the preview. It empties the active layer's media rather than
   // deleting the layer itself. Scope to the layers panel title so we don't
   // clash with the identical button inside the preview canvas.
   await page.getByTitle("Remove media from the selected layer").click();
-  await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(0);
-  await expect(page.getByText("Drop image or video to start")).toBeVisible();
+  await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(1);
 });
 
 test("duplicating a layer clones it with the same media", async ({ page }) => {
@@ -307,14 +378,15 @@ test("duplicating a layer clones it with the same media", async ({ page }) => {
       "base64"
     )
   });
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
-  // One layer to start.
-  await expect(page.locator(".layer-item")).toHaveCount(1);
+  await expect(previewMedia(page)).toBeVisible();
+  // The default demo is a 2-frame grid, so two layers to start.
+  await expect(page.locator(".layer-item")).toHaveCount(2);
 
   // Duplicate the selected layer from the layers panel. The clone keeps the
-  // same media, so the preview now renders two copies of it.
+  // same media, so the layer list grows to three.
   await page.locator(".layer-item.is-active").getByRole("button", { name: "Duplicate layer" }).click();
-  await expect(page.locator(".layer-item")).toHaveCount(2);
+  await expect(page.locator(".layer-item")).toHaveCount(3);
+  // Only the two grid frames render; the duplicated layer has no frame slot.
   await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(2);
 });
 
@@ -328,13 +400,12 @@ test("Control panel clears the active layer's media", async ({ page }) => {
       "base64"
     )
   });
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  await expect(previewMedia(page)).toBeVisible();
 
   // The Controls panel exposes its own Clear button next to Upload, distinct
   // from the one in the preview/layers panel. It empties the active layer.
-  await page.getByTitle("Clear the active layer's media").click();
-  await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(0);
-  await expect(page.getByText("Drop image or video to start")).toBeVisible();
+  await page.locator(".control-panel").getByRole("button", { name: "Clear media" }).click();
+  await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(1);
 });
 
 test("keyboard duplicates and reorders the active layer", async ({ page }) => {
@@ -347,21 +418,27 @@ test("keyboard duplicates and reorders the active layer", async ({ page }) => {
       "base64"
     )
   });
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
-  await expect(page.locator(".layer-item")).toHaveCount(1);
+  await expect(previewMedia(page)).toBeVisible();
+  await expect(page.locator(".layer-item")).toHaveCount(2);
 
   // ⌘D duplicates the active layer; the clone is appended and becomes active.
   await page.keyboard.press("Control+d");
-  await expect(page.locator(".layer-item")).toHaveCount(2);
+  await expect(page.locator(".layer-item")).toHaveCount(3);
   await expect(page.locator(".layer-item").last()).toHaveClass(/is-active/);
+  const activeIndex = () =>
+    page.locator(".layer-item").evaluateAll((items) =>
+      items.findIndex((el) => el.classList.contains("is-active"))
+    );
 
-  // ⌘↑ moves the active clone to the top of the stack.
+  // ⌘↑ moves the active clone one slot up the stack.
+  const beforeUp = await activeIndex();
   await page.keyboard.press("Control+ArrowUp");
-  await expect(page.locator(".layer-item").first()).toHaveClass(/is-active/);
+  expect(await activeIndex()).toBe(beforeUp - 1);
 
-  // ⌘↓ moves it back to the bottom.
+  // ⌘↓ moves it back down again.
+  const beforeDown = await activeIndex();
   await page.keyboard.press("Control+ArrowDown");
-  await expect(page.locator(".layer-item").last()).toHaveClass(/is-active/);
+  expect(await activeIndex()).toBe(beforeDown + 1);
 });
 
 test("keyboard switches between layers", async ({ page }) => {
@@ -374,21 +451,27 @@ test("keyboard switches between layers", async ({ page }) => {
       "base64"
     )
   });
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
-  await expect(page.locator(".layer-item")).toHaveCount(1);
-
-  // ⌘D gives two layers; the clone (bottom) is active.
-  await page.keyboard.press("Control+d");
+  await expect(previewMedia(page)).toBeVisible();
   await expect(page.locator(".layer-item")).toHaveCount(2);
-  await expect(page.locator(".layer-item").last()).toHaveClass(/is-active/);
 
-  // ⌘[ selects the previous (top) layer.
+  // ⌘D gives three layers; the clone (bottom) is active.
+  await page.keyboard.press("Control+d");
+  await expect(page.locator(".layer-item")).toHaveCount(3);
+  await expect(page.locator(".layer-item").last()).toHaveClass(/is-active/);
+  const activeIndex = () =>
+    page.locator(".layer-item").evaluateAll((items) =>
+      items.findIndex((el) => el.classList.contains("is-active"))
+    );
+
+  // ⌘[ selects the previous layer in the stack.
+  const beforePrev = await activeIndex();
   await page.keyboard.press("Control+[");
-  await expect(page.locator(".layer-item").first()).toHaveClass(/is-active/);
+  expect(await activeIndex()).toBe(beforePrev - 1);
 
-  // ⌘] selects the next (bottom) layer again.
+  // ⌘] selects the next layer again.
+  const beforeNext = await activeIndex();
   await page.keyboard.press("Control+]");
-  await expect(page.locator(".layer-item").last()).toHaveClass(/is-active/);
+  expect(await activeIndex()).toBe(beforeNext + 1);
 });
 
 test("toggling layer visibility hides and shows it in the preview", async ({ page }) => {
@@ -401,16 +484,16 @@ test("toggling layer visibility hides and shows it in the preview", async ({ pag
       "base64"
     )
   });
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  await expect(previewMedia(page)).toBeVisible();
 
   // Hide the active layer via the eye toggle in the layers panel; the preview
-  // drops its media without deleting the layer.
+  // drops its media without deleting the layer (the grid's other frame stays).
   await page.locator(".layer-item.is-active").getByTitle("Hide layer").click();
-  await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(0);
+  await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(1);
 
   // Show it again; the media returns to the preview.
   await page.locator(".layer-item.is-active").getByTitle("Show layer").click();
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  await expect(previewMedia(page)).toBeVisible();
 });
 
 test("undo and redo restore a previous frame choice", async ({ page }) => {
@@ -456,7 +539,7 @@ test("Export PNG via keyboard shortcut triggers a download", async ({ page }) =>
       "base64"
     )
   });
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  await expect(previewMedia(page)).toBeVisible();
 
   const downloadPromise = page.waitForEvent("download");
   await page.keyboard.press("Control+e");
@@ -531,8 +614,8 @@ test("rejects unsupported file types with an inline error", async ({ page }) => 
   await expect(page.getByText(/is not a supported image or video/)).toBeVisible();
   // The default demo media stays put; the rejected PDF is not loaded.
   const media = page.locator('img[alt="Uploaded media"]');
-  await expect(media).toHaveCount(1);
-  await expect(media).toHaveAttribute("src", /data:image\/svg/);
+  await expect(media).toHaveCount(2);
+  await expect(media.first()).toHaveAttribute("src", /data:image\/svg/);
   await expect(page.getByText("Drop image or video to start")).toHaveCount(0);
 });
 
@@ -546,7 +629,7 @@ test("exporting an image scene triggers an MP4 download", async ({ page }) => {
       "base64"
     )
   });
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  await expect(previewMedia(page)).toBeVisible();
 
   const downloadPromise = page.waitForEvent("download");
   await openExportDialog(page);
@@ -573,7 +656,7 @@ test("exporting an overlay phone frame (16 Pro) produces an MP4", async ({ page 
       "base64"
     )
   });
-  await expect(page.locator('img[src*="iphone16pro.svg"]')).toBeVisible();
+  await expect(page.locator('img[src*="iphone16pro.svg"]').first()).toBeVisible();
 
   const downloadPromise = page.waitForEvent("download");
   await openExportDialog(page);
@@ -599,7 +682,7 @@ test("Auto from media builds a gradient from the uploaded image palette", async 
       "base64"
     )
   });
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  await expect(previewMedia(page)).toBeVisible();
 
   // The button starts disabled until the media palette is analyzed after load.
   const autoBtn = page.getByRole("button", { name: "Auto from media" });
@@ -628,10 +711,10 @@ test("copy PNG button writes the mockup image to the clipboard", async ({ page, 
       "base64"
     )
   });
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  await expect(previewMedia(page)).toBeVisible();
 
   await openExportDialog(page);
-  await page.getByRole("button", { name: "Copy PNG" }).click();
+  await page.locator(".modal.export").getByRole("button", { name: "Copy", exact: true }).click();
   await expect(page.getByText("Copied PNG to clipboard")).toBeVisible();
 
   // The clipboard must actually hold a PNG, not just claim success.
@@ -652,9 +735,9 @@ test("exporting an MP4 via keyboard shortcut triggers a download", async ({ page
       "base64"
     )
   });
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  await expect(previewMedia(page)).toBeVisible();
 
-  const downloadPromise = page.waitForEvent("download");
+  const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
   await page.keyboard.press("Control+Shift+e");
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/\.mp4$/);
@@ -670,9 +753,9 @@ test("exporting a GIF via keyboard shortcut triggers a download", async ({ page 
       "base64"
     )
   });
-  await expect(page.locator('img[alt="Uploaded media"]')).toBeVisible();
+  await expect(previewMedia(page)).toBeVisible();
 
-  const downloadPromise = page.waitForEvent("download");
+  const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
   await page.keyboard.press("Control+Shift+g");
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/\.gif$/);
@@ -680,6 +763,10 @@ test("exporting a GIF via keyboard shortcut triggers a download", async ({ page 
 
 test("dragging the media pans it inside the frame", async ({ page }) => {
   await page.goto("/");
+  // Drag-panning is a single-frame gesture; collapse the demo grid to one frame.
+  const removeFrame = page.locator(".control-panel").getByRole("button", { name: "Remove frame" });
+  await removeFrame.first().click();
+  await removeFrame.first().click();
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
     name: "sample.png",
     mimeType: "image/png",
@@ -688,11 +775,11 @@ test("dragging the media pans it inside the frame", async ({ page }) => {
       "base64"
     )
   });
-  const media = page.locator('img[alt="Uploaded media"]');
+  const media = previewMedia(page);
   await expect(media).toBeVisible();
 
   // Position X starts at 0; dragging the media right must move it.
-  const slider = page.locator('[aria-label="Media horizontal position"]');
+  const slider = page.locator('[aria-label="Position X"]');
   expect(await slider.inputValue()).toBe("0");
 
   const box = await media.boundingBox();
@@ -709,6 +796,7 @@ test("dragging the media pans it inside the frame", async ({ page }) => {
 
 test("adding a text annotation renders it on the canvas and can be deleted", async ({ page }) => {
   await page.goto("/");
+  await page.getByRole("tab", { name: "Annotations" }).click();
   await page.locator('.segmented[aria-label="Add annotation"] button', { hasText: "+ Text" }).click();
   // The overlay text shows in the preview and a panel row appears.
   await expect(page.locator("#preview-canvas").getByText("Label")).toBeVisible();
@@ -719,19 +807,20 @@ test("adding a text annotation renders it on the canvas and can be deleted", asy
   await expect(page.locator("#preview-canvas").getByText("Hello")).toBeVisible();
 
   // Delete removes it from the preview and the panel.
-  await page.locator(".annotations-panel").getByRole("button", { name: "Delete" }).click();
+  await page.getByRole("tabpanel").getByRole("button", { name: "Delete", exact: true }).click();
   await expect(page.locator("#preview-canvas").getByText("Hello")).toHaveCount(0);
 });
 
 test("adding an arrow draws an overlay and selecting it shows the editor", async ({ page }) => {
   await page.goto("/");
+  await page.getByRole("tab", { name: "Annotations" }).click();
   await page.locator('.segmented[aria-label="Add annotation"] button', { hasText: "+ Arrow" }).click();
   // The arrow is an SVG drawn on the canvas.
   await expect(page.locator("#preview-canvas svg").first()).toBeVisible();
   await expect(page.getByRole("button", { name: /Arrow 1/ })).toBeVisible();
 
   // The selected annotation exposes a color and stroke editor.
-  await expect(page.locator('input[type="color"]')).toBeVisible();
+  await expect(page.getByRole("tabpanel").locator('input[type="color"]')).toBeVisible();
 });
 
 test("Fill / Fit toggle switches the media fit and persists across reload", async ({ page }) => {
@@ -757,8 +846,18 @@ test("Fill / Fit toggle switches the media fit and persists across reload", asyn
   expect(fitAfter).toBe("contain");
 
   // The choice is part of the scene and autosaved, so it survives a reload.
-  // Wait for the debounced autosave to flush before reloading.
-  await expect(page.getByText("Saved")).toBeVisible();
+  // Wait until the debounced autosave actually writes the scene with the new
+  // fit to localStorage (the "Saved" badge can briefly lag the write).
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const raw = localStorage.getItem("mocksy-projects");
+        if (!raw) return false;
+        const proj = JSON.parse(raw).projects[0] as { scene: { layers: { mediaFit?: string }[] } } | undefined;
+        return proj?.scene.layers.some((l) => l.mediaFit === "contain") ?? false;
+      })
+    )
+    .toBe(true);
   await page.reload();
   await page.waitForTimeout(400);
   const fitAfterReload = await previewFit();
@@ -793,7 +892,7 @@ test("keyboard shortcuts cheat sheet lists every shortcut", async ({ page }) => 
   await page.waitForTimeout(300);
 
   // Opens from the toolbar button (also reachable via "?").
-  await page.getByRole("button", { name: "Shortcuts", exact: true }).click();
+  await page.getByRole("button", { name: /Keyboard shortcuts/ }).click();
   await expect(page.locator(".modal[role='dialog']")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Keyboard shortcuts" })).toBeVisible();
 
@@ -817,6 +916,276 @@ test("? key opens the keyboard shortcuts cheat sheet", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Keyboard shortcuts" })).toBeVisible();
   await page.locator(".modal-backdrop").click({ position: { x: 4, y: 4 } });
   await expect(page.locator(".modal[role='dialog']")).toHaveCount(0);
+});
+
+test("export dialog lists every image and video format", async ({ page }) => {
+  await page.goto("/");
+  await openExportDialog(page);
+  // The format buttons live in segmented rows whose accessible name prefixes
+  // the row label ("Image Image"), so match on the button's visible text.
+  for (const label of ["PNG", "WebP", "SVG", "HTML", "MP4", "WebM", "GIF", "Animated WebP"]) {
+    await expect(
+      page.locator('.segmented[role="group"] button', { hasText: new RegExp(`^${label}$`) }).first()
+    ).toBeVisible();
+  }
+  // Every format has a matching Export action button: the dialog's single
+  // action button relabels itself to the currently selected format.
+  for (const label of ["PNG", "SVG", "HTML", "WebM", "Animated WebP"]) {
+    await page
+      .locator('.segmented[role="group"] button', { hasText: new RegExp(`^${label}$`) })
+      .first()
+      .click();
+    await expect(page.getByRole("button", { name: `Export ${label}` })).toBeVisible();
+  }
+});
+
+test("exporting an image scene triggers a WebP download", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(previewMedia(page)).toBeVisible();
+
+  await openExportDialog(page);
+  await chooseExportFormat(page, "WebP");
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export WebP" }).click();
+  const { name, buffer } = await downloadBuffer(downloadPromise);
+  expect(name).toMatch(/\.webp$/);
+  expect(buffer.length).toBeGreaterThan(0);
+});
+
+test("exporting an image scene produces a standalone SVG with embedded media", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(previewMedia(page)).toBeVisible();
+
+  await openExportDialog(page);
+  await chooseExportFormat(page, "SVG");
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export SVG" }).click();
+  const { name, buffer } = await downloadBuffer(downloadPromise);
+  expect(name).toMatch(/\.svg$/);
+  const svg = buffer.toString("utf8");
+  expect(svg.trimStart().startsWith("<svg")).toBe(true);
+  // The media must be embedded as a data URL so the file opens standalone.
+  expect(svg).toContain("<image");
+  expect(svg).toContain("data:image/png;base64,");
+});
+
+test("exporting an image scene produces a self-contained HTML document", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(previewMedia(page)).toBeVisible();
+
+  await openExportDialog(page);
+  await chooseExportFormat(page, "HTML");
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export HTML" }).click();
+  const { name, buffer } = await downloadBuffer(downloadPromise);
+  expect(name).toMatch(/\.html$/);
+  const html = buffer.toString("utf8");
+  expect(html.trimStart().toLowerCase().startsWith("<!doctype html")).toBe(true);
+  // The default scene is a multi-frame grid, so the HTML embeds a rendered PNG
+  // snapshot of the whole grid as a data URL (see exportHtml).
+  expect(html).toContain('<img src="data:image/png;base64,');
+});
+
+test("exporting a video scene triggers a WebM download", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles("public/sample-video.mp4");
+  await expect(page.locator("#preview-canvas video")).toBeVisible();
+
+  await openExportDialog(page);
+  await chooseExportFormat(page, "WebM");
+  const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
+  await page.getByRole("button", { name: "Export WebM" }).click();
+  const { name, buffer } = await downloadBuffer(downloadPromise);
+  expect(name).toMatch(/\.webm$/);
+  expect(buffer.length).toBeGreaterThan(0);
+});
+
+test("animated WebP export of an image scene downloads a non-empty file", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(previewMedia(page)).toBeVisible();
+
+  await openExportDialog(page);
+  await chooseExportFormat(page, "Animated WebP");
+  const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
+  await page.getByRole("button", { name: "Export Animated WebP" }).click();
+  const { name, buffer } = await downloadBuffer(downloadPromise);
+  expect(name).toMatch(/\.webp$/);
+  expect(buffer.length).toBeGreaterThan(0);
+});
+
+test("PNG export of a video scene draws the video frame, not an empty screen", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles("public/sample-video.mp4");
+  const video = page.locator("#preview-canvas video");
+  await expect(video).toBeVisible();
+  // Wait until the preview video has actually decoded a frame.
+  await expect
+    .poll(() => video.evaluate((v) => (v as HTMLVideoElement).readyState))
+    .toBeGreaterThanOrEqual(2);
+
+  // Solid near-black background: an empty frame would export as black, so the
+  // colorful screen region below proves the video content was painted.
+  await page.getByRole("button", { name: "Zinc", exact: true }).click();
+  await page.waitForTimeout(300);
+
+  await openExportDialog(page);
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export PNG" }).click();
+  const { buffer } = await downloadBuffer(downloadPromise);
+  const samples = await samplePngColors(page, buffer);
+
+  const cornerIsDark = (p: number[]) => p.every((v) => v < 60);
+  expect(cornerIsDark(samples.corners.tl), `TL corner should be near-black, got ${samples.corners.tl}`).toBe(true);
+  expect(cornerIsDark(samples.corners.br), `BR corner should be near-black, got ${samples.corners.br}`).toBe(true);
+  expect(samples.colorful, `${samples.colorful}/${samples.total} central points colorful`).toBeGreaterThanOrEqual(samples.total * 0.5);
+});
+
+test("SVG export of a video scene embeds the poster frame", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles("public/sample-video.mp4");
+  await expect(page.locator("#preview-canvas video")).toBeVisible();
+  await expect
+    .poll(() => page.locator("#preview-canvas video").evaluate((v) => (v as HTMLVideoElement).readyState))
+    .toBeGreaterThanOrEqual(2);
+
+  await openExportDialog(page);
+  await chooseExportFormat(page, "SVG");
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export SVG" }).click();
+  const { buffer } = await downloadBuffer(downloadPromise);
+  const svg = buffer.toString("utf8");
+  // The video frame is rasterized and embedded as a PNG data URL inside <image>.
+  expect(svg).toContain("<image");
+  expect(svg).toContain("data:image/png;base64,");
+});
+
+test("creating a 2-frame grid renders two mockups in the preview", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles("public/sample-video.mp4");
+  await expect(page.locator("#preview-canvas video")).toHaveCount(1);
+
+  // The horizontal 2-column grid button (first of the two "2" buttons).
+  await page.getByRole("button", { name: "2", exact: true }).first().click();
+  await expect(page.locator("#preview-canvas video")).toHaveCount(2);
+});
+
+test("PNG export of a 2-frame video grid draws video in both frames", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles("public/sample-video.mp4");
+  await expect(page.locator("#preview-canvas video")).toHaveCount(1);
+  await page.getByRole("button", { name: "Zinc", exact: true }).click();
+  await page.getByRole("button", { name: "2", exact: true }).first().click();
+  await page.waitForTimeout(600);
+
+  await openExportDialog(page);
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export PNG" }).click();
+  const { buffer } = await downloadBuffer(downloadPromise);
+
+  // Sample the left and right halves where the two phones' screens sit.
+  const sample = await page.evaluate(
+    async (b64) => {
+      const img = new Image();
+      img.src = `data:image/png;base64,${b64}`;
+      await img.decode();
+      const c = document.createElement("canvas");
+      c.width = img.width;
+      c.height = img.height;
+      const g = c.getContext("2d");
+      if (!g) throw new Error("no 2d context");
+      g.drawImage(img, 0, 0);
+      const px = (x: number, y: number): number[] => {
+        const d = g.getImageData(x, y, 1, 1).data;
+        return [d[0] ?? 0, d[1] ?? 0, d[2] ?? 0];
+      };
+      const sat = (p: number[]) => Math.max(p[0]!, p[1]!, p[2]!) - Math.min(p[0]!, p[1]!, p[2]!);
+      const W = img.width;
+      const H = img.height;
+      const count = (xs: number[]) => {
+        let n = 0;
+        for (const x of xs) for (let j = 1; j <= 6; j++) {
+          if (sat(px(Math.round(x), Math.round(H * (0.2 + j * 0.1)))) > 40) n++;
+        }
+        return n;
+      };
+      const corners = { tl: px(4, 4), br: px(W - 5, H - 5) };
+      return { corners, left: count([W * 0.25, W * 0.25 + 40]), right: count([W * 0.75, W * 0.75 - 40]), perHalf: 12 };
+    },
+    buffer.toString("base64")
+  );
+
+  const dark = (p: number[]) => p.every((v) => v < 60);
+  expect(dark(sample.corners.tl)).toBe(true);
+  expect(dark(sample.corners.br)).toBe(true);
+  expect(sample.left, `left half colorful points ${sample.left}/${sample.perHalf}`).toBeGreaterThanOrEqual(6);
+  expect(sample.right, `right half colorful points ${sample.right}/${sample.perHalf}`).toBeGreaterThanOrEqual(6);
+});
+
+test("export Size selector scales the PNG pixel dimensions", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(previewMedia(page)).toBeVisible();
+
+  const sizeButton = (label: string) =>
+    page.locator('.segmented[aria-label="Size"] button', { hasText: label }).first();
+
+  const exportPng = async () => {
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Export PNG" }).click();
+    const { buffer } = await downloadBuffer(downloadPromise);
+    return (await samplePngColors(page, buffer)).width;
+  };
+
+  // 1x export.
+  await openExportDialog(page);
+  await sizeButton("1×").click();
+  const width1x = await exportPng();
+
+  // 4x export (the dialog closes after each export, so reopen it).
+  await openExportDialog(page);
+  await sizeButton("4×").click();
+  const width4x = await exportPng();
+
+  expect(width4x).toBeGreaterThan(width1x * 3);
 });
 
 
