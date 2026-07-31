@@ -23,5 +23,5 @@ export function useAutosave(scene: EditorScene, setSaved: (v: boolean) => void) 
     return () => {
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     };
-  }, [scene]);
+  }, [scene, setSaved]);
 }

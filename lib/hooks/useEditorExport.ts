@@ -62,13 +62,13 @@ export function useEditorExport(scene: EditorScene, setExportOpen?: (v: boolean)
       else if (format === "mp4") handleExportMp4();
       else handleExportGif();
     },
-    [handleExportPng, handleExportMp4, handleExportGif]
+    [handleExportPng, handleExportMp4, handleExportGif, setExportOpen]
   );
 
   const handleCopyFromDialog = useCallback(() => {
     setExportOpen?.(false);
     handleCopyPng();
-  }, [handleCopyPng]);
+  }, [handleCopyPng, setExportOpen]);
 
   // Clear the transient "Copied" status after a moment so it doesn't
   // linger in the toolbar like the persistent Saved indicator.

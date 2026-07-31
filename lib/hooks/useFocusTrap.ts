@@ -50,7 +50,7 @@ export function useFocusTrap(isActive: boolean, trapTab = true) {
       document.removeEventListener("keydown", onKeyDown);
       previous.current?.focus();
     };
-  }, [isActive]);
+  }, [isActive, trapTab]);
 
   return ref;
 }
