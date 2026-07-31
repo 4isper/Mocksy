@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import type { EditorScene } from "@/lib/types/editor";
-import { getFrameSpec, SVG_VIEWBOX_HEIGHT, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
+import { frameViewBox, getFrameSpec } from "@/lib/render/frames";
 
 export interface SceneCss {
   container: CSSProperties;
@@ -112,13 +112,14 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
   const activeLayerForCss = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   const mediaPosX = 50 + (activeLayerForCss?.mediaOffsetX ?? 0) * 50;
   const mediaPosY = 50 + (activeLayerForCss?.mediaOffsetY ?? 0) * 50;
+  const vb = frameViewBox(spec);
   const mediaStyle: CSSProperties = spec.isOverlay && spec.cutout
     ? {
         position: "absolute",
-        left: `${(spec.cutout.x / SVG_VIEWBOX_WIDTH) * 100}%`,
-        top: `${(spec.cutout.y / SVG_VIEWBOX_HEIGHT) * 100}%`,
-        width: `${(spec.cutout.w / SVG_VIEWBOX_WIDTH) * 100}%`,
-        height: `${(spec.cutout.h / SVG_VIEWBOX_HEIGHT) * 100}%`,
+        left: `${(spec.cutout.x / vb.w) * 100}%`,
+        top: `${(spec.cutout.y / vb.h) * 100}%`,
+        width: `${(spec.cutout.w / vb.w) * 100}%`,
+        height: `${(spec.cutout.h / vb.h) * 100}%`,
         objectFit: activeLayerForCss?.mediaFit ?? "cover",
         objectPosition: `${mediaPosX}% ${mediaPosY}%`,
         borderRadius: `${(spec.cutout.rx / spec.cutout.w) * 100}% / ${(spec.cutout.rx / spec.cutout.h) * 100}%`,
@@ -136,10 +137,10 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
   const emptyMediaStyle: CSSProperties = spec.isOverlay && spec.cutout
     ? {
         position: "absolute",
-        left: `${(spec.cutout.x / SVG_VIEWBOX_WIDTH) * 100}%`,
-        top: `${(spec.cutout.y / SVG_VIEWBOX_HEIGHT) * 100}%`,
-        width: `${(spec.cutout.w / SVG_VIEWBOX_WIDTH) * 100}%`,
-        height: `${(spec.cutout.h / SVG_VIEWBOX_HEIGHT) * 100}%`,
+        left: `${(spec.cutout.x / vb.w) * 100}%`,
+        top: `${(spec.cutout.y / vb.h) * 100}%`,
+        width: `${(spec.cutout.w / vb.w) * 100}%`,
+        height: `${(spec.cutout.h / vb.h) * 100}%`,
         borderRadius: `${(spec.cutout.rx / spec.cutout.w) * 100}% / ${(spec.cutout.rx / spec.cutout.h) * 100}%`,
         display: "grid",
         placeItems: "center",

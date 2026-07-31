@@ -169,9 +169,9 @@ test("iphone16pro shadow control drives the overlay drop-shadow", async ({ page 
   expect(atZero).not.toBe(atMax);
 });
 
-test("iphone15 and iphone16pro overlays have a transparent screen cutout", async ({ page }) => {
+test("overlay skins have a transparent screen cutout", async ({ page }) => {
   await page.goto("/");
-  for (const label of ["15", "16 Pro"]) {
+  for (const label of ["15", "16 Pro", "iPad", "MacBook"]) {
     await selectFrame(page, label);
     await page.waitForTimeout(200);
 

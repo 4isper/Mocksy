@@ -181,6 +181,9 @@
     "iphone16pro": "16 Pro",
     "pixel8pro": "Pixel 8 Pro",
     "galaxy24": "Galaxy S24",
+    "ipad": "iPad",
+    "macbook": "MacBook",
+    "imac": "iMac",
     "desktop": "데스크톱",
     "tablet": "태블릿",
     "watch": "시계"

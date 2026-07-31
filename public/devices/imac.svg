@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1420" viewBox="0 0 1600 1420" fill="none">
+  <!-- iMac frame-only overlay: the display is a real transparent cutout (via
+       mask) so the media behind shows through. -->
+  <defs>
+    <linearGradient id="imac-slab" x1="0" y1="0" x2="0" y2="1420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f2f2f6"/>
+      <stop offset="0.75" stop-color="#d7d7dd"/>
+      <stop offset="1" stop-color="#e6e6eb"/>
+    </linearGradient>
+    <linearGradient id="imac-neck" x1="0" y1="0" x2="0" y2="1420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#c7c7cd"/>
+      <stop offset="1" stop-color="#8f8f95"/>
+    </linearGradient>
+    <linearGradient id="imac-base" x1="0" y1="0" x2="0" y2="1420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d4d4da"/>
+      <stop offset="1" stop-color="#9a9aa0"/>
+    </linearGradient>
+    <mask id="imac-screen">
+      <rect x="0" y="0" width="1600" height="1420" fill="white"/>
+      <rect x="70" y="80" width="1460" height="821" rx="10" ry="10" fill="black"/>
+    </mask>
+  </defs>
+  <!-- Slab: display + chin, with the display masked out. -->
+  <rect x="30" y="30" width="1540" height="1210" rx="36" ry="36" fill="url(#imac-slab)" stroke="#0a0a0a" stroke-width="2" mask="url(#imac-screen)"/>
+  <!-- Thin black border around the transparent display -->
+  <rect x="70" y="80" width="1460" height="821" rx="10" ry="10" fill="none" stroke="#0a0a0a" stroke-width="1.5"/>
+  <rect x="73" y="83" width="1454" height="815" rx="8" ry="8" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>
+  <!-- Apple logo on the chin -->
+  <g fill="rgba(0,0,0,0.22)">
+    <path d="M800 1040 C 793 1036, 784 1038, 780 1044 C 775 1050, 776 1060, 782 1066 C 788 1072, 796 1070, 800 1066 C 804 1070, 812 1072, 818 1066 C 824 1060, 825 1050, 820 1044 C 816 1038, 807 1036, 800 1040 Z"/>
+    <rect x="797" y="1028" width="6" height="13" rx="3"/>
+    <ellipse cx="811" cy="1031" rx="5" ry="3" transform="rotate(-35 811 1031)"/>
+  </g>
+  <!-- Neck and base -->
+  <rect x="764" y="1240" width="72" height="90" rx="8" ry="8" fill="url(#imac-neck)"/>
+  <rect x="620" y="1328" width="360" height="52" rx="26" ry="26" fill="url(#imac-base)"/>
+  <rect x="620" y="1326" width="360" height="2" fill="rgba(255,255,255,0.5)"/>
+</svg>

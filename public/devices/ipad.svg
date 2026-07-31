@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="862" height="1140" viewBox="0 0 862 1140" fill="none">
+  <!-- iPad Pro frame-only overlay: the screen area is a real transparent
+       cutout (via mask) so the media behind shows through. -->
+  <defs>
+    <linearGradient id="ipad-bezel" x1="0" y1="0" x2="862" y2="1140" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4a4a4e"/>
+      <stop offset="0.5" stop-color="#2c2c2f"/>
+      <stop offset="1" stop-color="#3d3d41"/>
+    </linearGradient>
+    <mask id="ipad-screen">
+      <rect x="0" y="0" width="862" height="1140" fill="white"/>
+      <rect x="14" y="14" width="834" height="1112" rx="12" ry="12" fill="black"/>
+    </mask>
+  </defs>
+  <!-- Outer body with the screen masked out to transparency. -->
+  <rect x="4" y="4" width="854" height="1132" rx="50" ry="50" fill="url(#ipad-bezel)" stroke="#0a0a0a" stroke-width="2" mask="url(#ipad-screen)"/>
+  <!-- Screen edge highlight (only the visible rim, not the cutout interior). -->
+  <rect x="14" y="14" width="834" height="1112" rx="12" ry="12" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+  <!-- Camera (top bezel) -->
+  <circle cx="431" cy="10" r="3" fill="#0a0a0a"/>
+  <circle cx="431" cy="10" r="1.4" fill="#1c1c1e"/>
+</svg>

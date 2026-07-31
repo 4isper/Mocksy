@@ -42,8 +42,11 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 | `iphone16pro` | Overlay | SVG skin, native portrait ratio |
 | `pixel8pro` | Overlay | SVG skin, native portrait ratio |
 | `galaxy24` | Overlay | SVG skin, native portrait ratio |
+| `ipad` | Overlay | iPad Pro skin, native portrait ratio |
 | `desktop` | CSS | Wide landscape monitor |
 | `tablet` | CSS | Tablet proportions |
+| `macbook` | Overlay | MacBook Pro skin, landscape |
+| `imac` | Overlay | iMac skin with stand |
 | `watch` | CSS | Circular face |
 
 - Style presets: default, glass (light/dark), outline — with configurable shadow opacity and corner radius

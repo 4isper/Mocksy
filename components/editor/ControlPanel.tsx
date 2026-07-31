@@ -61,8 +61,11 @@ export function ControlPanel() {
     iphone16pro: t("frame.iphone16pro"),
     pixel8pro: t("frame.pixel8pro"),
     galaxy24: t("frame.galaxy24"),
+    ipad: t("frame.ipad"),
     desktop: t("frame.desktop"),
     tablet: t("frame.tablet"),
+    macbook: t("frame.macbook"),
+    imac: t("frame.imac"),
     watch: t("frame.watch")
   };
   const styleLabels: Record<StylePreset, string> = {

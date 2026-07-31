@@ -20,7 +20,7 @@ export interface Annotation {
   /** Font family for text annotations. Falls back to "Inter, system-ui, sans-serif" when absent. */
   fontFamily?: string;
 }
-export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "pixel8pro" | "galaxy24" | "desktop" | "tablet" | "watch";
+export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "pixel8pro" | "galaxy24" | "ipad" | "desktop" | "tablet" | "macbook" | "imac" | "watch";
 export type StylePreset = "default" | "glassLight" | "glassDark" | "outline";
 export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax";
 export type MediaType = "none" | "image" | "video";

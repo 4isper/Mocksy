@@ -113,6 +113,19 @@ describe("buildSceneCss", () => {
     expect(cssOnly.padding).toBe(18);
   });
 
+  it("converts cutout percentages off each skin's own viewBox", () => {
+    const macbook = buildSceneCss(base({ frame: "macbook" }));
+    expect(macbook.frame.aspectRatio).toBe("1600 / 1040");
+    expect(macbook.mediaStyle.left).toBe(`${(44 / 1600) * 100}%`);
+    expect(macbook.mediaStyle.top).toBe(`${(34 / 1040) * 100}%`);
+    expect(macbook.mediaStyle.width).toBe(`${(1512 / 1600) * 100}%`);
+    expect(macbook.mediaStyle.height).toBe(`${(944 / 1040) * 100}%`);
+    const imac = buildSceneCss(base({ frame: "imac" }));
+    expect(imac.frame.aspectRatio).toBe("1600 / 1420");
+    expect(imac.mediaStyle.left).toBe(`${(70 / 1600) * 100}%`);
+    expect(imac.mediaStyle.top).toBe(`${(80 / 1420) * 100}%`);
+  });
+
   it("draws a CSS border for outline frames", () => {
     const { frame } = buildSceneCss(base({ frame: "none", stylePreset: "outline" }));
     expect(frame.border).toContain("solid");

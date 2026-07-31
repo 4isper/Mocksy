@@ -1,7 +1,7 @@
 "use client";
 
 import type { Annotation, EditorScene, MediaLayer } from "@/lib/types/editor";
-import { getFrameSpec, SVG_VIEWBOX_HEIGHT, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
+import { frameViewBox, getFrameSpec } from "@/lib/render/frames";
 
 function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   const radius = Math.max(0, Math.min(r, Math.min(w, h) / 2));
@@ -97,8 +97,9 @@ export function computeFrameBox(
   // device px off the rendered frame so the media matches the skin at any size.
   // Other frames use a simple padding-based inset.
   const cutout = spec.cutout;
-  const padX = cutout ? (cutout.x / SVG_VIEWBOX_WIDTH) * frameW : spec.padding * dpiScale * actualZoom;
-  const padY = cutout ? (cutout.y / SVG_VIEWBOX_HEIGHT) * frameH : spec.padding * dpiScale * actualZoom;
+  const vb = frameViewBox(spec);
+  const padX = cutout ? (cutout.x / vb.w) * frameW : spec.padding * dpiScale * actualZoom;
+  const padY = cutout ? (cutout.y / vb.h) * frameH : spec.padding * dpiScale * actualZoom;
   // X and Y insets differ because the skin viewBox is not square; innerX/Y/W/H
   // use the correct per-axis values below.
   // Circular frames (watch) ignore the corner radius and clip to a full circle.
@@ -108,8 +109,12 @@ export function computeFrameBox(
     : (spec.isOverlay ? spec.screenRadius : scene.borderRadius + spec.padding) * dpiScale * actualZoom;
   const innerX = x + padX;
   const innerY = y + padY;
-  const innerW = frameW - padX * 2;
-  const innerH = frameH - padY * 2;
+  // Cutout dimensions come straight from the skin's viewBox so asymmetric
+  // cutouts (e.g. MacBook's bottom base) match the CSS preview exactly. The
+  // old frameH - padY*2 formula assumed a symmetric cutout and drifted when
+  // the bottom bezel was thicker than the top.
+  const innerW = cutout ? (cutout.w / vb.w) * frameW : frameW - padX * 2;
+  const innerH = cutout ? (cutout.h / vb.h) * frameH : frameH - padY * 2;
   const innerRadius = isCircular
     ? Math.min(innerW, innerH) / 2
     : cutout
@@ -149,8 +154,9 @@ export function computeFrameInstances(
     const y = inst.y * canvasHeight - h / 2;
 
     const cutout = spec.cutout;
-    const padX = cutout ? (cutout.x / SVG_VIEWBOX_WIDTH) * w : spec.padding * dpiScale * actualZoom;
-    const padY = cutout ? (cutout.y / SVG_VIEWBOX_HEIGHT) * h : spec.padding * dpiScale * actualZoom;
+    const vb = frameViewBox(spec);
+    const padX = cutout ? (cutout.x / vb.w) * w : spec.padding * dpiScale * actualZoom;
+    const padY = cutout ? (cutout.y / vb.h) * h : spec.padding * dpiScale * actualZoom;
     const outerRadius = spec.isOverlay ? 0 : (inst.frame === "watch" ? Math.min(w, h) / 2 : scene.borderRadius + spec.padding) * dpiScale * actualZoom;
 
     return {
@@ -161,8 +167,8 @@ export function computeFrameInstances(
       outerRadius,
       innerX: x + padX,
       innerY: y + padY,
-      innerW: w - padX * 2,
-      innerH: h - padY * 2,
+      innerW: cutout ? (cutout.w / vb.w) * w : w - padX * 2,
+      innerH: cutout ? (cutout.h / vb.h) * h : h - padY * 2,
       innerRadius: cutout
         ? Math.max(0, (cutout.rx / cutout.w) * (w - padX * 2), (cutout.rx / cutout.h) * (h - padY * 2))
         : spec.screenRadius * dpiScale * actualZoom

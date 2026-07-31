@@ -7,6 +7,11 @@ import type { AnimationPreset, MockupFrame } from "@/lib/types/editor";
 export const SVG_VIEWBOX_WIDTH = 390;
 export const SVG_VIEWBOX_HEIGHT = 844;
 
+/** Default viewBox dimensions for skins that match the iPhone proportions
+ *  (390x844). Other skins override this per-frame so cutout percentages are
+ *  computed off their own viewBox instead of the shared phone size. */
+export const DEFAULT_VIEWBOX = { w: SVG_VIEWBOX_WIDTH, h: SVG_VIEWBOX_HEIGHT };
+
 export interface FrameSpec {
   /** SVG overlay asset path, or null for CSS-only frames (none/iphone/desktop/tablet). */
   asset: string | null;
@@ -21,6 +26,14 @@ export interface FrameSpec {
   /** Transparent screen cutout in SVG viewBox units, used to inset/round the
    *  media so it matches the skin at any rendered size. Null for non-overlay. */
   cutout: { x: number; y: number; w: number; h: number; rx: number } | null;
+  /** The skin's SVG viewBox size. Defaults to 390x844 (iPhone skins); must
+   *  match `aspectRatio` so the overlay stretches without distortion. */
+  viewBox?: { w: number; h: number };
+}
+
+/** ViewBox size used to convert cutout coordinates to frame percentages. */
+export function frameViewBox(spec: FrameSpec): { w: number; h: number } {
+  return spec.viewBox ?? DEFAULT_VIEWBOX;
 }
 
 export const FRAME_SPECS: Record<MockupFrame, FrameSpec> = {
@@ -62,8 +75,38 @@ export const FRAME_SPECS: Record<MockupFrame, FrameSpec> = {
     // viewBox 390x844; screen rect x12 y12 w366 h820 rx32
     cutout: { x: 12, y: 12, w: 366, h: 820, rx: 32 }
   },
+  ipad: {
+    asset: "/devices/ipad.svg",
+    padding: 14,
+    screenRadius: 12,
+    isOverlay: true,
+    aspectRatio: "862 / 1140",
+    // viewBox 862x1140; screen rect x14 y14 w834 h1112 rx12
+    cutout: { x: 14, y: 14, w: 834, h: 1112, rx: 12 },
+    viewBox: { w: 862, h: 1140 }
+  },
   desktop: { asset: null, padding: 10, screenRadius: 8, isOverlay: false, aspectRatio: "16 / 10", cutout: null },
   tablet: { asset: null, padding: 14, screenRadius: 24, isOverlay: false, aspectRatio: "4 / 3", cutout: null },
+  macbook: {
+    asset: "/devices/macbook.svg",
+    padding: 40,
+    screenRadius: 6,
+    isOverlay: true,
+    aspectRatio: "1600 / 1040",
+    // viewBox 1600x1040; screen rect x44 y34 w1512 h944 rx6
+    cutout: { x: 44, y: 34, w: 1512, h: 944, rx: 6 },
+    viewBox: { w: 1600, h: 1040 }
+  },
+  imac: {
+    asset: "/devices/imac.svg",
+    padding: 70,
+    screenRadius: 10,
+    isOverlay: true,
+    aspectRatio: "1600 / 1420",
+    // viewBox 1600x1420; screen rect x70 y80 w1460 h821 rx10
+    cutout: { x: 70, y: 80, w: 1460, h: 821, rx: 10 },
+    viewBox: { w: 1600, h: 1420 }
+  },
   watch: { asset: null, padding: 18, screenRadius: 999, isOverlay: false, aspectRatio: "1 / 1", cutout: null }
 };
 
@@ -78,8 +121,11 @@ export const FRAME_ORDER: MockupFrame[] = [
   "iphone16pro",
   "pixel8pro",
   "galaxy24",
+  "ipad",
   "desktop",
   "tablet",
+  "macbook",
+  "imac",
   "watch"
 ];
 

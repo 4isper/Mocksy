@@ -2,7 +2,7 @@
 
 import type { EditorScene } from "@/lib/types/editor";
 import { computeFrameBox, computeFrameInstances, loadVideoFrame, type FrameBox } from "@/lib/export/renderMockup";
-import { getFrameSpec, SVG_VIEWBOX_WIDTH, SVG_VIEWBOX_HEIGHT } from "@/lib/render/frames";
+import { frameViewBox, getFrameSpec, DEFAULT_VIEWBOX } from "@/lib/render/frames";
 import { resolveExportTransform, waitForImage } from "@/lib/export/exportImage";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 
@@ -46,6 +46,8 @@ export interface SvgFrameGroup {
   mediaHeight: number;
   /** Whether the frame is an SVG device skin that sits above the media. */
   isOverlay: boolean;
+  /** The skin's SVG viewBox size (defaults to the shared 390x844 phone viewBox). */
+  viewBox?: { w: number; h: number };
   /** True for the CSS watch frame, whose screen clips to a full circle. */
   isCircular?: boolean;
   /** Inner markup (children of the device SVG's <svg> root) to inline, or null. */
@@ -142,8 +144,9 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
   let frame = "";
   if (group.isOverlay) {
     if (group.overlayInner) {
-      const sx = box.width / SVG_VIEWBOX_WIDTH;
-      const sy = box.height / SVG_VIEWBOX_HEIGHT;
+      const vb = group.viewBox ?? DEFAULT_VIEWBOX;
+      const sx = box.width / vb.w;
+      const sy = box.height / vb.h;
       frame = `<g filter="url(#frame-shadow)"><g transform="translate(${num(box.x)} ${num(box.y)}) scale(${num(sx)} ${num(sy)})">${group.overlayInner}</g></g>`;
     }
   } else {
@@ -374,6 +377,7 @@ export async function exportSvg(
           mediaWidth: media?.width ?? box.innerW,
           mediaHeight: media?.height ?? box.innerH,
           isOverlay: spec.isOverlay,
+          viewBox: frameViewBox(spec),
           isCircular: inst.frame === "watch",
           overlayInner,
           mediaFit: layer?.mediaFit,
@@ -412,6 +416,7 @@ export async function exportSvg(
         mediaWidth: media?.width ?? box.innerW,
         mediaHeight: media?.height ?? box.innerH,
         isOverlay: spec.isOverlay,
+        viewBox: frameViewBox(spec),
         isCircular: scene.frame === "watch",
         overlayInner,
         mediaFit: activeLayer?.mediaFit,

@@ -38,6 +38,20 @@ describe("computeFrameBox geometry", () => {
     expect(ratioHigh).toBeCloseTo(ratioLow, 5);
   });
 
+  it("converts overlay cutout coordinates off the skin's own viewBox", () => {
+    const cssWidth = 700;
+    const spec = getFrameSpec("macbook");
+    const vbW = spec.viewBox?.w ?? 390;
+    const vbH = spec.viewBox?.h ?? 844;
+    // MacBook is landscape (1600/1040), so height is derived from the frame ratio.
+    const box = computeFrameBox(scene({ frame: "macbook" }), 1400, 1400, 2, cssWidth * 2, cssWidth * 2 * (1040 / 1600));
+
+    expect((box.innerX - box.x) / box.width).toBeCloseTo(spec.cutout!.x / vbW, 5);
+    expect((box.innerY - box.y) / box.height).toBeCloseTo(spec.cutout!.y / vbH, 5);
+    expect(box.innerW / box.width).toBeCloseTo(spec.cutout!.w / vbW, 5);
+    expect(box.innerH / box.height).toBeCloseTo(spec.cutout!.h / vbH, 5);
+  });
+
   it("matches the CSS preview inset ratio for a CSS-only frame", () => {
     const cssWidth = 640;
     const spec = getFrameSpec("iphone");
