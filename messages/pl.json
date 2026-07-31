@@ -241,7 +241,7 @@
     "apply": "Zastosuj {name}"
   },
   "help": {
-    "layersStack": "Warstwy są ułożone od góry do dołu. Wybierz warstwę, aby edytować jej zoom, pozycję i opcje wideo. Skróty dla aktywnej warstwy: ⌘D duplikuj, ⌘↑ / ⌘↓ zmień kolejność, ⌘[ / ⌘] przełącz."
+    "layersStack": "Warstwy są ułożone od góry do dołu. Wybierz warstwę, aby edytować jej zoom, pozycję i opcje wideo. Przeciągnij warstwę, aby ją przestawić. Skróty dla aktywnej warstwy: ⌘D duplikuj, ⌘↑ / ⌘↓ zmień kolejność, ⌘[ / ⌘] przełącz."
   },
   "export": {
     "title": "Eksportuj",

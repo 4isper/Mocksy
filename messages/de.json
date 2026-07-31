@@ -241,7 +241,7 @@
     "apply": "{name} anwenden"
   },
   "help": {
-    "layersStack": "Ebenen sind von oben nach unten gestapelt. Wählen Sie eine Ebene aus, um Zoom, Position und Videoeinstellungen zu bearbeiten. Tastenkombinationen für die aktive Ebene: ⌘D duplizieren, ⌘↑ / ⌘↓ verschieben, ⌘[ / ⌘] wechseln."
+    "layersStack": "Ebenen sind von oben nach unten gestapelt. Wählen Sie eine Ebene aus, um Zoom, Position und Videoeinstellungen zu bearbeiten. Ziehen Sie eine Ebene, um sie neu zu ordnen. Tastenkombinationen für die aktive Ebene: ⌘D duplizieren, ⌘↑ / ⌘↓ verschieben, ⌘[ / ⌘] wechseln."
   },
   "export": {
     "title": "Export",

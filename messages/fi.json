@@ -241,7 +241,7 @@
     "apply": "Käytä {name}"
   },
   "help": {
-    "layersStack": "Kerrokset on pinottu ylhäältä alaspäin. Valitse kerros muokataksesi zoomia, sijaintia ja videovalintoja. Pikakäyttövalinnat aktiiviselle kerrokselle: ⌘D kopioi, ⌘↑ / ⌘↓ järjestä, ⌘[ / ⌘] vaihda."
+    "layersStack": "Kerrokset on pinottu ylhäältä alaspäin. Valitse kerros muokataksesi zoomia, sijaintia ja videovalintoja. Vedä kerros uudelleenjärjestääksesi. Pikakäyttövalinnat aktiiviselle kerrokselle: ⌘D kopioi, ⌘↑ / ⌘↓ järjestä, ⌘[ / ⌘] vaihda."
   },
   "export": {
     "title": "Vie",

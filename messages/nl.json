@@ -241,7 +241,7 @@
     "apply": "{name} toepassen"
   },
   "help": {
-    "layersStack": "Lagen zijn van boven naar onder gestapeld. Selecteer een laag om zijn zoom, positie en video-opties te bewerken. Sneltoetsen voor de actieve laag: ⌘D dupliceren, ⌘↑ / ⌘↓ herschikken, ⌘[ / ⌘] wisselen."
+    "layersStack": "Lagen zijn van boven naar onder gestapeld. Selecteer een laag om zijn zoom, positie en video-opties te bewerken. Sleep een laag om te herschikken. Sneltoetsen voor de actieve laag: ⌘D dupliceren, ⌘↑ / ⌘↓ herschikken, ⌘[ / ⌘] wisselen."
   },
   "export": {
     "title": "Exporteren",

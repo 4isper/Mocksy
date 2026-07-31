@@ -241,7 +241,7 @@
     "apply": "Rakenda {name}"
   },
   "help": {
-    "layersStack": "Kihid on üles-alla asetatud. Vali kiht, et muuta zoomi, asukohta ja video valikuid. Kihi otseteed: ⌘D kopeerimiseks, ⌘↑ / ⌘↓ ümberjärjestamiseks, ⌘[ / ⌘] vahetamiseks."
+    "layersStack": "Kihid on üles-alla asetatud. Vali kiht, et muuta zoomi, asukohta ja video valikuid. Lohista kihti ümberjärjestamiseks. Kihi otseteed: ⌘D kopeerimiseks, ⌘↑ / ⌘↓ ümberjärjestamiseks, ⌘[ / ⌘] vahetamiseks."
   },
   "export": {
     "title": "Eksport",

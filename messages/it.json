@@ -241,7 +241,7 @@
     "apply": "Applica {name}"
   },
   "help": {
-    "layersStack": "I livelli sono impilati dall'alto verso il basso. Seleziona un livello per modificare zoom, posizione e opzioni video. Scorciatoie per il livello attivo: ⌘D duplica, ⌘↑ / ⌘↓ riordina, ⌘[ / ⌘] cambia."
+    "layersStack": "I livelli sono impilati dall'alto verso il basso. Seleziona un livello per modificare zoom, posizione e opzioni video. Trascina un livello per riordinarlo. Scorciatoie per il livello attivo: ⌘D duplica, ⌘↑ / ⌘↓ riordina, ⌘[ / ⌘] cambia."
   },
   "export": {
     "title": "Esporta",

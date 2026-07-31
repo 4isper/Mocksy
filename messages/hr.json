@@ -241,7 +241,7 @@
     "apply": "Primijeni {name}"
   },
   "help": {
-    "layersStack": "Slojevi se raspoređuju od gore prema dolje. Odaberite sloj za uređivanje zooma, pozicije i opcija videa. Prečaci za aktivni sloj: ⌘D dupliciranje, ⌘↑ / ⌘↓ preraspoređivanje, ⌘[ / ⌘] prebacivanje."
+    "layersStack": "Slojevi se raspoređuju od gore prema dolje. Odaberite sloj za uređivanje zooma, pozicije i opcija videa. Povucite sloj za preraspoređivanje. Prečaci za aktivni sloj: ⌘D dupliciranje, ⌘↑ / ⌘↓ preraspoređivanje, ⌘[ / ⌘] prebacivanje."
   },
   "export": {
     "title": "Izvoz",

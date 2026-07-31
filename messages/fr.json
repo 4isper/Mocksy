@@ -241,7 +241,7 @@
     "apply": "Appliquer {name}"
   },
   "help": {
-    "layersStack": "Les couches sont empilées de haut en bas. Sélectionnez une couche pour modifier son zoom, sa position et ses options vidéo. Raccourcis pour la couche active : ⌘D dupliquer, ⌘↑ / ⌘↓ réorganiser, ⌘[ / ⌘] changer."
+    "layersStack": "Les couches sont empilées de haut en bas. Sélectionnez une couche pour modifier son zoom, sa position et ses options vidéo. Faites glisser une couche pour la réorganiser. Raccourcis pour la couche active : ⌘D dupliquer, ⌘↑ / ⌘↓ réorganiser, ⌘[ / ⌘] changer."
   },
   "export": {
     "title": "Exporter",

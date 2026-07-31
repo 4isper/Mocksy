@@ -241,7 +241,7 @@
     "apply": "Anvend {name}"
   },
   "help": {
-    "layersStack": "Lag er staplet fra top til bund. Vælg et lag for at redigere zoom, position og videoindstillinger. Genveje for det aktive lag: ⌘D dubler, ⌘↑ / ⌘↓ omarrangerer, ⌘[ / ⌘] skifter."
+    "layersStack": "Lag er staplet fra top til bund. Vælg et lag for at redigere zoom, position og videoindstillinger. Træk et lag for at omarrangere. Genveje for det aktive lag: ⌘D dubler, ⌘↑ / ⌘↓ omarrangerer, ⌘[ / ⌘] skifter."
   },
   "export": {
     "title": "Eksporter",

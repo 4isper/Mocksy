@@ -241,7 +241,7 @@
     "apply": "Áp dụng {name}"
   },
   "help": {
-    "layersStack": "Các lớp được xếp chồng từ trên xuống dưới. Chọn một lớp để chỉnh sửa zoom, vị trí và tùy chọn video. Phím tắt cho lớp đang hoạt động: ⌘D nhân đôi, ⌘↑ / ⌘↓ sắp xếp lại, ⌘[ / ⌘] chuyển đổi."
+    "layersStack": "Các lớp được xếp chồng từ trên xuống dưới. Chọn một lớp để chỉnh sửa zoom, vị trí và tùy chọn video. Kéo một lớp để sắp xếp lại. Phím tắt cho lớp đang hoạt động: ⌘D nhân đôi, ⌘↑ / ⌘↓ sắp xếp lại, ⌘[ / ⌘] chuyển đổi."
   },
   "export": {
     "title": "Xuất",

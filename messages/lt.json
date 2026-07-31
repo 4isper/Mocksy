@@ -241,7 +241,7 @@
     "apply": "Aplicar {name}"
   },
   "help": {
-    "layersStack": "As camadas estão empilhadas de cima para baixo. Selecione uma camada para editar o zoom, a posição e as opções de vídeo. Atalhos para a camada ativa: ⌘D duplicar, ⌘↑ / ⌘↓ reordenar, ⌘[ / ⌘] alternar."
+    "layersStack": "Sluoksniai išdėstyti nuo viršaus iki apačios. Pasirinkite sluoksnį, kad pakeistumėte jo mastelį, padėtį ir vaizdo parinktis. Vilkite sluoksnį, kad pakeistumėte jo tvarką. Aktyvaus sluoksnio spartieji klavišai: ⌘D dublikavimas, ⌘↑ / ⌘↓ pertvarkymas, ⌘[ / ⌘] perjungimas."
   },
   "export": {
     "title": "Exportar",

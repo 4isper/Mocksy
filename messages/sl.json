@@ -241,7 +241,7 @@
     "apply": "Uporabi {name}"
   },
   "help": {
-    "layersStack": "Sloji so razporejeni od zgoraj navzdol. Izberite sloj za urejanje zooma, položaja in možnosti videa. Bližnjice za aktivni sloj: ⌘D podvoji, ⌘↑ / ⌘↓ preuredi, ⌘[ / ⌘] preklopi."
+    "layersStack": "Sloji so razporejeni od zgoraj navzdol. Izberite sloj za urejanje zooma, položaja in možnosti videa. Povlecite sloj za preureditev. Bližnjice za aktivni sloj: ⌘D podvoji, ⌘↑ / ⌘↓ preuredi, ⌘[ / ⌘] preklopi."
   },
   "export": {
     "title": "Izvoz",

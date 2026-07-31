@@ -241,7 +241,7 @@
     "apply": "Aplicar {name}"
   },
   "help": {
-    "layersStack": "As camadas são empilhadas de cima para baixo. Selecione uma camada para editar seu zoom, posição e opções de vídeo. Atalhos para a camada ativa: ⌘D duplicar, ⌘↑ / ⌘↓ reordenar, ⌘[ / ⌘] alternar."
+    "layersStack": "As camadas são empilhadas de cima para baixo. Selecione uma camada para editar seu zoom, posição e opções de vídeo. Arraste uma camada para reordenar. Atalhos para a camada ativa: ⌘D duplicar, ⌘↑ / ⌘↓ reordenar, ⌘[ / ⌘] alternar."
   },
   "export": {
     "title": "Exportar",

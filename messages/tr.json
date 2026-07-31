@@ -241,7 +241,7 @@
     "apply": "{name} uygula"
   },
   "help": {
-    "layersStack": "Katmanlar yukarıdan aşağıya yığılır. Aktif katmanın zoom, konum ve video seçeneklerini düzenlemek için katmanı seçin. Aktif katman için kısayollar: ⌘D kopyala, ⌘↑ / ⌘↓ sırala, ⌘[ / ⌘] değiştir."
+    "layersStack": "Katmanlar yukarıdan aşağıya yığılır. Aktif katmanın zoom, konum ve video seçeneklerini düzenlemek için katmanı seçin. Sıralamayı değiştirmek için katmanı sürükleyin. Aktif katman için kısayollar: ⌘D kopyala, ⌘↑ / ⌘↓ sırala, ⌘[ / ⌘] değiştir."
   },
   "export": {
     "title": "Dışa Aktar",

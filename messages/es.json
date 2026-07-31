@@ -241,7 +241,7 @@
     "apply": "Aplicar {name}"
   },
   "help": {
-    "layersStack": "Las capas se apilan de arriba a abajo. Selecciona una capa para editar su zoom, posición y opciones de video. Atajos para la capa activa: ⌘D duplicar, ⌘↑ / ⌘↓ reordenar, ⌘[ / ⌘] cambiar."
+    "layersStack": "Las capas se apilan de arriba a abajo. Selecciona una capa para editar su zoom, posición y opciones de video. Arrastra una capa para reordenarla. Atajos para la capa activa: ⌘D duplicar, ⌘↑ / ⌘↓ reordenar, ⌘[ / ⌘] cambiar."
   },
   "export": {
     "title": "Exportar",

@@ -241,7 +241,7 @@
     "apply": "Použít {name}"
   },
   "help": {
-    "layersStack": "Vrstvy jsou uspořádány shora dolů. Vyberte vrstvu pro úpravu zoomu, pozice a možností videa. Zkratky pro aktivní vrstvu: ⌘D duplikovat, ⌘↑ / ⌘↓ přeuspořádat, ⌘[ / ⌘] přepnout."
+    "layersStack": "Vrstvy jsou uspořádány shora dolů. Vyberte vrstvu pro úpravu zoomu, pozice a možností videa. Přesuňte vrstvu přetažením pro změnu pořadí. Zkratky pro aktivní vrstvu: ⌘D duplikovat, ⌘↑ / ⌘↓ přeuspořádat, ⌘[ / ⌘] přepnout."
   },
   "export": {
     "title": "Exportovat",

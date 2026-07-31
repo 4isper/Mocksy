@@ -241,7 +241,7 @@
     "apply": "Använd {name}"
   },
   "help": {
-    "layersStack": "Lager staplas från över till under. Välj ett lager för att redigera zoom, position och videoalternativ. Snabbbetagningar för aktivt lager: ⌘D duplicera, ⌘↑ / ⌘↓ ordna om, ⌘[ / ⌘] byta."
+    "layersStack": "Lager staplas uppifrån och ned. Välj ett lager för att redigera zoom, position och videoalternativ. Dra ett lager för att ändra ordningen. Genvägar för aktivt lager: ⌘D duplicera, ⌘↑ / ⌘↓ ordna om, ⌘[ / ⌘] byta."
   },
   "export": {
     "title": "Exportera",

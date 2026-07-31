@@ -241,7 +241,7 @@
     "apply": "Appliquer {name}"
   },
   "help": {
-    "layersStack": "Les couches sont empilées de haut en bas. Sélectionnez une couche pour modifier son zoom, sa position et ses options vidéo. Raccourcis pour la couche active : ⌘D dupliquer, ⌘↑ / ⌘↓ réorganiser, ⌘[ / ⌘] changer."
+    "layersStack": "Straturile sunt stivuite de sus în jos. Selectați un strat pentru a edita zoom-ul, poziția și opțiunile video. Trageți un strat pentru a-l reordona. Scurtături pentru stratul activ: ⌘D duplicare, ⌘↑ / ⌘↓ reordonare, ⌘[ / ⌘] comutare."
   },
   "export": {
     "title": "Exporter",

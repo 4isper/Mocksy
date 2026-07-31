@@ -241,7 +241,7 @@
     "apply": "Bruk {name}"
   },
   "help": {
-    "layersStack": "Lag er staplet fra topp til bunn. Velg et lag for å redigere zoom, posisjon og videoalternativer. Snarveier for aktivt lag: ⌘D dupliser, ⌘↑ / ⌘↓ omarranger, ⌘[ / ⌘] bytt."
+    "layersStack": "Lag er staplet fra topp til bunn. Velg et lag for å redigere zoom, posisjon og videoalternativer. Dra et lag for å omarrangere. Snarveier for aktivt lag: ⌘D dupliser, ⌘↑ / ⌘↓ omarranger, ⌘[ / ⌘] bytt."
   },
   "export": {
     "title": "Eksporter",

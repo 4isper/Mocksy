@@ -241,7 +241,7 @@
     "apply": "Terapkan {name}"
   },
   "help": {
-    "layersStack": "Lapisan ditumpuk dari atas ke bawah. Pilih lapisan untuk mengedit zoom, posisi, dan opsi video. Pintasan untuk lapisan aktif: ⌘D duplikasi, ⌘↑ / ⌘↓ urutkan, ⌘[ / ⌘] ganti."
+    "layersStack": "Lapisan ditumpuk dari atas ke bawah. Pilih lapisan untuk mengedit zoom, posisi, dan opsi video. Seret lapisan untuk mengurutkan ulang. Pintasan untuk lapisan aktif: ⌘D duplikasi, ⌘↑ / ⌘↓ urutkan, ⌘[ / ⌘] ganti."
   },
   "export": {
     "title": "Ekspor",
