@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { PreviewCanvas } from "@/components/editor/PreviewCanvas";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { initialScene } from "@/lib/state/editorStore";
@@ -17,6 +17,8 @@ afterEach(() => {
     isMediaLoading: false,
     scenePalette: null,
     selectedAnnotationId: null,
+    showGrid: false,
+    gridDivisions: 12,
   });
 });
 
@@ -101,5 +103,27 @@ describe("PreviewCanvas", () => {
     render(<PreviewCanvas scene={scene} />);
     const canvas = document.querySelector("#preview-canvas");
     expect(canvas).toBeInTheDocument();
+  });
+
+  it("hides the grid overlay by default", () => {
+    renderScene();
+    expect(document.querySelector("[data-grid-overlay]")).not.toBeInTheDocument();
+  });
+
+  it("renders the grid overlay when enabled", () => {
+    useEditorStore.setState({ showGrid: true, gridDivisions: 8 });
+    renderScene();
+    const overlay = document.querySelector("[data-grid-overlay]");
+    expect(overlay).toBeInTheDocument();
+    expect(overlay?.getAttribute("style") ?? "").toContain("12.5% 12.5%");
+  });
+
+  it("toggles the grid via the chip button", () => {
+    renderScene();
+    const toggle = screen.getByRole("button", { name: "editor.grid" });
+    fireEvent.click(toggle);
+    expect(useEditorStore.getState().showGrid).toBe(true);
+    fireEvent.click(toggle);
+    expect(useEditorStore.getState().showGrid).toBe(false);
   });
 });

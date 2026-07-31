@@ -968,6 +968,42 @@ describe("media fit + PNG export scale", () => {
   });
 });
 
+describe("grid overlay state", () => {
+  function reset() {
+    useEditorStore.setState({
+      past: [],
+      future: [],
+      scene: { ...initialScene },
+      showGrid: false,
+      gridDivisions: 12,
+      lastHistoryKey: null,
+      lastHistoryAt: 0
+    });
+  }
+
+  it("defaults to a hidden 12-division grid", () => {
+    expect(useEditorStore.getState().showGrid).toBe(false);
+    expect(useEditorStore.getState().gridDivisions).toBe(12);
+  });
+
+  it("setShowGrid toggles the overlay without touching scene/history", () => {
+    reset();
+    const before = useEditorStore.getState().scene;
+    useEditorStore.getState().setShowGrid(true);
+    expect(useEditorStore.getState().showGrid).toBe(true);
+    expect(useEditorStore.getState().scene).toBe(before);
+    expect(useEditorStore.getState().past).toHaveLength(0);
+  });
+
+  it("setGridDivisions updates the density", () => {
+    reset();
+    useEditorStore.getState().setGridDivisions(8);
+    expect(useEditorStore.getState().gridDivisions).toBe(8);
+    useEditorStore.getState().setGridDivisions(12);
+    expect(useEditorStore.getState().gridDivisions).toBe(12);
+  });
+});
+
 describe("editorHelpers", () => {
   it("activePosterTime returns 0 when there are no layers", () => {
     expect(activePosterTime({ ...initialScene, layers: [] })).toBe(0);

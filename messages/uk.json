@@ -172,7 +172,9 @@
     "gradientTo": "До",
     "gradientAngle": "Кут ({val}°)",
     "collapse": "Згорнути",
-    "expand": "Розгорнути"
+    "expand": "Розгорнути",
+    "grid": "Grid",
+    "gridDivisions": "Grid lines"
   },
   "frame": {
     "none": "Немає",

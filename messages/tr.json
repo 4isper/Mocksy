@@ -172,7 +172,9 @@
     "gradientTo": "Bitiş",
     "gradientAngle": "Açı ({val}°)",
     "collapse": "Küçült",
-    "expand": "Büyüt"
+    "expand": "Büyüt",
+    "grid": "Grid",
+    "gridDivisions": "Grid lines"
   },
   "frame": {
     "none": "Yok",

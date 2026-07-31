@@ -172,7 +172,9 @@
     "gradientTo": "Naar",
     "gradientAngle": "Hoek ({val}°)",
     "collapse": "Inklappen",
-    "expand": "Uitklappen"
+    "expand": "Uitklappen",
+    "grid": "Grid",
+    "gridDivisions": "Grid lines"
   },
   "frame": {
     "none": "Geen",

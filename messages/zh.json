@@ -172,7 +172,9 @@
     "gradientTo": "结束",
     "gradientAngle": "角度 ({val}°)",
     "collapse": "折叠",
-    "expand": "展开"
+    "expand": "展开",
+    "grid": "Grid",
+    "gridDivisions": "Grid lines"
   },
   "frame": {
     "none": "无",

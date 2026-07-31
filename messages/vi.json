@@ -172,7 +172,9 @@
     "gradientTo": "Đến",
     "gradientAngle": "Góc ({val}°)",
     "collapse": "Thu gọn",
-    "expand": "Mở rộng"
+    "expand": "Mở rộng",
+    "grid": "Grid",
+    "gridDivisions": "Grid lines"
   },
   "frame": {
     "none": "Không",

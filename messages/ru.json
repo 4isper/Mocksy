@@ -172,7 +172,9 @@
     "gradientTo": "До",
     "gradientAngle": "Угол ({val}°)",
     "collapse": "Свернуть",
-    "expand": "Развернуть"
+    "expand": "Развернуть",
+    "grid": "Сетка",
+    "gridDivisions": "Линий сетки"
   },
   "frame": {
     "none": "Без рамки",

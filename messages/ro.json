@@ -172,7 +172,9 @@
     "gradientTo": "À",
     "gradientAngle": "Angle ({val}°)",
     "collapse": "Réduire",
-    "expand": "Développer"
+    "expand": "Développer",
+    "grid": "Grid",
+    "gridDivisions": "Grid lines"
   },
   "frame": {
     "none": "Aucun",

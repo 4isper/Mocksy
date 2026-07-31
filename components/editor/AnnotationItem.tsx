@@ -4,11 +4,14 @@ import { useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import type { Annotation } from "@/lib/types/editor";
 import { useTranslations } from "next-intl";
+import { snapToGrid } from "@/lib/render/grid";
 
 interface AnnotationItemProps {
   annotation: Annotation;
   selected: boolean;
   canvasRef: React.RefObject<HTMLDivElement | null>;
+  /** Grid divisions per axis to snap to, or null to move freely. */
+  snapDivisions?: number | null;
   onSelect: (id: string) => void;
   onUpdate: (id: string, patch: Partial<Annotation>) => void;
 }
@@ -19,7 +22,7 @@ interface AnnotationItemProps {
  * drawn at measured pixel size (read from the canvas after layout) so its
  * stroke width and arrowhead match the exported PNG exactly.
  */
-export function AnnotationItem({ annotation, selected, canvasRef, onSelect, onUpdate }: AnnotationItemProps) {
+export function AnnotationItem({ annotation, selected, canvasRef, snapDivisions = null, onSelect, onUpdate }: AnnotationItemProps) {
   const t = useTranslations();
   const moveRef = useRef<{ x: number; y: number; ax: number; ay: number } | null>(null);
   const resizeRef = useRef<{ x: number; y: number; aw: number; ah: number } | null>(null);
@@ -46,8 +49,12 @@ export function AnnotationItem({ annotation, selected, canvasRef, onSelect, onUp
     if (!m || !canvas) return;
     const w = canvas.clientWidth || 1;
     const h = canvas.clientHeight || 1;
-    const nx = Math.max(-1, Math.min(2, m.ax + (e.clientX - m.x) / w));
-    const ny = Math.max(-1, Math.min(2, m.ay + (e.clientY - m.y) / h));
+    let nx = Math.max(-1, Math.min(2, m.ax + (e.clientX - m.x) / w));
+    let ny = Math.max(-1, Math.min(2, m.ay + (e.clientY - m.y) / h));
+    if (snapDivisions) {
+      nx = snapToGrid(nx, snapDivisions);
+      ny = snapToGrid(ny, snapDivisions);
+    }
     onUpdate(annotation.id, { x: nx, y: ny });
   };
   const onBodyUp = (e: React.PointerEvent) => {
@@ -68,8 +75,12 @@ export function AnnotationItem({ annotation, selected, canvasRef, onSelect, onUp
     if (!r || !canvas) return;
     const w = canvas.clientWidth || 1;
     const h = canvas.clientHeight || 1;
-    const nw = Math.max(-2, Math.min(2, r.aw + (e.clientX - r.x) / w));
-    const nh = Math.max(-2, Math.min(2, r.ah + (e.clientY - r.y) / h));
+    let nw = Math.max(-2, Math.min(2, r.aw + (e.clientX - r.x) / w));
+    let nh = Math.max(-2, Math.min(2, r.ah + (e.clientY - r.y) / h));
+    if (snapDivisions) {
+      nw = snapToGrid(nw, snapDivisions);
+      nh = snapToGrid(nh, snapDivisions);
+    }
     onUpdate(annotation.id, { w: nw, h: nh });
   };
   const onResizeUp = (e: React.PointerEvent) => {

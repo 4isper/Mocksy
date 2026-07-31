@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
+import { GRID_DIVISION_OPTIONS } from "@/lib/render/grid";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
@@ -39,6 +40,10 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const updateAnnotation = useEditorStore((s) => s.updateAnnotation);
   const activeFrameInstanceId = useEditorStore((s) => s.activeFrameInstanceId);
   const selectFrameInstance = useEditorStore((s) => s.selectFrameInstance);
+  const showGrid = useEditorStore((s) => s.showGrid);
+  const gridDivisions = useEditorStore((s) => s.gridDivisions);
+  const setShowGrid = useEditorStore((s) => s.setShowGrid);
+  const setGridDivisions = useEditorStore((s) => s.setGridDivisions);
 
   const { analyzeMedia } = useScenePalette(scene);
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
@@ -240,6 +245,23 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             }}
           />
         ) : null}
+        {showGrid ? (
+          <div
+            data-grid-overlay
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 0,
+              pointerEvents: "none",
+              backgroundImage: [
+                "repeating-linear-gradient(to right, rgba(255,255,255,0.07) 0 1px, transparent 1px 100%)",
+                "repeating-linear-gradient(to bottom, rgba(255,255,255,0.07) 0 1px, transparent 1px 100%)"
+              ].join(", "),
+              backgroundSize: `${100 / gridDivisions}% ${100 / gridDivisions}%`
+            }}
+          />
+        ) : null}
         {scene.frameInstances.length > 0 ? (
           <FrameInstanceGrid
             scene={scene}
@@ -276,6 +298,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             annotation={a}
             selected={a.id === selectedAnnotationId}
             canvasRef={canvasRef}
+            snapDivisions={showGrid ? gridDivisions : null}
             onSelect={selectAnnotation}
             onUpdate={updateAnnotation}
           />
@@ -304,6 +327,29 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           <button type="button" className="preview-chip" style={{ top: 40 }} onClick={() => setMedia(null, "none", null)}>
             {t("editor.clearMedia")}
           </button>
+        ) : null}
+        <button
+          type="button"
+          className="preview-chip"
+          style={{ top: "auto", bottom: 8, right: 12 }}
+          aria-pressed={showGrid}
+          aria-label={t("editor.grid")}
+          onClick={() => setShowGrid(!showGrid)}
+        >
+          {showGrid ? "✓ " : ""}{t("editor.grid")}
+        </button>
+        {showGrid ? (
+          <select
+            className="preview-chip"
+            style={{ top: "auto", bottom: 44, right: 12, cursor: "pointer" }}
+            value={gridDivisions}
+            aria-label={t("editor.gridDivisions")}
+            onChange={(e) => setGridDivisions(Number(e.target.value))}
+          >
+            {GRID_DIVISION_OPTIONS.map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
         ) : null}
         {dropError ? (
           <div role="alert" className="preview-error">

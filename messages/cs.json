@@ -172,7 +172,9 @@
     "gradientTo": "Do",
     "gradientAngle": "Úhel ({val}°)",
     "collapse": "Sbalit",
-    "expand": "Rozbalit"
+    "expand": "Rozbalit",
+    "grid": "Grid",
+    "gridDivisions": "Grid lines"
   },
   "frame": {
     "none": "Žádný",

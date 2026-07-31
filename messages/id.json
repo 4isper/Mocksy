@@ -172,7 +172,9 @@
     "gradientTo": "Ke",
     "gradientAngle": "Sudut ({val}°)",
     "collapse": "Ciutkan",
-    "expand": "Perluas"
+    "expand": "Perluas",
+    "grid": "Grid",
+    "gridDivisions": "Grid lines"
   },
   "frame": {
     "none": "Tidak ada",

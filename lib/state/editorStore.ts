@@ -15,6 +15,7 @@ import type {
   WatermarkPosition
 } from "@/lib/types/editor";
 import { ASPECT_RATIOS } from "@/lib/render/frames";
+import { DEFAULT_GRID_DIVISIONS } from "@/lib/render/grid";
 import {
   activeLayer,
   activeOf,
@@ -44,6 +45,11 @@ export interface EditorStoreState {
   /** Pixel multiplier used when exporting/copying PNG (1×/2×/4×). Kept out of
    *  `scene` so it doesn't churn undo history or serialize into share URLs. */
   exportScale: 1 | 2 | 4;
+  /** Grid overlay on the preview canvas; kept out of `scene` so it doesn't
+   *  churn undo history or serialize into share URLs. */
+  showGrid: boolean;
+  /** Number of grid lines on each axis while the overlay is visible. */
+  gridDivisions: number;
   /** Groups rapid same-field edits (e.g. slider drags) into one undo step. */
   lastHistoryKey: string | null;
   lastHistoryAt: number;
@@ -57,6 +63,8 @@ export interface EditorStoreState {
   setMediaLoading: (loading: boolean) => void;
   setScenePalette: (palette: string[] | null) => void;
   setExportScale: (scale: 1 | 2 | 4) => void;
+  setShowGrid: (show: boolean) => void;
+  setGridDivisions: (divisions: number) => void;
   resetScene: () => void;
   undo: () => void;
   redo: () => void;
@@ -198,6 +206,8 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   isMediaLoading: false,
   scenePalette: null,
   exportScale: 2,
+  showGrid: false,
+  gridDivisions: DEFAULT_GRID_DIVISIONS,
   setScene: (scene, recordHistory = true) =>
     set((s) => {
       const next = { ...s.scene, ...scene };
@@ -328,6 +338,8 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   setMediaLoading: (loading) => set({ isMediaLoading: loading }),
   setScenePalette: (palette) => set({ scenePalette: palette }),
   setExportScale: (exportScale) => set({ exportScale }),
+  setShowGrid: (showGrid) => set({ showGrid }),
+  setGridDivisions: (gridDivisions) => set({ gridDivisions }),
   setFrame: (frame) =>
     set((s) => {
       const nextScene = { ...s.scene, frame };

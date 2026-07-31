@@ -172,7 +172,9 @@
     "gradientTo": "Προς",
     "gradientAngle": "Γωνία ({val}°)",
     "collapse": "Σύμπτυξη",
-    "expand": "Επέκταση"
+    "expand": "Επέκταση",
+    "grid": "Grid",
+    "gridDivisions": "Grid lines"
   },
   "frame": {
     "none": "Καμία",

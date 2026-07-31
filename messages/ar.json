@@ -172,7 +172,9 @@
     "gradientTo": "إلى",
     "gradientAngle": "الزاوية ({val}°)",
     "collapse": "طي",
-    "expand": "توسيع"
+    "expand": "توسيع",
+    "grid": "Grid",
+    "gridDivisions": "Grid lines"
   },
   "frame": {
     "none": "بلا",

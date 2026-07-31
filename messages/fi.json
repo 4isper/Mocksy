@@ -172,7 +172,9 @@
     "gradientTo": "Päätteeksi",
     "gradientAngle": "Kulma ({val}°)",
     "collapse": "Kutista",
-    "expand": "Laajenna"
+    "expand": "Laajenna",
+    "grid": "Grid",
+    "gridDivisions": "Grid lines"
   },
   "frame": {
     "none": "Ei mitään",

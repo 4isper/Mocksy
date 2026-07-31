@@ -172,7 +172,9 @@
     "gradientTo": "끝",
     "gradientAngle": "각도 ({val}°)",
     "collapse": "접기",
-    "expand": "펼치기"
+    "expand": "펼치기",
+    "grid": "Grid",
+    "gridDivisions": "Grid lines"
   },
   "frame": {
     "none": "없음",

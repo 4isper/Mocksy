@@ -457,6 +457,25 @@ test("drag-and-drop reorders layers", async ({ page }) => {
   expect(namesAfter).toEqual([namesBefore[1], namesBefore[0]]);
 });
 
+test("grid overlay toggles from the preview chip", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("[data-grid-overlay]")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Grid" }).click();
+  const overlay = page.locator("[data-grid-overlay]");
+  await expect(overlay).toHaveCount(1);
+  // 12 divisions by default -> 8.3333% cells (computed as one size per gradient layer).
+  await expect(overlay).toHaveCSS("background-size", "8.33333% 8.33333%, 8.33333% 8.33333%");
+
+  // Switching density resizes the cells.
+  await page.getByRole("combobox", { name: "Grid lines" }).selectOption("8");
+  await expect(overlay).toHaveCSS("background-size", "12.5% 12.5%, 12.5% 12.5%");
+
+  // Toggling off removes the overlay.
+  await page.getByRole("button", { name: "Grid" }).click();
+  await expect(page.locator("[data-grid-overlay]")).toHaveCount(0);
+});
+
 test("keyboard switches between layers", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({

@@ -172,7 +172,9 @@
     "gradientTo": "אל",
     "gradientAngle": "זווית ({val}°)",
     "collapse": "כווץ",
-    "expand": "הרחב"
+    "expand": "הרחב",
+    "grid": "Grid",
+    "gridDivisions": "Grid lines"
   },
   "frame": {
     "none": "אף אחד",

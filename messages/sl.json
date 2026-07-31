@@ -172,7 +172,9 @@
     "gradientTo": "Do",
     "gradientAngle": "Kot ({val}°)",
     "collapse": "Strni",
-    "expand": "Razširi"
+    "expand": "Razširi",
+    "grid": "Grid",
+    "gridDivisions": "Grid lines"
   },
   "frame": {
     "none": "Brez",

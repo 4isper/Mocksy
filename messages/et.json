@@ -172,7 +172,9 @@
     "gradientTo": "Kuni",
     "gradientAngle": "Nurgakood ({val}°)",
     "collapse": "Ahenda",
-    "expand": "Laienda"
+    "expand": "Laienda",
+    "grid": "Grid",
+    "gridDivisions": "Grid lines"
   },
   "frame": {
     "none": "Puudub",

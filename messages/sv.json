@@ -172,7 +172,9 @@
     "gradientTo": "Till",
     "gradientAngle": "Vinkel ({val}°)",
     "collapse": "Komprimera",
-    "expand": "Expandera"
+    "expand": "Expandera",
+    "grid": "Grid",
+    "gridDivisions": "Grid lines"
   },
   "frame": {
     "none": "Ingen",
