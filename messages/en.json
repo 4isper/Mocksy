@@ -239,7 +239,7 @@
     "apply": "Apply {name}"
   },
   "help": {
-    "layersStack": "Layers stack top to bottom. Select a layer to edit its zoom, position and video options. Shortcuts for the active layer: ⌘D duplicate, ⌘↑ / ⌘↓ reorder, ⌘[ / ⌘] switch."
+    "layersStack": "Layers stack top to bottom. Select a layer to edit its zoom, position and video options. Drag a layer to reorder. Shortcuts for the active layer: ⌘D duplicate, ⌘↑ / ⌘↓ reorder, ⌘[ / ⌘] switch."
   },
   "export": {
     "title": "Export",

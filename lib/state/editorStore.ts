@@ -72,7 +72,9 @@ export interface EditorStoreState {
   toggleLayerHidden: (id: string) => void;
   removeLayer: (id: string) => void;
   selectLayer: (id: string) => void;
-  reorderLayers: (orderedIds: string[]) => void;
+  /** Reorders layers. Pass `coalesce: true` for continuous gestures (drag) so
+   *  all intermediate steps collapse into a single undo entry. */
+  reorderLayers: (orderedIds: string[], coalesce?: boolean) => void;
   updateActiveLayer: (patch: Partial<MediaLayer>) => void;
   setFrame: (frame: MockupFrame) => void;
   setFrameInstances: (instances: FrameInstance[]) => void;
@@ -306,13 +308,15 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
       return pushHistory(s, { ...s.scene, layers, activeLayerId });
     }),
   selectLayer: (id) => set((s) => pushHistory(s, { ...s.scene, activeLayerId: id })),
-  reorderLayers: (orderedIds) =>
+  reorderLayers: (orderedIds, coalesce) =>
     set((s) => {
       const byId = new Map(s.scene.layers.map((l) => [l.id, l]));
       const layers = orderedIds.map((id) => byId.get(id)).filter((l): l is MediaLayer => Boolean(l));
       // Keep any layers not mentioned in the order (defensive).
       for (const l of s.scene.layers) if (!orderedIds.includes(l.id)) layers.push(l);
-      return pushHistory(s, { ...s.scene, layers });
+      const sameOrder = layers.every((l, i) => s.scene.layers[i]?.id === l.id);
+      if (sameOrder) return {};
+      return pushHistory(s, { ...s.scene, layers }, coalesce ? "layerOrder" : undefined);
     }),
   updateActiveLayer: (patch) =>
     set((s) => {

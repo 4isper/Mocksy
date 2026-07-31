@@ -441,6 +441,22 @@ test("keyboard duplicates and reorders the active layer", async ({ page }) => {
   expect(await activeIndex()).toBe(beforeDown + 1);
 });
 
+test("drag-and-drop reorders layers", async ({ page }) => {
+  await page.goto("/");
+  // The default demo is a 2-frame grid, so two layers to start.
+  await expect(page.locator(".layer-item")).toHaveCount(2);
+
+  const namesBefore = await page.locator(".layer-item").evaluateAll((items) => items.map((el) => el.textContent));
+  // Drag the first layer onto the second; it should land below it.
+  await page.dragAndDrop(".layer-item >> nth=0", ".layer-item >> nth=1");
+  await page.waitForTimeout(150);
+
+  const namesAfter = await page.locator(".layer-item").evaluateAll((items) => items.map((el) => el.textContent));
+  expect(namesAfter).toHaveLength(2);
+  // The same two layers are present, but the top slot now holds the second one.
+  expect(namesAfter).toEqual([namesBefore[1], namesBefore[0]]);
+});
+
 test("keyboard switches between layers", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({

@@ -1,11 +1,16 @@
 "use client";
 
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, DragEvent } from "react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { isVideoLayer } from "@/lib/render/mediaKind";
+
+interface DropTarget {
+  id: string;
+  pos: "above" | "below";
+}
 
 export function LayersPanel() {
   const t = useTranslations();
@@ -18,6 +23,8 @@ export function LayersPanel() {
   const toggleLayerHidden = useEditorStore((s) => s.toggleLayerHidden);
   const setMedia = useEditorStore((s) => s.setMedia);
   const [error, setError] = useState<string | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
 
   const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -47,6 +54,52 @@ export function LayersPanel() {
     reorderLayers(ids);
   };
 
+  /** Moves the dragged layer to sit just above/below the target. Coalesced so
+   *  a continuous drag collapses into one undo step. */
+  const reorderByDrag = (targetId: string, pos: "above" | "below") => {
+    if (!dragId || dragId === targetId) return;
+    const ids = scene.layers.map((l) => l.id);
+    const from = ids.indexOf(dragId);
+    let to = ids.indexOf(targetId);
+    if (from < 0 || to < 0) return;
+    if (pos === "below") to += 1;
+    ids.splice(from, 1);
+    if (to > from) to -= 1;
+    ids.splice(to, 0, dragId);
+    reorderLayers(ids, true);
+  };
+
+  const handleDragStart = (e: DragEvent<HTMLLIElement>, id: string) => {
+    setDragId(id);
+    e.dataTransfer?.setData("text/plain", id);
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLLIElement>, id: string) => {
+    if (!dragId || dragId === id) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pos = e.clientY < rect.top + rect.height / 2 ? "above" : "below";
+    setDropTarget((cur) => (cur && cur.id === id && cur.pos === pos ? cur : { id, pos }));
+    reorderByDrag(id, pos);
+  };
+
+  const handleDrop = (e: DragEvent<HTMLLIElement>, id: string) => {
+    e.preventDefault();
+    if (!dragId) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pos = e.clientY < rect.top + rect.height / 2 ? "above" : "below";
+    reorderByDrag(id, pos);
+    setDragId(null);
+    setDropTarget(null);
+  };
+
+  const handleDragEnd = () => {
+    setDragId(null);
+    setDropTarget(null);
+  };
+
   return (
     <div style={{ padding: 10, display: "grid", gap: 8, alignContent: "start", overflow: "auto", minHeight: 0, minWidth: 0 }}>
       <label className="btn" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, padding: "6px 10px", cursor: "pointer" }}>
@@ -62,10 +115,20 @@ export function LayersPanel() {
         {scene.layers.map((layer, index) => {
           const active = layer.id === scene.activeLayerId;
           const label = layer.mediaName ?? (layer.mediaType === "video" ? t("editor.videoLabel") : t("editor.imageLabel"));
+          const isDragging = dragId === layer.id;
+          const isTarget = dropTarget?.id === layer.id;
+          const dropIndicator = isTarget && !isDragging
+            ? { boxShadow: dropTarget?.pos === "above" ? "0 -2px 0 0 var(--accent) inset" : "0 2px 0 0 var(--accent) inset" }
+            : undefined;
           return (
               <li
                   key={layer.id}
                   className={active ? "layer-item is-active" : "layer-item"}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, layer.id)}
+                  onDragOver={(e) => handleDragOver(e, layer.id)}
+                  onDrop={(e) => handleDrop(e, layer.id)}
+                  onDragEnd={handleDragEnd}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -74,12 +137,27 @@ export function LayersPanel() {
                     borderRadius: 8,
                     border: active ? "2px solid var(--accent)" : "1px solid var(--panel-border)",
                     background: active ? "rgba(0,217,255,0.08)" : "transparent",
-                    cursor: "pointer",
-                    opacity: layer.hidden ? 0.5 : 1,
-                    minWidth: 0
+                    cursor: isDragging ? "grabbing" : "grab",
+                    opacity: isDragging ? 0.45 : layer.hidden ? 0.5 : 1,
+                    minWidth: 0,
+                    ...dropIndicator
                   }}
                   onClick={() => selectLayer(layer.id)}
                 >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      flex: "0 0 auto",
+                      display: "grid",
+                      placeItems: "center",
+                      color: "var(--text-dim)",
+                      fontSize: 12,
+                      lineHeight: 1,
+                      letterSpacing: 1
+                    }}
+                  >
+                    ⋮⋮
+                  </span>
                   <span
                     aria-hidden="true"
                     style={{
