@@ -8,8 +8,13 @@ import type { Command } from "@/lib/types/editor";
 
 export function useCommands(
   onExportPng: () => void,
+  onExportWebp: () => void,
+  onExportSvg: () => void,
+  onExportHtml: () => void,
   onExportMp4: () => void,
+  onExportWebm: () => void,
   onExportGif: () => void,
+  onExportWebpAnim: () => void,
   onCopyPng: () => void,
   onCopyShareUrl: () => void,
   onSave: () => void
@@ -57,10 +62,12 @@ export function useCommands(
     toggleWatermark, setExportScale, exportScale,
     activeProjectId, projects, switchProject,
     themeMode, setThemeMode,
-    onExportPng, onExportMp4, onExportGif, onCopyPng, onCopyShareUrl, onSave
+    onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim,
+    onCopyPng, onCopyShareUrl, onSave
   ), [
     t, scene, pastLength, futureLength, activeProjectId, projects, themeMode, exportScale,
-    onExportPng, onExportMp4, onExportGif, onCopyPng, onCopyShareUrl, onSave,
+    onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim,
+    onCopyPng, onCopyShareUrl, onSave,
     undo, redo, resetScene,
     setFrame, setStylePreset, setAnimationPreset,
     setBackgroundSolid, setBackgroundGradient, setBackgroundTransparent, setBackgroundImage,

@@ -24,10 +24,13 @@ async function openExportDialog(page: import("@playwright/test").Page) {
   await expect(page.locator(".modal[role='dialog']")).toBeVisible();
 }
 
-// Picks a format tab inside the export dialog (PNG / MP4 / GIF).
-async function chooseExportFormat(page: import("@playwright/test").Page, label: "PNG" | "MP4" | "GIF") {
+// Picks a format button inside the export dialog (PNG / MP4 / GIF / ...).
+// The dialog groups formats into Image and Video segmented rows; the label is
+// matched by its visible text regardless of the group it lives in.
+async function chooseExportFormat(page: import("@playwright/test").Page, label: "PNG" | "MP4" | "GIF" | "WebP" | "WebM" | "Animated WebP") {
   await page
-    .locator('.segmented[aria-label="Format"] button', { hasText: label })
+    .locator('.segmented[role="group"] button', { hasText: label })
+    .filter({ hasText: new RegExp(`^${label}$`) })
     .first()
     .click();
 }

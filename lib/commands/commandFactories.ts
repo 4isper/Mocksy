@@ -20,14 +20,19 @@ export function createFileCommands(
   t: (key: string, values?: Record<string, any>) => string,
   callbacks: {
     onExportPng: () => void;
+    onExportWebp: () => void;
+    onExportSvg: () => void;
+    onExportHtml: () => void;
     onExportMp4: () => void;
+    onExportWebm: () => void;
     onExportGif: () => void;
+    onExportWebpAnim: () => void;
     onCopyPng: () => void;
     onCopyShareUrl: () => void;
     onSave: () => void;
   }
 ): Command[] {
-  const { onExportPng, onExportMp4, onExportGif, onCopyPng, onCopyShareUrl, onSave } = callbacks;
+  const { onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onCopyPng, onCopyShareUrl, onSave } = callbacks;
   return [
     {
       id: "new-project",
@@ -63,6 +68,41 @@ export function createFileCommands(
       shortcut: "⇧⌘E",
       keywords: ["export", "mp4", "video", "movie", "animation"],
       action: onExportMp4,
+    },
+    {
+      id: "export-webm",
+      label: t("commandPalette.exportWebm"),
+      description: t("commandPalette.exportWebmDesc"),
+      keywords: ["export", "webm", "video", "movie", "animation"],
+      action: onExportWebm,
+    },
+    {
+      id: "export-webp",
+      label: t("commandPalette.exportWebp"),
+      description: t("commandPalette.exportWebpDesc"),
+      keywords: ["export", "webp", "image", "download", "picture"],
+      action: onExportWebp,
+    },
+    {
+      id: "export-webp-anim",
+      label: t("commandPalette.exportWebpAnim"),
+      description: t("commandPalette.exportWebpAnimDesc"),
+      keywords: ["export", "webp", "animation", "animated"],
+      action: onExportWebpAnim,
+    },
+    {
+      id: "export-svg",
+      label: t("commandPalette.exportSvg"),
+      description: t("commandPalette.exportSvgDesc"),
+      keywords: ["export", "svg", "vector", "figma", "illustrator"],
+      action: onExportSvg,
+    },
+    {
+      id: "export-html",
+      label: t("commandPalette.exportHtml"),
+      description: t("commandPalette.exportHtmlDesc"),
+      keywords: ["export", "html", "snippet", "embed", "web"],
+      action: onExportHtml,
     },
     {
       id: "export-gif",
@@ -492,14 +532,19 @@ export function createCommands(
   themeMode: "light" | "dark" | "system",
   setThemeMode: (mode: "light" | "dark" | "system") => void,
   onExportPng: () => void,
+  onExportWebp: () => void,
+  onExportSvg: () => void,
+  onExportHtml: () => void,
   onExportMp4: () => void,
+  onExportWebm: () => void,
   onExportGif: () => void,
+  onExportWebpAnim: () => void,
   onCopyPng: () => void,
   onCopyShareUrl: () => void,
   onSave: () => void,
 ): Command[] {
   return [
-    ...createFileCommands(t, { onExportPng, onExportMp4, onExportGif, onCopyPng, onCopyShareUrl, onSave }),
+    ...createFileCommands(t, { onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onCopyPng, onCopyShareUrl, onSave }),
     ...createEditCommands(t, { undo, redo, pastLength, futureLength, resetScene }),
     ...createFrameCommands(t, { setFrame }),
     ...createStyleCommands(t),

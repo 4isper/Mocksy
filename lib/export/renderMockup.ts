@@ -645,3 +645,42 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+/**
+ * Loads a <video> for drawing one of its frames into a canvas. An <img> can't
+ * decode a video URL (loadImage would reject), and drawImage() of a video that
+ * hasn't decoded a frame paints black (observed in headless Chromium even
+ * after `loadeddata`), so this seeks to a real frame and resolves only once it
+ * has been decoded: the frame at `time` when a poster time is set, otherwise a
+ * tiny offset near the start.
+ */
+export function loadVideoFrame(url: string, time = 0): Promise<HTMLVideoElement> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    video.crossOrigin = "anonymous";
+    video.muted = true;
+    video.playsInline = true;
+    const target = Math.max(0, time || 0);
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      video.pause();
+      resolve(video);
+    };
+    const fail = () => {
+      if (settled) return;
+      settled = true;
+      reject(new Error(`Failed to load video: ${url}`));
+    };
+    video.onerror = fail;
+    video.onloadedmetadata = () => {
+      // A non-zero seek makes the decoder produce a composited frame that
+      // drawImage can paint; currentTime 0 may stay black until playback.
+      const seekTo = target > 0 && video.duration && target < video.duration ? target : 0.001;
+      video.onseeked = done;
+      video.currentTime = seekTo;
+    };
+    video.src = url;
+  });
+}
+

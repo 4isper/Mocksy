@@ -24,7 +24,7 @@ vi.mock("@ffmpeg/ffmpeg", () => ({
   }
 }));
 
-import { exportVideo, exportGif, sanitizeFilename, resolvePixelRatio, computeCaptureDuration, chooseWebmMimeType, terminateFfmpeg } from "@/lib/export/exportVideo";
+import { exportVideo, exportWebm, exportWebpAnim, exportGif, exportBaseName, sanitizeFilename, resolvePixelRatio, computeCaptureDuration, chooseWebmMimeType, terminateFfmpeg } from "@/lib/export/exportVideo";
 
 const ORIGINAL_WINDOW = globalThis.window;
 
@@ -107,6 +107,18 @@ describe("exportVideo pure helpers", () => {
     expect(computeCaptureDuration(scene)).toBe(4);
   });
 
+  it("computeCaptureDuration falls back to the loop length when duration is unknown", () => {
+    const scene = sceneWithLayer({ mediaUrl: "blob:vid", mediaType: "video", videoDuration: undefined });
+    expect(computeCaptureDuration(scene)).toBe(3);
+  });
+
+  it("computeCaptureDuration falls back to the loop length when duration is 0 (not yet measured)", () => {
+    // videoDuration stays 0 until the preview <video> reports metadata; a zero
+    // length must not collapse the recording to an empty capture.
+    const scene = sceneWithLayer({ mediaUrl: "blob:vid", mediaType: "video", videoDuration: 0, videoTrimStart: 0, videoTrimEnd: 0 });
+    expect(computeCaptureDuration(scene)).toBe(3);
+  });
+
   it("chooseWebmMimeType prefers vp9 when supported", () => {
     Object.defineProperty(globalThis, "MediaRecorder", {
       configurable: true,
@@ -121,6 +133,11 @@ describe("exportVideo pure helpers", () => {
       value: { isTypeSupported: () => false }
     });
     expect(chooseWebmMimeType()).toBe("video/webm;codecs=vp8");
+  });
+
+  it("exportBaseName strips the media extension and sanitizes", () => {
+    expect(exportBaseName(sceneWithLayer({ mediaName: "My Shot (1).png" }))).toBe("My_Shot__1_");
+    expect(exportBaseName(sceneWithLayer({ mediaName: null }))).toBe("mocksy-export");
   });
 });
 
@@ -260,5 +277,127 @@ describe("exportVideo orchestration", () => {
     const statuses: string[] = [];
     await exportGif(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), undefined, (m) => statuses.push(m));
     expect(statuses).toContain("Done");
+  });
+
+  it("exports a WebM directly from the MediaRecorder capture", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    const recorder = installMediaRecorder();
+
+    const statuses: string[] = [];
+    await exportWebm(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), undefined, (m) => statuses.push(m));
+    expect(recorder.start).toHaveBeenCalled();
+    expect(recorder.stop).toHaveBeenCalled();
+    expect(statuses).toContain("Done");
+  });
+
+  it("plays detached videos so multi-frame captures render the media", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    const videos: Array<Record<string, unknown>> = [];
+    const doc = {
+      getElementById: vi.fn().mockReturnValue(preview),
+      createElement: vi.fn().mockImplementation((tag: string) => {
+        if (tag === "canvas") return canvas;
+        if (tag === "a") return { click: vi.fn(), set href(_v: string) {}, get href() { return ""; } };
+        if (tag === "video") {
+          const v: Record<string, unknown> = {
+            src: "",
+            crossOrigin: "",
+            muted: false,
+            playsInline: false,
+            play: vi.fn().mockResolvedValue(undefined),
+            pause: vi.fn(),
+            remove: vi.fn(),
+            captureStream: vi.fn().mockReturnValue({ getAudioTracks: () => [], getVideoTracks: () => [] })
+          };
+          // Simulate the async metadata/seek events: metadata fires on a
+          // microtask once attached; seeking resolves once the handler is in
+          // place (mirrors the real event ordering in both call sites).
+          Object.defineProperty(v, "currentTime", {
+            configurable: true,
+            get() { return v._currentTime ?? 0; },
+            set(t) {
+              v._currentTime = t;
+              queueMicrotask(() => (v.onseeked as (() => void) | null)?.());
+            }
+          });
+          Object.defineProperty(v, "onloadedmetadata", {
+            configurable: true,
+            get() { return v._onLoadedMetadata; },
+            set(fn) { v._onLoadedMetadata = fn; if (fn) queueMicrotask(() => (fn as () => void)()); }
+          });
+          Object.defineProperty(v, "onseeked", {
+            configurable: true,
+            get() { return v._onSeeked; },
+            set(fn) { v._onSeeked = fn; }
+          });
+          Object.defineProperty(v, "onerror", {
+            configurable: true,
+            get() { return v._onError; },
+            set(fn) { v._onError = fn; }
+          });
+          videos.push(v);
+          return v;
+        }
+        if (tag === "audio") return { src: "", crossOrigin: "", loop: false, play: vi.fn().mockResolvedValue(undefined), pause: vi.fn(), remove: vi.fn(), captureStream: vi.fn().mockReturnValue({ getAudioTracks: () => [] }) };
+        return {};
+      }),
+      body: { appendChild: vi.fn(), removeChild: vi.fn() }
+    };
+    vi.stubGlobal("document", doc);
+    installMediaRecorder();
+
+    const videoLayer = layer({
+      id: "vlayer",
+      mediaUrl: "blob:vid",
+      mediaType: "video",
+      mediaName: "clip.mp4",
+      videoDuration: 10,
+      videoTrimStart: 2,
+      videoTrimEnd: 8
+    });
+    const scene: EditorScene = {
+      ...sceneWithLayer(videoLayer),
+      frameInstances: [
+        { id: "inst1", layerId: "vlayer", frame: "iphone15", x: 0.25, y: 0.5, scale: 0.4 },
+        { id: "inst2", layerId: "other", frame: "iphone15", x: 0.75, y: 0.5, scale: 0.4 }
+      ]
+    };
+
+    await exportWebm(scene);
+
+    // The frame instance's detached video must be seeked to its trim start and
+    // played (an unplayed video stays undecoded and draws nothing in the frame).
+    const gridVideo = videos[videos.length - 1]!;
+    expect(gridVideo._currentTime).toBe(2);
+    expect(gridVideo.play).toHaveBeenCalled();
+  });
+
+  it("transcodes an animated WebP through FFmpeg", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+
+    const statuses: string[] = [];
+    await exportWebpAnim(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), undefined, (m) => statuses.push(m));
+    expect(statuses).toContain("Done");
+    // writes the capture, runs the encoder and cleans up
+    expect(ffmpegHarness.loadCalls).toBeGreaterThan(0);
+  });
+
+  it("reports a WebP encoding failure", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+    ffmpegHarness.execCode = 1;
+
+    const errors: string[] = [];
+    await exportWebpAnim(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), undefined, undefined, undefined, (m) => errors.push(m));
+    expect(errors).toContain("WebP encoding failed.");
+    ffmpegHarness.execCode = 0;
   });
 });

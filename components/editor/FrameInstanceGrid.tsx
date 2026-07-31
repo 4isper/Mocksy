@@ -13,6 +13,7 @@ interface FrameInstanceGridProps {
   activeFrameInstanceId: string | null;
   selectFrameInstance: (id: string | null) => void;
   analyzeMedia: (el: HTMLImageElement | HTMLVideoElement) => void;
+  setVideoDuration: (duration: number, layerId?: string) => void;
 }
 
 export function FrameInstanceGrid({
@@ -21,7 +22,8 @@ export function FrameInstanceGrid({
   frameInstanceCssMap,
   activeFrameInstanceId,
   selectFrameInstance,
-  analyzeMedia
+  analyzeMedia,
+  setVideoDuration
 }: FrameInstanceGridProps) {
   return (
     <>
@@ -72,7 +74,18 @@ export function FrameInstanceGrid({
                 ) : null}
                 {layer?.mediaUrl ? (
                   isVideoLayer(layer) ? (
-                    <video src={layer.mediaUrl} muted playsInline controls loop={layer.videoLoop} autoPlay={layer.videoAutoplay} crossOrigin="anonymous" style={instCss.mediaStyle} onLoadedData={(e) => analyzeMedia(e.currentTarget)} />
+                  <video
+                    src={layer.mediaUrl}
+                    muted
+                    playsInline
+                    controls
+                    loop={layer.videoLoop}
+                    autoPlay={layer.videoAutoplay}
+                    crossOrigin="anonymous"
+                    style={instCss.mediaStyle}
+                    onLoadedData={(e) => analyzeMedia(e.currentTarget)}
+                    onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration || 0, layer.id)}
+                  />
                   ) : (
                     <img src={layer.mediaUrl} alt="" style={instCss.mediaStyle} onLoad={(e) => analyzeMedia(e.currentTarget)} />
                   )
@@ -91,7 +104,18 @@ export function FrameInstanceGrid({
               >
                 {layer?.mediaUrl ? (
                   isVideoLayer(layer) ? (
-                    <video src={layer.mediaUrl} muted playsInline controls loop={layer.videoLoop} autoPlay={layer.videoAutoplay} crossOrigin="anonymous" style={instCss.mediaStyle} onLoadedData={(e) => analyzeMedia(e.currentTarget)} />
+                  <video
+                    src={layer.mediaUrl}
+                    muted
+                    playsInline
+                    controls
+                    loop={layer.videoLoop}
+                    autoPlay={layer.videoAutoplay}
+                    crossOrigin="anonymous"
+                    style={instCss.mediaStyle}
+                    onLoadedData={(e) => analyzeMedia(e.currentTarget)}
+                    onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration || 0, layer.id)}
+                  />
                   ) : (
                     <img src={layer.mediaUrl} alt="" style={instCss.mediaStyle} onLoad={(e) => analyzeMedia(e.currentTarget)} />
                   )

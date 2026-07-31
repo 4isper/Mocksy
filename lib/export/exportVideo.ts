@@ -1,6 +1,6 @@
 "use client";
 
-import type { EditorScene, VideoQuality } from "@/lib/types/editor";
+import type { EditorScene, MediaLayer, VideoQuality } from "@/lib/types/editor";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { loadImage, renderMockupToCanvas, type RenderTransform } from "@/lib/export/renderMockup";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
@@ -38,6 +38,25 @@ export function sanitizeFilename(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
+function downloadBlob(blob: Blob, filename: string) {
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 200);
+}
+
+/** Media layer driving the export (active layer, falling back to the first). */
+function activeLayerOf(scene: EditorScene): MediaLayer | null {
+  return scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0] ?? null;
+}
+
+/** Base export filename (media name with its extension stripped, or the default). */
+export function exportBaseName(scene: EditorScene): string {
+  const name = activeLayerOf(scene)?.mediaName || "mocksy-export";
+  return sanitizeFilename(name.replace(/\.[^.]+$/, ""));
+}
+
 /**
  * Capture pixel ratio for a quality tier. Higher tiers keep more of the
  * device's native ratio; lower tiers downscale to shrink the output file.
@@ -60,6 +79,10 @@ export function computeCaptureDuration(scene: EditorScene): number {
   if (!isVideo || !active) return ANIMATION_DURATION_SEC;
   const start = Math.max(0, active.videoTrimStart || 0);
   const end = active.videoTrimEnd > start ? active.videoTrimEnd : active.videoDuration;
+  // Metadata may not have loaded yet (undefined/0) or a trim may be
+  // misconfigured; never let a non-finite or empty duration collapse the
+  // recording to zero frames.
+  if (typeof end !== "number" || !isFinite(end) || end <= 0) return ANIMATION_DURATION_SEC;
   return Math.max(0.2, end - start);
 }
 
@@ -143,6 +166,17 @@ async function recordCanvasToWebm(
     throw new Error("Cannot export a scene with no layers.");
   }
 
+  // Draw a warm-up frame before creating the stream. Some GPU/compositor
+  // pipelines won't deliver ANY frames to captureStream() when the canvas has
+  // never been painted, which MediaRecorder would otherwise turn into an empty
+  // blob (the "Recording produced no frames." guard below).
+  try {
+    renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, { zoom: 1, offsetX: 0, offsetY: 0 }, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays);
+  } catch {
+    // The per-tick render runs again right after; a warm-up failure alone
+    // must not abort the export.
+  }
+
   let stream: MediaStream;
   try {
     stream = canvas.captureStream(fps);
@@ -223,7 +257,10 @@ async function recordCanvasToWebm(
       onProgress?.(progress);
 
       if (media instanceof HTMLVideoElement) {
-        if (media.currentTime >= end || elapsed >= duration) {
+        // Guard against a not-yet-measured duration (end undefined/0): only
+        // stop on the video's playhead when we actually know where it ends.
+        const stopAt = typeof end === "number" && isFinite(end) && end > 0 ? end : Infinity;
+        if (media.currentTime >= stopAt || elapsed >= duration) {
           media.pause();
           renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays);
           recorder.stop();
@@ -258,12 +295,13 @@ async function recordCanvasToWebm(
 }
 
 /**
- * Captures the preview animation to a WebM blob, shared by the MP4 and GIF
- * exporters. Builds the off-screen canvas, resolves the media element (a
- * detached <video> for video scenes, or the one already in the preview), and
- * records via MediaRecorder. Returns null if no frames were captured.
+ * Captures the preview animation to a WebM blob, shared by the MP4, GIF, WebM
+ * and animated-WebP exporters. Builds the off-screen canvas, resolves the media
+ * element (a detached <video> for video scenes, or the one already in the
+ * preview), and records via MediaRecorder. Returns null if no frames were
+ * captured.
  */
-async function captureWebm(
+export async function captureWebm(
   scene: EditorScene,
   scale?: number,
   onStatus?: (message: string) => void,
@@ -329,16 +367,28 @@ async function captureWebm(
         try {
           const isVideo = isVideoLayer(layer);
           if (isVideo) {
-            // Create a detached video element for the export
+            // Create a detached video element for the export. It must be
+            // seeked to its trim start AND played: an element that never
+            // plays stays undecoded, and drawImage of an undecoded video
+            // renders an empty frame.
             const v = document.createElement("video");
             v.src = layer.mediaUrl;
             v.crossOrigin = "anonymous";
             v.muted = true;
             v.playsInline = true;
             await new Promise<void>((resolve, reject) => {
-              v.onloadedmetadata = () => resolve();
+              v.onloadedmetadata = () => {
+                const trimStart = Math.max(0, layer?.videoTrimStart || 0);
+                if (trimStart > 0) {
+                  v.onseeked = () => resolve();
+                  v.currentTime = trimStart;
+                } else {
+                  resolve();
+                }
+              };
               v.onerror = () => reject();
             });
+            v.play().catch(() => null);
             layerMedias.set(layer.id, v);
           } else {
             const img = await loadImage(layer.mediaUrl);
@@ -381,9 +431,9 @@ export async function exportVideo(
   onError?: (message: string) => void
 ) {
   try {
-    const webmBlob = await captureWebm(scene, scale, onStatus, onProgress);
+    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress);
     if (!webmBlob || webmBlob.size === 0) {
-      onError?.("Recording produced no video frames.");
+      onError?.("Recording produced no frames.");
       return;
     }
 
@@ -437,6 +487,115 @@ export async function exportVideo(
       // ignore cleanup errors
     }
     onError?.(err instanceof Error ? err.message : "Video export failed.");
+  }
+}
+
+/**
+ * Captures the preview animation to a WebM blob. An empty first pass is usually
+ * a one-off GPU/compositor race (the stream delivers zero frames once), so it
+ * retries a single time before giving up.
+ */
+async function captureWebmWithRetry(
+  scene: EditorScene,
+  scale?: number,
+  onStatus?: (message: string) => void,
+  onProgress?: (progress: number) => void
+): Promise<Blob | null> {
+  const first = await captureWebm(scene, scale, onStatus, onProgress);
+  if (first && first.size > 0) return first;
+  return captureWebm(scene, scale, onStatus, onProgress);
+}
+
+/**
+ * Exports the animation as a WebM video straight from MediaRecorder — no FFmpeg
+ * encode, so it's the fastest of the video formats and keeps the best quality.
+ * The captured blob is the same VP9/VP8 stream MP4 and GIF transcode from.
+ */
+export async function exportWebm(
+  scene: EditorScene,
+  scale?: number,
+  onStatus?: (message: string) => void,
+  onProgress?: (progress: number) => void,
+  onError?: (message: string) => void
+) {
+  try {
+    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress);
+    if (!webmBlob || webmBlob.size === 0) {
+      onError?.("Recording produced no video frames.");
+      return;
+    }
+    downloadBlob(webmBlob, `${exportBaseName(scene)}.webm`);
+    onStatus?.("Done");
+    onProgress?.(100);
+  } catch (err) {
+    onError?.(err instanceof Error ? err.message : "WebM export failed.");
+  }
+}
+
+/**
+ * Exports the animation as an animated WebP. Captures the preview to WebM and
+ * transcodes it through FFmpeg's libwebp_anim encoder with a downscaled
+ * framerate, so the file is a fraction of the MP4/GIF size and loops forever.
+ */
+export async function exportWebpAnim(
+  scene: EditorScene,
+  scale?: number,
+  onStatus?: (message: string) => void,
+  onProgress?: (progress: number) => void,
+  onError?: (message: string) => void
+) {
+  try {
+    const webmBlob = await captureWebm(scene, scale, onStatus, onProgress);
+    if (!webmBlob || webmBlob.size === 0) {
+      onError?.("Recording produced no frames.");
+      return;
+    }
+
+    onStatus?.("Encoding WebP…");
+    onProgress?.(0);
+    const exportQuality = activeLayerOf(scene)?.videoQuality ?? "medium";
+    const quality = QUALITY[exportQuality] ?? QUALITY.medium;
+    const ffmpeg = await getFfmpegInstance(onStatus);
+    const inputName = "input.webm";
+    const outputName = "mocksy-export.webp";
+    await ffmpeg.writeFile(inputName, new Uint8Array(await webmBlob.arrayBuffer()));
+    onProgress?.(50);
+    // Animated WebP is best kept small: cap the width per quality tier (2× is
+    // the baseline, so 1× halves and 4× doubles it) and drop to 15fps.
+    const width = Math.round(480 * quality.scale * (typeof scale === "number" && scale > 0 ? scale / 2 : 1));
+    const code = await ffmpeg.exec([
+      "-i", inputName,
+      "-vf", `fps=15,scale=${width}:-1:flags=lanczos`,
+      "-c:v", "libwebp_anim",
+      "-lossless", "0",
+      "-q:v", "75",
+      outputName
+    ]);
+    if (code !== 0) {
+      throw new Error("WebP encoding failed.");
+    }
+    onProgress?.(90);
+    const data = await ffmpeg.readFile(outputName);
+    const bytes = typeof data === "string" ? new TextEncoder().encode(data) : new Uint8Array(data);
+    if (bytes.length === 0) {
+      throw new Error("WebP encoding produced no output.");
+    }
+    downloadBlob(new Blob([bytes], { type: "image/webp" }), `${exportBaseName(scene)}.webp`);
+    await ffmpeg.deleteFile(inputName);
+    await ffmpeg.deleteFile(outputName);
+    onStatus?.("Done");
+    onProgress?.(100);
+  } catch (err) {
+    try {
+      const ffmpeg = ffmpegSingleton;
+      if (ffmpeg) {
+        await ffmpeg.deleteFile("input.webm");
+        await ffmpeg.deleteFile("mocksy-export.webp");
+      }
+    } catch {
+      // ignore cleanup errors
+    }
+    onError?.(err instanceof Error ? err.message : "Animated WebP export failed.");
   }
 }
 

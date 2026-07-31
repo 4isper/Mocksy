@@ -378,3 +378,226 @@ describe("loadImage", () => {
     await expect(loadImage("broken.png")).rejects.toThrow("Failed to load image: broken.png");
   });
 });
+
+describe("loadVideoFrame", () => {
+  function mockVideo(extra: Record<string, unknown> = {}) {
+    const video: Record<string, unknown> = {
+      src: "",
+      crossOrigin: "",
+      muted: false,
+      playsInline: false,
+      duration: 10,
+      pause: vi.fn(),
+      ...extra
+    };
+    return video;
+  }
+
+  function stubDocumentWithVideo(video: Record<string, unknown>) {
+    vi.stubGlobal("document", {
+      createElement: (tag: string) => (tag === "video" ? video : null)
+    });
+  }
+
+  it("seeks to the requested poster time and resolves when the frame is ready", async () => {
+    const video = mockVideo();
+    stubDocumentWithVideo(video);
+    const { loadVideoFrame } = await import("@/lib/export/renderMockup");
+    const promise = loadVideoFrame("blob:vid", 3);
+    (video.onloadedmetadata as () => void)();
+    expect(video.currentTime).toBe(3);
+    (video.onseeked as () => void)();
+    await expect(promise).resolves.toBe(video);
+    expect(video.pause).toHaveBeenCalled();
+  });
+
+  it("seeks near the start when no poster time is set", async () => {
+    const video = mockVideo();
+    stubDocumentWithVideo(video);
+    const { loadVideoFrame } = await import("@/lib/export/renderMockup");
+    const promise = loadVideoFrame("blob:vid");
+    (video.onloadedmetadata as () => void)();
+    expect(video.currentTime).toBe(0.001);
+    (video.onseeked as () => void)();
+    await expect(promise).resolves.toBe(video);
+  });
+
+  it("falls back to a small seek when the poster time is past the end", async () => {
+    const video = mockVideo({ duration: 5 });
+    stubDocumentWithVideo(video);
+    const { loadVideoFrame } = await import("@/lib/export/renderMockup");
+    const promise = loadVideoFrame("blob:vid", 99);
+    (video.onloadedmetadata as () => void)();
+    expect(video.currentTime).toBe(0.001);
+    (video.onseeked as () => void)();
+    await expect(promise).resolves.toBe(video);
+  });
+
+  it("rejects on load error", async () => {
+    const video = mockVideo();
+    stubDocumentWithVideo(video);
+    const { loadVideoFrame } = await import("@/lib/export/renderMockup");
+    const promise = loadVideoFrame("blob:bad");
+    (video.onerror as () => void)();
+    await expect(promise).rejects.toThrow("Failed to load video: blob:bad");
+  });
+});
+
+describe("renderSceneToPngBlob multi-frame video", () => {
+  it("loads a video frame element for video layers instead of decoding as an image", async () => {
+    const videoEl: Record<string, unknown> = {
+      src: "",
+      crossOrigin: "",
+      muted: false,
+      playsInline: false,
+      videoWidth: 320,
+      videoHeight: 240,
+      duration: 5,
+      pause: vi.fn()
+    };
+    const autoFire = (name: string) =>
+      Object.defineProperty(videoEl, name, {
+        configurable: true,
+        get: () => videoEl[`_${name}`],
+        set(fn: unknown) {
+          (videoEl as Record<string, unknown>)[`_${name}`] = fn;
+          if (fn) queueMicrotask(() => (fn as () => void)());
+        }
+      });
+    // Async load/seek events fire once attached; onerror must NOT auto-fire
+    // (assigning the handler is what we're mimicking, not an actual failure).
+    autoFire("onloadedmetadata");
+    autoFire("onloadeddata");
+    autoFire("onseeked");
+    Object.defineProperty(videoEl, "onerror", {
+      configurable: true,
+      get: () => videoEl._onerror,
+      set(fn: unknown) {
+        (videoEl as Record<string, unknown>)._onerror = fn;
+      }
+    });
+
+    const container = {
+      clientWidth: 800,
+      clientHeight: 600,
+      querySelector: (sel: string) => (sel === "[data-mockup-frame]" ? { offsetWidth: 400, offsetHeight: 300 } : null)
+    };
+    const mockCanvas = {
+      width: 800,
+      height: 600,
+      getContext: () => null,
+      toBlob: (cb: (b: Blob | null) => void) => cb(new Blob(["png"]))
+    } as unknown as HTMLCanvasElement;
+    vi.stubGlobal("document", {
+      getElementById: (id: string) => (id === "preview" ? container : null),
+      createElement: (tag: string) => (tag === "canvas" ? mockCanvas : tag === "video" ? videoEl : null)
+    });
+    vi.stubGlobal("window", { devicePixelRatio: 2 });
+    vi.stubGlobal("HTMLVideoElement", class {});
+    vi.stubGlobal("HTMLImageElement", class {});
+
+    const videoLayer = {
+      ...initialScene.layers[0]!,
+      id: "vlayer",
+      mediaUrl: "blob:vid",
+      mediaType: "video",
+      mediaName: "clip.mp4",
+      videoPosterTime: 2
+    } as MediaLayer;
+    const scene: EditorScene = {
+      ...initialScene,
+      layers: [videoLayer],
+      activeLayerId: "vlayer",
+      frameInstances: [
+        { id: "inst1", layerId: "vlayer", frame: "iphone15", x: 0.25, y: 0.5, scale: 0.4 },
+        { id: "inst2", layerId: null, frame: "iphone15", x: 0.75, y: 0.5, scale: 0.4 }
+      ]
+    };
+
+    const { renderSceneToPngBlob } = await import("@/lib/export/exportImage");
+    const errors: string[] = [];
+    const blob = await renderSceneToPngBlob(scene, "preview", (m) => errors.push(m));
+    expect(errors, errors.join(" | ")).toEqual([]);
+    expect(blob).toBeInstanceOf(Blob);
+    expect(videoEl.currentTime).toBe(2);
+    expect(videoEl.pause).toHaveBeenCalled();
+  });
+});
+
+describe("renderSceneToPngBlob single-frame video fallback", () => {
+  it("loads a video frame when the preview video is not decoded yet", async () => {
+    const videoEl: Record<string, unknown> = {
+      src: "",
+      crossOrigin: "",
+      muted: false,
+      playsInline: false,
+      videoWidth: 320,
+      videoHeight: 240,
+      duration: 5,
+      pause: vi.fn()
+    };
+    const autoFire = (name: string) =>
+      Object.defineProperty(videoEl, name, {
+        configurable: true,
+        get: () => videoEl[`_${name}`],
+        set(fn: unknown) {
+          (videoEl as Record<string, unknown>)[`_${name}`] = fn;
+          if (fn) queueMicrotask(() => (fn as () => void)());
+        }
+      });
+    autoFire("onloadedmetadata");
+    autoFire("onloadeddata");
+    autoFire("onseeked");
+    Object.defineProperty(videoEl, "onerror", {
+      configurable: true,
+      get: () => videoEl._onerror,
+      set(fn: unknown) {
+        (videoEl as Record<string, unknown>)._onerror = fn;
+      }
+    });
+
+    vi.stubGlobal("HTMLVideoElement", class {});
+    vi.stubGlobal("HTMLImageElement", class {});
+    // The preview <video> exists but hasn't decoded a frame yet (readyState < 2).
+    const undecoded = Object.assign(new (vi.mocked(globalThis.HTMLVideoElement))(), { readyState: 1 });
+    const container = {
+      clientWidth: 800,
+      clientHeight: 600,
+      querySelector: (sel: string) => {
+        if (sel === "video") return undecoded;
+        if (sel === "[data-mockup-frame]") return { offsetWidth: 400, offsetHeight: 300 };
+        return null;
+      }
+    };
+    const mockCanvas = {
+      width: 800,
+      height: 600,
+      getContext: () => null,
+      toBlob: (cb: (b: Blob | null) => void) => cb(new Blob(["png"]))
+    } as unknown as HTMLCanvasElement;
+    vi.stubGlobal("document", {
+      getElementById: (id: string) => (id === "preview" ? container : null),
+      createElement: (tag: string) => (tag === "canvas" ? mockCanvas : tag === "video" ? videoEl : null)
+    });
+    vi.stubGlobal("window", { devicePixelRatio: 2 });
+
+    const videoLayer = {
+      ...initialScene.layers[0]!,
+      id: "vlayer",
+      mediaUrl: "blob:vid",
+      mediaType: "video",
+      mediaName: "clip.mp4",
+      videoPosterTime: 2
+    } as MediaLayer;
+    const scene: EditorScene = { ...initialScene, layers: [videoLayer], activeLayerId: "vlayer" };
+
+    const { renderSceneToPngBlob } = await import("@/lib/export/exportImage");
+    const errors: string[] = [];
+    const blob = await renderSceneToPngBlob(scene, "preview", (m) => errors.push(m));
+    expect(errors, errors.join(" | ")).toEqual([]);
+    expect(blob).toBeInstanceOf(Blob);
+    // The fallback decoded a frame through loadVideoFrame (seek + pause).
+    expect(videoEl.currentTime).toBe(2);
+    expect(videoEl.pause).toHaveBeenCalled();
+  });
+});

@@ -248,6 +248,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             activeFrameInstanceId={activeFrameInstanceId}
             selectFrameInstance={selectFrameInstance}
             analyzeMedia={analyzeMedia}
+            setVideoDuration={setVideoDuration}
           />
         ) : (
           <SingleFrameView

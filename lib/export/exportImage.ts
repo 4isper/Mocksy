@@ -1,9 +1,10 @@
 "use client";
 
 import type { EditorScene } from "@/lib/types/editor";
-import { loadImage, renderMockupToCanvas, type RenderTransform } from "@/lib/export/renderMockup";
+import { loadImage, loadVideoFrame, renderMockupToCanvas, type RenderTransform } from "@/lib/export/renderMockup";
 import { getFrameSpec } from "@/lib/render/frames";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
+import { isVideoLayer } from "@/lib/render/mediaKind";
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -46,15 +47,17 @@ export function waitForImage(img: HTMLImageElement, timeoutMs = 10000) {
 }
 
 /**
- * Renders the current scene to a PNG `Blob` at the preview's pixel ratio,
- * reusing the exact geometry the preview uses (frame box, zoom/animation
- * transform, overlay skin, transparent background). Returns null (and routes the
- * reason through `onError`) when the preview can't be measured or the canvas
- * can't be read. Shared by `exportImage` (download) and `copyPngToClipboard`.
+ * Renders the current scene to a raster `Blob` (PNG or WebP) at the preview's
+ * pixel ratio, reusing the exact geometry the preview uses (frame box,
+ * zoom/animation transform, overlay skin, transparent background). Returns null
+ * (and routes the reason through `onError`) when the preview can't be measured
+ * or the canvas can't be read. Shared by `exportImage`, `exportWebp` and
+ * `copyPngToClipboard`.
  */
-export async function renderSceneToPngBlob(
+export async function renderSceneToImageBlob(
   scene: EditorScene,
   containerId: string,
+  mimeType: "image/png" | "image/webp",
   onError?: (message: string) => void,
   /** Pixel ratio for the export. Defaults to `Math.max(2, devicePixelRatio)`
    *  when omitted so existing callers keep 2× output on standard displays. */
@@ -76,8 +79,18 @@ export async function renderSceneToPngBlob(
 
     // A hidden active layer renders nothing, matching the preview.
     if (!active?.hidden) {
-      if (video instanceof HTMLVideoElement && video.readyState >= 2) {
-        media = video;
+      if (video instanceof HTMLVideoElement) {
+        if (video.readyState >= 2) {
+          media = video;
+        } else if (active && isVideoLayer(active) && active.mediaUrl) {
+          // Export fired before the preview video decoded; load a frame
+          // explicitly instead of drawing an empty screen.
+          try {
+            media = await loadVideoFrame(active.mediaUrl, active.videoPosterTime ?? 0);
+          } catch {
+            media = null;
+          }
+        }
       } else if (img instanceof HTMLImageElement) {
         await waitForImage(img);
         media = img;
@@ -139,8 +152,16 @@ export async function renderSceneToPngBlob(
         const layer = scene.layers.find((l) => l.id === inst.layerId);
         if (layer?.mediaUrl) {
           try {
-            const loaded = await loadImage(layer.mediaUrl);
-            layerMedias.set(layer.id, loaded);
+            // An <img> can't decode a video URL; load video frames through a
+            // <video> element that has actually decoded a frame, so the static
+            // export shows the poster frame instead of an empty screen.
+            if (isVideoLayer(layer)) {
+              const videoFrame = await loadVideoFrame(layer.mediaUrl, layer.videoPosterTime ?? 0);
+              layerMedias.set(layer.id, videoFrame);
+            } else {
+              const loaded = await loadImage(layer.mediaUrl);
+              layerMedias.set(layer.id, loaded);
+            }
           } catch {
             layerMedias.set(layer.id, null);
           }
@@ -175,16 +196,26 @@ export async function renderSceneToPngBlob(
       frameOverlays
     );
 
-    const pngBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
-    if (!pngBlob) {
-      onError?.("Failed to render PNG.");
+    const imageBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), mimeType));
+    if (!imageBlob) {
+      onError?.("Failed to render image.");
       return null;
     }
-    return pngBlob;
+    return imageBlob;
   } catch (err) {
     onError?.(err instanceof Error ? err.message : "Image export failed.");
     return null;
   }
+}
+
+/** PNG-specific wrapper around `renderSceneToImageBlob`. */
+export async function renderSceneToPngBlob(
+  scene: EditorScene,
+  containerId: string,
+  onError?: (message: string) => void,
+  scale?: number
+): Promise<Blob | null> {
+  return renderSceneToImageBlob(scene, containerId, "image/png", onError, scale);
 }
 
 export async function exportImage(
@@ -197,6 +228,23 @@ export async function exportImage(
 ) {
   const blob = await renderSceneToPngBlob(scene, containerId, onError, scale);
   if (blob) downloadBlob(blob, `${filename}.png`);
+}
+
+/**
+ * Exports the scene as a static WebP image (lossy, ~half the PNG size for
+ * photos). Rendered through the same canvas pipeline as PNG so the output
+ * matches the preview pixel-for-pixel.
+ */
+export async function exportWebp(
+  scene: EditorScene,
+  containerId: string,
+  filename: string,
+  onError?: (message: string) => void,
+  /** Export pixel ratio (1×/2×/4×), read from the editor's scale control. */
+  scale?: number
+) {
+  const blob = await renderSceneToImageBlob(scene, containerId, "image/webp", onError, scale);
+  if (blob) downloadBlob(blob, `${filename}.webp`);
 }
 
 /**

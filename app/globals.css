@@ -1315,6 +1315,11 @@ select {
   max-width: 520px;
 }
 
+/* Export dialog: two format rows (image / video) need a bit more room */
+.modal.export {
+  max-width: 420px;
+}
+
 .shortcut-list {
   display: flex;
   flex-direction: column;

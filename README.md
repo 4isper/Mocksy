@@ -90,8 +90,13 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 | Format | Scale | Notes |
 |--------|-------|-------|
 | PNG | 1x, 2x, 4x | Pixel-for-pixel match with preview; copy to clipboard |
+| WebP | 1x, 2x, 4x | Static WebP at ~half the PNG size |
+| SVG | — | Vector export: media, skins, annotations and watermark embedded as data URLs |
+| HTML | — | Self-contained snippet: live CSS mockup (animation preserved) or embedded raster for multi-frame scenes |
 | MP4 | 1x, 2x, 4x | In-browser MediaRecorder + FFmpeg WebM→MP4 |
+| WebM | 1x, 2x, 4x | Direct MediaRecorder capture, no encode — fastest, best quality |
 | GIF | 1x, 2x, 4x | Palette generation for accurate colors |
+| Animated WebP | 1x, 2x, 4x | FFmpeg libwebp_anim at 15fps — fraction of the MP4/GIF size |
 
 - Animated exports run for a visible 3s (zoom/parallax) instead of a blink
 - MP4 attaches the canvas to the DOM during recording for reliable frame capture in background tabs
@@ -113,8 +118,8 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 | UI | React 19 |
 | State | Zustand |
 | Styling | Tailwind CSS v4 |
-| Video | @ffmpeg/ffmpeg (client-side WebM→MP4) |
-| Unit tests | Vitest (512 tests, 34 files) |
+| Video | @ffmpeg/ffmpeg (client-side WebM→MP4 / GIF / WebP) |
+| Unit tests | Vitest (550 tests, 36 files) |
 | E2E tests | Playwright |
 | Language | TypeScript (strict) |
 
@@ -133,7 +138,7 @@ components/editor/      16 React components
   AnnotationsPanel       Annotation CRUD and editor
   TemplatesPanel         Scene style preset gallery
   ProjectsPanel          Project CRUD
-  ExportDialog           PNG/MP4/GIF export modal
+  ExportDialog           PNG/WebP/SVG/HTML/MP4/WebM/GIF/WebP export modal
   ShortcutsDialog        Keyboard shortcuts cheat sheet
   VideoOptions           Video playback + trim + quality
   VideoTrimControl       Dual-range trim slider
@@ -144,7 +149,7 @@ components/editor/      16 React components
 lib/
   state/                 Zustand stores + normalization + share URL
   render/                Frame specs, CSS geometry, video timeline
-  export/                PNG, MP4/GIF, canvas rendering
+  export/                PNG/WebP, SVG/HTML, MP4/WebM/GIF/WebP, canvas rendering
   media/                 File loading, demo image, palette extraction
   presets/               Background swatches, scene style presets
   types/                 TypeScript interfaces

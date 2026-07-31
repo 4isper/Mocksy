@@ -11,7 +11,8 @@ import { CommandPalette } from "@/components/editor/CommandPalette";
 import { useCommands } from "@/lib/hooks/useCommands";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
-import { exportImage, copyPngToClipboard } from "@/lib/export/exportImage";
+import { exportImage, copyPngToClipboard, exportWebp } from "@/lib/export/exportImage";
+import type { ExportFormat } from "@/components/editor/ExportDialog";
 import { sceneToShareUrl, ShareUrlTooLarge } from "@/lib/state/shareState";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { useThemeStore } from "@/lib/state/themeStore";
@@ -83,6 +84,31 @@ export function EditorShell() {
     await copyPngToClipboard(scene, "preview-canvas", setExportError, setCopyStatus, exportScale);
   }, [scene, exportScale]);
 
+  const handleExportWebp = useCallback(() => {
+    setExportError(null);
+    exportWebp(scene, "preview-canvas", "mocksy-export", setExportError, exportScale);
+  }, [scene, exportScale]);
+
+  const handleExportSvg = useCallback(async () => {
+    setExportError(null);
+    try {
+      const { exportSvg } = await import("@/lib/export/exportSvg");
+      await exportSvg(scene, "preview-canvas", "mocksy-export", setExportError);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "SVG export failed.");
+    }
+  }, [scene]);
+
+  const handleExportHtml = useCallback(async () => {
+    setExportError(null);
+    try {
+      const { exportHtml } = await import("@/lib/export/exportHtml");
+      await exportHtml(scene, "preview-canvas", "mocksy-export", setExportError);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "HTML export failed.");
+    }
+  }, [scene]);
+
   const handleExportMp4 = useCallback(async () => {
     setExportError(null);
     try {
@@ -90,6 +116,36 @@ export function EditorShell() {
       setVideoExportProgress(0);
       const { exportVideo } = await import("@/lib/export/exportVideo");
       await exportVideo(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError);
+    } finally {
+      setTimeout(() => {
+        setVideoExportStatus(null);
+        setVideoExportProgress(0);
+      }, 800);
+    }
+  }, [scene, exportScale]);
+
+  const handleExportWebm = useCallback(async () => {
+    setExportError(null);
+    try {
+      setVideoExportStatus("Exporting WebM…");
+      setVideoExportProgress(0);
+      const { exportWebm } = await import("@/lib/export/exportVideo");
+      await exportWebm(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError);
+    } finally {
+      setTimeout(() => {
+        setVideoExportStatus(null);
+        setVideoExportProgress(0);
+      }, 800);
+    }
+  }, [scene, exportScale]);
+
+  const handleExportWebpAnim = useCallback(async () => {
+    setExportError(null);
+    try {
+      setVideoExportStatus("Exporting WebP…");
+      setVideoExportProgress(0);
+      const { exportWebpAnim } = await import("@/lib/export/exportVideo");
+      await exportWebpAnim(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError);
     } finally {
       setTimeout(() => {
         setVideoExportStatus(null);
@@ -114,13 +170,45 @@ export function EditorShell() {
   }, [scene, exportScale]);
 
   const handleExport = useCallback(
-    (format: "png" | "mp4" | "gif") => {
+    (format: ExportFormat) => {
       setExportOpen(false);
-      if (format === "png") handleExportPng();
-      else if (format === "mp4") handleExportMp4();
-      else handleExportGif();
+      switch (format) {
+        case "png":
+          handleExportPng();
+          break;
+        case "webp":
+          handleExportWebp();
+          break;
+        case "svg":
+          void handleExportSvg();
+          break;
+        case "html":
+          void handleExportHtml();
+          break;
+        case "mp4":
+          void handleExportMp4();
+          break;
+        case "webm":
+          void handleExportWebm();
+          break;
+        case "gif":
+          void handleExportGif();
+          break;
+        case "webpAnim":
+          void handleExportWebpAnim();
+          break;
+      }
     },
-    [handleExportPng, handleExportMp4, handleExportGif]
+    [
+      handleExportPng,
+      handleExportWebp,
+      handleExportSvg,
+      handleExportHtml,
+      handleExportMp4,
+      handleExportWebm,
+      handleExportGif,
+      handleExportWebpAnim
+    ]
   );
 
   const handleCopyFromDialog = useCallback(() => {
@@ -159,8 +247,13 @@ export function EditorShell() {
 
   const commands = useCommands(
     handleExportPng,
+    handleExportWebp,
+    handleExportSvg,
+    handleExportHtml,
     handleExportMp4,
+    handleExportWebm,
     handleExportGif,
+    handleExportWebpAnim,
     handleCopyPng,
     copyShareUrl,
     saveNow

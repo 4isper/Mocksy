@@ -24,8 +24,34 @@ describe("ExportDialog", () => {
   it("renders format segmented buttons", () => {
     render(<ExportDialog {...baseProps} />);
     expect(screen.getByText("export.png")).toBeInTheDocument();
+    expect(screen.getByText("export.webp")).toBeInTheDocument();
+    expect(screen.getByText("export.svg")).toBeInTheDocument();
+    expect(screen.getByText("export.html")).toBeInTheDocument();
     expect(screen.getByText("export.mp4")).toBeInTheDocument();
+    expect(screen.getByText("export.webm")).toBeInTheDocument();
     expect(screen.getByText("export.gif")).toBeInTheDocument();
+    expect(screen.getByText("export.webpAnim")).toBeInTheDocument();
+  });
+
+  it("hides the scale selector for SVG and HTML formats", async () => {
+    render(<ExportDialog {...baseProps} />);
+    await userEvent.click(screen.getByText("export.svg"));
+    expect(screen.queryByText("export.scale2x")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByText("export.html"));
+    expect(screen.queryByText("export.scale2x")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByText("export.webp"));
+    expect(screen.getByText("export.scale2x")).toBeInTheDocument();
+  });
+
+  it("calls onExport with each newly added format", async () => {
+    const onExport = vi.fn();
+    render(<ExportDialog {...baseProps} onExport={onExport} />);
+    for (const format of ["webp", "svg", "html", "webm", "webpAnim"]) {
+      onExport.mockClear();
+      await userEvent.click(screen.getByText(`export.${format}`));
+      await userEvent.click(screen.getByText("export.exportAction"));
+      expect(onExport).toHaveBeenCalledWith(format);
+    }
   });
 
   it("renders scale segmented buttons", () => {
