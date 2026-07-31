@@ -173,8 +173,8 @@
     "gradientAngle": "각도 ({val}°)",
     "collapse": "접기",
     "expand": "펼치기",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "그리드",
+    "gridDivisions": "그리드 선"
   },
   "frame": {
     "none": "없음",

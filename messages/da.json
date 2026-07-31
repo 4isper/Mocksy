@@ -173,8 +173,8 @@
     "gradientAngle": "Vinkel ({val}°)",
     "collapse": "Skrump",
     "expand": "Udvid",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "Gitter",
+    "gridDivisions": "Gitterlinjer"
   },
   "frame": {
     "none": "Ingen",

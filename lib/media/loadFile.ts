@@ -63,10 +63,55 @@ function arrayBufferToBase64(buf: ArrayBuffer): string {
 
 export async function loadMediaFromFile(file: File): Promise<LoadedMedia> {
   if (!isSupportedMedia(file)) throw new UnsupportedMediaError(file.name);
-  const url = await blobToDataUrl(file);
+  const fileToEncode = await compressImageIfNeeded(file);
+  const url = await blobToDataUrl(fileToEncode);
   return {
     url,
     mediaType: detectMediaType(file),
     mediaName: file.name
   };
+}
+
+/** Raster image mimes that get downscaled on upload. SVG stays vector, GIF
+ *  may be animated, so both are skipped. */
+const RASTER_IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp", "image/avif", "image/bmp"];
+/** Largest side kept when a photo is uploaded; mockups rarely need more. */
+export const MAX_IMAGE_DIMENSION = 2048;
+const WEBP_QUALITY = 0.85;
+
+/** Downscales large raster images to `MAX_IMAGE_DIMENSION` and re-encodes
+ *  them as WebP. Keeps the resulting data: URL small enough for the
+ *  localStorage quota and the 16KB share-URL guard. Falls back to the
+ *  original file when the browser lacks `createImageBitmap`/canvas (older
+ *  Safari) or in the Node test runner. */
+export async function compressImageIfNeeded(file: File): Promise<Blob> {
+  if (!RASTER_IMAGE_MIMES.includes(file.type)) return file;
+  if (typeof createImageBitmap !== "function" || typeof document === "undefined") return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const { width, height } = bitmap;
+    if (Math.max(width, height) <= MAX_IMAGE_DIMENSION) {
+      bitmap.close();
+      return file;
+    }
+    const scale = MAX_IMAGE_DIMENSION / Math.max(width, height);
+    const outWidth = Math.max(1, Math.round(width * scale));
+    const outHeight = Math.max(1, Math.round(height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = outWidth;
+    canvas.height = outHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      bitmap.close();
+      return file;
+    }
+    ctx.drawImage(bitmap, 0, 0, outWidth, outHeight);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/webp", WEBP_QUALITY)
+    );
+    return blob ?? file;
+  } catch {
+    return file;
+  }
 }

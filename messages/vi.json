@@ -173,8 +173,8 @@
     "gradientAngle": "Góc ({val}°)",
     "collapse": "Thu gọn",
     "expand": "Mở rộng",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "Lưới",
+    "gridDivisions": "Số dòng lưới"
   },
   "frame": {
     "none": "Không",

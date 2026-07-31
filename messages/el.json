@@ -173,8 +173,8 @@
     "gradientAngle": "Γωνία ({val}°)",
     "collapse": "Σύμπτυξη",
     "expand": "Επέκταση",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "Πλέγμα",
+    "gridDivisions": "Γραμμές πλέγματος"
   },
   "frame": {
     "none": "Καμία",

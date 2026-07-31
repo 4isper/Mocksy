@@ -173,8 +173,8 @@
     "gradientAngle": "Açı ({val}°)",
     "collapse": "Küçült",
     "expand": "Büyüt",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "Izgara",
+    "gridDivisions": "Izgara çizgileri"
   },
   "frame": {
     "none": "Yok",

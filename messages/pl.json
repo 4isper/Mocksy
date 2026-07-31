@@ -173,8 +173,8 @@
     "gradientAngle": "Kąt ({val}°)",
     "collapse": "Zwiń",
     "expand": "Rozwiń",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "Siatka",
+    "gridDivisions": "Linie siatki"
   },
   "frame": {
     "none": "Brak",

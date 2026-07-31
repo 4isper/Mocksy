@@ -173,8 +173,8 @@
     "gradientAngle": "มุม ({val}°)",
     "collapse": "ยุบ",
     "expand": "ขยาย",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "ตาราง",
+    "gridDivisions": "เส้นตาราง"
   },
   "frame": {
     "none": "ไม่มี",

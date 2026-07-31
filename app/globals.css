@@ -926,7 +926,7 @@ select {
 }
 
 .template-card {
-  text-align: left;
+  text-align: start;
   padding: 12px 14px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--panel-border);
@@ -1032,7 +1032,7 @@ select {
   background: var(--field-bg);
   color: var(--text-dim);
   cursor: pointer;
-  text-align: left;
+  text-align: start;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 

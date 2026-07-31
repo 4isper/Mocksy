@@ -173,8 +173,8 @@
     "gradientAngle": "Sudut ({val}°)",
     "collapse": "Ciutkan",
     "expand": "Perluas",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "Kisi-kisi",
+    "gridDivisions": "Garis kisi-kisi"
   },
   "frame": {
     "none": "Tidak ada",

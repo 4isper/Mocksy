@@ -173,8 +173,8 @@
     "gradientAngle": "Winkel ({val}°)",
     "collapse": "Einklappen",
     "expand": "Aufklappen",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "Raster",
+    "gridDivisions": "Rasterlinien"
   },
   "frame": {
     "none": "Keiner",

@@ -1223,6 +1223,19 @@ test("export Size selector scales the PNG pixel dimensions", async ({ page }) =>
   expect(width4x).toBeGreaterThan(width1x * 3);
 });
 
+test("RTL locales render with dir=rtl and LTR locales with dir=ltr", async ({ page }) => {
+  await page.goto("/ar");
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await expect(page.locator("html")).toHaveAttribute("lang", "ar");
+
+  await page.goto("/he");
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+
+  await page.goto("/en");
+  await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+});
+
 
 
 

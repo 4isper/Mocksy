@@ -173,8 +173,8 @@
     "gradientAngle": "Kulma ({val}°)",
     "collapse": "Kutista",
     "expand": "Laajenna",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "Ruudukko",
+    "gridDivisions": "Ruudukon viivat"
   },
   "frame": {
     "none": "Ei mitään",

@@ -173,8 +173,8 @@
     "gradientAngle": "角度 ({val}°)",
     "collapse": "折叠",
     "expand": "展开",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "网格",
+    "gridDivisions": "网格线"
   },
   "frame": {
     "none": "无",

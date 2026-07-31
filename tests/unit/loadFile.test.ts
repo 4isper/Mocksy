@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { detectMediaType, isAudioFile, isSupportedMedia, loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { compressImageIfNeeded, detectMediaType, isAudioFile, isSupportedMedia, loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 
 const file = (name: string, type: string): File =>
   new File([new Uint8Array([1, 2, 3])], name, { type });
@@ -114,5 +114,88 @@ it("rejects non-audio files", () => {
   expect(isAudioFile(file("shot.png", "image/png"))).toBe(false);
   expect(isAudioFile(file("clip.mp4", "video/mp4"))).toBe(false);
   expect(isAudioFile(file("notes.txt", "text/plain"))).toBe(false);
+});
+
+describe("compressImageIfNeeded", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const bigPhoto = (mime = "image/jpeg", size = 10_000_000): File =>
+    new File([new Uint8Array(size)], "photo.jpg", { type: mime });
+
+  function stubImageTools(dim: { width: number; height: number }): {
+    draw: ReturnType<typeof vi.fn>;
+    close: ReturnType<typeof vi.fn>;
+    canvas: { width: number; height: number; toBlob: ReturnType<typeof vi.fn> };
+  } {
+    const draw = vi.fn();
+    const close = vi.fn();
+    const bitmap = { width: dim.width, height: dim.height, close };
+    vi.stubGlobal("createImageBitmap", vi.fn().mockResolvedValue(bitmap));
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: vi.fn().mockReturnValue({ drawImage: draw }),
+      toBlob: vi.fn((cb: (b: Blob | null) => void) =>
+        cb(new Blob(["webp-bytes"], { type: "image/webp" }))
+      )
+    };
+    vi.stubGlobal("document", { createElement: vi.fn().mockReturnValue(canvas) });
+    return { draw, close, canvas };
+  }
+
+  it("keeps vector and animated formats untouched", async () => {
+    await expect(compressImageIfNeeded(bigPhoto("image/svg+xml"))).resolves.toMatchObject({ type: "image/svg+xml" });
+    await expect(compressImageIfNeeded(bigPhoto("image/gif"))).resolves.toMatchObject({ type: "image/gif" });
+  });
+
+  it("keeps small-dimension raster images untouched", async () => {
+    stubImageTools({ width: 1000, height: 800 });
+    const result = await compressImageIfNeeded(bigPhoto());
+    expect(result.type).toBe("image/jpeg");
+    expect(result.size).toBe(10_000_000);
+  });
+
+  it("downscales oversized photos to MAX_IMAGE_DIMENSION and re-encodes as WebP", async () => {
+    stubImageTools({ width: 4096, height: 2048 });
+    const result = await compressImageIfNeeded(bigPhoto());
+    expect(result.type).toBe("image/webp");
+    expect(result.size).toBeLessThan(10_000_000);
+  });
+
+  it("scales the longest side to MAX_IMAGE_DIMENSION preserving aspect ratio", async () => {
+    const { canvas, draw } = stubImageTools({ width: 4096, height: 2048 });
+    await compressImageIfNeeded(bigPhoto());
+    expect(canvas.width).toBe(2048);
+    expect(canvas.height).toBe(1024);
+    expect(draw).toHaveBeenCalledWith(expect.anything(), 0, 0, 2048, 1024);
+  });
+
+  it("returns the original file when createImageBitmap is unavailable", async () => {
+    vi.stubGlobal("createImageBitmap", undefined);
+    const result = await compressImageIfNeeded(bigPhoto());
+    expect(result.type).toBe("image/jpeg");
+  });
+
+  it("returns the original file when decoding fails", async () => {
+    vi.stubGlobal("createImageBitmap", vi.fn().mockRejectedValue(new Error("decode failed")));
+    vi.stubGlobal("document", { createElement: vi.fn() });
+    const result = await compressImageIfNeeded(bigPhoto());
+    expect(result.type).toBe("image/jpeg");
+  });
+
+  it("returns the original file when canvas.toBlob yields null", async () => {
+    stubImageTools({ width: 4096, height: 2048 }).canvas.toBlob.mockImplementation(
+      (cb: (b: Blob | null) => void) => cb(null)
+    );
+    const result = await compressImageIfNeeded(bigPhoto());
+    expect(result.type).toBe("image/jpeg");
+  });
+
+  it("loadMediaFromFile still returns a data: URL when compression is skipped in Node", async () => {
+    const result = await loadMediaFromFile(bigPhoto());
+    expect(result.url).toMatch(/^data:image\/jpeg;base64,/);
+  });
 });
 });

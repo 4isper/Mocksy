@@ -173,8 +173,8 @@
     "gradientAngle": "זווית ({val}°)",
     "collapse": "כווץ",
     "expand": "הרחב",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "רשת",
+    "gridDivisions": "קווי רשת"
   },
   "frame": {
     "none": "אף אחד",

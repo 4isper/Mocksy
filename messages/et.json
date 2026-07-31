@@ -173,8 +173,8 @@
     "gradientAngle": "Nurgakood ({val}°)",
     "collapse": "Ahenda",
     "expand": "Laienda",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "Ruudustik",
+    "gridDivisions": "Ruudustiku jooned"
   },
   "frame": {
     "none": "Puudub",

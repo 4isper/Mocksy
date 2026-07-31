@@ -173,8 +173,8 @@
     "gradientAngle": "Angle ({val}°)",
     "collapse": "Réduire",
     "expand": "Développer",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "Grilă",
+    "gridDivisions": "Linii grilă"
   },
   "frame": {
     "none": "Aucun",

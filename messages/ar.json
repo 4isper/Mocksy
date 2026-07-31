@@ -173,8 +173,8 @@
     "gradientAngle": "الزاوية ({val}°)",
     "collapse": "طي",
     "expand": "توسيع",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "شبكة",
+    "gridDivisions": "خطوط الشبكة"
   },
   "frame": {
     "none": "بلا",

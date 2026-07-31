@@ -173,8 +173,8 @@
     "gradientAngle": "Kot ({val}°)",
     "collapse": "Strni",
     "expand": "Razširi",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "Mreža",
+    "gridDivisions": "Črte mreže"
   },
   "frame": {
     "none": "Brez",

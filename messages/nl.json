@@ -173,8 +173,8 @@
     "gradientAngle": "Hoek ({val}°)",
     "collapse": "Inklappen",
     "expand": "Uitklappen",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "Raster",
+    "gridDivisions": "Rasterlijnen"
   },
   "frame": {
     "none": "Geen",

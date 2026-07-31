@@ -173,8 +173,8 @@
     "gradientAngle": "Ъгъл ({val}°)",
     "collapse": "Свиване",
     "expand": "Разширяване",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "Решетка",
+    "gridDivisions": "Решетъчни линии"
   },
   "frame": {
     "none": "Няма",

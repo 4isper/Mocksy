@@ -173,8 +173,8 @@
     "gradientAngle": "Vinkel ({val}°)",
     "collapse": "Komprimera",
     "expand": "Expandera",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "Rutnät",
+    "gridDivisions": "Rutnätslinjer"
   },
   "frame": {
     "none": "Ingen",

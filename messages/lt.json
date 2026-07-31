@@ -173,8 +173,8 @@
     "gradientAngle": "Ângulo ({val}°)",
     "collapse": "Recolher",
     "expand": "Expandir",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "Tinklelis",
+    "gridDivisions": "Tinklelio linijos"
   },
   "frame": {
     "none": "Nenhum",

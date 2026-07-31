@@ -173,8 +173,8 @@
     "gradientAngle": "Úhel ({val}°)",
     "collapse": "Sbalit",
     "expand": "Rozbalit",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "Mřížka",
+    "gridDivisions": "Počet čar"
   },
   "frame": {
     "none": "Žádný",

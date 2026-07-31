@@ -173,8 +173,8 @@
     "gradientAngle": "Кут ({val}°)",
     "collapse": "Згорнути",
     "expand": "Розгорнути",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "Сітка",
+    "gridDivisions": "Лінії сітки"
   },
   "frame": {
     "none": "Немає",

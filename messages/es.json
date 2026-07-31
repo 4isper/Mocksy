@@ -173,8 +173,8 @@
     "gradientAngle": "Ángulo ({val}°)",
     "collapse": "Contraer",
     "expand": "Expandir",
-    "grid": "Grid",
-    "gridDivisions": "Grid lines"
+    "grid": "Cuadrícula",
+    "gridDivisions": "Líneas de cuadrícula"
   },
   "frame": {
     "none": "Ninguno",
