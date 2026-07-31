@@ -3,7 +3,7 @@
 import type { ChangeEvent, DragEvent } from "react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Circle, Video } from "lucide-react";
+import { Circle, Eye, EyeOff, Video } from "lucide-react";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { isVideoLayer } from "@/lib/render/mediaKind";
@@ -194,7 +194,7 @@ export function LayersPanel() {
                     title={layer.hidden ? t("editor.showLayer") : t("editor.hideLayer")}
                     onClick={(e) => { e.stopPropagation(); toggleLayerHidden(layer.id); }}
                   >
-                    {layer.hidden ? "🚫" : "👁"}
+                    {layer.hidden ? <EyeOff size={12} /> : <Eye size={12} />}
                   </button>
                   <button
                     type="button"
