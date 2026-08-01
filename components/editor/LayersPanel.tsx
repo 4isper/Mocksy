@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, DragEvent } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Circle, Eye, EyeOff, Video } from "lucide-react";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 
-interface DragState {
+interface DropTarget {
   id: string;
-  y: number;
+  pos: "above" | "below";
 }
 
 export function LayersPanel() {
@@ -24,12 +24,8 @@ export function LayersPanel() {
   const toggleLayerHidden = useEditorStore((s) => s.toggleLayerHidden);
   const setMedia = useEditorStore((s) => s.setMedia);
   const [error, setError] = useState<string | null>(null);
-  const [dragState, setDragState] = useState<DragState | null>(null);
-  const [dragOverDropTarget, setDragOverDropTarget] = useState<{
-    targetId: string;
-    pos: "above" | "below";
-  } | null>(null);
-  const listRef = useRef<HTMLUListElement>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
 
   const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -59,66 +55,50 @@ export function LayersPanel() {
     reorderLayers(ids);
   };
 
-  /** Which list item is closest to clientY, and above/below its midpoint. */
-  const getDropTarget = useCallback(
-    (clientY: number): { targetId: string; pos: "above" | "below" } | null => {
-      const list = listRef.current;
-      if (!list) return null;
-      const items = Array.from(list.children) as HTMLElement[];
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (!item) continue;
-        const rect = item.getBoundingClientRect();
-        if (clientY >= rect.top && clientY <= rect.bottom) {
-          const id = item.getAttribute("data-layer-id");
-          if (!id) continue;
-          const pos = clientY < rect.top + rect.height / 2 ? "above" : "below";
-          return { targetId: id, pos };
-        }
-      }
-      return null;
-    },
-    []
-  );
+  /** Moves the dragged layer to sit just above/below the target. Coalesced so
+   *  a continuous drag collapses into one undo step. */
+  const reorderByDrag = (targetId: string, pos: "above" | "below") => {
+    if (!dragId || dragId === targetId) return;
+    const ids = scene.layers.map((l) => l.id);
+    const from = ids.indexOf(dragId);
+    let to = ids.indexOf(targetId);
+    if (from < 0 || to < 0) return;
+    if (pos === "below") to += 1;
+    ids.splice(from, 1);
+    if (to > from) to -= 1;
+    ids.splice(to, 0, dragId);
+    reorderLayers(ids, true);
+  };
 
-  /** Moves the dragged layer to sit just above/below the target. */
-  const reorderByDrag = useCallback(
-    (targetId: string, pos: "above" | "below") => {
-      if (!dragState || dragState.id === targetId) return;
-      const ids = scene.layers.map((l) => l.id);
-      const from = ids.indexOf(dragState.id);
-      let to = ids.indexOf(targetId);
-      if (from < 0 || to < 0) return;
-      if (pos === "below") to += 1;
-      ids.splice(from, 1);
-      if (to > from) to -= 1;
-      ids.splice(to, 0, dragState.id);
-      reorderLayers(ids, true);
-    },
-    [dragState, scene.layers, reorderLayers]
-  );
+  const handleDragStart = (e: DragEvent<HTMLLIElement>, id: string) => {
+    setDragId(id);
+    e.dataTransfer?.setData("text/plain", id);
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+  };
 
-  const handleGripPointerDown = (e: React.PointerEvent<HTMLSpanElement>, id: string) => {
-    if (e.button !== 0) return;
+  const handleDragOver = (e: DragEvent<HTMLLIElement>, id: string) => {
+    if (!dragId || dragId === id) return;
     e.preventDefault();
-    setDragState({ id, y: e.clientY });
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pos = e.clientY < rect.top + rect.height / 2 ? "above" : "below";
+    setDropTarget((cur) => (cur && cur.id === id && cur.pos === pos ? cur : { id, pos }));
+    reorderByDrag(id, pos);
   };
 
-  const handleGripPointerMove = (e: React.PointerEvent<HTMLSpanElement>) => {
-    if (!dragState) return;
-    const dt = getDropTarget(e.clientY);
-    if (!dt) return;
-    setDragOverDropTarget(dt);
-    reorderByDrag(dt.targetId, dt.pos);
+  const handleDrop = (e: DragEvent<HTMLLIElement>, id: string) => {
+    e.preventDefault();
+    if (!dragId) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pos = e.clientY < rect.top + rect.height / 2 ? "above" : "below";
+    reorderByDrag(id, pos);
+    setDragId(null);
+    setDropTarget(null);
   };
 
-  const handleGripPointerUp = (e: React.PointerEvent<HTMLSpanElement>) => {
-    if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
-      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-    }
-    setDragState(null);
-    setDragOverDropTarget(null);
+  const handleDragEnd = () => {
+    setDragId(null);
+    setDropTarget(null);
   };
 
   return (
@@ -132,67 +112,53 @@ export function LayersPanel() {
           {error}
         </span>
       ) : null}
-      <ul
-        ref={listRef}
-        className="layers-list"
-        style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 6, minWidth: 0 }}
-      >
+      <ul className="layers-list" style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 6,  minWidth: 0 }}>
         {scene.layers.map((layer, index) => {
           const active = layer.id === scene.activeLayerId;
           const label = layer.mediaName ?? (layer.mediaType === "video" ? t("editor.videoLabel") : t("editor.imageLabel"));
-          const isDragging = dragState?.id === layer.id;
-          const isTarget = dragOverDropTarget?.targetId === layer.id;
+          const isDragging = dragId === layer.id;
+          const isTarget = dropTarget?.id === layer.id;
           const dropIndicator = isTarget && !isDragging
-            ? {
-                boxShadow:
-                  dragOverDropTarget?.pos === "above"
-                    ? "0 -2px 0 0 var(--accent) inset"
-                    : "0 2px 0 0 var(--accent) inset",
-              }
+            ? { boxShadow: dropTarget?.pos === "above" ? "0 -2px 0 0 var(--accent) inset" : "0 2px 0 0 var(--accent) inset" }
             : undefined;
           return (
-            <li
-              key={layer.id}
-              data-layer-id={layer.id}
-              className={active ? "layer-item is-active" : "layer-item"}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-                padding: "6px 8px",
-                borderRadius: 8,
-                border: active ? "2px solid var(--accent)" : "1px solid var(--panel-border)",
-                background: active ? "rgba(0,217,255,0.08)" : "transparent",
-                cursor: isDragging ? "grabbing" : "grab",
-                opacity: isDragging ? 0.45 : layer.hidden ? 0.5 : 1,
-                minWidth: 0,
-                ...dropIndicator
-              }}
-              onClick={() => selectLayer(layer.id)}
-            >
-              <span
-                aria-hidden="true"
-                className="layer-grip"
-                onPointerDown={(e) => handleGripPointerDown(e, layer.id)}
-                onPointerMove={handleGripPointerMove}
-                onPointerUp={handleGripPointerUp}
-                onPointerCancel={handleGripPointerUp}
-                style={{
-                  flex: "0 0 auto",
-                  display: "grid",
-                  placeItems: "center",
-                  color: "var(--text-dim)",
-                  fontSize: 12,
-                  lineHeight: 1,
-                  letterSpacing: 1,
-                  cursor: "grab",
-                  padding: "0 2px",
-                  userSelect: "none",
-                  touchAction: "none",
-                }}
-              >
-                ⋮⋮
-              </span>
+              <li
+                  key={layer.id}
+                  className={active ? "layer-item is-active" : "layer-item"}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, layer.id)}
+                  onDragOver={(e) => handleDragOver(e, layer.id)}
+                  onDrop={(e) => handleDrop(e, layer.id)}
+                  onDragEnd={handleDragEnd}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "6px 8px",
+                    borderRadius: 8,
+                    border: active ? "2px solid var(--accent)" : "1px solid var(--panel-border)",
+                    background: active ? "rgba(0,217,255,0.08)" : "transparent",
+                    cursor: isDragging ? "grabbing" : "grab",
+                    opacity: isDragging ? 0.45 : layer.hidden ? 0.5 : 1,
+                    minWidth: 0,
+                    ...dropIndicator
+                  }}
+                  onClick={() => selectLayer(layer.id)}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      flex: "0 0 auto",
+                      display: "grid",
+                      placeItems: "center",
+                      color: "var(--text-dim)",
+                      fontSize: 12,
+                      lineHeight: 1,
+                      letterSpacing: 1
+                    }}
+                  >
+                    ⋮⋮
+                  </span>
                   <span
                     aria-hidden="true"
                     style={{
