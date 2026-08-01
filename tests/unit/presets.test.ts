@@ -18,6 +18,14 @@ describe("backgroundPresets", () => {
     }
   });
 
+  it("exposes pattern presets with a patternId", () => {
+    const patterns = backgroundPresets.filter((p) => p.kind === "pattern");
+    expect(patterns.length).toBeGreaterThan(0);
+    for (const preset of patterns) {
+      expect(preset.patternId).toBeTruthy();
+    }
+  });
+
   it("has unique ids", () => {
     const ids = backgroundPresets.map((p) => p.id);
     expect(new Set(ids).size).toBe(ids.length);

@@ -268,6 +268,115 @@ describe("renderMockupToCanvas background modes", () => {
     renderMockupToCanvas(canvas, { ...initialScene, backgroundMode: "solid", backgroundColor: "#ff0000", layers: [] }, null, undefined, undefined, 400, 300, 2);
     expect(fillStyles).toContain("#ff0000");
   });
+
+  it("renders a radial gradient background with a middle stop", () => {
+    let radialCreated = false;
+    const stops: string[] = [];
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      createRadialGradient: () => {
+        radialCreated = true;
+        return { addColorStop: (_o: number, c: string) => stops.push(c) };
+      },
+      drawImage: () => {},
+      set fillStyle(_v: unknown) {},
+      set strokeStyle(_v: unknown) {},
+      set lineWidth(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {}
+    };
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    renderMockupToCanvas(
+      canvas,
+      { ...initialScene, backgroundMode: "gradient", gradientType: "radial", gradientFrom: "#000", gradientVia: "#111", gradientTo: "#fff", layers: [] },
+      null, undefined, undefined, 400, 300, 2
+    );
+    expect(radialCreated).toBe(true);
+    expect(stops).toEqual(["#000", "#111", "#fff"]);
+  });
+
+  it("renders a dot pattern background", () => {
+    let arcCalls = 0;
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      arc: () => { arcCalls++; },
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(_v: unknown) {},
+      set strokeStyle(_v: unknown) {},
+      set lineWidth(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {}
+    };
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    renderMockupToCanvas(
+      canvas,
+      { ...initialScene, backgroundMode: "pattern", patternId: "dots", layers: [] },
+      null, undefined, undefined, 400, 300, 2
+    );
+    expect(arcCalls).toBeGreaterThan(0);
+  });
+
+  it("renders a grid pattern background", () => {
+    let strokeCalls = 0;
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => { strokeCalls++; },
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(_v: unknown) {},
+      set strokeStyle(_v: unknown) {},
+      set lineWidth(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {}
+    };
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    renderMockupToCanvas(
+      canvas,
+      { ...initialScene, backgroundMode: "pattern", patternId: "grid", layers: [] },
+      null, undefined, undefined, 400, 300, 2
+    );
+    expect(strokeCalls).toBeGreaterThan(0);
+  });
 });
 
 describe("renderMockupToCanvas watermark positions", () => {

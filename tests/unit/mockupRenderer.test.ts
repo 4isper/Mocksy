@@ -177,4 +177,43 @@ describe("buildSceneCss", () => {
     const contain = buildSceneCss(base({ layer: { mediaFit: "contain" } })).mediaStyle.objectFit;
     expect(contain).toBe("contain");
   });
+
+  it("builds a radial gradient with a middle stop when type is radial", () => {
+    const { container } = buildSceneCss(
+      base({ backgroundMode: "gradient", gradientType: "radial", gradientFrom: "#000000", gradientVia: "#111111", gradientTo: "#ffffff" })
+    );
+    expect(container.background).toBe("radial-gradient(circle at center, #000000, #111111, #ffffff)");
+  });
+
+  it("includes a middle stop in linear gradients when gradientVia is set", () => {
+    const { container } = buildSceneCss(
+      base({ backgroundMode: "gradient", gradientType: "linear", gradientFrom: "#1d4ed8", gradientVia: "#0ea5e9", gradientTo: "#7c3aed", gradientAngle: 90 })
+    );
+    expect(container.background).toBe("linear-gradient(90deg, #1d4ed8, #0ea5e9, #7c3aed)");
+  });
+
+  it("renders a dot pattern background with a tiled size", () => {
+    const { container, backgroundSize } = buildSceneCss(base({ backgroundMode: "pattern", patternId: "dots" }));
+    expect(container.background).toContain("radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)");
+    expect(backgroundSize).toBe("20px 20px");
+  });
+
+  it("renders grid and diagonal patterns as repeating linear gradients", () => {
+    const grid = buildSceneCss(base({ backgroundMode: "pattern", patternId: "grid" }));
+    expect(grid.container.background).toContain("repeating-linear-gradient(0deg");
+    expect(grid.backgroundSize).toBe("cover");
+    const diagonal = buildSceneCss(base({ backgroundMode: "pattern", patternId: "diagonal" }));
+    expect(diagonal.container.background).toContain("repeating-linear-gradient(45deg");
+  });
+
+  it("renders a noise pattern as an encoded SVG data URL", () => {
+    const { container } = buildSceneCss(base({ backgroundMode: "pattern", patternId: "noise" }));
+    expect(container.background).toContain("data:image/svg+xml");
+    expect(container.background).toContain("feTurbulence");
+  });
+
+  it("falls back to transparent for an unknown pattern id", () => {
+    const { container } = buildSceneCss(base({ backgroundMode: "pattern", patternId: "bogus" as never }));
+    expect(container.background).toBe("transparent");
+  });
 });

@@ -218,4 +218,51 @@ describe("normalizeScene", () => {
     expect(s.annotations[0]!.id.length).toBeGreaterThan(0);
     expect(s.annotations[0]!.id).not.toBe("");
   });
+
+  it("accepts pattern background mode with a valid pattern id", () => {
+    const s = normalizeScene({ backgroundMode: "pattern", patternId: "dots" });
+    expect(s.backgroundMode).toBe("pattern");
+    expect(s.patternId).toBe("dots");
+  });
+
+  it("rejects unknown pattern ids and gradient types", () => {
+    const s = normalizeScene({ backgroundMode: "pattern", patternId: "waves", gradientType: "cone" });
+    expect(s.patternId).toBe(initialScene.patternId);
+    expect(s.gradientType).toBe(initialScene.gradientType);
+  });
+
+  it("normalizes gradient type and middle stop", () => {
+    const s = normalizeScene({ gradientType: "radial", gradientVia: "#0ea5e9" });
+    expect(s.gradientType).toBe("radial");
+    expect(s.gradientVia).toBe("#0ea5e9");
+    const missing = normalizeScene({ gradientType: "radial" });
+    expect(missing.gradientVia).toBeNull();
+  });
+
+  it("normalizes circle annotations", () => {
+    const s = normalizeScene({
+      annotations: [{ id: "a1", type: "circle", x: 0.2, y: 0.2, w: 0.3, h: 0.3, text: "", color: "#f00", strokeWidth: 4, fontSize: 0 }]
+    });
+    expect(s.annotations[0]!.type).toBe("circle");
+    const bad = normalizeScene({ annotations: [{ type: "squiggle" }] });
+    expect(bad.annotations[0]!.type).toBe("rect");
+  });
+
+  it("normalizes text background fields with defaults and clamping", () => {
+    const styled = normalizeScene({
+      annotations: [{ id: "a1", type: "text", x: 0.1, y: 0.1, w: 0.3, h: 0, text: "Hi", color: "#fff", fontSize: 24, strokeWidth: 0, bgColor: "rgba(0,0,0,0.5)", bgPadding: 12, bgRadius: 4 }]
+    });
+    expect(styled.annotations[0]).toMatchObject({ bgColor: "rgba(0,0,0,0.5)", bgPadding: 12, bgRadius: 4 });
+    const plain = normalizeScene({
+      annotations: [{ id: "a2", type: "text", x: 0, y: 0, w: 0.1, h: 0, text: "Hi", color: "#fff", fontSize: 24, strokeWidth: 0 }]
+    });
+    expect(plain.annotations[0]!.bgColor).toBeNull();
+    expect(plain.annotations[0]!.bgPadding).toBe(0);
+    expect(plain.annotations[0]!.bgRadius).toBe(0);
+    const clamped = normalizeScene({
+      annotations: [{ id: "a3", type: "text", x: 0, y: 0, w: 0.1, h: 0, text: "Hi", color: "#fff", fontSize: 24, strokeWidth: 0, bgPadding: 999, bgRadius: -5 }]
+    });
+    expect(clamped.annotations[0]!.bgPadding).toBe(100);
+    expect(clamped.annotations[0]!.bgRadius).toBe(0);
+  });
 });

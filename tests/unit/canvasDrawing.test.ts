@@ -4,6 +4,7 @@ import type { Annotation, EditorScene, MediaLayer } from "@/lib/types/editor";
 
 function mockCtx(): CanvasRenderingContext2D {
   const state: Record<string, unknown> = {};
+  const fillStyles: string[] = [];
   return {
     clearRect: vi.fn(),
     fillRect: vi.fn(),
@@ -15,6 +16,7 @@ function mockCtx(): CanvasRenderingContext2D {
     quadraticCurveTo: vi.fn(),
     closePath: vi.fn(),
     arc: vi.fn(),
+    ellipse: vi.fn(),
     fill: vi.fn(),
     stroke: vi.fn(),
     clip: vi.fn(),
@@ -22,8 +24,10 @@ function mockCtx(): CanvasRenderingContext2D {
     fillText: vi.fn(),
     strokeRect: vi.fn(),
     measureText: (text: string) => ({ width: text.length * 10 }),
-    set fillStyle(v: unknown) { state.fillStyle = v; },
+    set fillStyle(v: unknown) { fillStyles.push(String(v)); state.fillStyle = v; },
     get fillStyle() { return state.fillStyle; },
+    /** Every fillStyle write, in order, so tests can assert intermediate paints. */
+    _fillStyles: fillStyles,
     set strokeStyle(v: unknown) { state.strokeStyle = v; },
     get strokeStyle() { return state.strokeStyle; },
     set lineWidth(v: unknown) { state.lineWidth = v; },
@@ -191,6 +195,50 @@ describe("drawAnnotations", () => {
     drawAnnotations(ctx, annotations, 800, 600, 2);
     expect(ctx.stroke).toHaveBeenCalled();
     expect(ctx.fill).toHaveBeenCalled();
+  });
+
+  it("draws circle annotations with ellipse and stroke", () => {
+    const ctx = mockCtx();
+    const annotations: Annotation[] = [
+      { id: "a1", type: "circle", x: 0.2, y: 0.2, w: 0.3, h: 0.3, text: "", color: "#00ff00", strokeWidth: 2, fontSize: 0 }
+    ];
+    drawAnnotations(ctx, annotations, 800, 600, 2);
+    expect(ctx.ellipse).toHaveBeenCalledWith(280, 210, 120, 90, 0, 0, Math.PI * 2);
+    expect(ctx.strokeStyle).toBe("#00ff00");
+    expect(ctx.stroke).toHaveBeenCalled();
+  });
+
+  it("scales circle strokeWidth by dpiScale", () => {
+    const ctx = mockCtx();
+    const annotations: Annotation[] = [
+      { id: "a1", type: "circle", x: 0.1, y: 0.1, w: 0.3, h: 0.3, text: "", color: "#000", strokeWidth: 0.5, fontSize: 0 }
+    ];
+    drawAnnotations(ctx, annotations, 800, 600, 2);
+    expect(ctx.lineWidth).toBe(1);
+  });
+
+  it("draws a rounded background box behind text when bgColor is set", () => {
+    const ctx = mockCtx();
+    const annotations: Annotation[] = [
+      { id: "a1", type: "text", x: 0.1, y: 0.1, w: 0.3, h: 0, text: "Hello", color: "#000", strokeWidth: 0, fontSize: 16, fontFamily: "Inter", bgColor: "rgba(0,0,0,0.5)", bgPadding: 4, bgRadius: 6 }
+    ];
+    drawAnnotations(ctx, annotations, 800, 600, 2);
+    // textWidth 50 (5 chars), padding 8 and radius 12 at dpr 2; box hugs the text.
+    expect(ctx.moveTo).toHaveBeenCalledWith(80 - 8 + 12, 60 - 8);
+    expect(ctx.quadraticCurveTo).toHaveBeenCalled();
+    expect(ctx.fill).toHaveBeenCalled();
+    expect((ctx as any)._fillStyles).toContain("rgba(0,0,0,0.5)");
+    // Foreground color is restored after the box so the text keeps its color.
+    expect(ctx.fillStyle).toBe("#000");
+  });
+
+  it("scales background padding and radius by dpiScale", () => {
+    const ctx = mockCtx();
+    const annotations: Annotation[] = [
+      { id: "a1", type: "text", x: 0.1, y: 0.1, w: 0.3, h: 0, text: "Hi", color: "#000", strokeWidth: 0, fontSize: 16, fontFamily: "Inter", bgColor: "#111", bgPadding: 4, bgRadius: 2 }
+    ];
+    drawAnnotations(ctx, annotations, 800, 600, 3);
+    expect(ctx.moveTo).toHaveBeenCalledWith(80 - 12 + 6, 60 - 12);
   });
 
   it("handles multi-line text annotations", () => {

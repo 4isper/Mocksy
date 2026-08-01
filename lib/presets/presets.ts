@@ -28,15 +28,6 @@ export const backgroundPresets: BackgroundPreset[] = [
   { id: "noise", name: "Noise", kind: "pattern", swatch: "#18181b", patternId: "noise" }
 ];
 
-export interface PatternPreset {}
-
-export const patternPresets: PatternPreset[] = [
-  { id: "dots", name: "Dots", swatch: "#18181b" },
-  { id: "grid", name: "Grid", swatch: "#18181b" },
-  { id: "diagonal", name: "Diagonal", swatch: "#18181b" },
-  { id: "noise", name: "Noise", swatch: "#18181b" }
-];
-
 /** Named appearance presets. Each carries the scene's frame, frame style,
  *  background, shadow and watermark — but never the media layers — so
  *  applying one restyles the mockup in one click without dropping the
