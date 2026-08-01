@@ -63,7 +63,10 @@ function normalizeAnnotation(raw: unknown, fallback: Annotation): Annotation {
     color: str(r.color, fallback.color) ?? fallback.color,
     strokeWidth: num(r.strokeWidth, fallback.strokeWidth, 0, 40),
     fontSize: num(r.fontSize, fallback.fontSize, 8, 200),
-    fontFamily: str(r.fontFamily, null) ?? fallback.fontFamily
+    fontFamily: str(r.fontFamily, null) ?? fallback.fontFamily,
+    fontWeight: pick(r.fontWeight, ["normal", "bold"] as const, fallback.fontWeight ?? "bold"),
+    fontStyle: pick(r.fontStyle, ["normal", "italic"] as const, fallback.fontStyle ?? "normal"),
+    textAlign: pick(r.textAlign, ["left", "center", "right"] as const, fallback.textAlign ?? "left")
   };
 }
 

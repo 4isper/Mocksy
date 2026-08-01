@@ -101,8 +101,21 @@ describe("buildHtmlSnippet", () => {
       watermarkSize: 13
     });
     const html = buildHtmlSnippet(scene, { mediaHref: null, mediaType: null, backgroundHref: null, overlayHref: null });
-    expect(html).toContain('<div class="anno anno-text" style="left:10%;top:10%;font-size:24px;color:#ffffff;font-family:Inter">Hi &lt;there&gt;</div>');
+    expect(html).toContain('<div class="anno anno-text" style="left:10%;top:10%;width:30%;font-size:24px;color:#ffffff;font-family:Inter;font-weight:600;font-style:normal;text-align:left">Hi &lt;there&gt;</div>');
     expect(html).toContain('<span class="wm" style="right:16px;bottom:16px;font-size:13px">Mocksy</span>');
+  });
+
+  it("applies typography styles to text annotations", () => {
+    const scene = sceneWith({
+      annotations: [
+        {
+          id: "a1", type: "text", x: 0.1, y: 0.1, w: 0.3, h: 0, text: "Hi", color: "#ffffff", strokeWidth: 0, fontSize: 24,
+          fontWeight: "normal", fontStyle: "italic", textAlign: "center"
+        }
+      ]
+    });
+    const html = buildHtmlSnippet(scene, { mediaHref: null, mediaType: null, backgroundHref: null, overlayHref: null });
+    expect(html).toContain("font-weight:400;font-style:italic;text-align:center");
   });
 
   it("adds keyframe animation CSS for animated layers", () => {

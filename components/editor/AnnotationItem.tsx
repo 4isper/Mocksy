@@ -26,6 +26,8 @@ export function AnnotationItem({ annotation, selected, canvasRef, snapDivisions 
   const t = useTranslations();
   const moveRef = useRef<{ x: number; y: number; ax: number; ay: number } | null>(null);
   const resizeRef = useRef<{ x: number; y: number; aw: number; ah: number } | null>(null);
+  const editRef = useRef<HTMLDivElement | null>(null);
+  const [editing, setEditing] = useState(false);
   // Measured canvas size, captured after layout so the arrow renders at the
   // correct pixel scale on first paint (the ref is null during the initial
   // render, before the canvas has been laid out).
@@ -34,6 +36,21 @@ export function AnnotationItem({ annotation, selected, canvasRef, snapDivisions 
     const canvas = canvasRef.current;
     if (canvas) setSize({ w: canvas.clientWidth, h: canvas.clientHeight });
   }, [canvasRef, annotation.x, annotation.y, annotation.w, annotation.h, annotation.type]);
+
+  // Focus the in-place editor when it mounts and place the caret at the end so
+  // typing appends instead of inserting at the start.
+  useLayoutEffect(() => {
+    if (!editing) return;
+    const el = editRef.current;
+    if (!el) return;
+    el.focus();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    range.collapse(false);
+  }, [editing]);
 
   const onBodyDown = (e: React.PointerEvent) => {
     e.stopPropagation();
@@ -108,18 +125,39 @@ export function AnnotationItem({ annotation, selected, canvasRef, snapDivisions 
 
   let content: ReactNode = null;
   if (annotation.type === "text") {
-    content = (
+    const textStyle: CSSProperties = {
+      fontSize: annotation.fontSize,
+      color: annotation.color,
+      lineHeight: 1.2,
+      fontWeight: annotation.fontWeight ?? "bold",
+      fontStyle: annotation.fontStyle ?? "normal",
+      textAlign: annotation.textAlign ?? "left",
+      fontFamily: annotation.fontFamily ?? "Inter, system-ui, sans-serif",
+      whiteSpace: "pre-wrap",
+      textShadow: "0 1px 3px rgba(0,0,0,0.5)"
+    };
+    // Double-click edits the text in place: the label becomes contentEditable
+    // until it loses focus, then the edited value is committed back to the
+    // scene. Pointer-down must not start a drag while editing.
+    content = editing ? (
       <div
-        style={{
-          fontSize: annotation.fontSize,
-          color: annotation.color,
-          lineHeight: 1.2,
-          fontWeight: 600,
-          fontFamily: annotation.fontFamily ?? "Inter, system-ui, sans-serif",
-          whiteSpace: "pre-wrap",
-          textShadow: "0 1px 3px rgba(0,0,0,0.5)"
+        ref={editRef}
+        contentEditable
+        suppressContentEditableWarning
+        style={{ ...textStyle, outline: "none", minWidth: 24, cursor: "text" }}
+        onPointerDown={(e) => e.stopPropagation()}
+        onInput={(e) => onUpdate(annotation.id, { text: e.currentTarget.textContent ?? "" })}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            e.currentTarget.blur();
+          }
         }}
+        onBlur={() => setEditing(false)}
       >
+        {annotation.text}
+      </div>
+    ) : (
+      <div style={textStyle} onDoubleClick={() => setEditing(true)}>
         {annotation.text}
       </div>
     );

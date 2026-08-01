@@ -133,14 +133,16 @@ describe("buildSvgMarkup", () => {
     const scene = sceneWith({
       backgroundMode: "transparent",
       annotations: [
-        { id: "a1", type: "text", x: 0.1, y: 0.1, w: 0.3, h: 0, text: "Hi <there>", color: "#ffffff", strokeWidth: 0, fontSize: 24 },
+        { id: "a1", type: "text", x: 0.1, y: 0.1, w: 0.3, h: 0, text: "Hi <there>", color: "#ffffff", strokeWidth: 0, fontSize: 24, fontWeight: "normal", fontStyle: "italic", textAlign: "center" },
         { id: "a2", type: "rect", x: 0.1, y: 0.2, w: 0.3, h: 0.2, text: "", color: "#ffff00", strokeWidth: 3, fontSize: 0 },
         { id: "a3", type: "arrow", x: 0.1, y: 0.3, w: 0.4, h: 0.2, text: "", color: "#00ff00", strokeWidth: 2, fontSize: 0 }
       ]
     });
     const markup = buildSvgMarkup(scene, { width: 800, height: 600, backgroundHref: null, groups: [] });
     expect(markup).toContain("Hi &lt;there&gt;");
-    expect(markup).toContain('font-size="24" font-weight="600" fill="#ffffff"');
+    expect(markup).toContain('font-size="24" font-weight="400" fill="#ffffff"');
+    expect(markup).toContain('text-anchor="middle"');
+    expect(markup).toContain('font-style="italic"');
     expect(markup).toContain('fill="none" stroke="#ffff00" stroke-width="3"');
     expect(markup).toContain('<line x1="80" y1="180" x2="400" y2="300"');
     expect(markup).toContain('<polygon points="');

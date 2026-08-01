@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { AnnotationItem } from "@/components/editor/AnnotationItem";
 import type { Annotation } from "@/lib/types/editor";
 
@@ -84,5 +84,33 @@ describe("AnnotationItem", () => {
     expect(call[0]).toBe("a1");
     expect(call[1].x).toBeCloseTo(0.23, 6);
     expect(call[1].y).toBeCloseTo(0.42, 6);
+  });
+
+  it("edits text in place on double click", () => {
+    const canvas = document.createElement("div");
+    Object.defineProperty(canvas, "clientWidth", { value: 1000, configurable: true });
+    Object.defineProperty(canvas, "clientHeight", { value: 1000, configurable: true });
+    const canvasRef = { current: canvas } as React.RefObject<HTMLDivElement | null>;
+    const onUpdate = vi.fn();
+    const annotation = makeAnnotation({ type: "text", text: "Hello" });
+    render(
+      <AnnotationItem
+        annotation={annotation}
+        selected
+        canvasRef={canvasRef}
+        onSelect={() => {}}
+        onUpdate={onUpdate}
+      />
+    );
+
+    const label = screen.getByText("Hello");
+    fireEvent.doubleClick(label);
+
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement;
+    expect(editable).toBeTruthy();
+    editable.textContent = "Edited";
+    fireEvent.input(editable);
+
+    expect(onUpdate).toHaveBeenCalledWith("a1", { text: "Edited" });
   });
 });

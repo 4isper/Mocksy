@@ -2,6 +2,10 @@ export type BackgroundMode = "transparent" | "solid" | "gradient" | "image";
 
 export type AnnotationType = "text" | "arrow" | "rect";
 
+export type FontWeight = "normal" | "bold";
+export type FontStyle = "normal" | "italic";
+export type TextAlign = "left" | "center" | "right";
+
 /** A non-media overlay drawn on top of the mockup (text, arrow, rectangle).
  *  Position and size are fractions (0..1) of the canvas so they scale with the
  *  preview and the exported PNG/video at any pixel ratio. For arrows, (x, y) is
@@ -19,6 +23,12 @@ export interface Annotation {
   fontSize: number;
   /** Font family for text annotations. Falls back to "Inter, system-ui, sans-serif" when absent. */
   fontFamily?: string;
+  /** Font weight for text annotations (default "bold"). */
+  fontWeight?: FontWeight;
+  /** Italic flag for text annotations (default "normal"). */
+  fontStyle?: FontStyle;
+  /** Horizontal alignment for text annotations (default "left"). */
+  textAlign?: TextAlign;
 }
 export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "pixel8pro" | "galaxy24" | "ipad" | "desktop" | "tablet" | "macbook" | "imac" | "watch";
 export type StylePreset = "default" | "glassLight" | "glassDark" | "outline";

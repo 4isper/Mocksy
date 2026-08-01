@@ -48,17 +48,21 @@ export function drawAnnotations(
     ctx.save();
     if (a.type === "text") {
       const fontSize = a.fontSize * dpiScale;
+      const weight = a.fontWeight === "normal" ? "400" : "600";
+      const style = a.fontStyle === "italic" ? "italic " : "";
       ctx.fillStyle = a.color;
-      ctx.font = `600 ${fontSize}px ${a.fontFamily ?? "Inter, system-ui, sans-serif"}`;
+      ctx.font = `${style}${weight} ${fontSize}px ${a.fontFamily ?? "Inter, system-ui, sans-serif"}`;
       ctx.textBaseline = "top";
-      ctx.textAlign = "left";
+      const align = a.textAlign ?? "left";
+      ctx.textAlign = align === "center" ? "center" : align === "right" ? "right" : "left";
+      const textX = align === "center" ? bx + bw / 2 : align === "right" ? bx + bw : bx;
       ctx.shadowColor = "rgba(0,0,0,0.5)";
       ctx.shadowBlur = 3 * dpiScale;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 1 * dpiScale;
       const lines = a.text.split("\n");
       const lineHeight = fontSize * 1.2;
-      lines.forEach((line, i) => ctx.fillText(line, bx, by + i * lineHeight));
+      lines.forEach((line, i) => ctx.fillText(line, textX, by + i * lineHeight));
     } else if (a.type === "rect") {
       ctx.strokeStyle = a.color;
       ctx.lineWidth = Math.max(1, a.strokeWidth * dpiScale);

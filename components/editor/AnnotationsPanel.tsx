@@ -95,6 +95,65 @@ export function AnnotationsPanel() {
           ) : null}
           {selected.type === "text" ? (
             <label className="field">
+              <span>{t("annotation.align")}</span>
+              <div className="segmented" role="group" aria-label={t("annotation.align")}>
+                {(["left", "center", "right"] as const).map((a) => (
+                  <button
+                    key={a}
+                    type="button"
+                    className={(selected.textAlign ?? "left") === a ? "is-active" : ""}
+                    onClick={() => updateAnnotation(selected.id, { textAlign: a })}
+                  >
+                    {t(`annotation.align${a.charAt(0).toUpperCase()}${a.slice(1)}`)}
+                  </button>
+                ))}
+              </div>
+            </label>
+          ) : null}
+          {selected.type === "text" ? (
+            <label className="field">
+              <span>{t("annotation.fontWeight")}</span>
+              <div className="segmented" role="group" aria-label={t("annotation.fontWeight")}>
+                <button
+                  type="button"
+                  className={(selected.fontWeight ?? "bold") === "bold" ? "is-active" : ""}
+                  onClick={() => updateAnnotation(selected.id, { fontWeight: "bold" })}
+                >
+                  {t("annotation.bold")}
+                </button>
+                <button
+                  type="button"
+                  className={(selected.fontWeight ?? "bold") === "normal" ? "is-active" : ""}
+                  onClick={() => updateAnnotation(selected.id, { fontWeight: "normal" })}
+                >
+                  {t("annotation.regular")}
+                </button>
+              </div>
+            </label>
+          ) : null}
+          {selected.type === "text" ? (
+            <label className="field">
+              <span>{t("annotation.fontStyle")}</span>
+              <div className="segmented" role="group" aria-label={t("annotation.fontStyle")}>
+                <button
+                  type="button"
+                  className={(selected.fontStyle ?? "normal") === "normal" ? "is-active" : ""}
+                  onClick={() => updateAnnotation(selected.id, { fontStyle: "normal" })}
+                >
+                  {t("annotation.normal")}
+                </button>
+                <button
+                  type="button"
+                  className={(selected.fontStyle ?? "normal") === "italic" ? "is-active" : ""}
+                  onClick={() => updateAnnotation(selected.id, { fontStyle: "italic" })}
+                >
+                  {t("annotation.italic")}
+                </button>
+              </div>
+            </label>
+          ) : null}
+          {selected.type === "text" ? (
+            <label className="field">
               <span>{t("annotation.fontSize", { val: selected.fontSize })}</span>
               <input
                 className="range"

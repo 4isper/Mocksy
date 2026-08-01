@@ -158,6 +158,21 @@ describe("normalizeScene", () => {
     expect(normalizeScene({}).animationDurationMs).toBe(initialScene.animationDurationMs);
   });
 
+  it("normalizes text annotation typography with defaults for missing values", () => {
+    const s = normalizeScene({
+      annotations: [{ id: "a1", type: "text", x: 0.1, y: 0.1, w: 0.2, h: 0.1, text: "Hi", color: "#fff", fontSize: 24, strokeWidth: 0 }]
+    });
+    expect(s.annotations[0]).toMatchObject({ fontWeight: "bold", fontStyle: "normal", textAlign: "left" });
+    const styled = normalizeScene({
+      annotations: [{ id: "a1", type: "text", x: 0.1, y: 0.1, w: 0.2, h: 0.1, text: "Hi", color: "#fff", fontSize: 24, strokeWidth: 0, fontWeight: "normal", fontStyle: "italic", textAlign: "center", fontFamily: "Georgia" }]
+    });
+    expect(styled.annotations[0]).toMatchObject({ fontWeight: "normal", fontStyle: "italic", textAlign: "center", fontFamily: "Georgia" });
+    const bogus = normalizeScene({
+      annotations: [{ id: "a1", type: "text", x: 0.1, y: 0.1, w: 0.2, h: 0.1, text: "Hi", color: "#fff", fontSize: 24, strokeWidth: 0, fontWeight: "heavy", fontStyle: "underlined", textAlign: "justify" }]
+    });
+    expect(bogus.annotations[0]).toMatchObject({ fontWeight: "bold", fontStyle: "normal", textAlign: "left" });
+  });
+
   it("accepts explicit background image URL", () => {
     const s = normalizeScene({ backgroundImageUrl: "data:image/png;base64,abc" });
     expect(s.backgroundImageUrl).toBe("data:image/png;base64,abc");

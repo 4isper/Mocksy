@@ -62,7 +62,10 @@ function annotationsHtml(scene: EditorScene, arW: number, arH: number): string {
     const bw = Math.abs(a.w) * 100;
     const bh = Math.abs(a.h) * 100;
     if (a.type === "text") {
-      out += `<div class="anno anno-text" style="left:${num(bx)}%;top:${num(by)}%;font-size:${num(a.fontSize)}px;color:${a.color};font-family:${a.fontFamily ?? "Inter, system-ui, sans-serif"}">${escapeHtml(a.text)}</div>`;
+      const weight = a.fontWeight === "normal" ? 400 : 600;
+      const style = a.fontStyle === "italic" ? "italic" : "normal";
+      const align = a.textAlign ?? "left";
+      out += `<div class="anno anno-text" style="left:${num(bx)}%;top:${num(by)}%;width:${num(bw)}%;font-size:${num(a.fontSize)}px;color:${a.color};font-family:${a.fontFamily ?? "Inter, system-ui, sans-serif"};font-weight:${weight};font-style:${style};text-align:${align}">${escapeHtml(a.text)}</div>`;
     } else if (a.type === "rect") {
       out += `<div class="anno" style="left:${num(bx)}%;top:${num(by)}%;width:${num(bw)}%;height:${num(bh)}%;border:${Math.max(1, a.strokeWidth)}px solid ${a.color}"></div>`;
     } else {

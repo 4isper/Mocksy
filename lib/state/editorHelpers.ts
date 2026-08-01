@@ -45,7 +45,7 @@ export function makeAnnotation(type: AnnotationType): Annotation {
     y: 0.32
   };
   if (type === "text") {
-    return { ...base, w: 0.36, h: 0, text: "Label", fontSize: 48, fontFamily: "Inter, system-ui, sans-serif" };
+    return { ...base, w: 0.36, h: 0, text: "Label", fontSize: 48, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "bold", fontStyle: "normal", textAlign: "left" };
   }
   if (type === "arrow") {
     return { ...base, w: 0.32, h: 0.2, text: "", fontSize: 0 };

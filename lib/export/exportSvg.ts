@@ -174,12 +174,16 @@ function annotationsMarkup(scene: EditorScene, width: number, height: number): s
     const bw = Math.abs(a.w) * width;
     const bh = Math.abs(a.h) * height;
     if (a.type === "text") {
+      const weight = a.fontWeight === "normal" ? "400" : "600";
+      const style = a.fontStyle === "italic" ? ' font-style="italic"' : "";
+      const anchor = a.textAlign === "center" ? "middle" : a.textAlign === "right" ? "end" : "start";
+      const textX = anchor === "start" ? bx : anchor === "end" ? bx + bw : bx + bw / 2;
       const lineHeight = a.fontSize * 1.2;
       const tspans = a.text
         .split("\n")
-        .map((line, i) => `<tspan x="${num(bx)}" dy="${i === 0 ? 0 : num(lineHeight)}">${escapeXml(line)}</tspan>`)
+        .map((line, i) => `<tspan x="${num(textX)}" dy="${i === 0 ? 0 : num(lineHeight)}">${escapeXml(line)}</tspan>`)
         .join("");
-      out += `<text x="${num(bx)}" y="${num(by)}" font-size="${num(a.fontSize)}" font-weight="600" fill="${a.color}" font-family="${a.fontFamily ?? "Inter, system-ui, sans-serif"}" dominant-baseline="hanging" filter="url(#anno-shadow)">${tspans}</text>`;
+      out += `<text x="${num(textX)}" y="${num(by)}" font-size="${num(a.fontSize)}" font-weight="${weight}" fill="${a.color}" font-family="${a.fontFamily ?? "Inter, system-ui, sans-serif"}" text-anchor="${anchor}" dominant-baseline="hanging"${style} filter="url(#anno-shadow)">${tspans}</text>`;
     } else if (a.type === "rect") {
       out += `<rect x="${num(bx)}" y="${num(by)}" width="${num(bw)}" height="${num(bh)}" fill="none" stroke="${a.color}" stroke-width="${Math.max(1, a.strokeWidth)}"/>`;
     } else {

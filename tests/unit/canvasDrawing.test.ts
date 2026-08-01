@@ -143,6 +143,29 @@ describe("drawAnnotations", () => {
     drawAnnotations(ctx, annotations, 800, 600, 2);
     expect(ctx.fillText).toHaveBeenCalledWith("Hello", 80, 60);
     expect(ctx.fillStyle).toBe("#ff0000");
+    expect(ctx.font).toBe("600 32px Inter");
+    expect(ctx.textAlign).toBe("left");
+  });
+
+  it("applies italic weight and alignment to text annotations", () => {
+    const ctx = mockCtx();
+    const annotations: Annotation[] = [
+      { id: "a1", type: "text", x: 0.1, y: 0.1, w: 0.3, h: 0, text: "Hi", color: "#000", strokeWidth: 0, fontSize: 16, fontWeight: "normal", fontStyle: "italic", textAlign: "center" }
+    ];
+    drawAnnotations(ctx, annotations, 800, 600, 2);
+    expect(ctx.font).toBe("italic 400 32px Inter, system-ui, sans-serif");
+    expect(ctx.textAlign).toBe("center");
+    expect(ctx.fillText).toHaveBeenCalledWith("Hi", 80 + 240 / 2, 60);
+  });
+
+  it("right-aligns text at the box edge", () => {
+    const ctx = mockCtx();
+    const annotations: Annotation[] = [
+      { id: "a1", type: "text", x: 0.1, y: 0.1, w: 0.3, h: 0, text: "Hi", color: "#000", strokeWidth: 0, fontSize: 16, textAlign: "right" }
+    ];
+    drawAnnotations(ctx, annotations, 800, 600, 2);
+    expect(ctx.textAlign).toBe("right");
+    expect(ctx.fillText).toHaveBeenCalledWith("Hi", 80 + 240, 60);
   });
 
   it("draws rectangle annotations with correct stroke", () => {

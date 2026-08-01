@@ -109,6 +109,53 @@ describe("AnnotationsPanel", () => {
     expect(screen.getByText("annotation.delete")).toBeInTheDocument();
   });
 
+  it("shows typography controls for text annotations", () => {
+    useEditorStore.setState({
+      selectedAnnotationId: "a1",
+      scene: {
+        ...useEditorStore.getState().scene,
+        annotations: [
+          { id: "a1", type: "text", text: "Hello", x: 0, y: 0, w: 0.2, h: 0.1, color: "#fff", fontSize: 24, strokeWidth: 2 },
+        ],
+      }
+    });
+    render(<AnnotationsPanel />);
+    expect(screen.getByText("annotation.alignLeft")).toBeInTheDocument();
+    expect(screen.getByText("annotation.alignCenter")).toBeInTheDocument();
+    expect(screen.getByText("annotation.bold")).toBeInTheDocument();
+    expect(screen.getByText("annotation.italic")).toBeInTheDocument();
+  });
+
+  it("updates text alignment from the panel", async () => {
+    useEditorStore.setState({
+      selectedAnnotationId: "a1",
+      scene: {
+        ...useEditorStore.getState().scene,
+        annotations: [
+          { id: "a1", type: "text", text: "Hello", x: 0, y: 0, w: 0.2, h: 0.1, color: "#fff", fontSize: 24, strokeWidth: 2 },
+        ],
+      }
+    });
+    render(<AnnotationsPanel />);
+    await userEvent.click(screen.getByText("annotation.alignCenter"));
+    expect(useEditorStore.getState().scene.annotations[0]!.textAlign).toBe("center");
+  });
+
+  it("updates font weight from the panel", async () => {
+    useEditorStore.setState({
+      selectedAnnotationId: "a1",
+      scene: {
+        ...useEditorStore.getState().scene,
+        annotations: [
+          { id: "a1", type: "text", text: "Hello", x: 0, y: 0, w: 0.2, h: 0.1, color: "#fff", fontSize: 24, strokeWidth: 2 },
+        ],
+      }
+    });
+    render(<AnnotationsPanel />);
+    await userEvent.click(screen.getByText("annotation.regular"));
+    expect(useEditorStore.getState().scene.annotations[0]!.fontWeight).toBe("normal");
+  });
+
   it("shows color picker for selected annotation", () => {
     useEditorStore.setState({
       selectedAnnotationId: "a1",
