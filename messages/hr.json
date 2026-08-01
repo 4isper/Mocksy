@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Strelica",
     "addBox": "+ Kutija",
+    "addCircle": "+ Krug",
     "addLayer": "Dodaj sloj",
     "addText": "+ Tekst",
     "animation": "Animacija",
@@ -216,6 +217,7 @@
     "text": "Tekst",
     "arrow": "Strelica",
     "rect": "Kutija",
+    "circle": "Krug",
     "addAnnotation": "Dodaj anotaciju",
     "addCallouts": "Dodajte anotacije, strelice ili kutije za označavanje mockupa. Povucite ih na platno za promjenu pozicije.",
     "font": "Font",
@@ -233,7 +235,11 @@
     "normal": "Normalno",
     "italic": "Kurziv",
     "delete": "Obriši",
-    "clearAll": "Očisti sve"
+    "clearAll": "Očisti sve",
+    "bgColor": "Pozadina",
+    "bgClear": "Očisti",
+    "bgPadding": "Popuna — {val}px",
+    "bgRadius": "Polumjer — {val}px"
   },
   "video": {
     "options": "Postavke videa",

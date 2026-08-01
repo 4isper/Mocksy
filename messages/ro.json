@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Săgeată",
     "addBox": "+ Cutie",
+    "addCircle": "+ Cerc",
     "addLayer": "Adaugă strat",
     "addText": "+ Text",
     "animation": "Animatie",
@@ -216,6 +217,7 @@
     "text": "Text",
     "arrow": "Săgeată",
     "rect": "Cutie",
+    "circle": "Cerc",
     "addAnnotation": "Adaugă anotare",
     "addCallouts": "Adăugați anotări, săgeți sau cutii pentru a marca mockup-ul. Trageți-le pe canvas pentru a schimba poziția.",
     "font": "Font",
@@ -233,7 +235,11 @@
     "normal": "Normal",
     "italic": "Cursiv",
     "delete": "Șterge",
-    "clearAll": "Golește tot"
+    "clearAll": "Golește tot",
+    "bgColor": "Fond",
+    "bgClear": "Golește",
+    "bgPadding": "Umplere — {val}px",
+    "bgRadius": "Rază — {val}px"
   },
   "video": {
     "options": "Opțiuni video",

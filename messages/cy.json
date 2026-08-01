@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Saeth",
     "addBox": "+ Bocs",
+    "addCircle": "+ Gylch",
     "addLayer": "Ychwanegu llwyth",
     "addText": "+ Testun",
     "animation": "Animeiddio",
@@ -216,6 +217,7 @@
     "text": "Testun",
     "arrow": "Saeth",
     "rect": "Bocs",
+    "circle": "Gylch",
     "addAnnotation": "Ychwanegu nodiad",
     "addCallouts": "Ychwanegwch nodiadau, saethau neu bocsi i nodi'r mockup. Eu haniaethu i'r canvas i ail-leoli.",
     "font": "Ffont",
@@ -233,7 +235,11 @@
     "normal": "Arferol",
     "italic": "Italig",
     "delete": "Dileu",
-    "clearAll": "Clirio popeth"
+    "clearAll": "Clirio popeth",
+    "bgColor": "Cefndir",
+    "bgClear": "Clirio",
+    "bgPadding": "Padding ({val}px)",
+    "bgRadius": "Radiws ({val}px)"
   },
   "video": {
     "options": "Opsiynau fideo",

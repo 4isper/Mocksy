@@ -134,7 +134,11 @@ export function AnnotationItem({ annotation, selected, canvasRef, snapDivisions 
       textAlign: annotation.textAlign ?? "left",
       fontFamily: annotation.fontFamily ?? "Inter, system-ui, sans-serif",
       whiteSpace: "pre-wrap",
-      textShadow: "0 1px 3px rgba(0,0,0,0.5)"
+      textShadow: "0 1px 3px rgba(0,0,0,0.5)",
+      background: annotation.bgColor ?? undefined,
+      padding: annotation.bgColor ? (annotation.bgPadding ?? 0) : 0,
+      borderRadius: annotation.bgColor ? (annotation.bgRadius ?? 0) : 0,
+      display: "inline-block"
     };
     // Double-click edits the text in place: the label becomes contentEditable
     // until it loses focus, then the edited value is committed back to the
@@ -169,6 +173,18 @@ export function AnnotationItem({ annotation, selected, canvasRef, snapDivisions 
           height: "100%",
           border: `${annotation.strokeWidth}px solid ${annotation.color}`,
           borderRadius: 4,
+          boxSizing: "border-box"
+        }}
+      />
+    );
+  } else if (annotation.type === "circle") {
+    content = (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          border: `${annotation.strokeWidth}px solid ${annotation.color}`,
+          borderRadius: "50%",
           boxSizing: "border-box"
         }}
       />

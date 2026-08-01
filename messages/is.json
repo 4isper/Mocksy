@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Píl",
     "addBox": "+ Húfa",
+    "addCircle": "+ Hringur",
     "addLayer": "Bæta við lagi",
     "addText": "+ Texti",
     "animation": "Hreyfing",
@@ -216,6 +217,7 @@
     "text": "Texti",
     "arrow": "Píl",
     "rect": "Húfa",
+    "circle": "Hringur",
     "addAnnotation": "Bæta við athugasemð",
     "addCallouts": "Bæta við athugasemðum, pílum eða húfum til að merka mockup. Dragðu þau á canvas til að breyta staðsetningu.",
     "font": "Letur",
@@ -233,7 +235,11 @@
     "normal": "Venjulegur",
     "italic": "Skáletrað",
     "delete": "Eyða",
-    "clearAll": "Hreinsa allt"
+    "clearAll": "Hreinsa allt",
+    "bgColor": "Bakgrunnur",
+    "bgClear": "Hreinsa",
+    "bgPadding": "Fylling — {val}px",
+    "bgRadius": "Radíus — {val}px"
   },
   "video": {
     "options": "Valkostir sjónvarpssíu",

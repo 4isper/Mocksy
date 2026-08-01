@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ سهم",
     "addBox": "+ مربع",
+    "addCircle": "+ دائرة",
     "addLayer": "إضافة طبقة",
     "addText": "+ نص",
     "animation": "تحريك",
@@ -216,6 +217,7 @@
     "text": "نص",
     "arrow": "سهم",
     "rect": "مربع",
+    "circle": "دائرة",
     "addAnnotation": "إضافة تعليق توضيحي",
     "addCallouts": "أضف تعليقات توضيحية أو أسهمًا أو مربعات لتوضيح mockup. اسحبها على canvas لإعادة تحديد موقعها.",
     "font": "خط",
@@ -233,7 +235,11 @@
     "normal": "عادي",
     "italic": "مائل",
     "delete": "حذف",
-    "clearAll": "مسح الكل"
+    "clearAll": "مسح الكل",
+    "bgColor": "الخلفية",
+    "bgClear": "مسح",
+    "bgPadding": "حشوة ({val}px)",
+    "bgRadius": "نصف القطر ({val}px)"
   },
   "video": {
     "options": "خيارات الفيديو",

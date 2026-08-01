@@ -19,6 +19,38 @@ export interface SceneCss {
   backgroundImage: string | null;
   /** Blur radius (px) applied to the background image. */
   backgroundBlur: number;
+  /** background-size value for pattern backgrounds */
+  backgroundSize?: string;
+}
+
+function buildGradientBackground(scene: EditorScene): string {
+  if (scene.gradientType === "radial") {
+    const stops = scene.gradientVia
+      ? `${scene.gradientFrom}, ${scene.gradientVia}, ${scene.gradientTo}`
+      : `${scene.gradientFrom}, ${scene.gradientTo}`;
+    return `radial-gradient(circle at center, ${stops})`;
+  }
+  const stops = scene.gradientVia
+    ? `${scene.gradientFrom}, ${scene.gradientVia}, ${scene.gradientTo}`
+    : `${scene.gradientFrom}, ${scene.gradientTo}`;
+  return `linear-gradient(${scene.gradientAngle}deg, ${stops})`;
+}
+
+function buildPatternBackground(patternId: import("@/lib/types/editor").PatternId): string {
+  switch (patternId) {
+    case "dots":
+      return `radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)`;
+    case "grid":
+      return `repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px, transparent 1px, transparent 20px), repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px, transparent 1px, transparent 20px)`;
+    case "diagonal":
+      return `repeating-linear-gradient(45deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px, transparent 1px, transparent 20px)`;
+    case "noise": {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23n)" opacity="0.15"/></svg>`;
+      return `url('data:image/svg+xml,${encodeURIComponent(svg)}')`;
+    }
+    default:
+      return "transparent";
+  }
 }
 
 export function buildSceneCss(scene: EditorScene): SceneCss {
@@ -30,10 +62,19 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
     scene.backgroundMode === "solid"
       ? scene.backgroundColor
       : scene.backgroundMode === "gradient"
-        ? `linear-gradient(${scene.gradientAngle}deg, ${scene.gradientFrom}, ${scene.gradientTo})`
+        ? buildGradientBackground(scene)
         : scene.backgroundMode === "image"
           ? "#0a0a0f"
-          : "transparent";
+          : scene.backgroundMode === "pattern" && scene.patternId
+            ? buildPatternBackground(scene.patternId)
+            : "transparent";
+
+  const backgroundSize =
+    scene.backgroundMode === "pattern" && scene.patternId === "dots"
+      ? "20px 20px"
+      : scene.backgroundMode === "pattern"
+        ? "cover"
+        : undefined;
 
   const frameBorder =
     scene.stylePreset === "outline"
@@ -168,7 +209,8 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      background
+      background,
+      ...(backgroundSize ? { backgroundSize } : {})
     },
     frame: frameStyle,
     frameOverlay: spec.isOverlay ? spec.asset : null,
@@ -177,6 +219,7 @@ export function buildSceneCss(scene: EditorScene): SceneCss {
     mediaStyle,
     emptyMediaStyle,
     backgroundImage: scene.backgroundMode === "image" ? scene.backgroundImageUrl : null,
-    backgroundBlur: scene.backgroundBlur
+    backgroundBlur: scene.backgroundBlur,
+    backgroundSize
   };
 }

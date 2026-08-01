@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Pile",
     "addBox": "+ Box",
+    "addCircle": "+ Cirkel",
     "addLayer": "Tilføj lag",
     "addText": "+ Tekst",
     "animation": "Animation",
@@ -216,6 +217,7 @@
     "text": "Tekst",
     "arrow": "Pil",
     "rect": "Box",
+    "circle": "Cirkel",
     "addAnnotation": "Tilføj anmærkning",
     "addCallouts": "Tilføj anmærkninger, pile eller bokse til at markere mockup. Træk dem på canvas for at ændre position.",
     "font": "Skrifttype",
@@ -233,7 +235,11 @@
     "normal": "Normal",
     "italic": "Kursiv",
     "delete": "Slet",
-    "clearAll": "Ryd alt"
+    "clearAll": "Ryd alt",
+    "bgColor": "Baggrund",
+    "bgClear": "Ryd",
+    "bgPadding": "Udfyldning — {val}px",
+    "bgRadius": "Radius — {val}px"
   },
   "video": {
     "options": "Videoindstillinger",

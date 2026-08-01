@@ -9,7 +9,8 @@ export function AnnotationsPanel() {
   const TYPE_LABELS: Record<AnnotationType, string> = {
     text: t("annotation.text"),
     arrow: t("annotation.arrow"),
-    rect: t("annotation.rect")
+    rect: t("annotation.rect"),
+    circle: t("annotation.circle")
   };
   const scene = useEditorStore((s) => s.scene);
   const selectedAnnotationId = useEditorStore((s) => s.selectedAnnotationId);
@@ -32,6 +33,9 @@ export function AnnotationsPanel() {
         </button>
         <button type="button" onClick={() => addAnnotation("rect")}>
           {t("editor.addBox")}
+        </button>
+        <button type="button" onClick={() => addAnnotation("circle")}>
+          {t("editor.addCircle")}
         </button>
       </div>
 
@@ -151,6 +155,56 @@ export function AnnotationsPanel() {
                 </button>
               </div>
             </label>
+          ) : null}
+          {selected.type === "text" ? (
+            <label className="field">
+              <span>{t("annotation.bgColor")}</span>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input
+                  type="color"
+                  value={selected.bgColor || "#09090b"}
+                  onChange={(e) => updateAnnotation(selected.id, { bgColor: e.target.value })}
+                  style={{ flex: 1 }}
+                />
+                {selected.bgColor ? (
+                  <button type="button" className="btn btn-sm" onClick={() => updateAnnotation(selected.id, { bgColor: null })}>
+                    {t("annotation.bgClear")}
+                  </button>
+                ) : null}
+              </div>
+            </label>
+          ) : null}
+          {selected.type === "text" && selected.bgColor ? (
+            <>
+              <label className="field">
+                <span>{t("annotation.bgPadding", { val: selected.bgPadding ?? 0 })}</span>
+                <input
+                  className="range"
+                  type="range"
+                  min={0}
+                  max={24}
+                  step={1}
+                  value={selected.bgPadding ?? 0}
+                  aria-label={t("annotation.bgPadding", { val: selected.bgPadding ?? 0 })}
+                  aria-valuetext={`${selected.bgPadding ?? 0}px`}
+                  onChange={(e) => updateAnnotation(selected.id, { bgPadding: Number(e.target.value) })}
+                />
+              </label>
+              <label className="field">
+                <span>{t("annotation.bgRadius", { val: selected.bgRadius ?? 0 })}</span>
+                <input
+                  className="range"
+                  type="range"
+                  min={0}
+                  max={20}
+                  step={1}
+                  value={selected.bgRadius ?? 0}
+                  aria-label={t("annotation.bgRadius", { val: selected.bgRadius ?? 0 })}
+                  aria-valuetext={`${selected.bgRadius ?? 0}px`}
+                  onChange={(e) => updateAnnotation(selected.id, { bgRadius: Number(e.target.value) })}
+                />
+              </label>
+            </>
           ) : null}
           {selected.type === "text" ? (
             <label className="field">

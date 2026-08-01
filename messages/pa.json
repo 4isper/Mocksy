@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ ਤੀਰ",
     "addBox": "+ ਬਕਸ",
+    "addCircle": "+ ਚੱਕਰ",
     "addLayer": "ਲੇਅਰ ਸ਼ਾਮਲ ਕਰੋ",
     "addText": "+ ਟੈਕਸਟ",
     "animation": "ਐਨੀਮੇਸ਼ਨ",
@@ -216,6 +217,7 @@
     "text": "ਟੈਕਸਟ",
     "arrow": "ਤੀਰ",
     "rect": "ਬਕਸ",
+    "circle": "ਚੱਕਰ",
     "addAnnotation": "ਟਿੱਪਣੀ ਜੋੜੋ",
     "addCallouts": "ਟਿੱਪਣੀਆਂ, ਤੀਰ ਜਾਂ ਬਕਸ ਜੋੜੋ mockup ਨੂੰ ਚਿਹਨਿਤ ਕਰਨ ਲਈ। ਉਹਨਾਂ ਨੂੰ ਫੇਰੀ ਵਰਤਾਰੇ ਲਈ canvas ਉੱਤੇ ਖੀਂਚੋ।",
     "font": "ਫੋਂਟ",
@@ -233,7 +235,11 @@
     "normal": "ਆਮ",
     "italic": "ਤਿਰਛਾ",
     "delete": "ਹਟਾਓ",
-    "clearAll": "ਸਭ ਸਾਫ਼ ਕਰੋ"
+    "clearAll": "ਸਭ ਸਾਫ਼ ਕਰੋ",
+    "bgColor": "ਪਿਛੋਕੜ",
+    "bgClear": "ਸਾਫ਼ ਕਰੋ",
+    "bgPadding": "ਪੈਡਿੰਗ ({val}px)",
+    "bgRadius": "ਅਰਧ-ਵਿਆਸ ({val}px)"
   },
   "video": {
     "options": "ਵੀਡੀਓ ਵਿਕਲਪ",

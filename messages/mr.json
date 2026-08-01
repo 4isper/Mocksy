@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ तीर",
     "addBox": "+ बॉक्स",
+    "addCircle": "+ वर्तुळ",
     "addLayer": "परत जोडा",
     "addText": "+ मजकूर",
     "animation": "अ‍ॅनिमेशन",
@@ -216,6 +217,7 @@
     "text": "मजकूर",
     "arrow": "तीर",
     "rect": "बॉक्स",
+    "circle": "वर्तुळ",
     "addAnnotation": "टिप्पणी जोडा",
     "addCallouts": "टिप्पण्या, तीर किंवा बॉक्स जोडा mockup चिन्हित करण्यासाठी. त्यांचे स्थान बदलण्यासाठी canvas वर त्यांना ढोला.",
     "font": "फॉन्ट",
@@ -233,7 +235,11 @@
     "normal": "सामान्य",
     "italic": "तिरपा",
     "delete": "वगळा",
-    "clearAll": "सर्व साफ करा"
+    "clearAll": "सर्व साफ करा",
+    "bgColor": "पार्श्वभूमी",
+    "bgClear": "साफ करा",
+    "bgPadding": "पॅडिंग ({val}px)",
+    "bgRadius": "त्रिज्या ({val}px)"
   },
   "video": {
     "options": "व्हिडिओ पर्याय",

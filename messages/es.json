@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Flecha",
     "addBox": "+ Cuadro",
+    "addCircle": "+ Círculo",
     "addLayer": "Añadir capa",
     "addText": "+ Texto",
     "animation": "Animación",
@@ -216,6 +217,7 @@
     "text": "Texto",
     "arrow": "Flecha",
     "rect": "Cuadro",
+    "circle": "Círculo",
     "addAnnotation": "Añadir anotación",
     "addCallouts": "Añade anotaciones, flechas o cuadros para marcar el mockup. Arrástralos al canvas para cambiar la posición.",
     "font": "Fuente",
@@ -233,7 +235,11 @@
     "normal": "Normal",
     "italic": "Cursiva",
     "delete": "Eliminar",
-    "clearAll": "Limpiar todo"
+    "clearAll": "Limpiar todo",
+    "bgColor": "Fondo",
+    "bgClear": "Limpiar",
+    "bgPadding": "Relleno — {val}px",
+    "bgRadius": "Radio — {val}px"
   },
   "video": {
     "options": "Opciones de video",

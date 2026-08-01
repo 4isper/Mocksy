@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Ok",
     "addBox": "+ Kutu",
+    "addCircle": "+ Daire",
     "addLayer": "Katman ekle",
     "addText": "+ Metin",
     "animation": "Animasyon",
@@ -216,6 +217,7 @@
     "text": "Metin",
     "arrow": "Ok",
     "rect": "Kutu",
+    "circle": "Daire",
     "addAnnotation": "Açıklama ekle",
     "addCallouts": "Mockup'ı işaretlemek için açıklamalar, oklar veya kutular ekleyin. Konumu değiştirmek için canvas'a sürükleyin.",
     "font": "Yazı tipi",
@@ -233,7 +235,11 @@
     "normal": "Normal",
     "italic": "İtalik",
     "delete": "Sil",
-    "clearAll": "Tümünü temizle"
+    "clearAll": "Tümünü temizle",
+    "bgColor": "Arka Plan",
+    "bgClear": "Temizle",
+    "bgPadding": "İç boşluk — {val}px",
+    "bgRadius": "Yarıçap — {val}px"
   },
   "video": {
     "options": "Video ayarları",

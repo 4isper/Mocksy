@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Nyíl",
     "addBox": "+ Doboz",
+    "addCircle": "+ Kör",
     "addLayer": "Réteg hozzáadása",
     "addText": "+ Szöveg",
     "animation": "Animáció",
@@ -216,6 +217,7 @@
     "text": "Szöveg",
     "arrow": "Nyíl",
     "rect": "Doboz",
+    "circle": "Kör",
     "addAnnotation": "Megjegyzés hozzáadása",
     "addCallouts": "Adjon hozzá megjegyzéseket, nyilakat vagy dobozokat a mockup megjelöléséhez. Húzza őket a vászra a pozíció módosításához.",
     "font": "Betűtípus",
@@ -233,7 +235,11 @@
     "normal": "Normál",
     "italic": "Dőlt",
     "delete": "Törlés",
-    "clearAll": "Összes törlése"
+    "clearAll": "Összes törlése",
+    "bgColor": "Háttér",
+    "bgClear": "Törlés",
+    "bgPadding": "Kitöltés — {val}px",
+    "bgRadius": "Sugár — {val}px"
   },
   "video": {
     "options": "Videó beállítások",

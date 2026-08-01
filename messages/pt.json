@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Seta",
     "addBox": "+ Caixa",
+    "addCircle": "+ Círculo",
     "addLayer": "Adicionar camada",
     "addText": "+ Texto",
     "animation": "Animação",
@@ -216,6 +217,7 @@
     "text": "Texto",
     "arrow": "Seta",
     "rect": "Caixa",
+    "circle": "Círculo",
     "addAnnotation": "Adicionar anotação",
     "addCallouts": "Adicione anotações, setas ou caixas para marcar o mockup. Arraste-os para o canvas para alterar a posição.",
     "font": "Fonte",
@@ -233,7 +235,11 @@
     "normal": "Normal",
     "italic": "Itálico",
     "delete": "Excluir",
-    "clearAll": "Limpar tudo"
+    "clearAll": "Limpar tudo",
+    "bgColor": "Fundo",
+    "bgClear": "Limpar",
+    "bgPadding": "Preenchimento — {val}px",
+    "bgRadius": "Raio — {val}px"
   },
   "video": {
     "options": "Opções de vídeo",

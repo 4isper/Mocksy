@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ فلش",
     "addBox": "+ جعبه",
+    "addCircle": "+ دایره",
     "addLayer": "افزودن لایه",
     "addText": "+ متن",
     "animation": "انیمیشن",
@@ -216,6 +217,7 @@
     "text": "متن",
     "arrow": "فلش",
     "rect": "جعبه",
+    "circle": "دایره",
     "addAnnotation": "افزودن توضیح",
     "addCallouts": "توضیحات، فلش‌ها یا جعبه‌ها اضافه کنید تا mockup را مشخص کنید. آنها را برای تغییر موقعیت به canvas بکشید.",
     "font": "فونت",
@@ -233,7 +235,11 @@
     "normal": "عادی",
     "italic": "مورب",
     "delete": "حذف",
-    "clearAll": "پاک کردن همه"
+    "clearAll": "پاک کردن همه",
+    "bgColor": "پسزمینه",
+    "bgClear": "پاک کردن",
+    "bgPadding": "پدینگ ({val}px)",
+    "bgRadius": "شعاع ({val}px)"
   },
   "video": {
     "options": "گزینه‌های ویدیو",

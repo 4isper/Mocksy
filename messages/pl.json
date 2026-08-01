@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Strzałka",
     "addBox": "+ Prostokąt",
+    "addCircle": "+ Koło",
     "addLayer": "Dodaj warstwę",
     "addText": "+ Tekst",
     "animation": "Animacja",
@@ -216,6 +217,7 @@
     "text": "Tekst",
     "arrow": "Strzałka",
     "rect": "Prostokąt",
+    "circle": "Koło",
     "addAnnotation": "Dodaj adnotację",
     "addCallouts": "Dodaj adnotacje, strzałki lub prostokąty, aby oznaczyć mockup. Przeciągnij je na płótno, aby zmienić pozycję.",
     "font": "Czcionka",
@@ -233,7 +235,11 @@
     "normal": "Zwykłe",
     "italic": "Kursywa",
     "delete": "Usuń",
-    "clearAll": "Wyczyść wszystko"
+    "clearAll": "Wyczyść wszystko",
+    "bgColor": "Tło",
+    "bgClear": "Wyczyść",
+    "bgPadding": "Wypełnienie — {val}px",
+    "bgRadius": "Promień — {val}px"
   },
   "video": {
     "options": "Ustawienia wideo",

@@ -48,10 +48,13 @@ export function makeAnnotation(type: AnnotationType): Annotation {
     y: 0.32
   };
   if (type === "text") {
-    return { ...base, w: 0.36, h: 0, text: "Label", fontSize: 48, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "bold", fontStyle: "normal", textAlign: "left" };
+    return { ...base, w: 0.36, h: 0, text: "Label", fontSize: 48, fontFamily: "Inter, system-ui, sans-serif", fontWeight: "bold", fontStyle: "normal", textAlign: "left", bgColor: null, bgPadding: 0, bgRadius: 0 };
   }
   if (type === "arrow") {
     return { ...base, w: 0.32, h: 0.2, text: "", fontSize: 0 };
+  }
+  if (type === "circle") {
+    return { ...base, w: 0.2, h: 0.2, text: "", fontSize: 0 };
   }
   return { ...base, w: 0.28, h: 0.2, text: "", fontSize: 0 };
 }

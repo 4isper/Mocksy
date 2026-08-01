@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Strėlė",
     "addBox": "+ Dėžutė",
+    "addCircle": "+ Apskritimas",
     "addLayer": "Pridėti sluoksnį",
     "addText": "+ Tekstas",
     "animation": "Animacija",
@@ -216,6 +217,7 @@
     "text": "Tekstas",
     "arrow": "Strėlė",
     "rect": "Dėžutė",
+    "circle": "Apskritimas",
     "addAnnotation": "Pridėti annotaciją",
     "addCallouts": "Pridėkite annotacijas, strėles arba dėžutes, kad pažymėtumėte mockupą. Perkelkite juos į canvas, kad perkeltumėte jų padėtį.",
     "font": "Šriftas",
@@ -233,7 +235,11 @@
     "normal": "Įprastas",
     "italic": "Kursyvas",
     "delete": "Ištrinti",
-    "clearAll": "Išvalyti viską"
+    "clearAll": "Išvalyti viską",
+    "bgColor": "Fonas",
+    "bgClear": "Išvalyti",
+    "bgPadding": "Užpildymas ({val}px)",
+    "bgRadius": "Spindulys ({val}px)"
   },
   "video": {
     "options": "Video nustatymai",

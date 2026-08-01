@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Sleamhnán",
     "addBox": "+ Bosca",
+    "addCircle": "+ Ciorcal",
     "addLayer": "Cuir sruth leis",
     "addText": "+ Téacs",
     "animation": "Ainmheas",
@@ -216,6 +217,7 @@
     "text": "Téacs",
     "arrow": "Sleamhnán",
     "rect": "Bosca",
+    "circle": "Ciorcal",
     "addAnnotation": "Cuir nóta leis",
     "addCallouts": "Cuir nótaí, sleamhnáin nó boscaí leis chun an mockup a mharcáil. Tarraing iad chuig an gcanvas chun a suímh a athrú.",
     "font": "Cló",
@@ -233,7 +235,11 @@
     "normal": "Gnáth",
     "italic": "Iodálach",
     "delete": "Scrios",
-    "clearAll": "Glan go léir"
+    "clearAll": "Glan go léir",
+    "bgColor": "Cúlra",
+    "bgClear": "Glan",
+    "bgPadding": "Líonadh ({val}px)",
+    "bgRadius": "Ga ({val}px)"
   },
   "video": {
     "options": "Roghanna físeáin",

@@ -107,9 +107,12 @@ export interface EditorStoreState {
   setShadowOpacity: (shadowOpacity: number) => void;
   setBorderRadius: (radius: number) => void;
   setBackgroundSolid: (color: string) => void;
-  setBackgroundGradient: (from: string, to: string, angle?: number) => void;
+  setBackgroundGradient: (from: string, to: string, angle?: number, gradientVia?: string, gradientType?: "linear" | "radial") => void;
   setBackgroundTransparent: () => void;
   setBackgroundImage: (url: string) => void;
+  setBackgroundPattern: (patternId: import("@/lib/types/editor").PatternId) => void;
+  setGradientType: (gradientType: "linear" | "radial") => void;
+  setGradientVia: (gradientVia: string) => void;
   setBackgroundBlur: (blur: number) => void;
   toggleWatermark: (enabled: boolean) => void;
   setWatermarkText: (text: string) => void;
@@ -147,7 +150,10 @@ export const initialScene: EditorScene = {
   backgroundColor: "#111827",
   gradientFrom: "#1d4ed8",
   gradientTo: "#7c3aed",
+  gradientVia: null,
+  gradientType: "linear",
   gradientAngle: 120,
+  patternId: null,
   backgroundImageUrl: null,
   backgroundBlur: 0,
   backgroundAudioUrl: null,
@@ -200,6 +206,9 @@ export function makeDemoScene(): EditorScene {
     backgroundBlur: initialScene.backgroundBlur,
     backgroundAudioUrl: null,
     backgroundAudioName: null,
+    gradientVia: initialScene.gradientVia,
+    gradientType: initialScene.gradientType,
+    patternId: initialScene.patternId,
     animationDurationMs: initialScene.animationDurationMs,
     annotations: []
   };
@@ -438,10 +447,21 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   setShadowOpacity: (shadowOpacity) => set((s) => pushHistory(s, { ...s.scene, shadowOpacity }, "shadow")),
   setBorderRadius: (borderRadius) => set((s) => pushHistory(s, { ...s.scene, borderRadius }, "radius")),
   setBackgroundSolid: (backgroundColor) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "solid", backgroundColor })),
-  setBackgroundGradient: (gradientFrom, gradientTo, gradientAngle) =>
-    set((s) => pushHistory(s, { ...s.scene, backgroundMode: "gradient", gradientFrom, gradientTo, ...(gradientAngle !== undefined ? { gradientAngle } : {}) })),
+  setBackgroundGradient: (gradientFrom, gradientTo, gradientAngle, gradientVia, gradientType) =>
+    set((s) => pushHistory(s, {
+      ...s.scene,
+      backgroundMode: "gradient",
+      gradientFrom,
+      gradientTo,
+      ...(gradientAngle !== undefined ? { gradientAngle } : {}),
+      ...(gradientVia !== undefined ? { gradientVia } : {}),
+      ...(gradientType !== undefined ? { gradientType } : {})
+    })),
   setBackgroundTransparent: () => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "transparent" })),
   setBackgroundImage: (backgroundImageUrl) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "image", backgroundImageUrl })),
+  setBackgroundPattern: (patternId) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "pattern", patternId })),
+  setGradientType: (gradientType) => set((s) => pushHistory(s, { ...s.scene, gradientType })),
+  setGradientVia: (gradientVia) => set((s) => pushHistory(s, { ...s.scene, gradientVia })),
   setBackgroundBlur: (backgroundBlur) => set((s) => pushHistory(s, { ...s.scene, backgroundBlur: Math.max(0, Math.min(40, Math.round(backgroundBlur))) }, "bgBlur")),
   toggleWatermark: (watermarkEnabled) => set((s) => pushHistory(s, { ...s.scene, watermarkEnabled })),
   setWatermarkText: (watermarkText) => set((s) => pushHistory(s, { ...s.scene, watermarkText })),

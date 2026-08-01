@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ तीर",
     "addBox": "+ बॉक्स",
+    "addCircle": "+ वृत्त",
     "addLayer": "परत जोड़ें",
     "addText": "+ पाठ",
     "animation": "एनिमेशन",
@@ -216,6 +217,7 @@
     "text": "पाठ",
     "arrow": "तीर",
     "rect": "बॉक्स",
+    "circle": "वृत्त",
     "addAnnotation": "टिप्पणी जोड़ें",
     "addCallouts": "mockup को टिप्पणी करने के लिए टिप्पणियां, तीर या बॉक्स जोड़ें। उन्हें कैनवास पर खींचकर पुनर्स्थापित करें।",
     "font": "फ़ॉन्ट",
@@ -233,7 +235,11 @@
     "normal": "सामान्य",
     "italic": "इटैलिक",
     "delete": "हटाएं",
-    "clearAll": "सब साफ़ करें"
+    "clearAll": "सब साफ़ करें",
+    "bgColor": "पृष्ठभूमि",
+    "bgClear": "साफ़ करें",
+    "bgPadding": "पैडिंग ({val}px)",
+    "bgRadius": "त्रिज्या ({val}px)"
   },
   "video": {
     "options": "वीडियो विकल्प",

@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Mrao",
     "addBox": "+ Kikasha",
+    "addCircle": "+ Duara",
     "addLayer": "Ongeza kipande",
     "addText": "+ Tungo",
     "animation": "Uhamisho",
@@ -216,6 +217,7 @@
     "text": "Tungo",
     "arrow": "Mrao",
     "rect": "Kikasha",
+    "circle": "Duara",
     "addAnnotation": "Ongeza maelekezo",
     "addCallouts": "Ongeza maelekezo, mrao au vikasha kwa kuweka alama kwenye mockup. Kanda juu kwenye canvas kubadilisha nafiri.",
     "font": "Habari",
@@ -233,7 +235,11 @@
     "normal": "Kawaida",
     "italic": "Mlazo",
     "delete": "Futa",
-    "clearAll": "Futa zote"
+    "clearAll": "Futa zote",
+    "bgColor": "Usuli",
+    "bgClear": "Futa",
+    "bgPadding": "Padding — {val}px",
+    "bgRadius": "Radius — {val}px"
   },
   "video": {
     "options": "Chaguo za video",

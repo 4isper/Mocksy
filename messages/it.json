@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Freccia",
     "addBox": "+ Riquadro",
+    "addCircle": "+ Cerchio",
     "addLayer": "Aggiungi livello",
     "addText": "+ Testo",
     "animation": "Animazione",
@@ -216,6 +217,7 @@
     "text": "Testo",
     "arrow": "Freccia",
     "rect": "Riquadro",
+    "circle": "Cerchio",
     "addAnnotation": "Aggiungi annotazione",
     "addCallouts": "Aggiungi annotazioni, frecce o riquadri per contrassegnare il mockup. Trascinali sulla canvas per cambiare posizione.",
     "font": "Carattere",
@@ -233,7 +235,11 @@
     "normal": "Normale",
     "italic": "Corsivo",
     "delete": "Elimina",
-    "clearAll": "Cancella tutto"
+    "clearAll": "Cancella tutto",
+    "bgColor": "Sfondo",
+    "bgClear": "Cancella",
+    "bgPadding": "Rientro — {val}px",
+    "bgRadius": "Raggio — {val}px"
   },
   "video": {
     "options": "Opzioni video",

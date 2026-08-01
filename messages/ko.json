@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ 화살표",
     "addBox": "+ 상자",
+    "addCircle": "+ 원",
     "addLayer": "레이어 추가",
     "addText": "+ 텍스트",
     "animation": "애니메이션",
@@ -216,6 +217,7 @@
     "text": "텍스트",
     "arrow": "화살표",
     "rect": "상자",
+    "circle": "원",
     "addAnnotation": "주석 추가",
     "addCallouts": "모의편집에 주석, 화살표, 상자를 추가합니다. 캔버스에서 드래그하여 위치를 변경합니다.",
     "font": "글꼴",
@@ -233,7 +235,11 @@
     "normal": "보통",
     "italic": "기울임",
     "delete": "삭제",
-    "clearAll": "모두 지우기"
+    "clearAll": "모두 지우기",
+    "bgColor": "배경",
+    "bgClear": "지우기",
+    "bgPadding": "패딩 ({val}px)",
+    "bgRadius": "반지름 ({val}px)"
   },
   "video": {
     "options": "비디오 옵션",

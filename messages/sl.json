@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Puščica",
     "addBox": "+ Okvir",
+    "addCircle": "+ Krog",
     "addLayer": "Dodaj plast",
     "addText": "+ Besedilo",
     "animation": "Animacija",
@@ -216,6 +217,7 @@
     "text": "Besedilo",
     "arrow": "Puščica",
     "rect": "Okvir",
+    "circle": "Krog",
     "addAnnotation": "Dodaj opombo",
     "addCallouts": "Dodajte opombe, puščice ali okvirje, da označite mockup. Povlecite jih na platno, da spremenite položaj.",
     "font": "Pisava",
@@ -233,7 +235,11 @@
     "normal": "Navadno",
     "italic": "Poševno",
     "delete": "Izbriši",
-    "clearAll": "Počisti vse"
+    "clearAll": "Počisti vse",
+    "bgColor": "Ozadje",
+    "bgClear": "Počisti",
+    "bgPadding": "Polnilo — {val}px",
+    "bgRadius": "Polmer — {val}px"
   },
   "video": {
     "options": "Možnosti videa",

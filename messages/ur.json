@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ تیر",
     "addBox": "+ باکس",
+    "addCircle": "+ دائرہ",
     "addLayer": "لیئر شامل کریں",
     "addText": "+ متن",
     "animation": "انیمیشن",
@@ -216,6 +217,7 @@
     "text": "متن",
     "arrow": "تیر",
     "rect": "باکس",
+    "circle": "دائرہ",
     "addAnnotation": "اینوٹیشن شامل کریں",
     "addCallouts": "اینوٹیشنز، تیر یا باکس شامل کریں تاکہ mockup کو نشان لگایا جا سکے۔ انہیں کینوس پر دوبارہ ترتیب دینے کے لیے کھینچیں۔",
     "font": "فونٹ",
@@ -233,7 +235,11 @@
     "normal": "عام",
     "italic": "ترچھا",
     "delete": "حذف کریں",
-    "clearAll": "سب صاف کریں"
+    "clearAll": "سب صاف کریں",
+    "bgColor": "پس منظر",
+    "bgClear": "صاف کریں",
+    "bgPadding": "پیڈنگ ({val}px)",
+    "bgRadius": "رداس ({val}px)"
   },
   "video": {
     "options": "ویڈیو اختیارات",

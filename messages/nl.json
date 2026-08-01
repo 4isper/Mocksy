@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Pijl",
     "addBox": "+ Box",
+    "addCircle": "+ Cirkel",
     "addLayer": "Laag toevoegen",
     "addText": "+ Tekst",
     "animation": "Animatie",
@@ -216,6 +217,7 @@
     "text": "Tekst",
     "arrow": "Pijl",
     "rect": "Box",
+    "circle": "Cirkel",
     "addAnnotation": "Aantekening toevoegen",
     "addCallouts": "Voeg aantekeningen, pijlen of boxes toe om de mockup aan te geven. Sleep ze naar de canvas om de positie te wijzigen.",
     "font": "Lettertype",
@@ -233,7 +235,11 @@
     "normal": "Normaal",
     "italic": "Cursief",
     "delete": "Verwijderen",
-    "clearAll": "Alles wissen"
+    "clearAll": "Alles wissen",
+    "bgColor": "Achtergrond",
+    "bgClear": "Wissen",
+    "bgPadding": "Opvulling — {val}px",
+    "bgRadius": "Straal — {val}px"
   },
   "video": {
     "options": "Video-instellingen",

@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Pile",
     "addBox": "+ Boks",
+    "addCircle": "+ Sirkel",
     "addLayer": "Legg til lag",
     "addText": "+ Tekst",
     "animation": "Animasjon",
@@ -216,6 +217,7 @@
     "text": "Tekst",
     "arrow": "Pile",
     "rect": "Boks",
+    "circle": "Sirkel",
     "addAnnotation": "Legg til anmerkning",
     "addCallouts": "Legg til anmerkninger, piler eller bokser for å markere mockup-en. Dra dem på canvas for å endre posisjon.",
     "font": "Skrifttype",
@@ -233,7 +235,11 @@
     "normal": "Normal",
     "italic": "Kursiv",
     "delete": "Slett",
-    "clearAll": "Tøm alt"
+    "clearAll": "Tøm alt",
+    "bgColor": "Bakgrunn",
+    "bgClear": "Tøm",
+    "bgPadding": "Fyll — {val}px",
+    "bgRadius": "Radius — {val}px"
   },
   "video": {
     "options": "Videoinnstillinger",

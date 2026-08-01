@@ -47,6 +47,9 @@ export function ControlPanel() {
     setBackgroundGradient,
     setBackgroundTransparent,
     setBackgroundImage,
+    setBackgroundPattern,
+    setGradientType,
+    setGradientVia,
     setBackgroundBlur,
     setScenePalette,
     toggleWatermark,
@@ -295,12 +298,18 @@ export function ControlPanel() {
         backgroundColor={scene.backgroundColor}
         gradientFrom={scene.gradientFrom}
         gradientTo={scene.gradientTo}
+        gradientVia={scene.gradientVia}
+        gradientType={scene.gradientType}
         gradientAngle={scene.gradientAngle}
+        patternId={scene.patternId}
         backgroundBlur={scene.backgroundBlur}
         setBackgroundSolid={setBackgroundSolid}
         setBackgroundGradient={setBackgroundGradient}
         setBackgroundTransparent={setBackgroundTransparent}
         setBackgroundImage={setBackgroundImage}
+        setBackgroundPattern={setBackgroundPattern}
+        setGradientType={setGradientType}
+        setGradientVia={setGradientVia}
         setBackgroundBlur={setBackgroundBlur}
       />
 

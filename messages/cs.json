@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Šipka",
     "addBox": "+ Krabice",
+    "addCircle": "+ Kruh",
     "addLayer": "Přidat vrstvu",
     "addText": "+ Text",
     "animation": "Animace",
@@ -216,6 +217,7 @@
     "text": "Text",
     "arrow": "Šipka",
     "rect": "Krabice",
+    "circle": "Kruh",
     "addAnnotation": "Přidat anotaci",
     "addCallouts": "Přidejte poznámky, šipky nebo krabice k označení mockupu. Přetáhněte je na plátno, aby změnily polohu.",
     "font": "Písmo",
@@ -233,7 +235,11 @@
     "normal": "Normální",
     "italic": "Kurzíva",
     "delete": "Smazat",
-    "clearAll": "Smazat vše"
+    "clearAll": "Smazat vše",
+    "bgColor": "Pozadí",
+    "bgClear": "Vymazat",
+    "bgPadding": "Odsazení ({val}px)",
+    "bgRadius": "Poloměr ({val}px)"
   },
   "video": {
     "options": "Možnosti videa",

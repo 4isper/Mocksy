@@ -5,6 +5,24 @@ import { useTranslations } from "next-intl";
 import { loadMediaFromFile } from "@/lib/media/loadFile";
 import { pickBestSolid, pickGradientPair } from "@/lib/media/palette";
 import { backgroundPresets } from "@/lib/presets/presets";
+import type { PatternId } from "@/lib/types/editor";
+
+function buildPatternSwatchStyle(patternId: PatternId): string {
+  switch (patternId) {
+    case "dots":
+      return `radial-gradient(circle, rgba(255,255,255,0.25) 1.5px, transparent 1.5px)`;
+    case "grid":
+      return `repeating-linear-gradient(0deg, rgba(255,255,255,0.15) 0px, rgba(255,255,255,0.15) 1px, transparent 1px, transparent 10px), repeating-linear-gradient(90deg, rgba(255,255,255,0.15) 0px, rgba(255,255,255,0.15) 1px, transparent 1px, transparent 10px)`;
+    case "diagonal":
+      return `repeating-linear-gradient(45deg, rgba(255,255,255,0.15) 0px, rgba(255,255,255,0.15) 1px, transparent 1px, transparent 10px)`;
+    case "noise": {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="60" height="60" filter="url(%23n)" opacity="0.25"/></svg>`;
+      return `url('data:image/svg+xml,${encodeURIComponent(svg)}')`;
+    }
+    default:
+      return "transparent";
+  }
+}
 
 interface BackgroundControlsProps {
   scenePalette: string[] | null;
@@ -12,12 +30,18 @@ interface BackgroundControlsProps {
   backgroundColor: string;
   gradientFrom: string;
   gradientTo: string;
+  gradientVia: string | null;
+  gradientType: "linear" | "radial";
   gradientAngle: number;
+  patternId: string | null;
   backgroundBlur: number;
   setBackgroundSolid: (color: string) => void;
-  setBackgroundGradient: (from: string, to: string, angle?: number) => void;
+  setBackgroundGradient: (from: string, to: string, angle?: number, gradientVia?: string, gradientType?: "linear" | "radial") => void;
   setBackgroundTransparent: () => void;
   setBackgroundImage: (url: string) => void;
+  setBackgroundPattern: (patternId: PatternId) => void;
+  setGradientType: (gradientType: "linear" | "radial") => void;
+  setGradientVia: (gradientVia: string) => void;
   setBackgroundBlur: (blur: number) => void;
 }
 
@@ -27,12 +51,18 @@ export function BackgroundControls({
   backgroundColor,
   gradientFrom,
   gradientTo,
+  gradientVia,
+  gradientType,
   gradientAngle,
+  patternId,
   backgroundBlur,
   setBackgroundSolid,
   setBackgroundGradient,
   setBackgroundTransparent,
   setBackgroundImage,
+  setBackgroundPattern,
+  setGradientType,
+  setGradientVia,
   setBackgroundBlur
 }: BackgroundControlsProps) {
   const t = useTranslations();
@@ -121,7 +151,8 @@ export function BackgroundControls({
             (preset.kind === "gradient" &&
               backgroundMode === "gradient" &&
               gradientFrom === preset.gradientFrom &&
-              gradientTo === preset.gradientTo);
+              gradientTo === preset.gradientTo) ||
+            (preset.kind === "pattern" && backgroundMode === "pattern" && patternId === preset.patternId);
           return (
             <button
               key={preset.id}
@@ -132,7 +163,8 @@ export function BackgroundControls({
                 if (preset.kind === "transparent") setBackgroundTransparent();
                 else if (preset.kind === "solid" && preset.backgroundColor) setBackgroundSolid(preset.backgroundColor);
                 else if (preset.kind === "gradient" && preset.gradientFrom && preset.gradientTo)
-                  setBackgroundGradient(preset.gradientFrom, preset.gradientTo);
+                  setBackgroundGradient(preset.gradientFrom, preset.gradientTo, gradientAngle);
+                else if (preset.kind === "pattern" && preset.patternId) setBackgroundPattern(preset.patternId);
               }}
               style={{
                 width: 28,
@@ -145,7 +177,9 @@ export function BackgroundControls({
                     ? "repeating-conic-gradient(#3f3f46 0% 25%, #18181b 0% 50%) 50% / 12px 12px"
                     : preset.kind === "gradient"
                       ? `linear-gradient(135deg, ${preset.gradientFrom}, ${preset.gradientTo})`
-                      : preset.swatch
+                      : preset.kind === "pattern"
+                        ? buildPatternSwatchStyle(preset.patternId!)
+                        : preset.swatch
               }}
             />
           );
@@ -160,20 +194,35 @@ export function BackgroundControls({
       ) : null}
       {backgroundMode === "gradient" ? (
         <>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+              <input type="radio" name="grad-type" checked={gradientType === "linear"} onChange={() => setGradientType("linear")} />
+              Linear
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+              <input type="radio" name="grad-type" checked={gradientType === "radial"} onChange={() => setGradientType("radial")} />
+              Radial
+            </label>
+          </div>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
             <span>{t("editor.gradientFrom")}</span>
-            <input type="color" value={gradientFrom} onChange={(e) => setBackgroundGradient(e.target.value, gradientTo, gradientAngle)}
+            <input type="color" value={gradientFrom} onChange={(e) => setBackgroundGradient(e.target.value, gradientTo, gradientAngle, gradientVia ?? undefined, gradientType)}
+              style={{ width: 32, height: 28, padding: 0, border: "1px solid var(--panel-border)", borderRadius: 6, cursor: "pointer", background: "none" }} />
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+            <span>Middle</span>
+            <input type="color" value={gradientVia ?? "#ffffff"} onChange={(e) => setGradientVia(e.target.value)}
               style={{ width: 32, height: 28, padding: 0, border: "1px solid var(--panel-border)", borderRadius: 6, cursor: "pointer", background: "none" }} />
           </label>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
             <span>{t("editor.gradientTo")}</span>
-            <input type="color" value={gradientTo} onChange={(e) => setBackgroundGradient(gradientFrom, e.target.value, gradientAngle)}
+            <input type="color" value={gradientTo} onChange={(e) => setBackgroundGradient(gradientFrom, e.target.value, gradientAngle, gradientVia ?? undefined, gradientType)}
               style={{ width: 32, height: 28, padding: 0, border: "1px solid var(--panel-border)", borderRadius: 6, cursor: "pointer", background: "none" }} />
           </label>
           <label className="field">
             <span>{t("editor.gradientAngle", { val: gradientAngle })}</span>
             <div className="range-wrap">
-              <input type="range" min={0} max={360} step={1} value={gradientAngle} aria-label={t("editor.gradientAngle", { val: gradientAngle })} aria-valuetext={`${gradientAngle}°`} onChange={(e) => setBackgroundGradient(gradientFrom, gradientTo, Number(e.target.value))} />
+              <input type="range" min={0} max={360} step={1} value={gradientAngle} aria-label={t("editor.gradientAngle", { val: gradientAngle })} aria-valuetext={`${gradientAngle}°`} onChange={(e) => setBackgroundGradient(gradientFrom, gradientTo, Number(e.target.value), gradientVia ?? undefined, gradientType)} />
               <span className="range-val">{gradientAngle}°</span>
             </div>
           </label>

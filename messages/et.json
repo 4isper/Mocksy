@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Nool",
     "addBox": "+ Ruut",
+    "addCircle": "+ Ring",
     "addLayer": "Lisa kiht",
     "addText": "+ Tekst",
     "animation": "Animatsioon",
@@ -216,6 +217,7 @@
     "text": "Tekst",
     "arrow": "Nool",
     "rect": "Ruut",
+    "circle": "Ring",
     "addAnnotation": "Lisa märkus",
     "addCallouts": "Lisa märkused, nooled või ruudud mockup'i märkimiseks. Loi neid kanvaale, et muuta asukohta.",
     "font": "Font",
@@ -233,7 +235,11 @@
     "normal": "Tavaline",
     "italic": "Kaldkiri",
     "delete": "Kustuta",
-    "clearAll": "Tühjenda kõik"
+    "clearAll": "Tühjenda kõik",
+    "bgColor": "Taust",
+    "bgClear": "Tühjenda",
+    "bgPadding": "Täidis — {val}px",
+    "bgRadius": "Raadius — {val}px"
   },
   "video": {
     "options": "Video seaded",

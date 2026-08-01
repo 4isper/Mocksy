@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ তীর",
     "addBox": "+ বক্স",
+    "addCircle": "+ বৃত্ত",
     "addLayer": "স্তর যোগ করুন",
     "addText": "+ টেক্সট",
     "animation": "অ্যানিমেশন",
@@ -216,6 +217,7 @@
     "text": "টেক্সট",
     "arrow": "তীর",
     "rect": "বক্স",
+    "circle": "বৃত্ত",
     "addAnnotation": "টীকা যোগ করুন",
     "addCallouts": "টীকা, তীর বা বক্স যোগ করুন mockup চিহ্নিত করতে. তাদের পুনরায় স্থাপন করতে canvasে টেনে নিন।",
     "font": "ফন্ট",
@@ -233,7 +235,11 @@
     "normal": "স্বাভাবিক",
     "italic": "তির্যক",
     "delete": "মুছে ফেলুন",
-    "clearAll": "সব পরিষ্কার করুন"
+    "clearAll": "সব পরিষ্কার করুন",
+    "bgColor": "পটভূমি",
+    "bgClear": "পরিষ্কার করুন",
+    "bgPadding": "প্যাডিং ({val}px)",
+    "bgRadius": "ব্যাসার্ধ ({val}px)"
   },
   "video": {
     "options": "ভিডিও বিকল্প",

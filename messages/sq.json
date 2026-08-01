@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Shigjetë",
     "addBox": "+ Kutia",
+    "addCircle": "+ Rreth",
     "addLayer": "Shto shtresë",
     "addText": "+ Tekst",
     "animation": "Animacion",
@@ -216,6 +217,7 @@
     "text": "Tekst",
     "arrow": "Shigjetë",
     "rect": "Kutia",
+    "circle": "Rreth",
     "addAnnotation": "Shto shënim",
     "addCallouts": "Shtoni shënime, shigjeta ose kuti për të shënuar mockup-in. Tërhiqini në kanevë për të ndryshuar pozicionin.",
     "font": "Font",
@@ -233,7 +235,11 @@
     "normal": "Normal",
     "italic": "Kursiv",
     "delete": "Fshi",
-    "clearAll": "Pastro gjithçka"
+    "clearAll": "Pastro gjithçka",
+    "bgColor": "Sfond",
+    "bgClear": "Pastro",
+    "bgPadding": "Mbushje — {val}px",
+    "bgRadius": "Rrezja — {val}px"
   },
   "video": {
     "options": "Opsionet e videos",

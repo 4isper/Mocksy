@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Pilar",
     "addBox": "+ Ruta",
+    "addCircle": "+ Cirkel",
     "addLayer": "Lägg till lager",
     "addText": "+ Text",
     "animation": "Animation",
@@ -216,6 +217,7 @@
     "text": "Text",
     "arrow": "Pil",
     "rect": "Ruta",
+    "circle": "Cirkel",
     "addAnnotation": "Lägg till anmärkning",
     "addCallouts": "Lägg till anmärkningar, pilar eller rutor för att markera mockup:en. Dra dem till canvas för att ändra position.",
     "font": "Teckensnitt",
@@ -233,7 +235,11 @@
     "normal": "Normal",
     "italic": "Kursiv",
     "delete": "Ta bort",
-    "clearAll": "Rensa allt"
+    "clearAll": "Rensa allt",
+    "bgColor": "Bakgrund",
+    "bgClear": "Rensa",
+    "bgPadding": "Fyllning — {val}px",
+    "bgRadius": "Radie — {val}px"
   },
   "video": {
     "options": "Videoinställningar",

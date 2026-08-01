@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Pfeil",
     "addBox": "+ Kasten",
+    "addCircle": "+ Kreis",
     "addLayer": "Ebene hinzufügen",
     "addText": "+ Text",
     "animation": "Animation",
@@ -216,6 +217,7 @@
     "text": "Text",
     "arrow": "Pfeil",
     "rect": "Box",
+    "circle": "Kreis",
     "addAnnotation": "Anmerkung hinzufügen",
     "addCallouts": "Füge Anmerkungen, Pfeile oder Boxen hinzu, um den Mockup zu markieren. Ziehe sie auf die Canvas, um die Position zu ändern.",
     "font": "Schriftart",
@@ -233,7 +235,11 @@
     "normal": "Normal",
     "italic": "Kursiv",
     "delete": "Löschen",
-    "clearAll": "Alles leeren"
+    "clearAll": "Alles leeren",
+    "bgColor": "Hintergrund",
+    "bgClear": "Leeren",
+    "bgPadding": "Innenabstand — {val}px",
+    "bgRadius": "Radius — {val}px"
   },
   "video": {
     "options": "Videoeinstellungen",

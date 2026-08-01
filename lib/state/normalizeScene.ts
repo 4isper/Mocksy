@@ -4,9 +4,11 @@ import type {
   BackgroundMode,
   EditorScene,
   FrameInstance,
+  GradientType,
   MediaLayer,
   MediaType,
   MockupFrame,
+  PatternId,
   StylePreset
 } from "@/lib/types/editor";
 import { FRAME_SPECS, ANIMATION_PRESETS } from "@/lib/render/frames";
@@ -14,11 +16,13 @@ import { initialScene } from "@/lib/state/editorStore";
 
 const FRAMES = Object.keys(FRAME_SPECS) as MockupFrame[];
 const STYLE_PRESETS: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
-const BACKGROUND_MODES: BackgroundMode[] = ["transparent", "solid", "gradient", "image"];
+const BACKGROUND_MODES: BackgroundMode[] = ["transparent", "solid", "gradient", "image", "pattern"];
+const GRADIENT_TYPES: GradientType[] = ["linear", "radial"];
+const PATTERN_IDS: PatternId[] = ["dots", "grid", "diagonal", "noise"];
 const MEDIA_TYPES: MediaType[] = ["none", "image", "video"];
 const MEDIA_FITS = ["cover", "contain"] as const;
 const ANIMATIONS = ANIMATION_PRESETS;
-const ANNOTATION_TYPES: AnnotationType[] = ["text", "arrow", "rect"];
+const ANNOTATION_TYPES: AnnotationType[] = ["text", "arrow", "rect", "circle"];
 
 function pick<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
   return allowed.includes(value as T) ? (value as T) : fallback;
@@ -66,7 +70,10 @@ function normalizeAnnotation(raw: unknown, fallback: Annotation): Annotation {
     fontFamily: str(r.fontFamily, null) ?? fallback.fontFamily,
     fontWeight: pick(r.fontWeight, ["normal", "bold"] as const, fallback.fontWeight ?? "bold"),
     fontStyle: pick(r.fontStyle, ["normal", "italic"] as const, fallback.fontStyle ?? "normal"),
-    textAlign: pick(r.textAlign, ["left", "center", "right"] as const, fallback.textAlign ?? "left")
+    textAlign: pick(r.textAlign, ["left", "center", "right"] as const, fallback.textAlign ?? "left"),
+    bgColor: str(r.bgColor, null),
+    bgPadding: num(r.bgPadding, fallback.bgPadding ?? 0, 0, 100),
+    bgRadius: num(r.bgRadius, fallback.bgRadius ?? 0, 0, 200)
   };
 }
 
@@ -150,7 +157,12 @@ export function normalizeScene(raw: unknown): EditorScene {
     backgroundColor: str(r.backgroundColor, initialScene.backgroundColor) ?? initialScene.backgroundColor,
     gradientFrom: str(r.gradientFrom, initialScene.gradientFrom) ?? initialScene.gradientFrom,
     gradientTo: str(r.gradientTo, initialScene.gradientTo) ?? initialScene.gradientTo,
+    gradientVia: str(r.gradientVia, initialScene.gradientVia) ?? initialScene.gradientVia,
+    gradientType: pick(r.gradientType, GRADIENT_TYPES, initialScene.gradientType),
     gradientAngle: num(r.gradientAngle, initialScene.gradientAngle, 0, 360),
+    patternId: r.patternId != null && PATTERN_IDS.includes(r.patternId as PatternId)
+      ? (r.patternId as PatternId)
+      : initialScene.patternId,
     backgroundImageUrl: str(r.backgroundImageUrl, initialScene.backgroundImageUrl),
     backgroundBlur: num(r.backgroundBlur, initialScene.backgroundBlur, 0, 40),
     backgroundAudioUrl: str(r.backgroundAudioUrl, initialScene.backgroundAudioUrl),

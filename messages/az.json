@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Ox",
     "addBox": "+ Qutu",
+    "addCircle": "+ Dairə",
     "addLayer": "Təbəqə əlavə edin",
     "addText": "+ Mətn",
     "animation": "Animasiya",
@@ -216,6 +217,7 @@
     "text": "Mətn",
     "arrow": "Ox",
     "rect": "Qutu",
+    "circle": "Dairə",
     "addAnnotation": "İşarələmə əlavə edin",
     "addCallouts": "İşarələmələr, oxlar və ya qutular əlavə edin mockup-u işarələmək üçün. Onları yenidən yerləşdirmək üçün canvas-ə sürüşdürün.",
     "font": "Şrift",
@@ -233,7 +235,11 @@
     "normal": "Normal",
     "italic": "Kursiv",
     "delete": "Sil",
-    "clearAll": "Hamısını təmizlə"
+    "clearAll": "Hamısını təmizlə",
+    "bgColor": "Fon",
+    "bgClear": "Təmizlə",
+    "bgPadding": "Doldurma ({val}px)",
+    "bgRadius": "Radius ({val}px)"
   },
   "video": {
     "options": "Video seçimləri",

@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Mataas",
     "addBox": "+ Kahon",
+    "addCircle": "+ Bilog",
     "addLayer": "Magdagdag ng layer",
     "addText": "+ Text",
     "animation": "Animasyon",
@@ -216,6 +217,7 @@
     "text": "Text",
     "arrow": "Arrow",
     "rect": "Box",
+    "circle": "Bilog",
     "addAnnotation": "Magdagdag ng annotation",
     "addCallouts": "Magdagdag ng mga annotation, arrow, o box upang markahan ang mockup. I-drag sa canvas upang baguhin ang posisyon.",
     "font": "Font",
@@ -233,7 +235,11 @@
     "normal": "Normal",
     "italic": "Italic",
     "delete": "Tanggalin",
-    "clearAll": "I-clear lahat"
+    "clearAll": "I-clear lahat",
+    "bgColor": "Background",
+    "bgClear": "I-clear",
+    "bgPadding": "Padding — {val}px",
+    "bgRadius": "Radius — {val}px"
   },
   "video": {
     "options": "Mga opsyon ng video",

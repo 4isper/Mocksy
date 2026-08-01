@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ 矢印",
     "addBox": "+ ボックス",
+    "addCircle": "+ 円",
     "addLayer": "レイヤーを追加",
     "addText": "+ テキスト",
     "animation": "アニメーション",
@@ -216,6 +217,7 @@
     "text": "テキスト",
     "arrow": "矢印",
     "rect": "ボックス",
+    "circle": "円",
     "addAnnotation": "注釈を追加",
     "addCallouts": "モックアップに注釈、矢印、ボックスを追加します。キャンバス上でドラッグして位置を変更します。",
     "font": "フォント",
@@ -233,7 +235,11 @@
     "normal": "標準",
     "italic": "斜体",
     "delete": "削除",
-    "clearAll": "すべてクリア"
+    "clearAll": "すべてクリア",
+    "bgColor": "背景",
+    "bgClear": "クリア",
+    "bgPadding": "パディング ({val}px)",
+    "bgRadius": "半径 ({val}px)"
   },
   "video": {
     "options": "ビデオオプション",

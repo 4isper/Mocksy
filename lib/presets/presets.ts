@@ -1,6 +1,6 @@
 import type { EditorScene, SceneStylePreset } from "@/lib/types/editor";
 
-export type BackgroundKind = "transparent" | "solid" | "gradient";
+export type BackgroundKind = "transparent" | "solid" | "gradient" | "pattern";
 
 export interface BackgroundPreset {
   id: string;
@@ -11,6 +11,7 @@ export interface BackgroundPreset {
   backgroundColor?: string;
   gradientFrom?: string;
   gradientTo?: string;
+  patternId?: import("@/lib/types/editor").PatternId;
 }
 
 export const backgroundPresets: BackgroundPreset[] = [
@@ -20,7 +21,20 @@ export const backgroundPresets: BackgroundPreset[] = [
   { id: "rose", name: "Rose", kind: "solid", swatch: "#4c0519", backgroundColor: "#4c0519" },
   { id: "blue-violet", name: "Blue → Violet", kind: "gradient", swatch: "#1d4ed8", gradientFrom: "#1d4ed8", gradientTo: "#7c3aed" },
   { id: "sunset", name: "Sunset", kind: "gradient", swatch: "#f97316", gradientFrom: "#f97316", gradientTo: "#db2777" },
-  { id: "mint", name: "Mint", kind: "gradient", swatch: "#059669", gradientFrom: "#059669", gradientTo: "#0ea5e9" }
+  { id: "mint", name: "Mint", kind: "gradient", swatch: "#059669", gradientFrom: "#059669", gradientTo: "#0ea5e9" },
+  { id: "dots", name: "Dots", kind: "pattern", swatch: "#18181b", patternId: "dots" },
+  { id: "grid", name: "Grid", kind: "pattern", swatch: "#18181b", patternId: "grid" },
+  { id: "diagonal", name: "Diagonal", kind: "pattern", swatch: "#18181b", patternId: "diagonal" },
+  { id: "noise", name: "Noise", kind: "pattern", swatch: "#18181b", patternId: "noise" }
+];
+
+export interface PatternPreset {}
+
+export const patternPresets: PatternPreset[] = [
+  { id: "dots", name: "Dots", swatch: "#18181b" },
+  { id: "grid", name: "Grid", swatch: "#18181b" },
+  { id: "diagonal", name: "Diagonal", swatch: "#18181b" },
+  { id: "noise", name: "Noise", swatch: "#18181b" }
 ];
 
 /** Named appearance presets. Each carries the scene's frame, frame style,
@@ -37,6 +51,8 @@ export const sceneStylePresets: SceneStylePreset[] = [
     backgroundColor: "#09090b",
     gradientFrom: "#09090b",
     gradientTo: "#09090b",
+    gradientVia: null,
+    gradientType: "linear",
     shadowOpacity: 0.45,
     borderRadius: 20,
     watermarkEnabled: false,
@@ -53,6 +69,8 @@ export const sceneStylePresets: SceneStylePreset[] = [
     backgroundColor: "#1d4ed8",
     gradientFrom: "#1d4ed8",
     gradientTo: "#7c3aed",
+    gradientVia: null,
+    gradientType: "linear",
     shadowOpacity: 0.4,
     borderRadius: 28,
     watermarkEnabled: false,
@@ -69,6 +87,8 @@ export const sceneStylePresets: SceneStylePreset[] = [
     backgroundColor: "#f97316",
     gradientFrom: "#f97316",
     gradientTo: "#db2777",
+    gradientVia: null,
+    gradientType: "linear",
     shadowOpacity: 0.5,
     borderRadius: 16,
     watermarkEnabled: true,
@@ -85,6 +105,8 @@ export const sceneStylePresets: SceneStylePreset[] = [
     backgroundColor: "#ffffff",
     gradientFrom: "#ffffff",
     gradientTo: "#ffffff",
+    gradientVia: null,
+    gradientType: "linear",
     shadowOpacity: 0.12,
     borderRadius: 8,
     watermarkEnabled: false,
@@ -101,6 +123,8 @@ export const sceneStylePresets: SceneStylePreset[] = [
     backgroundColor: "#f59e0b",
     gradientFrom: "#f59e0b",
     gradientTo: "#ef4444",
+    gradientVia: null,
+    gradientType: "linear",
     shadowOpacity: 0.42,
     borderRadius: 24,
     watermarkEnabled: false,
@@ -121,6 +145,8 @@ export function applySceneStylePreset(preset: SceneStylePreset): Partial<EditorS
     backgroundColor: preset.backgroundColor,
     gradientFrom: preset.gradientFrom,
     gradientTo: preset.gradientTo,
+    gradientVia: preset.gradientVia,
+    gradientType: preset.gradientType,
     shadowOpacity: preset.shadowOpacity,
     borderRadius: preset.borderRadius,
     watermarkEnabled: preset.watermarkEnabled,

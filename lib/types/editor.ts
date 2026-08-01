@@ -1,6 +1,10 @@
-export type BackgroundMode = "transparent" | "solid" | "gradient" | "image";
+export type BackgroundMode = "transparent" | "solid" | "gradient" | "image" | "pattern";
 
-export type AnnotationType = "text" | "arrow" | "rect";
+export type GradientType = "linear" | "radial";
+
+export type PatternId = "dots" | "grid" | "diagonal" | "noise";
+
+export type AnnotationType = "text" | "arrow" | "rect" | "circle";
 
 export type FontWeight = "normal" | "bold";
 export type FontStyle = "normal" | "italic";
@@ -29,6 +33,12 @@ export interface Annotation {
   fontStyle?: FontStyle;
   /** Horizontal alignment for text annotations (default "left"). */
   textAlign?: TextAlign;
+  /** Background color behind text (optional, e.g. "rgba(0,0,0,0.5)"). */
+  bgColor?: string | null;
+  /** Padding around text inside background box, in px (default 0). */
+  bgPadding?: number;
+  /** Border-radius of background box, in px (default 0). */
+  bgRadius?: number;
 }
 export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "pixel8pro" | "galaxy24" | "iphoneSE" | "ipad" | "galaxyTab" | "desktop" | "tablet" | "macbook" | "imac" | "notebook" | "watch";
 export type StylePreset = "default" | "glassLight" | "glassDark" | "outline";
@@ -101,7 +111,13 @@ export interface EditorScene {
   backgroundColor: string;
   gradientFrom: string;
   gradientTo: string;
+  /** Middle stop for 3-stop gradients; optional. */
+  gradientVia: string | null;
+  /** Gradient type: linear (angle-driven) or radial (center-driven). */
+  gradientType: GradientType;
   gradientAngle: number;
+  /** Pattern preset id when backgroundMode is "pattern". */
+  patternId: PatternId | null;
   /** data: URL of an uploaded background image, or null when none. */
   backgroundImageUrl: string | null;
   /** Blur radius (px) applied to the background image. Range [0, 40]. */
@@ -133,6 +149,10 @@ export interface SceneStylePreset {
   backgroundColor: string;
   gradientFrom: string;
   gradientTo: string;
+  /** Middle stop for 3-stop gradients. */
+  gradientVia: string | null;
+  /** Gradient type: linear (angle-driven) or radial (center-driven). */
+  gradientType: GradientType;
   shadowOpacity: number;
   borderRadius: number;
   watermarkEnabled: boolean;

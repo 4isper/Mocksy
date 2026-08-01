@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Nuoli",
     "addBox": "+ Laatikko",
+    "addCircle": "+ Ympyrä",
     "addLayer": "Lisää kerros",
     "addText": "+ Teksti",
     "animation": "Animointi",
@@ -216,6 +217,7 @@
     "text": "Teksti",
     "arrow": "Nuoli",
     "rect": "Laatikko",
+    "circle": "Ympyrä",
     "addAnnotation": "Lisää huomautus",
     "addCallouts": "Lisää huomautuksia, nuolia tai laatikoita merkitäksesi mockupin. Vedä ne kankaalle muuttaaksesi sijaintia.",
     "font": "Kirjasin",
@@ -233,7 +235,11 @@
     "normal": "Normaali",
     "italic": "Kursivoitu",
     "delete": "Poista",
-    "clearAll": "Tyhjennä kaikki"
+    "clearAll": "Tyhjennä kaikki",
+    "bgColor": "Tausta",
+    "bgClear": "Tyhjennä",
+    "bgPadding": "Täyttö — {val}px",
+    "bgRadius": "Säde — {val}px"
   },
   "video": {
     "options": "Videovalinnat",

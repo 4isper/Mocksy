@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ તીર",
     "addBox": "+ બોક્સ",
+    "addCircle": "+ વર્તુળ",
     "addLayer": "લેયર ઉમેરો",
     "addText": "+ ટેક્સ્ટ",
     "animation": "એનિમેશન",
@@ -216,6 +217,7 @@
     "text": "ટેક્સ્ટ",
     "arrow": "તીર",
     "rect": "બોક્સ",
+    "circle": "વર્તુળ",
     "addAnnotation": "ટિપ્પણી ઉમેરો",
     "addCallouts": "ટિપ્પણીઓ, તીરો અથવા બોક્સો ઉમેરો mockup ને ચિહ્નિત કરવા માટે. તેમને ફરી વ્યવસ્થા કરવા માટે canvas ઉપર ખેંચો.",
     "font": "ફોન્ટ",
@@ -233,7 +235,11 @@
     "normal": "સામાન્ય",
     "italic": "ત્રાંસુ",
     "delete": "કાઢો",
-    "clearAll": "બધું સાફ કરો"
+    "clearAll": "બધું સાફ કરો",
+    "bgColor": "પૃષ્ઠભૂમિ",
+    "bgClear": "સાફ કરો",
+    "bgPadding": "પેડિંગ ({val}px)",
+    "bgRadius": "ત્રિજ્યા ({val}px)"
   },
   "video": {
     "options": "વીડિયો વિકલ્પો",

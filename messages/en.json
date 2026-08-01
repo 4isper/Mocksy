@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Arrow",
     "addBox": "+ Box",
+    "addCircle": "+ Circle",
     "addLayer": "Add layer",
     "addText": "+ Text",
     "animation": "Animation",
@@ -216,6 +217,7 @@
     "text": "Text",
     "arrow": "Arrow",
     "rect": "Box",
+    "circle": "Circle",
     "addAnnotation": "Add annotation",
     "addCallouts": "Add callouts, arrows or boxes to annotate the mockup. Drag them on the canvas to reposition.",
     "font": "Font",
@@ -233,7 +235,11 @@
     "strokeWidth": "Stroke ({val}px)",
     "color": "Color",
     "delete": "Delete",
-    "clearAll": "Clear all"
+    "clearAll": "Clear all",
+    "bgColor": "Background",
+    "bgClear": "Clear",
+    "bgPadding": "Padding ({val}px)",
+    "bgRadius": "Radius ({val}px)"
   },
   "video": {
     "options": "Video options",

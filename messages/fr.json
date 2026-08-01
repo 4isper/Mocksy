@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Flèche",
     "addBox": "+ Boîte",
+    "addCircle": "+ Cercle",
     "addLayer": "Ajouter une couche",
     "addText": "+ Texte",
     "animation": "Animation",
@@ -216,6 +217,7 @@
     "text": "Texte",
     "arrow": "Flèche",
     "rect": "Boîte",
+    "circle": "Cercle",
     "addAnnotation": "Ajouter une annotation",
     "addCallouts": "Ajoutez des annotations, des flèches ou des boîtes pour marquer le mockup. Faites-les glisser sur le canevas pour changer la position.",
     "font": "Police",
@@ -233,7 +235,11 @@
     "normal": "Normal",
     "italic": "Italique",
     "delete": "Supprimer",
-    "clearAll": "Effacer tout"
+    "clearAll": "Effacer tout",
+    "bgColor": "Arrière-plan",
+    "bgClear": "Effacer",
+    "bgPadding": "Remplissage — {val}px",
+    "bgRadius": "Rayon — {val}px"
   },
   "video": {
     "options": "Options vidéo",

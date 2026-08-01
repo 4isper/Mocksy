@@ -50,23 +50,44 @@ export function drawAnnotations(
       const fontSize = a.fontSize * dpiScale;
       const weight = a.fontWeight === "normal" ? "400" : "600";
       const style = a.fontStyle === "italic" ? "italic " : "";
-      ctx.fillStyle = a.color;
       ctx.font = `${style}${weight} ${fontSize}px ${a.fontFamily ?? "Inter, system-ui, sans-serif"}`;
       ctx.textBaseline = "top";
       const align = a.textAlign ?? "left";
       ctx.textAlign = align === "center" ? "center" : align === "right" ? "right" : "left";
       const textX = align === "center" ? bx + bw / 2 : align === "right" ? bx + bw : bx;
+      const lines = a.text.split("\n");
+      const lineHeight = fontSize * 1.2;
+      const textHeight = lines.length * lineHeight;
+      const textWidth = Math.max(...lines.map((line) => ctx.measureText(line).width), 0);
+      const padding = (a.bgPadding ?? 0) * dpiScale;
+      if (a.bgColor && textWidth > 0) {
+        const radius = (a.bgRadius ?? 0) * dpiScale;
+        const boxX = align === "center" ? textX - textWidth / 2 - padding : align === "right" ? textX - textWidth - padding : textX - padding;
+        const boxY = by - padding;
+        const boxW = textWidth + padding * 2;
+        const boxH = textHeight + padding * 2;
+        ctx.save();
+        ctx.fillStyle = a.bgColor;
+        roundedRectPath(ctx, boxX, boxY, boxW, boxH, radius);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.fillStyle = a.color;
       ctx.shadowColor = "rgba(0,0,0,0.5)";
       ctx.shadowBlur = 3 * dpiScale;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 1 * dpiScale;
-      const lines = a.text.split("\n");
-      const lineHeight = fontSize * 1.2;
       lines.forEach((line, i) => ctx.fillText(line, textX, by + i * lineHeight));
     } else if (a.type === "rect") {
       ctx.strokeStyle = a.color;
       ctx.lineWidth = Math.max(1, a.strokeWidth * dpiScale);
       ctx.strokeRect(bx, by, bw, bh);
+    } else if (a.type === "circle") {
+      ctx.strokeStyle = a.color;
+      ctx.lineWidth = Math.max(1, a.strokeWidth * dpiScale);
+      ctx.beginPath();
+      ctx.ellipse(bx + bw / 2, by + bh / 2, bw / 2, bh / 2, 0, 0, Math.PI * 2);
+      ctx.stroke();
     } else {
       const startX = a.x * width;
       const startY = a.y * height;

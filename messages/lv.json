@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Bulta",
     "addBox": "+ Kastīte",
+    "addCircle": "+ Aplis",
     "addLayer": "Pievienot slāni",
     "addText": "+ Teksts",
     "animation": "Animācija",
@@ -216,6 +217,7 @@
     "text": "Teksts",
     "arrow": "Bulta",
     "rect": "Kastīte",
+    "circle": "Aplis",
     "addAnnotation": "Pievienot anotāciju",
     "addCallouts": "Pievienojiet anotācijas, bultas vai kastītes, lai atzīmētu mockup. Veliet tos uz kanva, lai mainītu novietojumu.",
     "font": "Fonts",
@@ -233,7 +235,11 @@
     "normal": "Parasts",
     "italic": "Slīpraksts",
     "delete": "Dzēst",
-    "clearAll": "Notīrīt visu"
+    "clearAll": "Notīrīt visu",
+    "bgColor": "Fons",
+    "bgClear": "Notīrīt",
+    "bgPadding": "Pildījums — {val}px",
+    "bgRadius": "Rādiuss — {val}px"
   },
   "video": {
     "options": "Video iestatījumi",

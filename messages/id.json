@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Panah",
     "addBox": "+ Kotak",
+    "addCircle": "+ Lingkaran",
     "addLayer": "Tambah lapisan",
     "addText": "+ Teks",
     "animation": "Animasi",
@@ -216,6 +217,7 @@
     "text": "Teks",
     "arrow": "Panah",
     "rect": "Kotak",
+    "circle": "Lingkaran",
     "addAnnotation": "Tambahkan anotasi",
     "addCallouts": "Tambahkan anotasi, panah, atau kotak untuk menandai mockup. Seret ke canvas untuk mengubah posisi.",
     "font": "Font",
@@ -233,7 +235,11 @@
     "normal": "Normal",
     "italic": "Miring",
     "delete": "Hapus",
-    "clearAll": "Bersihkan semua"
+    "clearAll": "Bersihkan semua",
+    "bgColor": "Latar Belakang",
+    "bgClear": "Bersihkan",
+    "bgPadding": "Padding — {val}px",
+    "bgRadius": "Jari-jari — {val}px"
   },
   "video": {
     "options": "Pengaturan video",

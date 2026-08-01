@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ Mũi tên",
     "addBox": "+ Hộp",
+    "addCircle": "+ Hình tròn",
     "addLayer": "Thêm lớp",
     "addText": "+ Văn bản",
     "animation": "Hoạt ảnh",
@@ -216,6 +217,7 @@
     "text": "Văn bản",
     "arrow": "Mũi tên",
     "rect": "Hộp",
+    "circle": "Hình tròn",
     "addAnnotation": "Thêm ghi chú",
     "addCallouts": "Thêm ghi chú, mũi tên hoặc hộp để đánh dấu mockup. Kéo chúng lên canvas để thay đổi vị trí.",
     "font": "Phông chữ",
@@ -233,7 +235,11 @@
     "normal": "Thường",
     "italic": "Nghiêng",
     "delete": "Xóa",
-    "clearAll": "Xóa tất cả"
+    "clearAll": "Xóa tất cả",
+    "bgColor": "Nền",
+    "bgClear": "Xóa",
+    "bgPadding": "Đệm — {val}px",
+    "bgRadius": "Bán kính — {val}px"
   },
   "video": {
     "options": "Tùy chọn video",

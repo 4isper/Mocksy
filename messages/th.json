@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ ลูกศร",
     "addBox": "+ กล่อง",
+    "addCircle": "+ วงกลม",
     "addLayer": "เพิ่มเลเยอร์",
     "addText": "+ ข้อความ",
     "animation": "แอนิเมชัน",
@@ -216,6 +217,7 @@
     "text": "ข้อความ",
     "arrow": "ลูกศร",
     "rect": "กล่อง",
+    "circle": "วงกลม",
     "addAnnotation": "เพิ่มคำอธิบายประกอบ",
     "addCallouts": "เพิ่มคำอธิบายประกอบ ลูกศร หรือกล่องเพื่อระบุรายละเอียด mockup ลากไปยัง canvas เพื่อเปลี่ยนตำแหน่ง",
     "font": "ฟอนต์",
@@ -233,7 +235,11 @@
     "normal": "ปกติ",
     "italic": "ตัวเอียง",
     "delete": "ลบ",
-    "clearAll": "ลบทั้งหมด"
+    "clearAll": "ลบทั้งหมด",
+    "bgColor": "พื้นหลัง",
+    "bgClear": "ล้าง",
+    "bgPadding": "แพดดิ้ง ({val}px)",
+    "bgRadius": "รัศมี ({val}px)"
   },
   "video": {
     "options": "ตัวเลือกวิดีโอ",

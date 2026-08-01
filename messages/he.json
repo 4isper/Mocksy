@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ חץ",
     "addBox": "+ תיבה",
+    "addCircle": "+ מעגל",
     "addLayer": "הוסף שכבה",
     "addText": "+ טקסט",
     "animation": "אנימציה",
@@ -216,6 +217,7 @@
     "text": "טקסט",
     "arrow": "חץ",
     "rect": "תיבה",
+    "circle": "מעגל",
     "addAnnotation": "הוסף הערה",
     "addCallouts": "הוסף הערות, חצים או תיבות לסמן את המוקפ. גרור אותם לקנבס כדי לשנות מיקום.",
     "font": "גופן",
@@ -233,7 +235,11 @@
     "normal": "רגיל",
     "italic": "נטוי",
     "delete": "מחק",
-    "clearAll": "נקה הכל"
+    "clearAll": "נקה הכל",
+    "bgColor": "רקע",
+    "bgClear": "נקה",
+    "bgPadding": "ריפוד ({val}px)",
+    "bgRadius": "רדיוס ({val}px)"
   },
   "video": {
     "options": "אפשרויות וידאו",

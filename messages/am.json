@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ ብድር",
     "addBox": "+ ሞባ",
+    "addCircle": "+ ክብ",
     "addLayer": "አካል ጭኸት",
     "addText": "+ ጽሑፍ",
     "animation": "አንገልግሎት",
@@ -216,6 +217,7 @@
     "text": "ጽሑፍ",
     "arrow": "ብድር",
     "rect": "ሞባ",
+    "circle": "ክብ",
     "addAnnotation": "ማስታወሻ ጭኸት",
     "addCallouts": "ማስታወሻዎች፣ ብድሮች ወይም ሞቦችን ጭኸት mockup ለማስፈልግ። ለእነሱን በአዲስ ቦታ ለማንሳት canvas ላይ ይነበባል።",
     "font": "ፊደል",
@@ -233,7 +235,11 @@
     "normal": "መደበኛ",
     "italic": "ጠማማ",
     "delete": "ጥፍ",
-    "clearAll": "ሁሉንም አጽዋ"
+    "clearAll": "ሁሉንም አጽዋ",
+    "bgColor": "ጀርባ",
+    "bgClear": "አጽዳ",
+    "bgPadding": "መከፈል ({val}px)",
+    "bgRadius": "ራዲየስ ({val}px)"
   },
   "video": {
     "options": "የቪዲዮ ምርጫዎች",

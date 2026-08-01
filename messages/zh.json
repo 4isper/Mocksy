@@ -71,6 +71,7 @@
   "editor": {
     "addArrow": "+ 箭头",
     "addBox": "+ 方框",
+    "addCircle": "+ 圆形",
     "addLayer": "添加图层",
     "addText": "+ 文本",
     "animation": "动画",
@@ -216,6 +217,7 @@
     "text": "文本",
     "arrow": "箭头",
     "rect": "方框",
+    "circle": "圆形",
     "addAnnotation": "添加注释",
     "addCallouts": "添加注释、箭头或方框来标注模型。拖放到画布上以重新定位。",
     "font": "字体",
@@ -233,7 +235,11 @@
     "normal": "常规",
     "italic": "斜体",
     "delete": "删除",
-    "clearAll": "清除全部"
+    "clearAll": "清除全部",
+    "bgColor": "背景",
+    "bgClear": "清除",
+    "bgPadding": "内边距 ({val}px)",
+    "bgRadius": "半径 ({val}px)"
   },
   "video": {
     "options": "视频选项",

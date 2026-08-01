@@ -18,6 +18,111 @@ function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w:
   ctx.closePath();
 }
 
+function fillGradientBackground(ctx: CanvasRenderingContext2D, scene: EditorScene, width: number, height: number) {
+  if (scene.gradientType === "radial") {
+    const grad = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, Math.max(width, height) / 2);
+    grad.addColorStop(0, scene.gradientFrom);
+    if (scene.gradientVia) grad.addColorStop(0.5, scene.gradientVia);
+    grad.addColorStop(1, scene.gradientTo);
+    ctx.fillStyle = grad;
+  } else {
+    const rad = ((scene.gradientAngle ?? RENDER.gradientAngleDeg) * Math.PI) / 180;
+    const dx = Math.sin(rad);
+    const dy = -Math.cos(rad);
+    const lineLen = Math.abs(width * dx) + Math.abs(height * dy);
+    const cx = width / 2;
+    const cy = height / 2;
+    const grad = ctx.createLinearGradient(
+      cx - (dx * lineLen) / 2,
+      cy - (dy * lineLen) / 2,
+      cx + (dx * lineLen) / 2,
+      cy + (dy * lineLen) / 2
+    );
+    grad.addColorStop(0, scene.gradientFrom);
+    if (scene.gradientVia) grad.addColorStop(0.5, scene.gradientVia);
+    grad.addColorStop(1, scene.gradientTo);
+    ctx.fillStyle = grad;
+  }
+  ctx.fillRect(0, 0, width, height);
+}
+
+function fillPatternBackground(ctx: CanvasRenderingContext2D, scene: EditorScene, width: number, height: number) {
+  const patternId = scene.patternId;
+  if (!patternId) {
+    ctx.fillStyle = "#18181b";
+    ctx.fillRect(0, 0, width, height);
+    return;
+  }
+  switch (patternId) {
+    case "dots": {
+      ctx.fillStyle = "#18181b";
+      ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = "rgba(255,255,255,0.12)";
+      for (let x = 0; x < width; x += 20) {
+        for (let y = 0; y < height; y += 20) {
+          ctx.beginPath();
+          ctx.arc(x + 10, y + 10, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      break;
+    }
+    case "grid": {
+      ctx.fillStyle = "#18181b";
+      ctx.fillRect(0, 0, width, height);
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= width; x += 20) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= height; y += 20) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+      break;
+    }
+    case "diagonal": {
+      ctx.fillStyle = "#18181b";
+      ctx.fillRect(0, 0, width, height);
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.lineWidth = 1;
+      const step = 28; // ~20px * sqrt(2)
+      for (let i = -height; i < width + height; i += step) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i + height, height);
+        ctx.stroke();
+      }
+      break;
+    }
+    case "noise": {
+      ctx.fillStyle = "#18181b";
+      ctx.fillRect(0, 0, width, height);
+      const imageData = ctx.getImageData(0, 0, width, height);
+      const data = imageData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const d0 = data[i] ?? 0;
+        const d1 = data[i + 1] ?? 0;
+        const d2 = data[i + 2] ?? 0;
+        const noise = (Math.random() - 0.5) * 30;
+        data[i] = Math.max(0, Math.min(255, d0 + noise));
+        data[i + 1] = Math.max(0, Math.min(255, d1 + noise));
+        data[i + 2] = Math.max(0, Math.min(255, d2 + noise));
+      }
+      ctx.putImageData(imageData, 0, 0);
+      break;
+    }
+    default:
+      ctx.fillStyle = "#18181b";
+      ctx.fillRect(0, 0, width, height);
+  }
+}
+
 export interface RenderTransform {
   zoom: number;
   offsetX: number;
@@ -214,22 +319,7 @@ export function renderMockupToCanvas(
   if (scene.frameInstances.length > 0) {
     // Draw background first (matches single-frame path)
     if (scene.backgroundMode === "gradient") {
-      const rad = ((scene.gradientAngle ?? RENDER.gradientAngleDeg) * Math.PI) / 180;
-      const dx = Math.sin(rad);
-      const dy = -Math.cos(rad);
-      const lineLen = Math.abs(width * dx) + Math.abs(height * dy);
-      const cx = width / 2;
-      const cy = height / 2;
-      const grad = ctx.createLinearGradient(
-        cx - (dx * lineLen) / 2,
-        cy - (dy * lineLen) / 2,
-        cx + (dx * lineLen) / 2,
-        cy + (dy * lineLen) / 2
-      );
-      grad.addColorStop(0, scene.gradientFrom);
-      grad.addColorStop(1, scene.gradientTo);
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, width, height);
+      fillGradientBackground(ctx, scene, width, height);
     } else if (scene.backgroundMode === "solid") {
       ctx.fillStyle = scene.backgroundColor;
       ctx.fillRect(0, 0, width, height);
