@@ -1243,7 +1243,7 @@ test("locale switcher switches the UI language end-to-end", async ({ page }) => 
   await expect(switcher).toHaveValue("en");
 
   await Promise.all([
-    page.waitForURL("**/ru"),
+    page.waitForURL("**/ru", { waitUntil: "commit" }),
     switcher.selectOption({ label: "Русский" }),
   ]);
   await expect(page.locator("html")).toHaveAttribute("lang", "ru");
@@ -1251,7 +1251,7 @@ test("locale switcher switches the UI language end-to-end", async ({ page }) => 
   await expect(page.getByLabel("Сетка")).toBeVisible();
 
   await Promise.all([
-    page.waitForURL("**/en"),
+    page.waitForURL("**/en", { waitUntil: "commit" }),
     switcher.selectOption({ label: "English" }),
   ]);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
