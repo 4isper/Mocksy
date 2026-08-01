@@ -8,7 +8,7 @@ export default defineConfig({
     }
   },
   test: {
-    include: ["tests/unit/**/*.test.ts", "tests/components/**/*.test.tsx"],
+    include: ["tests/unit/**/*.test.{ts,tsx}", "tests/components/**/*.test.tsx"],
     setupFiles: ["tests/components/setup.ts"],
     coverage: {
       provider: "v8",

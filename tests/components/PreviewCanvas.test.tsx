@@ -1,17 +1,31 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { PreviewCanvas } from "@/components/editor/PreviewCanvas";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { initialScene } from "@/lib/state/editorStore";
-import type { EditorScene } from "@/lib/types/editor";
+import type { EditorScene, MediaLayer } from "@/lib/types/editor";
+
+const mockLoadFile = vi.hoisted(() => ({
+  loadMediaFromFile: vi.fn(),
+  UnsupportedMediaError: class UnsupportedMediaError extends Error {}
+}));
+vi.mock("@/lib/media/loadFile", () => mockLoadFile);
 
 // Stub rAF so useFrameTransform doesn't hang
 vi.stubGlobal("requestAnimationFrame", vi.fn().mockReturnValue(42));
 vi.stubGlobal("cancelAnimationFrame", vi.fn());
 
+beforeEach(() => {
+  mockLoadFile.loadMediaFromFile.mockReset();
+  vi.spyOn(HTMLElement.prototype, "setPointerCapture").mockImplementation(() => {});
+  vi.spyOn(HTMLElement.prototype, "hasPointerCapture").mockReturnValue(true);
+  vi.spyOn(HTMLElement.prototype, "releasePointerCapture").mockImplementation(() => {});
+});
+
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   useEditorStore.setState({
     scene: { ...initialScene },
     isMediaLoading: false,
@@ -125,5 +139,148 @@ describe("PreviewCanvas", () => {
     expect(useEditorStore.getState().showGrid).toBe(true);
     fireEvent.click(toggle);
     expect(useEditorStore.getState().showGrid).toBe(false);
+  });
+});
+
+describe("PreviewCanvas media upload", () => {
+  const file = new File(["fake"], "photo.png", { type: "image/png" });
+
+  it("adds a new layer on drop", async () => {
+    mockLoadFile.loadMediaFromFile.mockResolvedValue({
+      url: "data:image/png;base64,abc",
+      mediaType: "image",
+      mediaName: "photo.png"
+    });
+    renderScene();
+    const before = useEditorStore.getState().scene.layers.length;
+    fireEvent.drop(document.querySelector(".panel")!, { dataTransfer: { files: [file] } });
+    await vi.waitFor(() => {
+      const scene = useEditorStore.getState().scene;
+      expect(scene.layers.length).toBe(before + 1);
+      expect(scene.layers[scene.layers.length - 1]?.mediaUrl).toBe("data:image/png;base64,abc");
+    });
+  });
+
+  it("adds a new layer on file input change", async () => {
+    mockLoadFile.loadMediaFromFile.mockResolvedValue({
+      url: "data:image/png;base64,xyz",
+      mediaType: "image",
+      mediaName: "photo.png"
+    });
+    renderScene();
+    const input = document.querySelector('.preview-chip input[type="file"]') as HTMLInputElement;
+    expect(input).not.toBeNull();
+    fireEvent.change(input, { target: { files: [file] } });
+    await vi.waitFor(() => {
+      const scene = useEditorStore.getState().scene;
+      expect(scene.layers[scene.layers.length - 1]?.mediaUrl).toBe("data:image/png;base64,xyz");
+    });
+  });
+
+  it("shows a drop error for unsupported media", async () => {
+    mockLoadFile.loadMediaFromFile.mockRejectedValue(new mockLoadFile.UnsupportedMediaError("unsupported message"));
+    renderScene();
+    fireEvent.drop(document.querySelector(".panel")!, { dataTransfer: { files: [file] } });
+    expect(await screen.findByRole("alert")).toHaveTextContent("unsupported message");
+  });
+
+  it("shows the generic upload error for unexpected failures", async () => {
+    mockLoadFile.loadMediaFromFile.mockRejectedValue(new Error("boom"));
+    renderScene();
+    fireEvent.drop(document.querySelector(".panel")!, { dataTransfer: { files: [file] } });
+    expect(await screen.findByRole("alert")).toHaveTextContent("editor.uploadError");
+  });
+
+  it("clears the active media", () => {
+    renderScene();
+    fireEvent.click(screen.getByText("editor.clearMedia"));
+    const layer = useEditorStore.getState().scene.layers[0];
+    expect(layer?.mediaUrl).toBeNull();
+    expect(layer?.mediaType).toBe("none");
+  });
+
+  it("tracks drag enter/leave to show the drop outline", () => {
+    renderScene();
+    const panel = document.querySelector(".panel") as HTMLElement;
+    fireEvent.dragEnter(panel);
+    expect(panel.style.outline).toContain("#00d9ff");
+    fireEvent.dragLeave(panel);
+    expect(panel.style.outline).toContain("transparent");
+  });
+
+  it("ignores drops without a file", async () => {
+    renderScene();
+    const before = useEditorStore.getState().scene.layers.length;
+    fireEvent.drop(document.querySelector(".panel")!, { dataTransfer: { files: [] } });
+    expect(useEditorStore.getState().scene.layers.length).toBe(before);
+  });
+});
+
+describe("PreviewCanvas grid divisions", () => {
+  it("changes grid divisions via the select", () => {
+    renderScene();
+    fireEvent.click(screen.getByRole("button", { name: "editor.grid" }));
+    const select = screen.getByRole("combobox");
+    fireEvent.change(select, { target: { value: "16" } });
+    expect(useEditorStore.getState().gridDivisions).toBe(16);
+  });
+});
+
+describe("PreviewCanvas gestures", () => {
+  it("zooms via two-finger pinch", () => {
+    renderScene();
+    const panel = document.querySelector(".panel") as HTMLElement;
+    const touch = (x: number, y: number) => ({ clientX: x, clientY: y });
+    fireEvent.touchStart(panel, { touches: [touch(0, 0), touch(100, 0)] });
+    fireEvent.touchMove(panel, { touches: [touch(0, 0), touch(150, 0)] });
+    expect(useEditorStore.getState().scene.layers[0]?.zoom).toBeCloseTo(1.5);
+    fireEvent.touchEnd(panel, { touches: [touch(0, 0)] });
+  });
+
+  it("pans the media on pointer drag", () => {
+    renderScene();
+    const frame = document.querySelector("[data-mockup-frame]") as HTMLElement;
+    fireEvent.pointerDown(frame, { pointerId: 1, clientX: 100, clientY: 100 });
+    fireEvent.pointerMove(frame, { pointerId: 1, clientX: 101, clientY: 100 });
+    const layer = useEditorStore.getState().scene.layers[0];
+    expect(layer?.mediaOffsetX).toBe(1);
+    expect(layer?.mediaOffsetY).toBe(0);
+    fireEvent.pointerUp(frame, { pointerId: 1, clientX: 101, clientY: 100 });
+  });
+
+  it("does not start panning without media", () => {
+    const scene: EditorScene = {
+      ...initialScene,
+      layers: [{ ...initialScene.layers[0]!, mediaUrl: null, mediaType: "none" }],
+      annotations: [],
+    };
+    render(<PreviewCanvas scene={scene} />);
+    const frame = document.querySelector("[data-mockup-frame]") as HTMLElement;
+    fireEvent.pointerDown(frame, { pointerId: 1, clientX: 100, clientY: 100 });
+    fireEvent.pointerMove(frame, { pointerId: 1, clientX: 120, clientY: 100 });
+    expect(useEditorStore.getState().scene.layers[0]?.mediaOffsetX).toBe(0);
+  });
+});
+
+describe("PreviewCanvas multi-frame", () => {
+  it("renders one instance per frame and selects on Enter", () => {
+    const layers: MediaLayer[] = [{ ...initialScene.layers[0]!, id: "l1", mediaUrl: null, mediaType: "none" }];
+    const instances = [
+      { id: "i1", frame: "iphone16pro" as const, x: 0.1, y: 0.2, scale: 0.5, layerId: "l1" },
+      { id: "i2", frame: "iphone16pro" as const, x: 0.5, y: 0.5, scale: 0.5, layerId: "l1" },
+    ];
+    renderScene({ layers, frameInstances: instances });
+    expect(document.querySelectorAll(".frame-instance").length).toBe(2);
+    fireEvent.keyDown(document.querySelector(".frame-instance")!, { key: "Enter" });
+    expect(useEditorStore.getState().activeFrameInstanceId).toBe("i1");
+  });
+
+  it("hides instances whose layer is hidden", () => {
+    const layers: MediaLayer[] = [{ ...initialScene.layers[0]!, id: "l1", mediaUrl: null, mediaType: "none", hidden: true }];
+    const instances = [
+      { id: "i1", frame: "iphone16pro" as const, x: 0.1, y: 0.2, scale: 0.5, layerId: "l1" },
+    ];
+    renderScene({ layers, frameInstances: instances });
+    expect(document.querySelectorAll(".frame-instance").length).toBe(0);
   });
 });

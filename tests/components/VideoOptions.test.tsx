@@ -1,9 +1,15 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { VideoOptions } from "@/components/editor/VideoOptions";
-import { useEditorStore } from "@/lib/state/editorStore";
+import { useEditorStore, initialScene } from "@/lib/state/editorStore";
+
+const mockLoadFile = vi.hoisted(() => ({
+  isAudioFile: vi.fn(),
+  blobToDataUrl: vi.fn()
+}));
+vi.mock("@/lib/media/loadFile", () => mockLoadFile);
 
 function setVideoLayer() {
   useEditorStore.setState({
@@ -63,9 +69,15 @@ function setImageLayer() {
   });
 }
 
+beforeEach(() => {
+  mockLoadFile.isAudioFile.mockReset().mockReturnValue(true);
+  mockLoadFile.blobToDataUrl.mockReset().mockResolvedValue("data:audio/mp3;base64,abc");
+  useEditorStore.setState({ videoCurrentTime: 0 });
+});
+
 afterEach(() => {
   cleanup();
-  useEditorStore.setState({ scene: useEditorStore.getState().scene });
+  useEditorStore.setState({ scene: { ...initialScene }, videoCurrentTime: 0 });
 });
 
 describe("VideoOptions", () => {
@@ -108,5 +120,87 @@ describe("VideoOptions", () => {
     setVideoLayer();
     render(<VideoOptions />);
     expect(screen.getByRole("slider", { name: "video.posterTime" })).toBeInTheDocument();
+  });
+});
+
+describe("VideoOptions controls", () => {
+  it("toggles muted", () => {
+    setVideoLayer();
+    render(<VideoOptions />);
+    fireEvent.click(screen.getByRole("checkbox", { name: "video.muted" }));
+    expect(useEditorStore.getState().scene.layers[0]?.videoMuted).toBe(true);
+  });
+
+  it("toggles loop", () => {
+    setVideoLayer();
+    render(<VideoOptions />);
+    fireEvent.click(screen.getByRole("checkbox", { name: "video.loop" }));
+    expect(useEditorStore.getState().scene.layers[0]?.videoLoop).toBe(true);
+  });
+
+  it("toggles autoplay", () => {
+    setVideoLayer();
+    render(<VideoOptions />);
+    fireEvent.click(screen.getByRole("checkbox", { name: "video.autoplay" }));
+    expect(useEditorStore.getState().scene.layers[0]?.videoAutoplay).toBe(true);
+  });
+
+  it("updates the poster time from the slider", () => {
+    setVideoLayer();
+    render(<VideoOptions />);
+    fireEvent.change(screen.getByRole("slider", { name: "video.posterTime" }), { target: { value: "3.5" } });
+    expect(useEditorStore.getState().scene.layers[0]?.videoPosterTime).toBe(3.5);
+  });
+
+  it("updates the playback position from the slider", () => {
+    setVideoLayer();
+    render(<VideoOptions />);
+    fireEvent.change(screen.getByRole("slider", { name: "video.playbackPosition" }), { target: { value: "4.2" } });
+    expect(useEditorStore.getState().videoCurrentTime).toBe(4.2);
+  });
+
+  it("updates the export quality", () => {
+    setVideoLayer();
+    render(<VideoOptions />);
+    fireEvent.change(screen.getByRole("combobox", { name: "video.exportQuality" }), { target: { value: "high" } });
+    expect(useEditorStore.getState().scene.layers[0]?.videoQuality).toBe("high");
+  });
+});
+
+describe("VideoOptions background audio", () => {
+  it("uploads an audio file as background audio", async () => {
+    setVideoLayer();
+    render(<VideoOptions />);
+    const file = new File(["x"], "song.mp3", { type: "audio/mp3" });
+    const input = document.querySelector('.upload-audio-btn input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+    await screen.findByText("song.mp3");
+    const scene = useEditorStore.getState().scene;
+    expect(scene.backgroundAudioUrl).toBe("data:audio/mp3;base64,abc");
+    expect(scene.backgroundAudioName).toBe("song.mp3");
+  });
+
+  it("ignores non-audio uploads", async () => {
+    mockLoadFile.isAudioFile.mockReturnValue(false);
+    setVideoLayer();
+    render(<VideoOptions />);
+    const file = new File(["x"], "song.mp3", { type: "audio/mp3" });
+    const input = document.querySelector('.upload-audio-btn input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+    expect(useEditorStore.getState().scene.backgroundAudioUrl).toBeNull();
+  });
+
+  it("clears the background audio", async () => {
+    setVideoLayer();
+    useEditorStore.setState({
+      scene: { ...useEditorStore.getState().scene, backgroundAudioUrl: "data:audio/mp3;base64,abc", backgroundAudioName: "song.mp3" },
+    });
+    render(<VideoOptions />);
+    expect(screen.getByText("song.mp3")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("video.removeAudio"));
+    const scene = useEditorStore.getState().scene;
+    expect(scene.backgroundAudioUrl).toBeNull();
+    expect(scene.backgroundAudioName).toBeNull();
+    expect(screen.getByText("video.uploadAudio")).toBeInTheDocument();
   });
 });
