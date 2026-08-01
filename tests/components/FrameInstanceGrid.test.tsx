@@ -51,7 +51,7 @@ function renderGrid(scene: EditorScene, snapDivisions: number | null = null) {
         toJSON: () => ""
       }))
     }
-  } as React.RefObject<HTMLDivElement | null>;
+  } as unknown as React.RefObject<HTMLDivElement | null>;
 
   return render(
     <FrameInstanceGrid
