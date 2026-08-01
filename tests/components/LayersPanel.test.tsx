@@ -1,5 +1,7 @@
+import { initialScene } from "@/lib/state/editorStore";
+
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { LayersPanel } from "@/components/editor/LayersPanel";
@@ -31,8 +33,25 @@ function makeLayer(id: string, overrides: Record<string, unknown> = {}) {
 
 afterEach(() => {
   cleanup();
-  useEditorStore.setState({ scene: useEditorStore.getState().scene });
+  useEditorStore.setState({
+    scene: { ...initialScene, layers: [makeLayer("x")], activeLayerId: "x" },
+    past: [],
+    future: [],
+  });
 });
+
+function renderPanel(opts?: { layers?: ReturnType<typeof makeLayer>[]; activeLayerId?: string }) {
+  if (opts) {
+    useEditorStore.setState({
+      scene: {
+        ...useEditorStore.getState().scene,
+        layers: opts.layers ?? useEditorStore.getState().scene.layers,
+        activeLayerId: opts.activeLayerId ?? useEditorStore.getState().scene.activeLayerId,
+      },
+    });
+  }
+  return render(<LayersPanel />);
+}
 
 describe("LayersPanel", () => {
   it("renders add layer button", () => {
@@ -121,55 +140,59 @@ describe("LayersPanel", () => {
     expect(screen.getByText("editor.clearMedia")).toBeInTheDocument();
   });
 
-  it("reorders layers via drag-and-drop", () => {
-    useEditorStore.setState({
-      scene: {
-        ...useEditorStore.getState().scene,
-        layers: [
-          makeLayer("a", { mediaName: "A" }),
-          makeLayer("b", { mediaName: "B" }),
-          makeLayer("c", { mediaName: "C" }),
-        ],
-        activeLayerId: "a",
-      }
+  it("reorders layers via drag-and-drop (pointer)", () => {
+    renderPanel({
+      layers: [
+        makeLayer("a", { mediaName: "A" }),
+        makeLayer("b", { mediaName: "B" }),
+        makeLayer("c", { mediaName: "C" }),
+      ],
+      activeLayerId: "a",
     });
     render(<LayersPanel />);
+    const grips = document.querySelectorAll(".layer-grip");
     const items = screen.getAllByRole("listitem");
-    const a = items[0]!;
-    const b = items[1]!;
-    expect(a).toHaveTextContent("A");
-    expect(b).toHaveTextContent("B");
+    expect(grips.length).toBe(3);
 
-    // Drag "A" and hover it below the midpoint of "B".
-    fireEvent.dragStart(a);
-    fireEvent.dragOver(b, { clientY: 100 });
+    // Mock B's rect so clientY=100 lands inside it
+    vi.spyOn(items[1]!, "getBoundingClientRect").mockReturnValue({
+      top: 0, bottom: 300, height: 300, left: 0, right: 0, width: 0, x: 0, y: 0,
+      toJSON: () => "",
+    } as DOMRect);
+
+    // Drag grip for A over B
+    fireEvent.pointerDown(grips[0]!, { clientY: 10, button: 0 });
+    fireEvent.pointerMove(grips[0]!, { clientY: 100 });
     expect(useEditorStore.getState().scene.layers.map((l) => l.mediaName)).toEqual(["B", "A", "C"]);
+
+    fireEvent.pointerUp(grips[0]!);
   });
 
-  it("drops the dragged layer above the target", () => {
-    useEditorStore.setState({
-      scene: {
-        ...useEditorStore.getState().scene,
-        layers: [
-          makeLayer("a", { mediaName: "A" }),
-          makeLayer("b", { mediaName: "B" }),
-          makeLayer("c", { mediaName: "C" }),
-        ],
-        activeLayerId: "a",
-      }
+  it("drops the dragged layer above the target (pointer)", () => {
+    renderPanel({
+      layers: [
+        makeLayer("a", { mediaName: "A" }),
+        makeLayer("b", { mediaName: "B" }),
+        makeLayer("c", { mediaName: "C" }),
+      ],
+      activeLayerId: "a",
     });
     render(<LayersPanel />);
+    const grips = document.querySelectorAll(".layer-grip");
     const items = screen.getAllByRole("listitem");
-    const a = items[0]!;
-    const b = items[1]!;
     const c = items[2]!;
-    // Force a tall rect so clientY=100 is below the midpoint -> "below".
-    const rect = { top: 0, bottom: 300, height: 300 } as DOMRect;
-    b.getBoundingClientRect = () => rect;
+    expect(c).toHaveTextContent("C");
 
-    fireEvent.dragStart(a);
-    fireEvent.dragOver(b, { clientY: 100 });
-    fireEvent.drop(b, { clientY: 100 });
+    // Mock B's rect so clientY=100 maps to "below"
+    vi.spyOn(items[1]!, "getBoundingClientRect").mockReturnValue({
+      top: 0, bottom: 300, height: 300, left: 0, right: 0, width: 0, x: 0, y: 0,
+      toJSON: () => "",
+    } as DOMRect);
+
+    fireEvent.pointerDown(grips[0]!, { clientY: 10, button: 0 });
+    fireEvent.pointerMove(grips[0]!, { clientY: 100 });
+    fireEvent.pointerUp(grips[0]!);
+
     expect(useEditorStore.getState().scene.layers.map((l) => l.mediaName)).toEqual(["B", "A", "C"]);
     expect(c).toHaveTextContent("C");
   });
