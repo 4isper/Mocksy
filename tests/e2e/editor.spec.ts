@@ -1289,7 +1289,7 @@ test("skip link navigates to main content on Enter", async ({ page }) => {
 
 test("frame instances have keyboard-accessible role and tabindex", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("[data-mockup-frame]")).toBeVisible();
+  await expect(page.locator("[data-mockup-frame]").first()).toBeVisible();
   const frame = page.locator(".frame-instance").first();
   await expect(frame).toHaveAttribute("role", "button");
   await expect(frame).toHaveAttribute("tabindex", "0");
