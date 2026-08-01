@@ -1,7 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { buildAnimationCss, buildHtmlSnippet, buildRasterHtmlSnippet, serializeCssProperties } from "@/lib/export/exportHtml";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { buildAnimationCss, buildHtmlSnippet, buildRasterHtmlSnippet, exportHtml, serializeCssProperties } from "@/lib/export/exportHtml";
 import { initialScene } from "@/lib/state/editorStore";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
 
 const MEDIA = "data:image/png;base64,AAAA";
 const BG = "data:image/png;base64,BG";
@@ -118,6 +123,28 @@ describe("buildHtmlSnippet", () => {
     expect(html).toContain("font-weight:400;font-style:italic;text-align:center");
   });
 
+  it("renders rectangle annotations as bordered divs", () => {
+    const scene = sceneWith({
+      annotations: [
+        { id: "a2", type: "rect", x: 0.1, y: 0.2, w: 0.3, h: 0.2, text: "", color: "#ffff00", strokeWidth: 3, fontSize: 0 }
+      ]
+    });
+    const html = buildHtmlSnippet(scene, { mediaHref: null, mediaType: null, backgroundHref: null, overlayHref: null });
+    expect(html).toContain('<div class="anno" style="left:10%;top:20%;width:30%;height:20%;border:3px solid #ffff00"></div>');
+  });
+
+  it("renders arrow annotations as an inline svg with a line and arrowhead", () => {
+    const scene = sceneWith({
+      annotations: [
+        { id: "a3", type: "arrow", x: 0.1, y: 0.3, w: 0.4, h: 0.2, text: "", color: "#00ff00", strokeWidth: 2, fontSize: 0 }
+      ]
+    });
+    const html = buildHtmlSnippet(scene, { mediaHref: null, mediaType: null, backgroundHref: null, overlayHref: null });
+    expect(html).toContain('<svg class="anno" viewBox="0 0 16 9"');
+    expect(html).toContain('<line x1="1.6" y1="2.7" x2="8" y2="4.5" stroke="#00ff00" stroke-width="2" stroke-linecap="round"/>');
+    expect(html).toContain('<polygon points="8,4.5 ');
+  });
+
   it("adds keyframe animation CSS for animated layers", () => {
     const scene = sceneWith({ animationDurationMs: 5000 });
     scene.layers[0] = layerWith({ animationPreset: "zoomIn" });
@@ -147,5 +174,32 @@ describe("buildRasterHtmlSnippet", () => {
   it("embeds the rasterized image", () => {
     const html = buildRasterHtmlSnippet(MEDIA);
     expect(html).toContain('<img src="data:image/png;base64,AAAA" alt="Mocksy mockup"/>');
+  });
+});
+
+describe("exportHtml", () => {
+  it("downloads a standalone HTML snippet for a single-frame scene", async () => {
+    const scene = sceneWith({ frame: "none", backgroundMode: "transparent", watermarkEnabled: false });
+    const link = { href: "", download: "", click: vi.fn() };
+    vi.stubGlobal("document", { createElement: (tag: string) => (tag === "a" ? link : undefined) });
+    const createObjectURL = vi.fn((_blob: Blob) => "blob:mock");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
+    vi.useFakeTimers();
+
+    await exportHtml(scene, "preview");
+    await vi.advanceTimersByTimeAsync(300);
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    const blob = createObjectURL.mock.calls[0]![0] as Blob;
+    expect(blob.type).toBe("text/html;charset=utf-8");
+    const html = await blob.text();
+    expect(html).toMatch(/^<!doctype html>/);
+    // The demo media is a data: URL, so it embeds as-is without a fetch.
+    expect(html).toContain('src="data:image/svg+xml');
+    expect(link.href).toBe("blob:mock");
+    expect(link.download).toBe("mocksy-export.html");
+    expect(link.click).toHaveBeenCalled();
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:mock");
   });
 });

@@ -1,8 +1,50 @@
-import { describe, expect, it } from "vitest";
-import { buildSvgMarkup } from "@/lib/export/exportSvg";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { buildSvgMarkup, exportSvg, inlineSvgAsset, mediaToDataUrl, videoToDataUrl } from "@/lib/export/exportSvg";
 import { computeFrameBox } from "@/lib/render/frameGeometry";
 import { initialScene } from "@/lib/state/editorStore";
 import type { EditorScene } from "@/lib/types/editor";
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
+/** Installs a fake global `Image` so `loadMediaElement` resolves deterministically. */
+function stubImage({ naturalWidth = 100, naturalHeight = 50 } = {}) {
+  const instances: Array<{ onload: (() => void) | null; onerror: (() => void) | null; src: string }> = [];
+  class FakeImage {
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    naturalWidth = naturalWidth;
+    naturalHeight = naturalHeight;
+    width = naturalWidth;
+    height = naturalHeight;
+    complete = true;
+    src = "";
+    constructor() {
+      instances.push(this);
+    }
+  }
+  vi.stubGlobal("Image", FakeImage);
+  return {
+    resolve: () => instances.forEach((i) => i.onload?.()),
+    reject: () => instances.forEach((i) => i.onerror?.())
+  };
+}
+
+/** Installs a fake `document` whose createElement("canvas") returns a mock canvas. */
+function stubCanvas(getCtx: () => unknown) {
+  const canvas = {
+    width: 0,
+    height: 0,
+    getContext: vi.fn(getCtx),
+    toDataURL: vi.fn(() => "data:image/png;base64,REENCODED")
+  } as unknown as HTMLCanvasElement;
+  vi.stubGlobal("document", {
+    createElement: (tag: string) => (tag === "canvas" ? canvas : undefined)
+  });
+  return canvas;
+}
 
 const MEDIA = "data:image/png;base64,AAAA";
 const BG = "data:image/png;base64,BG";
@@ -177,5 +219,151 @@ describe("buildSvgMarkup", () => {
     const scene = sceneWith({ backgroundMode: "transparent", watermarkEnabled: false, watermarkText: "Mocksy" });
     const markup = buildSvgMarkup(scene, { width: 800, height: 600, backgroundHref: null, groups: [] });
     expect(markup).not.toContain(">Mocksy</text>");
+  });
+});
+
+describe("mediaToDataUrl", () => {
+  it("passes data URLs through unchanged with their intrinsic size", async () => {
+    const image = stubImage({ naturalWidth: 320, naturalHeight: 240 });
+    const src = "data:image/png;base64,AAAA";
+    const promise = mediaToDataUrl(src);
+    image.resolve();
+    await expect(promise).resolves.toEqual({ href: src, width: 320, height: 240 });
+  });
+
+  it("re-encodes blob/http URLs through a canvas so the SVG is self-contained", async () => {
+    const image = stubImage({ naturalWidth: 320, naturalHeight: 240 });
+    const ctx = { drawImage: vi.fn() };
+    const canvas = stubCanvas(() => ctx);
+    const promise = mediaToDataUrl("https://example.com/media.png");
+    image.resolve();
+    await expect(promise).resolves.toEqual({ href: "data:image/png;base64,REENCODED", width: 320, height: 240 });
+    expect(canvas.width).toBe(320);
+    expect(canvas.height).toBe(240);
+    expect(ctx.drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0);
+  });
+
+  it("falls back to the raw URL when the canvas context is unavailable", async () => {
+    const image = stubImage();
+    stubCanvas(() => null);
+    const src = "https://example.com/media.png";
+    const promise = mediaToDataUrl(src);
+    image.resolve();
+    await expect(promise).resolves.toEqual({ href: src, width: 100, height: 50 });
+  });
+
+  it("returns null when the image fails to load", async () => {
+    const image = stubImage();
+    const promise = mediaToDataUrl("https://example.com/broken.png");
+    image.reject();
+    await expect(promise).resolves.toBeNull();
+  });
+});
+
+describe("videoToDataUrl", () => {
+  it("returns null for a video with no decoded dimensions", () => {
+    const video = { videoWidth: 0, videoHeight: 0 } as HTMLVideoElement;
+    expect(videoToDataUrl(video)).toBeNull();
+  });
+
+  it("captures the current frame as a PNG data URL", () => {
+    const ctx = { drawImage: vi.fn() };
+    const canvas = stubCanvas(() => ctx);
+    const video = { videoWidth: 640, videoHeight: 360 } as HTMLVideoElement;
+    expect(videoToDataUrl(video)).toEqual({ href: "data:image/png;base64,REENCODED", width: 640, height: 360 });
+    expect(canvas.width).toBe(640);
+    expect(canvas.height).toBe(360);
+    expect(ctx.drawImage).toHaveBeenCalledWith(video, 0, 0);
+  });
+
+  it("returns null when drawing the frame throws", () => {
+    stubCanvas(() => ({
+      drawImage: () => {
+        throw new Error("tainted canvas");
+      }
+    }));
+    const video = { videoWidth: 640, videoHeight: 360 } as HTMLVideoElement;
+    expect(videoToDataUrl(video)).toBeNull();
+  });
+});
+
+describe("inlineSvgAsset", () => {
+  it("strips the xml prolog and svg root, wrapping inner markup in a group", async () => {
+    const svg = `<?xml version="1.0"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844"><rect fill="red"/><circle cx="5" cy="5" r="2"/></svg>`;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ text: async () => svg }));
+    await expect(inlineSvgAsset("/devices/iphone.svg")).resolves.toBe(
+      '<g><rect fill="red"/><circle cx="5" cy="5" r="2"/></g>'
+    );
+  });
+
+  it("returns null when the asset cannot be fetched", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    await expect(inlineSvgAsset("/devices/iphone.svg")).resolves.toBeNull();
+  });
+});
+
+describe("exportSvg", () => {
+  it("downloads a standalone SVG built from the live preview", async () => {
+    const scene = sceneWith({ frame: "none", backgroundMode: "transparent", watermarkEnabled: false });
+    vi.stubGlobal("HTMLImageElement", class {});
+    vi.stubGlobal("HTMLVideoElement", class {});
+
+    const img = new (globalThis.HTMLImageElement as unknown as new () => HTMLImageElement)();
+    Object.assign(img, { src: MEDIA, complete: true, naturalWidth: 400, naturalHeight: 300 });
+
+    const node = {
+      clientWidth: 800,
+      clientHeight: 600,
+      querySelector: (selector: string) => {
+        if (selector === "img") return img;
+        if (selector === "video") return null;
+        if (selector === "[data-mockup-frame]") return null;
+        return null;
+      }
+    } as unknown as HTMLElement;
+
+    const link = { href: "", download: "", click: vi.fn() };
+    vi.stubGlobal("document", {
+      getElementById: () => node,
+      createElement: (tag: string) => (tag === "a" ? link : undefined)
+    });
+    const createObjectURL = vi.fn((_blob: Blob) => "blob:mock");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
+    vi.useFakeTimers();
+
+    await exportSvg(scene, "preview");
+    await vi.advanceTimersByTimeAsync(300);
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    const blob = createObjectURL.mock.calls[0]![0] as Blob;
+    expect(blob.type).toBe("image/svg+xml");
+    const markup = await blob.text();
+    expect(markup).toMatch(/^<svg /);
+    expect(markup).toMatch(/<\/svg>$/);
+    expect(markup).toContain('<image href="data:image/png;base64,AAAA"');
+    expect(link.href).toBe("blob:mock");
+    expect(link.download).toBe("mocksy-export.svg");
+    expect(link.click).toHaveBeenCalled();
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:mock");
+
+    vi.useRealTimers();
+  });
+
+  it("reports an error when the preview area is missing", async () => {
+    const scene = sceneWith({ frame: "none" });
+    vi.stubGlobal("document", { getElementById: () => null });
+    const onError = vi.fn();
+    await exportSvg(scene, "missing", "out", onError);
+    expect(onError).toHaveBeenCalledWith("Preview area not found.");
+  });
+
+  it("reports an error when the preview has no measurable size", async () => {
+    const scene = sceneWith({ frame: "none" });
+    const node = { clientWidth: 0, clientHeight: 0, querySelector: () => null } as unknown as HTMLElement;
+    vi.stubGlobal("document", { getElementById: () => node });
+    const onError = vi.fn();
+    await exportSvg(scene, "preview", "out", onError);
+    expect(onError).toHaveBeenCalledWith("Preview has no measurable size.");
   });
 });
