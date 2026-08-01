@@ -45,6 +45,15 @@ Free browser-based mockup editor (Next.js 15 + React 19 + TypeScript). All media
 1. Add entry to `sceneStylePresets` or `backgroundPresets` in `lib/presets/presets.ts`.
 2. Add test to `tests/unit/presets.test.ts`.
 
+### Adding a layout preset
+
+1. Add value to `LayoutPreset` in `lib/types/editor.ts`.
+2. Add key to `LAYOUT_PRESETS` in `lib/state/editorHelpers.ts`.
+3. Add layout handler in `buildAutoLayout` (`lib/state/editorHelpers.ts`).
+4. Add translation keys in `messages/en.json` and `messages/ru.json` (`editor.layoutName`).
+5. Add button to the layout section in `ControlPanel.tsx`.
+6. Add tests to `tests/unit/autoLayout.test.ts` and e2e if visible.
+
 ## State management
 
 - **`editorStore.ts`** — scene, layers, annotations, undo/redo (`pushHistory` with 100-entry limit, 400ms slider-drag coalescing). UI-only state (`exportScale`, `isMediaLoading`, `scenePalette`, `selectedAnnotationId`) lives **outside** `scene` so it doesn't pollute undo history or share URLs.
@@ -88,6 +97,9 @@ tests/e2e/        Playwright (42 tests in editor.spec.ts)
 
 - `npm run test` — Vitest (165 tests, 16 files)
 - `npm run test:e2e` — Playwright (requires browser install, needs dev server)
+- `npm run test:vrt` — Visual regression tests via Playwright
+- `npm run test:vrt:update` — Update visual regression baselines
+- `npm run test:lhci` — Lighthouse CI (requires built app + server)
 - Pure functions (normalization, frames, palette, video timeline) should be tested without mocks.
 - Use `vi.stubGlobal` or `vi.stubEnv` for browser APIs / localStorage.
 

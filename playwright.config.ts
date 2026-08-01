@@ -10,6 +10,7 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
+      testIgnore: /.*visual\.spec\.ts/,
       use: {
         ...devices["Desktop Chrome"],
         // ffmpeg-core.wasm (32MB) loads + converts in-browser; disable the
@@ -17,6 +18,18 @@ export default defineConfig({
         launchOptions: {
           chromiumSandbox: false,
           args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"]
+        }
+      }
+    },
+    {
+      name: "chromium-vrt",
+      testMatch: /.*visual\.spec\.ts/,
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 900 },
+        launchOptions: {
+          chromiumSandbox: false,
+          args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--font-render-hinting=none"]
         }
       }
     }

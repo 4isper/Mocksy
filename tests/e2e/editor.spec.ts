@@ -1476,6 +1476,50 @@ test("export dialog shows error when no media is uploaded", async ({ page }) => 
   expect(buffer.length).toBeGreaterThanOrEqual(0);
 });
 
+test("applying a fan layout preset rearranges frames in a fan pattern", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Fan" }).click();
+  await page.waitForTimeout(400);
+
+  const frames = page.locator("[data-mockup-frame]");
+  await expect(frames).toHaveCount(2);
+
+  const leftX = await frames.first().evaluate((el) => el.getBoundingClientRect().left);
+  const rightX = await frames.last().evaluate((el) => el.getBoundingClientRect().left);
+  expect(leftX).toBeLessThan(rightX);
+});
+
+test("applying a cascade layout preset rearranges frames diagonally", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Cascade" }).click();
+  await page.waitForTimeout(400);
+
+  const frames = page.locator("[data-mockup-frame]");
+  await expect(frames).toHaveCount(2);
+
+  const firstRect = await frames.first().boundingBox();
+  const lastRect = await frames.last().boundingBox();
+  expect(firstRect).toBeTruthy();
+  expect(lastRect).toBeTruthy();
+  expect(firstRect!.x).toBeLessThan(lastRect!.x);
+  expect(firstRect!.y).toBeLessThan(lastRect!.y);
+});
+
+test("applying a stack layout preset overlaps frames", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Stack" }).click();
+  await page.waitForTimeout(400);
+
+  const frames = page.locator("[data-mockup-frame]");
+  await expect(frames).toHaveCount(2);
+
+  const boxes = await frames.evaluateAll((els) =>
+    els.map((el) => el.getBoundingClientRect())
+  );
+  expect(boxes[0]!.left).toBeLessThan(boxes[1]!.right);
+  expect(boxes[1]!.left).toBeGreaterThan(boxes[0]!.left);
+});
+
 
 
 

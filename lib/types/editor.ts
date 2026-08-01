@@ -36,6 +36,7 @@ export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax";
 export type MediaType = "none" | "image" | "video";
 export type VideoQuality = "low" | "medium" | "high";
 export type WatermarkPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
+export type LayoutPreset = "grid" | "fan" | "cascade" | "masonry" | "stack";
 
 /** Absolute pixel dimensions for a custom-size export. When set, it overrides
  *  the 1×/2×/4× scale control for raster formats (PNG, WebP, MP4, WebM). */

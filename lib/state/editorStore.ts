@@ -21,12 +21,13 @@ import {
   activeLayer,
   activeOf,
   activePosterTime,
+  buildAutoLayout,
   makeAnnotation,
   makeDemoLayer,
   nextLayerId,
   patchActive,
   pushHistory,
-  layoutFrameGrid
+  layoutFrameGrid as layoutFrameGridHelper
 } from "@/lib/state/editorHelpers";
 
 export interface EditorStoreState {
@@ -95,6 +96,7 @@ export interface EditorStoreState {
   updateFrameInstance: (id: string, patch: Partial<FrameInstance>, coalesce?: boolean) => void;
   removeFrameInstance: (id: string) => void;
   layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") => void;
+  applyFrameLayout: (frame: MockupFrame, count: number, layout: import("@/lib/types/editor").LayoutPreset) => void;
   setStylePreset: (stylePreset: StylePreset) => void;
   setAnimationPreset: (animationPreset: AnimationPreset) => void;
   setAnimationDuration: (durationMs: number) => void;
@@ -167,7 +169,7 @@ initialScene.activeLayerId = initialScene.layers[0]?.id ?? null;
  *  see the multi-frame capability. */
 export function makeDemoScene(): EditorScene {
   const count = 2;
-  const instances = layoutFrameGrid("iphone", count, "horizontal");
+      const instances = layoutFrameGridHelper("iphone", count, "horizontal");
   const layers = Array.from({ length: count }, () => ({
     ...makeDemoLayer(),
     id: nextLayerId()
@@ -226,7 +228,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   resetScene: () =>
     set((s) => {
       const count = 2;
-      const instances = layoutFrameGrid("iphone", count, "horizontal");
+  const instances = layoutFrameGridHelper("iphone", count, "horizontal");
       const layers = Array.from({ length: count }, () => ({
         ...makeDemoLayer(),
         id: nextLayerId()
@@ -381,8 +383,31 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
     }),
   layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") =>
     set((s) => {
-      const instances = layoutFrameGrid(frame, count, direction);
+      const instances = layoutFrameGridHelper(frame, count, direction);
       // Create new layers for each frame instance (clone from active layer)
+      const activeLayerData = activeLayer(s.scene);
+      const newLayers = instances.map((inst) => ({
+        ...(activeLayerData ?? makeDemoLayer()),
+        id: nextLayerId(),
+        hidden: false,
+        animationPreset: "none" as const
+      }));
+      const allLayers = [...s.scene.layers, ...newLayers];
+      const layerIds = newLayers.map(l => l.id);
+      const instancesWithLayers = instances.map((inst, i) => ({
+        ...inst,
+        layerId: layerIds[i] ?? null
+      }));
+      return pushHistory(s, {
+        ...s.scene,
+        layers: allLayers,
+        frameInstances: instancesWithLayers,
+        activeLayerId: layerIds[0] ?? s.scene.activeLayerId
+      });
+    }),
+  applyFrameLayout: (frame: MockupFrame, count: number, layout: import("@/lib/types/editor").LayoutPreset) =>
+    set((s) => {
+      const instances = buildAutoLayout(frame, count, layout, s.scene.aspectRatio);
       const activeLayerData = activeLayer(s.scene);
       const newLayers = instances.map((inst) => ({
         ...(activeLayerData ?? makeDemoLayer()),
