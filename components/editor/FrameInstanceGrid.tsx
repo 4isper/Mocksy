@@ -1,11 +1,15 @@
 "use client";
 
+import { useRef, useCallback, useState } from "react";
 import type { CSSProperties } from "react";
 import { useTranslations } from "next-intl";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import type { SceneCss } from "@/lib/render/mockupRenderer";
+import { useEditorStore } from "@/lib/state/editorStore";
+
+import { snapToGrid } from "@/lib/render/grid";
 
 interface FrameInstanceGridProps {
   scene: EditorScene;
@@ -15,6 +19,18 @@ interface FrameInstanceGridProps {
   selectFrameInstance: (id: string | null) => void;
   analyzeMedia: (el: HTMLImageElement | HTMLVideoElement) => void;
   setVideoDuration: (duration: number, layerId?: string) => void;
+  canvasRef: React.RefObject<HTMLDivElement | null>;
+  /** Number of grid divisions for snap-to-grid; null disables snapping. */
+  snapDivisions: number | null;
+}
+
+interface DragState {
+  id: string;
+  startX: number;
+  startY: number;
+  initialInstX: number;
+  initialInstY: number;
+  moved: boolean;
 }
 
 export function FrameInstanceGrid({
@@ -24,9 +40,97 @@ export function FrameInstanceGrid({
   activeFrameInstanceId,
   selectFrameInstance,
   analyzeMedia,
-  setVideoDuration
+  setVideoDuration,
+  canvasRef,
+  snapDivisions
 }: FrameInstanceGridProps) {
   const t = useTranslations();
+  const updateFrameInstance = useEditorStore((s) => s.updateFrameInstance);
+  const dragState = useRef<DragState | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+
+  const getCanvasRect = useCallback(() => {
+    return canvasRef.current?.getBoundingClientRect();
+  }, [canvasRef]);
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>, instId: string) => {
+      const canvasRect = getCanvasRect();
+      if (!canvasRect || canvasRect.width === 0 || canvasRect.height === 0) return;
+
+      const inst = scene.frameInstances.find((fi) => fi.id === instId);
+      if (!inst) return;
+
+      if (e.button !== 0) return;
+      const target = e.target as HTMLElement;
+      if (target.closest("video") || target.closest("button") || target.closest("input")) return;
+
+      dragState.current = {
+        id: instId,
+        startX: e.clientX,
+        startY: e.clientY,
+        initialInstX: inst.x,
+        initialInstY: inst.y,
+        moved: false
+      };
+      selectFrameInstance(instId);
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      e.preventDefault();
+    },
+    [getCanvasRect, scene.frameInstances, selectFrameInstance]
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>, instId: string) => {
+      const ds = dragState.current;
+      if (!ds || ds.id !== instId) return;
+
+      const canvasRect = getCanvasRect();
+      if (!canvasRect || canvasRect.width === 0 || canvasRect.height === 0) return;
+
+      const dxPx = e.clientX - ds.startX;
+      const dyPx = e.clientY - ds.startY;
+
+      if (!ds.moved && (Math.abs(dxPx) > 3 || Math.abs(dyPx) > 3)) {
+        ds.moved = true;
+        setDraggingId(instId);
+      }
+
+      if (!ds.moved) return;
+
+      const dx = dxPx / canvasRect.width;
+      const dy = dyPx / canvasRect.height;
+
+      let nextX = Math.max(0, Math.min(1, ds.initialInstX + dx));
+      let nextY = Math.max(0, Math.min(1, ds.initialInstY + dy));
+
+      // Snap to grid unless Shift is held (fine-control override)
+      if (snapDivisions && !e.shiftKey) {
+        nextX = snapToGrid(nextX, snapDivisions);
+        nextY = snapToGrid(nextY, snapDivisions);
+      }
+
+      updateFrameInstance(ds.id, { x: nextX, y: nextY }, true);
+    },
+    [getCanvasRect, updateFrameInstance, snapDivisions]
+  );
+
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>, instId: string) => {
+    const ds = dragState.current;
+    if (ds && ds.id === instId) {
+      const didMove = ds.moved;
+      dragState.current = null;
+      setDraggingId((prev) => (prev === instId ? null : prev));
+      if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      }
+      // If it was just a click (no movement), select the frame instance
+      if (!didMove) {
+        selectFrameInstance(instId);
+      }
+    }
+  }, [selectFrameInstance]);
+
   return (
     <>
       {scene.frameInstances.filter((inst) => {
@@ -46,13 +150,16 @@ export function FrameInstanceGrid({
             className="frame-instance"
             role="button"
             tabIndex={0}
-            onClick={() => selectFrameInstance(inst.id)}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 selectFrameInstance(inst.id);
               }
             }}
+            onPointerDown={(e) => handlePointerDown(e, inst.id)}
+            onPointerMove={(e) => handlePointerMove(e, inst.id)}
+            onPointerUp={(e) => handlePointerUp(e, inst.id)}
+            onPointerCancel={(e) => handlePointerUp(e, inst.id)}
             style={{
               position: "absolute",
               left: `${inst.x * 100}%`,
@@ -61,11 +168,12 @@ export function FrameInstanceGrid({
               height: "auto",
               transform: "translate(-50%, -50%)",
               aspectRatio: spec.aspectRatio ?? (inst.frame === "watch" ? "1" : "9 / 16"),
-              cursor: "pointer",
+              cursor: draggingId === inst.id ? "grabbing" : "grab",
               outline: activeFrameInstanceId === inst.id ? "2px solid var(--accent)" : undefined,
               outlineOffset: 4,
-              borderRadius: 4
-            }}
+              borderRadius: 4,
+              touchAction: "none"
+            } as CSSProperties}
           >
             {spec.isOverlay ? (
               // Overlay frame: match single-frame structure so

@@ -272,6 +272,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             selectFrameInstance={selectFrameInstance}
             analyzeMedia={analyzeMedia}
             setVideoDuration={setVideoDuration}
+            canvasRef={canvasRef}
+            snapDivisions={showGrid ? gridDivisions : null}
           />
         ) : (
           <SingleFrameView

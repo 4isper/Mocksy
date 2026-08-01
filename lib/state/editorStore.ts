@@ -86,7 +86,7 @@ export interface EditorStoreState {
   updateActiveLayer: (patch: Partial<MediaLayer>) => void;
   setFrame: (frame: MockupFrame) => void;
   setFrameInstances: (instances: FrameInstance[]) => void;
-  updateFrameInstance: (id: string, patch: Partial<FrameInstance>) => void;
+  updateFrameInstance: (id: string, patch: Partial<FrameInstance>, coalesce?: boolean) => void;
   removeFrameInstance: (id: string) => void;
   layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") => void;
   setStylePreset: (stylePreset: StylePreset) => void;
@@ -362,12 +362,12 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
         : layers[0]?.id ?? null;
       return pushHistory(s, { ...s.scene, layers, frameInstances: remaining, activeLayerId });
     }),
-  updateFrameInstance: (id, patch) =>
+  updateFrameInstance: (id, patch, coalesce) =>
     set((s) => {
       const frameInstances = s.scene.frameInstances.map((fi) =>
         fi.id === id ? { ...fi, ...patch } : fi
       );
-      return pushHistory(s, { ...s.scene, frameInstances });
+      return pushHistory(s, { ...s.scene, frameInstances }, coalesce ? "frameInstanceDrag" : undefined);
     }),
   layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") =>
     set((s) => {

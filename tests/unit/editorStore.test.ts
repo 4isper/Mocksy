@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { initialScene } from "@/lib/state/editorStore";
 import { activePosterTime, makeDemoLayer, patchActive } from "@/lib/state/editorHelpers";
@@ -614,6 +614,21 @@ describe("frame control", () => {
     store().updateFrameInstance("fi1", { x: 0.25 });
     expect(store().scene.frameInstances[0]!.x).toBe(0.25);
     expect(store().scene.frameInstances[1]!.x).toBe(0.5);
+  });
+
+  it("updateFrameInstance coalesces rapid calls into a single history entry", () => {
+    reset();
+    vi.useFakeTimers();
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0, scale: 1, layerId: null }
+    ]);
+    const pastBefore = store().past.length;
+    store().updateFrameInstance("fi1", { x: 0.1 }, true);
+    store().updateFrameInstance("fi1", { x: 0.2 }, true);
+    store().updateFrameInstance("fi1", { x: 0.3 }, true);
+    expect(store().past.length).toBe(pastBefore + 1);
+    expect(store().scene.frameInstances[0]!.x).toBe(0.3);
+    vi.useRealTimers();
   });
 
   it("removeFrameInstance removes the instance and its orphaned layer", () => {
