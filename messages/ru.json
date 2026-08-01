@@ -296,7 +296,7 @@
     "height": "Высота",
     "download": "Скачать",
     "exportAction": "Экспорт {format}",
-    "exportActionShortcut": "Экспорт {format} (⌘E)",
+    "exportActionShortcut": "Экспорт {format}",
     "copy": "Копировать",
     "convertVideo": "Конвертация видео…",
     "exportComplete": "Экспорт завершён!"

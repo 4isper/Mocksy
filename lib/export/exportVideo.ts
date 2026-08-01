@@ -26,7 +26,7 @@ async function getFfmpegInstance(onStatus?: (message: string) => void) {
 }
 
 /** Releases the cached FFmpeg instance and its WASM worker. Call when the
- *  editor is torn down or memory is tight; the next export will re-load it. */
+  *  editor is torn down or memory is tight; the next export will re-load it. */
 export function terminateFfmpeg() {
   if (!ffmpegSingleton) return;
   // terminate() exists on the real FFmpeg class; guard for test stubs.
@@ -34,12 +34,22 @@ export function terminateFfmpeg() {
   ffmpegSingleton = null;
 }
 
+/** Deletes temporary FFmpeg files best-effort; ignores cleanup errors. */
+async function cleanupFfmpegTempFiles(ffmpeg: FFmpeg | null, files: string[]) {
+  if (!ffmpeg) return;
+  try {
+    for (const f of files) await ffmpeg.deleteFile(f);
+  } catch {
+    // ignore cleanup errors
+  }
+}
+
 export function sanitizeFilename(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
 /** Media layer driving the export (active layer, falling back to the first). */
-function activeLayerOf(scene: EditorScene): MediaLayer | null {
+export function activeLayerOf(scene: EditorScene): MediaLayer | null {
   return scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0] ?? null;
 }
 
@@ -93,7 +103,7 @@ export function chooseWebmMimeType(): string {
  * is better) and the capture resolution scale drive the output size. "high"
  * keeps the full device-pixel-ratio canvas; lower tiers downscale it.
  */
-const QUALITY: Record<VideoQuality, { qscale: number; scale: number }> = {
+export const QUALITY: Record<VideoQuality, { qscale: number; scale: number }> = {
   low: { qscale: 10, scale: 0.5 },
   medium: { qscale: 5, scale: 0.75 },
   high: { qscale: 2, scale: 1 }
@@ -478,15 +488,7 @@ export async function exportVideo(
   } catch (err) {
     // Best-effort temp-file cleanup so the FFmpeg singleton doesn't carry
     // stale input/output between failed exports.
-    try {
-      const ffmpeg = ffmpegSingleton;
-      if (ffmpeg) {
-        await ffmpeg.deleteFile("input.webm");
-        await ffmpeg.deleteFile("mocksy-export.mp4");
-      }
-    } catch {
-      // ignore cleanup errors
-    }
+    await cleanupFfmpegTempFiles(ffmpegSingleton, ["input.webm", "mocksy-export.mp4"]);
     onError?.(err instanceof Error ? err.message : "Video export failed.");
   }
 }
@@ -594,15 +596,7 @@ export async function exportWebpAnim(
     onStatus?.("Done");
     onProgress?.(100);
   } catch (err) {
-    try {
-      const ffmpeg = ffmpegSingleton;
-      if (ffmpeg) {
-        await ffmpeg.deleteFile("input.webm");
-        await ffmpeg.deleteFile("mocksy-export.webp");
-      }
-    } catch {
-      // ignore cleanup errors
-    }
+    await cleanupFfmpegTempFiles(ffmpegSingleton, ["input.webm", "mocksy-export.webp"]);
     onError?.(err instanceof Error ? err.message : "Animated WebP export failed.");
   }
 }
@@ -665,24 +659,15 @@ export async function exportGif(
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = sanitizeFilename(((scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0])?.mediaName || "mocksy-export").replace(/\.[^.]+$/, "")) + ".gif";
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(link.href), 200);
-  await ffmpeg.deleteFile(inputName);
-  await ffmpeg.deleteFile(paletteName);
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 200);
+    await ffmpeg.deleteFile(inputName);
+    await ffmpeg.deleteFile(paletteName);
     await ffmpeg.deleteFile(outputName);
     onStatus?.("Done");
     onProgress?.(100);
   } catch (err) {
-    try {
-      const ffmpeg = ffmpegSingleton;
-      if (ffmpeg) {
-        await ffmpeg.deleteFile("input.webm");
-        await ffmpeg.deleteFile("palette.png");
-        await ffmpeg.deleteFile("mocksy-export.gif");
-      }
-    } catch {
-      // ignore cleanup errors
-    }
+    await cleanupFfmpegTempFiles(ffmpegSingleton, ["input.webm", "palette.png", "mocksy-export.gif"]);
     onError?.(err instanceof Error ? err.message : "GIF export failed.");
   }
 }

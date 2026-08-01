@@ -296,7 +296,7 @@
     "height": "Height",
     "download": "Download",
     "exportAction": "Export {format}",
-    "exportActionShortcut": "Export {format} (⌘E)",
+    "exportActionShortcut": "Export {format}",
     "copy": "Copy",
     "convertVideo": "Converting video…",
     "exportComplete": "Export complete!"

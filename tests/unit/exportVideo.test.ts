@@ -441,4 +441,17 @@ describe("exportVideo orchestration", () => {
     expect(errors).toContain("WebP encoding failed.");
     ffmpegHarness.execCode = 0;
   });
+
+  it("reports a GIF encoding failure", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+    ffmpegHarness.execCode = 1;
+
+    const errors: string[] = [];
+    await exportGif(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), undefined, undefined, undefined, (m) => errors.push(m));
+    expect(errors).toContain("GIF encoding failed.");
+    ffmpegHarness.execCode = 0;
+  });
 });
