@@ -92,6 +92,7 @@ function scene(overrides: Partial<EditorScene> = {}): EditorScene {
     gradientAngle: 0,
     backgroundAudioUrl: null,
     backgroundAudioName: null,
+    animationDurationMs: 3000,
     ...overrides
   };
 }

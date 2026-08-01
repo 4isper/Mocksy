@@ -41,6 +41,7 @@ export function ControlPanel() {
     setMediaFit,
     setShadowOpacity,
     setBorderRadius,
+    setAnimationDuration,
     setBackgroundSolid,
     setBackgroundGradient,
     setBackgroundTransparent,
@@ -195,6 +196,23 @@ export function ControlPanel() {
           options={animations.map((a) => ({ value: a, label: animLabels[a] }))}
           onChange={setAnimationPreset}
         />
+        <label className="field">
+          <span>{t("editor.animationDuration")}</span>
+          <div className="range-wrap">
+            <input
+              type="range"
+              min={0.5}
+              max={10}
+              step={0.5}
+              value={scene.animationDurationMs / 1000}
+              disabled={activeLayer?.animationPreset === "none"}
+              aria-label={t("editor.animationDuration")}
+              aria-valuetext={`${scene.animationDurationMs / 1000}s`}
+              onChange={(e) => setAnimationDuration(Math.round(Number(e.target.value) * 1000))}
+            />
+            <span className="range-val">{scene.animationDurationMs / 1000}s</span>
+          </div>
+        </label>
       </div>
 
       <div className="divider" />

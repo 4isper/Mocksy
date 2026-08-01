@@ -73,6 +73,7 @@
     "frame": "Frame",
     "style": "Style",
     "animation": "Animation",
+    "animationDuration": "Animation duration ({val}s)",
     "aspectRatio": "Aspect ratio",
     "background": "Background",
     "watermark": "Watermark",

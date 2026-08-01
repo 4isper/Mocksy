@@ -91,6 +91,7 @@ export interface EditorStoreState {
   layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") => void;
   setStylePreset: (stylePreset: StylePreset) => void;
   setAnimationPreset: (animationPreset: AnimationPreset) => void;
+  setAnimationDuration: (durationMs: number) => void;
   setZoom: (zoom: number) => void;
   setMediaOffsetX: (offset: number) => void;
   setMediaOffsetY: (offset: number) => void;
@@ -148,7 +149,8 @@ export const initialScene: EditorScene = {
   watermarkEnabled: false,
   watermarkPosition: "bottom-right",
   watermarkSize: 13,
-  aspectRatio: ASPECT_RATIOS[0] ?? "16 / 9"
+  aspectRatio: ASPECT_RATIOS[0] ?? "16 / 9",
+  animationDurationMs: 3000
 };
 // The first layer is the active one by default.
 initialScene.activeLayerId = initialScene.layers[0]?.id ?? null;
@@ -190,10 +192,10 @@ export function makeDemoScene(): EditorScene {
     backgroundBlur: initialScene.backgroundBlur,
     backgroundAudioUrl: null,
     backgroundAudioName: null,
+    animationDurationMs: initialScene.animationDurationMs,
     annotations: []
   };
 }
-
 export const useEditorStore = create<EditorStoreState>((set) => ({
   scene: initialScene,
   past: [],
@@ -395,6 +397,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
     }),
   setStylePreset: (stylePreset) => set((s) => pushHistory(s, { ...s.scene, stylePreset })),
   setAnimationPreset: (animationPreset) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationPreset }) }, "animation")),
+  setAnimationDuration: (animationDurationMs) => set((s) => pushHistory(s, { ...s.scene, animationDurationMs: Math.max(500, Math.min(20000, Math.round(animationDurationMs))) }, "animationDuration")),
   setZoom: (zoom) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { zoom }) }, "zoom")),
   setMediaOffsetX: (mediaOffsetX) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetX }) }, "mediaOffsetX")),
   setMediaOffsetY: (mediaOffsetY) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetY }) }, "mediaOffsetY")),

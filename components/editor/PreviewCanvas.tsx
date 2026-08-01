@@ -15,9 +15,6 @@ import { AnnotationItem } from "@/components/editor/AnnotationItem";
 import { FrameInstanceGrid } from "@/components/editor/FrameInstanceGrid";
 import { SingleFrameView } from "@/components/editor/SingleFrameView";
 
-/** Duration of one animation loop in the preview, matching the video export. */
-const ANIMATION_DURATION_MS = 3000;
-
 interface PreviewCanvasProps {
   scene: EditorScene;
 }
@@ -62,7 +59,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
    const frameRef = useRef<HTMLDivElement>(null);
    const videoRef = useRef<HTMLVideoElement | null>(null);
    const canvasRef = useRef<HTMLDivElement>(null);
-   useFrameTransform(frameRef, activeLayer);
+   useFrameTransform(frameRef, activeLayer, scene.animationDurationMs);
 
   // Mirror the Timeline scrubber (driven by VideoOptions) onto the actual
   // <video>. The onTimeUpdate handler also writes videoCurrentTime back to the

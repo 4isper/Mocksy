@@ -737,6 +737,16 @@ describe("scene-wide settings", () => {
     expect(store().past.length).toBe(1);
   });
 
+  it("setAnimationDuration updates the loop length and clamps into range", () => {
+    reset();
+    store().setAnimationDuration(5000);
+    expect(store().scene.animationDurationMs).toBe(5000);
+    store().setAnimationDuration(10);
+    expect(store().scene.animationDurationMs).toBe(500);
+    store().setAnimationDuration(999999);
+    expect(store().scene.animationDurationMs).toBe(20000);
+  });
+
   it("setZoom coalesces rapid calls", () => {
     reset();
     store().setZoom(1.1);

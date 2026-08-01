@@ -4,9 +4,6 @@ import { useEffect, useRef } from "react";
 import type { MediaLayer } from "@/lib/types/editor";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 
-/** Duration of one animation loop in the preview, matching the video export. */
-const ANIMATION_DURATION_MS = 3000;
-
 /**
  * Drives the frame's zoomIn/zoomOut/parallax in the live preview by writing
  * the transform straight to the frame DOM via rAF — no React re-render per
@@ -14,9 +11,9 @@ const ANIMATION_DURATION_MS = 3000;
  * transform mirrors sampleVideoTransform used by the video export, so what you
  * see previews what you export. Zoom/animation scale the whole mockup (device
  * + media together), matching the export where the frame box is multiplied by
- * the zoom.
+ * the zoom. `durationMs` is the length of one animation loop.
  */
-export function useFrameTransform(node: React.RefObject<HTMLDivElement | null>, layer: MediaLayer | undefined) {
+export function useFrameTransform(node: React.RefObject<HTMLDivElement | null>, layer: MediaLayer | undefined, durationMs = 3000) {
   const layerRef = useRef(layer);
   useEffect(() => {
     layerRef.current = layer;
@@ -34,10 +31,11 @@ export function useFrameTransform(node: React.RefObject<HTMLDivElement | null>, 
       apply(base.zoom, base.x, base.y);
       return;
     }
+    const duration = Math.max(100, durationMs);
     let raf = 0;
     const start = performance.now();
     const tick = () => {
-      const progress = ((performance.now() - start) % ANIMATION_DURATION_MS) / ANIMATION_DURATION_MS;
+      const progress = ((performance.now() - start) % duration) / duration;
       const { zoom, x, y } = sampleVideoTransform(layerRef.current ?? ({} as MediaLayer), progress);
       apply(zoom, x, y);
       raf = requestAnimationFrame(tick);
@@ -46,5 +44,5 @@ export function useFrameTransform(node: React.RefObject<HTMLDivElement | null>, 
     return () => cancelAnimationFrame(raf);
     // Re-seed when the preset, zoom, or pan changes so the static branch
     // re-applies, and the rAF loop picks up fresh values.
-  }, [node, animates, layer?.animationPreset, layer?.zoom, layer?.mediaOffsetX, layer?.mediaOffsetY]);
+  }, [node, animates, durationMs, layer?.animationPreset, layer?.zoom, layer?.mediaOffsetX, layer?.mediaOffsetY]);
 }

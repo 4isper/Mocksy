@@ -8,9 +8,6 @@ import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { renderSceneToImageBlob } from "@/lib/export/exportImage";
 
-/** Preview/export animation loop duration, seconds (matches the video export). */
-const ANIMATION_DURATION_SEC = 3;
-
 const UNITLESS = new Set(["opacity", "zIndex", "flexGrow", "flexShrink", "aspectRatio", "fontWeight", "lineHeight", "tabSize"]);
 
 /**
@@ -47,13 +44,13 @@ function transformFor(zoom: number, x: number, y: number): string {
 }
 
 /** @keyframes + animation rule for the active layer's animation preset. */
-export function buildAnimationCss(layer: MediaLayer | undefined): string {
+export function buildAnimationCss(layer: MediaLayer | undefined, durationSec = 3): string {
   if (!layer || layer.animationPreset === "none") return "";
   const timeline = buildVideoTimeline(layer);
   const keyframes = timeline
     .map((k) => `${num(k.at * 100)}% { transform: ${transformFor(k.zoom, k.x, k.y)}; }`)
     .join("\n");
-  return `@keyframes mockup-anim {\n${keyframes}\n}\n.frame {\n  animation: mockup-anim ${ANIMATION_DURATION_SEC}s linear infinite;\n  transform-origin: center;\n}\n`;
+  return `@keyframes mockup-anim {\n${keyframes}\n}\n.frame {\n  animation: mockup-anim ${durationSec}s linear infinite;\n  transform-origin: center;\n}\n`;
 }
 
 function annotationsHtml(scene: EditorScene, arW: number, arH: number): string {
@@ -133,7 +130,7 @@ export function buildHtmlSnippet(scene: EditorScene, opts: HtmlSnippetOptions): 
     ? `<span class="wm" style="${scene.watermarkPosition.includes("left") ? "left" : "right"}:16px;${scene.watermarkPosition.includes("top") ? "top" : "bottom"}:16px;font-size:${num(scene.watermarkSize)}px">${escapeHtml(scene.watermarkText)}</span>`
     : "";
 
-  const animationCss = buildAnimationCss(activeLayer);
+  const animationCss = buildAnimationCss(activeLayer, scene.animationDurationMs / 1000);
 
   return `<!doctype html>
 <html lang="en">

@@ -45,6 +45,11 @@ describe("buildAnimationCss", () => {
     expect(css).toContain("animation: mockup-anim 3s linear infinite;");
   });
 
+  it("uses the scene animation duration", () => {
+    const css = buildAnimationCss(layerWith({ animationPreset: "zoomIn" }), 5);
+    expect(css).toContain("animation: mockup-anim 5s linear infinite;");
+  });
+
   it("returns empty CSS for a static or missing layer", () => {
     expect(buildAnimationCss(layerWith({ animationPreset: "none" }))).toBe("");
     expect(buildAnimationCss(undefined)).toBe("");
@@ -101,10 +106,11 @@ describe("buildHtmlSnippet", () => {
   });
 
   it("adds keyframe animation CSS for animated layers", () => {
-    const scene = sceneWith();
+    const scene = sceneWith({ animationDurationMs: 5000 });
     scene.layers[0] = layerWith({ animationPreset: "zoomIn" });
     const html = buildHtmlSnippet(scene, { mediaHref: MEDIA, mediaType: "image", backgroundHref: null, overlayHref: null });
     expect(html).toContain("@keyframes mockup-anim");
+    expect(html).toContain("animation: mockup-anim 5s linear infinite;");
   });
 });
 

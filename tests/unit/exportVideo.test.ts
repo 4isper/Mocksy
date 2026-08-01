@@ -99,6 +99,11 @@ describe("exportVideo pure helpers", () => {
     expect(computeCaptureDuration(scene)).toBe(3);
   });
 
+  it("computeCaptureDuration honors a custom animation duration", () => {
+    const scene = { ...sceneWithLayer({ mediaUrl: null, mediaType: "none" }), animationDurationMs: 6000 };
+    expect(computeCaptureDuration(scene)).toBe(6);
+  });
+
   it("computeCaptureDuration uses trimmed video length", () => {
     const scene = sceneWithLayer({
       mediaUrl: "blob:vid",

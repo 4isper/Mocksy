@@ -157,6 +157,7 @@ export function normalizeScene(raw: unknown): EditorScene {
     aspectRatio: str(r.aspectRatio, initialScene.aspectRatio) ?? initialScene.aspectRatio,
     watermarkPosition: pick(r.watermarkPosition, ["bottom-right", "bottom-left", "top-right", "top-left"], initialScene.watermarkPosition),
     watermarkSize: num(r.watermarkSize, initialScene.watermarkSize, 8, 64),
+    animationDurationMs: num(r.animationDurationMs, initialScene.animationDurationMs, 500, 20000),
     annotations: Array.isArray(r.annotations)
       ? r.annotations.map((a) =>
           normalizeAnnotation(a, {

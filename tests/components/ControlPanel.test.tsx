@@ -161,6 +161,19 @@ describe("ControlPanel", () => {
     expect(useEditorStore.getState().scene.layers[0]!.animationPreset).toBe("zoomIn");
   });
 
+  it("changes animation duration via slider", () => {
+    render(<ControlPanel />);
+    const slider = screen.getByRole("slider", { name: "editor.animationDuration" });
+    fireEvent.change(slider, { target: { value: "5" } });
+    expect(useEditorStore.getState().scene.animationDurationMs).toBe(5000);
+  });
+
+  it("disables the animation duration slider when no animation is set", () => {
+    render(<ControlPanel />);
+    const slider = screen.getByRole("slider", { name: "editor.animationDuration" });
+    expect(slider).toBeDisabled();
+  });
+
   it("switches fill/fit on button click", async () => {
     render(<ControlPanel />);
     await userEvent.click(screen.getByText("editor.fit"));

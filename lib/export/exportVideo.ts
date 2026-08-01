@@ -33,9 +33,6 @@ export function terminateFfmpeg() {
   ffmpegSingleton = null;
 }
 
-/** Duration of an animated still-image export, in seconds. */
-const ANIMATION_DURATION_SEC = 3;
-
 export function sanitizeFilename(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
@@ -73,18 +70,19 @@ export function resolvePixelRatio(videoQuality: VideoQuality): number {
 
 /**
  * Records video scenes for their trimmed length; still-image scenes play the
- * fixed animation loop. Returns seconds.
+ * configured animation loop. Returns seconds.
  */
 export function computeCaptureDuration(scene: EditorScene): number {
   const active = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   const isVideo = active ? isVideoLayer(active) && active.mediaUrl != null : false;
-  if (!isVideo || !active) return ANIMATION_DURATION_SEC;
+  const fallbackSec = Math.max(0.5, scene.animationDurationMs / 1000);
+  if (!isVideo || !active) return fallbackSec;
   const start = Math.max(0, active.videoTrimStart || 0);
   const end = active.videoTrimEnd > start ? active.videoTrimEnd : active.videoDuration;
   // Metadata may not have loaded yet (undefined/0) or a trim may be
   // misconfigured; never let a non-finite or empty duration collapse the
   // recording to zero frames.
-  if (typeof end !== "number" || !isFinite(end) || end <= 0) return ANIMATION_DURATION_SEC;
+  if (typeof end !== "number" || !isFinite(end) || end <= 0) return fallbackSec;
   return Math.max(0.2, end - start);
 }
 

@@ -150,6 +150,14 @@ describe("normalizeScene", () => {
     expect(s.gradientAngle).toBe(90);
   });
 
+  it("clamps animation duration into range and falls back for invalid input", () => {
+    expect(normalizeScene({ animationDurationMs: 6000 }).animationDurationMs).toBe(6000);
+    expect(normalizeScene({ animationDurationMs: 99 }).animationDurationMs).toBe(500);
+    expect(normalizeScene({ animationDurationMs: 99999 }).animationDurationMs).toBe(20000);
+    expect(normalizeScene({ animationDurationMs: Number.NaN }).animationDurationMs).toBe(initialScene.animationDurationMs);
+    expect(normalizeScene({}).animationDurationMs).toBe(initialScene.animationDurationMs);
+  });
+
   it("accepts explicit background image URL", () => {
     const s = normalizeScene({ backgroundImageUrl: "data:image/png;base64,abc" });
     expect(s.backgroundImageUrl).toBe("data:image/png;base64,abc");

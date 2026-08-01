@@ -73,6 +73,7 @@
     "frame": "Рамка",
     "style": "Стиль",
     "animation": "Анимация",
+    "animationDuration": "Длительность анимации ({val}с)",
     "aspectRatio": "Соотношение сторон",
     "background": "Фон",
     "watermark": "Водяной знак",

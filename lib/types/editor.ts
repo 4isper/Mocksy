@@ -97,6 +97,8 @@ export interface EditorScene {
   watermarkPosition: WatermarkPosition;
   watermarkSize: number;
   aspectRatio: string;
+  /** Length of one animation loop (preview, video, HTML), in ms. */
+  animationDurationMs: number;
   /** Non-media overlays (text, arrows, rectangles) drawn above the mockup. */
   annotations: Annotation[];
 }
