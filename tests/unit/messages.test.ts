@@ -162,11 +162,18 @@ describe("locale files stay consistent with en.json", () => {
     expect(bad, bad.join("\n")).toEqual([]);
   });
 
-  it("ru.json translates every en.json key (full parity)", () => {
-    const ru = readMessages("ru");
-    const { leaves: ruLeaves } = collectPaths(ru);
-    const mismatch = [...leaves].filter((p) => !ruLeaves.has(p)).map((p) => `missing in ru.json: "${p}"`);
-    mismatch.push(...[...ruLeaves].filter((p) => !leaves.has(p)).map((p) => `extra in ru.json: "${p}"`));
-    expect(mismatch, mismatch.join("\n")).toEqual([]);
+  it("every locale translates every en.json key (full parity)", () => {
+    const bad: string[] = [];
+    for (const file of localeFiles) {
+      const loc = readLocaleFile(file);
+      const { leaves: locLeaves } = collectPaths(loc);
+      for (const p of [...leaves].filter((p) => !locLeaves.has(p))) {
+        bad.push(`${file}: missing "${p}"`);
+      }
+      for (const p of [...locLeaves].filter((p) => !leaves.has(p))) {
+        bad.push(`${file}: extra "${p}"`);
+      }
+    }
+    expect(bad, bad.join("\n")).toEqual([]);
   });
 });
