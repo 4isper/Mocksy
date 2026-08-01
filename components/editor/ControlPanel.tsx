@@ -197,7 +197,7 @@ export function ControlPanel() {
           onChange={setAnimationPreset}
         />
         <label className="field">
-          <span>{t("editor.animationDuration")}</span>
+          <span>{t("editor.animationDuration", { val: scene.animationDurationMs / 1000 })}</span>
           <div className="range-wrap">
             <input
               type="range"
@@ -206,7 +206,7 @@ export function ControlPanel() {
               step={0.5}
               value={scene.animationDurationMs / 1000}
               disabled={activeLayer?.animationPreset === "none"}
-              aria-label={t("editor.animationDuration")}
+              aria-label={t("editor.animationDuration", { val: scene.animationDurationMs / 1000 })}
               aria-valuetext={`${scene.animationDurationMs / 1000}s`}
               onChange={(e) => setAnimationDuration(Math.round(Number(e.target.value) * 1000))}
             />

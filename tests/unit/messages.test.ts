@@ -92,6 +92,36 @@ describe("translation keys used in the codebase resolve in en.json", () => {
     }
     expect(bad, bad.join("\n")).toEqual([]);
   });
+
+  it("static t(\"...\") calls pass every placeholder the message needs", () => {
+    const bad: string[] = [];
+    const placeholdersOf = (s: string) => [...s.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map((m) => m[1]);
+    for (const file of listSourceFiles()) {
+      const src = fs.readFileSync(file, "utf-8");
+      const ns = src.match(/useTranslations\(\s*"([^"]+)"\s*\)/)?.[1] ?? null;
+      for (const m of src.matchAll(/\bt\(\s*"([^"]+)"\s*\)/g)) {
+        const raw = m[1]!;
+        const key = !raw.includes(".") && ns ? `${ns}.${raw}` : raw;
+        const value = getByPath(en, key);
+        if (typeof value === "string" && placeholdersOf(value).length > 0) {
+          bad.push(`${file}: t("${raw}") for "${key}" doesn't pass ${placeholdersOf(value).map((p) => `{${p}}`).join(", ")}`);
+        }
+      }
+      for (const m of src.matchAll(/\bt\(\s*"([^"]+)"\s*,\s*\{([^}]*)\}\)/g)) {
+        const raw = m[1]!;
+        const body = m[2]!;
+        const key = !raw.includes(".") && ns ? `${ns}.${raw}` : raw;
+        const value = getByPath(en, key);
+        if (typeof value !== "string") continue;
+        for (const p of placeholdersOf(value)) {
+          if (!new RegExp(`\\b${p}\\b`).test(body)) {
+            bad.push(`${file}: t("${raw}") for "${key}" is missing {${p}}`);
+          }
+        }
+      }
+    }
+    expect(bad, bad.join("\n")).toEqual([]);
+  });
 });
 
 describe("en.json is the complete message tree", () => {
