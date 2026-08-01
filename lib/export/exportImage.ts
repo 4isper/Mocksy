@@ -7,15 +7,7 @@ import type { RenderTransform } from "@/lib/render/frameGeometry";
 import { getFrameSpec } from "@/lib/render/frames";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { isVideoLayer } from "@/lib/render/mediaKind";
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 200);
-}
+import { downloadBlob } from "@/lib/export/downloadBlob";
 
 /**
  * Transform for the exported PNG. An animated scene samples its mid-animation

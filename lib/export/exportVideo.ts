@@ -8,6 +8,7 @@ import type { RenderTransform } from "@/lib/render/frameGeometry";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
+import { downloadBlob } from "@/lib/export/downloadBlob";
 
 let ffmpegSingleton: FFmpeg | null = null;
 
@@ -35,14 +36,6 @@ export function terminateFfmpeg() {
 
 export function sanitizeFilename(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_");
-}
-
-function downloadBlob(blob: Blob, filename: string) {
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(link.href), 200);
 }
 
 /** Media layer driving the export (active layer, falling back to the first). */

@@ -7,6 +7,7 @@ import { frameViewBox, getFrameSpec, DEFAULT_VIEWBOX } from "@/lib/render/frames
 import { resolveExportTransform, waitForImage } from "@/lib/export/exportImage";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { buildEmbeddedFontCss, collectFontStacks } from "@/lib/export/fontEmbed";
+import { downloadBlob } from "@/lib/export/downloadBlob";
 
 const RENDER = {
   shadowBlur: 70,
@@ -251,14 +252,6 @@ export function buildSvgMarkup(scene: EditorScene, opts: SvgExportOptions): stri
   ].join("");
 }
 
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 200);
-}
 
 /**
  * Converts a media URL to a data: URL plus its intrinsic size. Data URLs pass

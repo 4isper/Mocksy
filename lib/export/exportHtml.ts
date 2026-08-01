@@ -8,6 +8,7 @@ import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { renderSceneToImageBlob } from "@/lib/export/exportImage";
 import { buildEmbeddedFontCss, collectFontStacks } from "@/lib/export/fontEmbed";
+import { downloadBlob } from "@/lib/export/downloadBlob";
 
 const UNITLESS = new Set(["opacity", "zIndex", "flexGrow", "flexShrink", "aspectRatio", "fontWeight", "lineHeight", "tabSize"]);
 
@@ -241,14 +242,6 @@ img { max-width: 100%; max-height: 100vh; display: block; border-radius: 12px; b
 `;
 }
 
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 200);
-}
 
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
