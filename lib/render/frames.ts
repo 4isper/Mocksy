@@ -75,6 +75,16 @@ export const FRAME_SPECS: Record<MockupFrame, FrameSpec> = {
     // viewBox 390x844; screen rect x12 y12 w366 h820 rx32
     cutout: { x: 12, y: 12, w: 366, h: 820, rx: 32 }
   },
+  iphoneSE: {
+    asset: "/devices/iphoneSE.svg",
+    padding: 10,
+    screenRadius: 10,
+    isOverlay: true,
+    aspectRatio: "375 / 667",
+    // viewBox 375x667; screen rect x10 y34 w355 h577 rx10
+    cutout: { x: 10, y: 34, w: 355, h: 577, rx: 10 },
+    viewBox: { w: 375, h: 667 }
+  },
   ipad: {
     asset: "/devices/ipad.svg",
     padding: 14,
@@ -84,6 +94,16 @@ export const FRAME_SPECS: Record<MockupFrame, FrameSpec> = {
     // viewBox 862x1140; screen rect x14 y14 w834 h1112 rx12
     cutout: { x: 14, y: 14, w: 834, h: 1112, rx: 12 },
     viewBox: { w: 862, h: 1140 }
+  },
+  galaxyTab: {
+    asset: "/devices/galaxyTab.svg",
+    padding: 18,
+    screenRadius: 24,
+    isOverlay: true,
+    aspectRatio: "800 / 1280",
+    // viewBox 800x1280; screen rect x18 y18 w764 h1244 rx24
+    cutout: { x: 18, y: 18, w: 764, h: 1244, rx: 24 },
+    viewBox: { w: 800, h: 1280 }
   },
   desktop: { asset: null, padding: 10, screenRadius: 8, isOverlay: false, aspectRatio: "16 / 10", cutout: null },
   tablet: { asset: null, padding: 14, screenRadius: 24, isOverlay: false, aspectRatio: "4 / 3", cutout: null },
@@ -107,6 +127,16 @@ export const FRAME_SPECS: Record<MockupFrame, FrameSpec> = {
     cutout: { x: 70, y: 80, w: 1460, h: 821, rx: 10 },
     viewBox: { w: 1600, h: 1420 }
   },
+  notebook: {
+    asset: "/devices/notebook.svg",
+    padding: 80,
+    screenRadius: 8,
+    isOverlay: true,
+    aspectRatio: "1600 / 1000",
+    // viewBox 1600x1000; screen rect x80 y40 w1440 h810 rx8
+    cutout: { x: 80, y: 40, w: 1440, h: 810, rx: 8 },
+    viewBox: { w: 1600, h: 1000 }
+  },
   watch: { asset: null, padding: 18, screenRadius: 999, isOverlay: false, aspectRatio: "1 / 1", cutout: null }
 };
 
@@ -121,11 +151,14 @@ export const FRAME_ORDER: MockupFrame[] = [
   "iphone16pro",
   "pixel8pro",
   "galaxy24",
+  "iphoneSE",
   "ipad",
+  "galaxyTab",
   "desktop",
   "tablet",
   "macbook",
   "imac",
+  "notebook",
   "watch"
 ];
 

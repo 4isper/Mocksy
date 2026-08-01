@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1280" viewBox="0 0 800 1280" fill="none">
+  <!-- Galaxy Tab (portrait Android tablet) frame-only overlay: the screen area
+       is a real transparent cutout (via mask) so the media behind shows through. -->
+  <defs>
+    <linearGradient id="tab-bezel" x1="0" y1="0" x2="800" y2="1280" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4a4a4e"/>
+      <stop offset="0.5" stop-color="#2c2c2f"/>
+      <stop offset="1" stop-color="#3d3d41"/>
+    </linearGradient>
+    <mask id="tab-screen">
+      <rect x="0" y="0" width="800" height="1280" fill="white"/>
+      <rect x="18" y="18" width="764" height="1244" rx="24" ry="24" fill="black"/>
+    </mask>
+  </defs>
+  <!-- Outer body with the screen masked out to transparency. -->
+  <rect x="8" y="8" width="784" height="1264" rx="36" ry="36" fill="url(#tab-bezel)" stroke="#0a0a0a" stroke-width="2" mask="url(#tab-screen)"/>
+  <!-- Screen edge highlight -->
+  <rect x="18" y="18" width="764" height="1244" rx="24" ry="24" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+  <!-- Front camera (top bezel) -->
+  <circle cx="400" cy="10" r="3" fill="#0a0a0a"/>
+  <circle cx="400" cy="10" r="1.4" fill="#1c1c1e"/>
+</svg>

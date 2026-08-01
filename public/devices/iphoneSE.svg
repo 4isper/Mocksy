@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="375" height="667" viewBox="0 0 375 667" fill="none">
+  <!-- iPhone SE (2nd gen) frame-only overlay: the screen area is a real
+       transparent cutout (via mask) so the media behind shows through. -->
+  <defs>
+    <linearGradient id="se-bezel" x1="0" y1="0" x2="375" y2="667" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3a3a3c"/>
+      <stop offset="0.5" stop-color="#1c1c1e"/>
+      <stop offset="1" stop-color="#2c2c2e"/>
+    </linearGradient>
+    <mask id="se-screen">
+      <rect x="0" y="0" width="375" height="667" fill="white"/>
+      <rect x="10" y="34" width="355" height="577" rx="10" ry="10" fill="black"/>
+    </mask>
+  </defs>
+  <!-- Outer body with the screen masked out to transparency. -->
+  <rect x="3" y="3" width="369" height="661" rx="50" ry="50" fill="url(#se-bezel)" stroke="#0a0a0a" stroke-width="2" mask="url(#se-screen)"/>
+  <!-- Screen edge highlight -->
+  <rect x="10" y="34" width="355" height="577" rx="10" ry="10" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+  <!-- Speaker slot -->
+  <rect x="152" y="15" width="71" height="5" rx="2.5" fill="#0a0a0a"/>
+  <!-- Home button (Touch ID ring) -->
+  <circle cx="187.5" cy="632" r="9" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
+  <!-- Side buttons -->
+  <rect x="0" y="165" width="5" height="30" rx="2.5" fill="#2c2c2e"/>
+  <rect x="0" y="205" width="5" height="30" rx="2.5" fill="#2c2c2e"/>
+  <rect x="370" y="180" width="5" height="50" rx="2.5" fill="#2c2c2e"/>
+</svg>

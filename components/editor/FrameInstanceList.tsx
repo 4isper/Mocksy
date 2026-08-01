@@ -34,11 +34,14 @@ export function FrameInstanceList({
     iphone16pro: t("frame.iphone16pro"),
     pixel8pro: t("frame.pixel8pro"),
     galaxy24: t("frame.galaxy24"),
+    iphoneSE: t("frame.iphoneSE"),
     ipad: t("frame.ipad"),
+    galaxyTab: t("frame.galaxyTab"),
     desktop: t("frame.desktop"),
     tablet: t("frame.tablet"),
     macbook: t("frame.macbook"),
     imac: t("frame.imac"),
+    notebook: t("frame.notebook"),
     watch: t("frame.watch")
   };
 
