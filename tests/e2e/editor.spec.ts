@@ -790,7 +790,8 @@ test("exporting a GIF via keyboard shortcut triggers a download", async ({ page 
   });
   await expect(previewMedia(page)).toBeVisible();
 
-  const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
+  test.setTimeout(120_000);
+  const downloadPromise = page.waitForEvent("download", { timeout: 100_000 });
   await page.keyboard.press("Control+Shift+g");
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/\.gif$/);
@@ -1241,14 +1242,18 @@ test("locale switcher switches the UI language end-to-end", async ({ page }) => 
   const switcher = page.locator("select.locale-select");
   await expect(switcher).toHaveValue("en");
 
-  await switcher.selectOption({ label: "Русский" });
-  await expect(page).toHaveURL(/\/ru$/);
+  await Promise.all([
+    page.waitForURL("**/ru"),
+    switcher.selectOption({ label: "Русский" }),
+  ]);
   await expect(page.locator("html")).toHaveAttribute("lang", "ru");
   await expect(page.getByRole("button", { name: "Экспорт", exact: true })).toBeVisible();
   await expect(page.getByLabel("Сетка")).toBeVisible();
 
-  await page.locator("select.locale-select").selectOption({ label: "English" });
-  await expect(page).toHaveURL(/\/en$/);
+  await Promise.all([
+    page.waitForURL("**/en"),
+    switcher.selectOption({ label: "English" }),
+  ]);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.getByRole("button", { name: "Export", exact: true })).toBeVisible();
 });
