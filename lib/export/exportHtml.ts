@@ -7,6 +7,7 @@ import { buildVideoTimeline } from "@/lib/render/videoComposer";
 import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { renderSceneToImageBlob } from "@/lib/export/exportImage";
+import { buildEmbeddedFontCss, collectFontStacks } from "@/lib/export/fontEmbed";
 
 const UNITLESS = new Set(["opacity", "zIndex", "flexGrow", "flexShrink", "aspectRatio", "fontWeight", "lineHeight", "tabSize"]);
 
@@ -95,6 +96,8 @@ export interface HtmlSnippetOptions {
   backgroundHref: string | null;
   /** data: URL of the overlay device skin (SVG), or null. */
   overlayHref: string | null;
+  /** Embedded @font-face CSS (data: URLs) so text renders with the right font. */
+  fontCss?: string;
 }
 
 /**
@@ -141,7 +144,10 @@ export function buildHtmlSnippet(scene: EditorScene, opts: HtmlSnippetOptions): 
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Mocksy mockup</title>
-<style>
+${opts.fontCss ? `<style>
+${opts.fontCss}
+</style>
+` : ""}<style>
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
@@ -304,7 +310,8 @@ export async function exportHtml(
     const spec = getFrameSpec(scene.frame);
     const overlayHref = spec.isOverlay && spec.asset ? await svgAssetToDataUrl(spec.asset) : null;
 
-    const html = buildHtmlSnippet(scene, { mediaHref, mediaType, backgroundHref, overlayHref });
+    const fontCss = await buildEmbeddedFontCss(collectFontStacks(scene));
+    const html = buildHtmlSnippet(scene, { mediaHref, mediaType, backgroundHref, overlayHref, fontCss });
     downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), `${filename}.html`);
   } catch (err) {
     onError?.(err instanceof Error ? err.message : "HTML export failed.");

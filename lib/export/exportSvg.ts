@@ -6,6 +6,7 @@ import { loadVideoFrame } from "@/lib/render/canvasMedia";
 import { frameViewBox, getFrameSpec, DEFAULT_VIEWBOX } from "@/lib/render/frames";
 import { resolveExportTransform, waitForImage } from "@/lib/export/exportImage";
 import { isVideoLayer } from "@/lib/render/mediaKind";
+import { buildEmbeddedFontCss, collectFontStacks } from "@/lib/export/fontEmbed";
 
 const RENDER = {
   shadowBlur: 70,
@@ -70,6 +71,8 @@ export interface SvgExportOptions {
   /** Current frame zoom, used to scale the drop shadow with the mockup. */
   zoom?: number;
   groups: SvgFrameGroup[];
+  /** Embedded @font-face CSS (data: URLs) so text renders with the right font. */
+  fontCss?: string;
 }
 
 function backgroundMarkup(scene: EditorScene, opts: SvgExportOptions): string {
@@ -233,7 +236,8 @@ export function buildSvgMarkup(scene: EditorScene, opts: SvgExportOptions): stri
     `<filter id="frame-shadow" x="-60%" y="-250%" width="220%" height="500%"><feDropShadow dx="0" dy="${shadowDy}" stdDeviation="${shadowStd}" flood-color="#000" flood-opacity="${scene.shadowOpacity}"/></filter>`,
     `<filter id="anno-shadow" x="-50%" y="-100%" width="200%" height="300%"><feDropShadow dx="0" dy="${RENDER.annoShadowOffsetY}" stdDeviation="${RENDER.annoShadowBlur / 2}" flood-color="#000" flood-opacity="0.5"/></filter>`,
     scene.backgroundBlur > 0 ? `<filter id="bg-blur"><feGaussianBlur stdDeviation="${num(scene.backgroundBlur / 2)}"/></filter>` : "",
-    ...groups.map((g, i) => groupClipMarkup(g, i))
+    ...groups.map((g, i) => groupClipMarkup(g, i)),
+    opts.fontCss ? `<style>${opts.fontCss}</style>` : ""
   ].filter(Boolean);
 
   return [
@@ -437,7 +441,8 @@ export async function exportSvg(
       backgroundWidth: background?.width,
       backgroundHeight: background?.height,
       zoom: transform.zoom,
-      groups
+      groups,
+      fontCss: await buildEmbeddedFontCss(collectFontStacks(scene))
     });
     downloadBlob(new Blob([markup], { type: "image/svg+xml" }), `${filename}.svg`);
   } catch (err) {

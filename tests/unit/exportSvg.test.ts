@@ -148,6 +148,24 @@ describe("buildSvgMarkup", () => {
     expect(markup).toContain('<polygon points="');
   });
 
+  it("embeds font-face CSS in the defs when provided", () => {
+    const scene = sceneWith({ backgroundMode: "transparent" });
+    const markup = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      groups: [],
+      fontCss: '@font-face { font-family: "Inter"; }'
+    });
+    expect(markup).toContain('<style>@font-face { font-family: "Inter"; }</style>');
+  });
+
+  it("omits font-face CSS when not provided", () => {
+    const scene = sceneWith({ backgroundMode: "transparent" });
+    const markup = buildSvgMarkup(scene, { width: 800, height: 600, backgroundHref: null, groups: [] });
+    expect(markup).not.toContain("<style>");
+  });
+
   it("renders the watermark when enabled", () => {
     const scene = sceneWith({ backgroundMode: "transparent", watermarkEnabled: true, watermarkText: "Mocksy", watermarkSize: 13 });
     const markup = buildSvgMarkup(scene, { width: 800, height: 600, backgroundHref: null, groups: [] });

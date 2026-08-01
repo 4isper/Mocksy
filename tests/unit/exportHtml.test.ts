@@ -125,6 +125,22 @@ describe("buildHtmlSnippet", () => {
     expect(html).toContain("@keyframes mockup-anim");
     expect(html).toContain("animation: mockup-anim 5s linear infinite;");
   });
+
+  it("embeds font-face CSS in the head when provided", () => {
+    const html = buildHtmlSnippet(sceneWith(), {
+      mediaHref: MEDIA,
+      mediaType: "image",
+      backgroundHref: null,
+      overlayHref: null,
+      fontCss: '@font-face { font-family: "Roboto"; }'
+    });
+    expect(html).toContain('<style>\n@font-face { font-family: "Roboto"; }\n</style>');
+  });
+
+  it("omits font-face CSS when not provided", () => {
+    const html = buildHtmlSnippet(sceneWith(), { mediaHref: MEDIA, mediaType: "image", backgroundHref: null, overlayHref: null });
+    expect(html).not.toContain("@font-face");
+  });
 });
 
 describe("buildRasterHtmlSnippet", () => {
