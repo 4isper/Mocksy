@@ -383,6 +383,39 @@ describe("exportVideo orchestration", () => {
     expect(gridVideo.play).toHaveBeenCalled();
   });
 
+  it("sizes the capture canvas to a custom resolution", async () => {
+    const preview = fakePreview(); // 800×600 preview
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+
+    const statuses: string[] = [];
+    await exportWebm(
+      sceneWithLayer({ mediaUrl: null, mediaType: "none" }),
+      undefined,
+      (m) => statuses.push(m),
+      undefined,
+      undefined,
+      { width: 1920, height: 1080 }
+    );
+    expect(statuses).toContain("Done");
+    // custom size overrides the quality-tier pixel ratio entirely
+    expect(canvas.width).toBe(1920);
+    expect(canvas.height).toBe(1080);
+  });
+
+  it("records at the quality-tier size when no custom size is set", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+
+    // medium quality, dpr 2 → resolvePixelRatio = max(2,2)*0.75 = 1.5
+    await exportWebm(sceneWithLayer({ mediaUrl: null, mediaType: "none" }));
+    expect(canvas.width).toBe(Math.max(640, Math.round(800 * 1.5)));
+    expect(canvas.height).toBe(Math.max(360, Math.round(600 * 1.5)));
+  });
+
   it("transcodes an animated WebP through FFmpeg", async () => {
     const preview = fakePreview();
     const canvas = fakeCanvas();

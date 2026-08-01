@@ -160,6 +160,68 @@ describe("renderSceneToPngBlob", () => {
     expect(result).toBeNull();
   });
 
+  it("renders at a custom resolution when customSize overrides scale", async () => {
+    vi.stubGlobal("HTMLCanvasElement", class {});
+    vi.stubGlobal("HTMLVideoElement", class {});
+    vi.stubGlobal("HTMLImageElement", class {});
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => null,
+      toBlob: (cb: (b: Blob | null) => void) => cb(new Blob(["png"]))
+    } as unknown as HTMLCanvasElement;
+    const container = {
+      clientWidth: 800,
+      clientHeight: 600,
+      querySelector: (sel: string) =>
+        sel === "[data-mockup-frame]" ? ({ offsetWidth: 400, offsetHeight: 300 } as HTMLElement) : null
+    };
+    vi.stubGlobal("document", {
+      getElementById: (id: string) => (id === "preview" ? container : null),
+      createElement: (tag: string) => (tag === "canvas" ? canvas : null)
+    });
+    vi.stubGlobal("window", { devicePixelRatio: 2 });
+
+    const { renderSceneToPngBlob } = await import("@/lib/export/exportImage");
+    const errors: string[] = [];
+    const blob = await renderSceneToPngBlob(initialScene, "preview", (m) => errors.push(m), 4, { width: 1280, height: 720 });
+    expect(errors, errors.join(" | ")).toEqual([]);
+    expect(blob).toBeInstanceOf(Blob);
+    // The custom size wins over the 4× scale: exact 1280×720 canvas, and the
+    // frame (400×300) scales by the fit ratio min(1280/800, 720/600) = 1.2.
+    expect(canvas.width).toBe(1280);
+    expect(canvas.height).toBe(720);
+  });
+
+  it("ignores an incomplete customSize and falls back to scale", async () => {
+    vi.stubGlobal("HTMLCanvasElement", class {});
+    vi.stubGlobal("HTMLVideoElement", class {});
+    vi.stubGlobal("HTMLImageElement", class {});
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => null,
+      toBlob: (cb: (b: Blob | null) => void) => cb(new Blob(["png"]))
+    } as unknown as HTMLCanvasElement;
+    const container = {
+      clientWidth: 800,
+      clientHeight: 600,
+      querySelector: (sel: string) =>
+        sel === "[data-mockup-frame]" ? ({ offsetWidth: 400, offsetHeight: 300 } as HTMLElement) : null
+    };
+    vi.stubGlobal("document", {
+      getElementById: (id: string) => (id === "preview" ? container : null),
+      createElement: (tag: string) => (tag === "canvas" ? canvas : null)
+    });
+    vi.stubGlobal("window", { devicePixelRatio: 2 });
+
+    const { renderSceneToPngBlob } = await import("@/lib/export/exportImage");
+    const blob = await renderSceneToPngBlob(initialScene, "preview", undefined, 2, { width: 0, height: 720 });
+    expect(blob).toBeInstanceOf(Blob);
+    expect(canvas.width).toBe(1600); // 800 * 2
+    expect(canvas.height).toBe(1200); // 600 * 2
+  });
+
   it("returns null when canvas cannot produce blob", async () => {
     vi.stubGlobal("window", { devicePixelRatio: 2 });
     vi.stubGlobal("HTMLCanvasElement", class {});

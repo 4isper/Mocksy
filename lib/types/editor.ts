@@ -37,6 +37,13 @@ export type MediaType = "none" | "image" | "video";
 export type VideoQuality = "low" | "medium" | "high";
 export type WatermarkPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
 
+/** Absolute pixel dimensions for a custom-size export. When set, it overrides
+ *  the 1×/2×/4× scale control for raster formats (PNG, WebP, MP4, WebM). */
+export interface ExportSize {
+  width: number;
+  height: number;
+}
+
 /** One device frame instance in a multi-frame scene. When frameInstances exists,
  *  it takes precedence over scene.frame (which becomes legacy/single-frame mode). */
 export interface FrameInstance {

@@ -991,6 +991,14 @@ describe("media fit + PNG export scale", () => {
     store().setExportScale(1);
     expect(store().exportScale).toBe(1);
   });
+
+  it("starts without a custom export size and updates via setter", () => {
+    expect(store().customExportSize).toBeNull();
+    store().setCustomExportSize({ width: 1280, height: 720 });
+    expect(store().customExportSize).toEqual({ width: 1280, height: 720 });
+    store().setCustomExportSize(null);
+    expect(store().customExportSize).toBeNull();
+  });
 });
 
 describe("grid overlay state", () => {

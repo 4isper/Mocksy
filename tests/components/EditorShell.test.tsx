@@ -14,6 +14,7 @@ afterEach(() => {
     past: [],
     future: [],
     exportScale: 2,
+    customExportSize: null,
   });
   useProjectsStore.setState({ projects: [], activeProjectId: null, saveError: null });
   useThemeStore.setState({ mode: "dark" });

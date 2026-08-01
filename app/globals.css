@@ -473,6 +473,38 @@ select {
   outline-offset: 2px;
 }
 
+/* ---- Custom export size (Export dialog) ---- */
+.custom-size {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.custom-size input[type="number"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 11px;
+}
+
+.custom-size input[type="number"]:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.custom-size > span {
+  flex: 0 0 auto;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
 /* ---- Auto background button ---- */
 .auto-bg-btn {
   appearance: none;

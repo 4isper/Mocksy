@@ -6,6 +6,7 @@ import type {
   AnnotationType,
   AnimationPreset,
   EditorScene,
+  ExportSize,
   FrameInstance,
   MediaLayer,
   MediaType,
@@ -45,6 +46,10 @@ export interface EditorStoreState {
   /** Pixel multiplier used when exporting/copying PNG (1×/2×/4×). Kept out of
    *  `scene` so it doesn't churn undo history or serialize into share URLs. */
   exportScale: 1 | 2 | 4;
+  /** Absolute export size in pixels. When set (width/height > 0) it overrides
+   *  `exportScale` for raster formats. Kept out of `scene` for the same reason
+   *  as `exportScale`. */
+  customExportSize: ExportSize | null;
   /** Grid overlay on the preview canvas; kept out of `scene` so it doesn't
    *  churn undo history or serialize into share URLs. */
   showGrid: boolean;
@@ -63,6 +68,7 @@ export interface EditorStoreState {
   setMediaLoading: (loading: boolean) => void;
   setScenePalette: (palette: string[] | null) => void;
   setExportScale: (scale: 1 | 2 | 4) => void;
+  setCustomExportSize: (size: ExportSize | null) => void;
   setShowGrid: (show: boolean) => void;
   setGridDivisions: (divisions: number) => void;
   resetScene: () => void;
@@ -208,6 +214,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   isMediaLoading: false,
   scenePalette: null,
   exportScale: 2,
+  customExportSize: null,
   showGrid: false,
   gridDivisions: DEFAULT_GRID_DIVISIONS,
   setScene: (scene, recordHistory = true) =>
@@ -340,6 +347,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
   setMediaLoading: (loading) => set({ isMediaLoading: loading }),
   setScenePalette: (palette) => set({ scenePalette: palette }),
   setExportScale: (exportScale) => set({ exportScale }),
+  setCustomExportSize: (customExportSize) => set({ customExportSize }),
   setShowGrid: (showGrid) => set({ showGrid }),
   setGridDivisions: (gridDivisions) => set({ gridDivisions }),
   setFrame: (frame) =>

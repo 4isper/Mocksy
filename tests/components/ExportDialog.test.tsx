@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ExportDialog } from "@/components/editor/ExportDialog";
 
@@ -12,6 +12,8 @@ describe("ExportDialog", () => {
     onClose: vi.fn(),
     scale: 2 as 1 | 2 | 4,
     onScaleChange: vi.fn(),
+    customSize: null,
+    onCustomSizeChange: vi.fn(),
     onExport: vi.fn(),
     onCopy: vi.fn(),
   };
@@ -118,5 +120,45 @@ describe("ExportDialog", () => {
     render(<ExportDialog {...baseProps} busy />);
     const exportBtn = screen.getByRole("button", { name: "export.exportAction" });
     expect(exportBtn).toBeDisabled();
+  });
+
+  it("enables the custom-size inputs when Custom is selected", async () => {
+    const onCustomSizeChange = vi.fn();
+    const { rerender } = render(<ExportDialog {...baseProps} onCustomSizeChange={onCustomSizeChange} />);
+    expect(screen.queryByRole("spinbutton", { name: "export.width" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByText("export.custom"));
+    // enabling custom mode offers the default size to the store
+    expect(onCustomSizeChange).toHaveBeenCalledWith({ width: 1280, height: 720 });
+    // once the store acknowledges, the inputs appear
+    rerender(<ExportDialog {...baseProps} customSize={{ width: 1280, height: 720 }} onCustomSizeChange={onCustomSizeChange} />);
+    expect(screen.getByRole("spinbutton", { name: "export.width" })).toBeInTheDocument();
+    expect(screen.getByRole("spinbutton", { name: "export.height" })).toBeInTheDocument();
+  });
+
+  it("clears custom mode when a scale preset is picked", async () => {
+    const onScaleChange = vi.fn();
+    const onCustomSizeChange = vi.fn();
+    const { rerender } = render(<ExportDialog {...baseProps} customSize={{ width: 1280, height: 720 }} onScaleChange={onScaleChange} onCustomSizeChange={onCustomSizeChange} />);
+    await userEvent.click(screen.getByText("export.scale4x"));
+    expect(onScaleChange).toHaveBeenCalledWith(4);
+    expect(onCustomSizeChange).toHaveBeenCalledWith(null);
+    // once the store clears the custom size, the inputs disappear
+    rerender(<ExportDialog {...baseProps} customSize={null} onScaleChange={onScaleChange} onCustomSizeChange={onCustomSizeChange} />);
+    expect(screen.queryByRole("spinbutton", { name: "export.width" })).not.toBeInTheDocument();
+  });
+
+  it("updates the custom size when the width input changes", () => {
+    const onCustomSizeChange = vi.fn();
+    render(<ExportDialog {...baseProps} customSize={{ width: 1280, height: 720 }} onCustomSizeChange={onCustomSizeChange} />);
+    const width = screen.getByRole("spinbutton", { name: "export.width" });
+    fireEvent.change(width, { target: { value: "1920" } });
+    expect(onCustomSizeChange).toHaveBeenLastCalledWith({ width: 1920, height: 720 });
+  });
+
+  it("clamps custom-size inputs to positive integers", () => {
+    const onCustomSizeChange = vi.fn();
+    render(<ExportDialog {...baseProps} customSize={{ width: 1280, height: 720 }} onCustomSizeChange={onCustomSizeChange} />);
+    fireEvent.change(screen.getByRole("spinbutton", { name: "export.width" }), { target: { value: "0" } });
+    expect(onCustomSizeChange).toHaveBeenLastCalledWith({ width: 1, height: 720 });
   });
 });

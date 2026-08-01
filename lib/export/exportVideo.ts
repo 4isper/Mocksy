@@ -1,6 +1,6 @@
 "use client";
 
-import type { EditorScene, MediaLayer, VideoQuality } from "@/lib/types/editor";
+import type { EditorScene, ExportSize, MediaLayer, VideoQuality } from "@/lib/types/editor";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { loadImage } from "@/lib/render/canvasMedia";
 import { renderMockupToCanvas } from "@/lib/render/renderMockup";
@@ -305,17 +305,24 @@ export async function captureWebm(
   scene: EditorScene,
   scale?: number,
   onStatus?: (message: string) => void,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
+  customSize?: ExportSize | null
 ): Promise<Blob | null> {
   const previewNode = document.getElementById("preview-canvas");
   if (!previewNode) throw new Error("Preview area not found.");
 
   const exportQuality = (scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0])?.videoQuality ?? "medium";
   const quality = QUALITY[exportQuality] ?? QUALITY.medium;
-  const pixelRatio = resolvePixelRatio(exportQuality) * (typeof scale === "number" && scale > 0 ? scale / 2 : 1);
+  const hasCustomSize = customSize !== null && customSize !== undefined && customSize.width > 0 && customSize.height > 0;
+  // Custom resolutions record the canvas at exactly that size and scale the
+  // frame by the uniform fit ratio (aspect-preserving, letterboxed), matching
+  // the PNG export. Otherwise the quality tier and export scale drive the size.
+  const pixelRatio = hasCustomSize
+    ? Math.min(customSize.width / previewNode.clientWidth, customSize.height / previewNode.clientHeight)
+    : resolvePixelRatio(exportQuality) * (typeof scale === "number" && scale > 0 ? scale / 2 : 1);
   const canvas = document.createElement("canvas");
-  canvas.width = Math.max(640, Math.round(previewNode.clientWidth * pixelRatio));
-  canvas.height = Math.max(360, Math.round(previewNode.clientHeight * pixelRatio));
+  canvas.width = Math.max(hasCustomSize ? 1 : 640, Math.round(hasCustomSize ? customSize.width : previewNode.clientWidth * pixelRatio));
+  canvas.height = Math.max(hasCustomSize ? 1 : 360, Math.round(hasCustomSize ? customSize.height : previewNode.clientHeight * pixelRatio));
 
   const videoInPreview = previewNode.querySelector("video");
   const imageInPreview = previewNode.querySelector("img");
@@ -428,10 +435,11 @@ export async function exportVideo(
   scale?: number,
   onStatus?: (message: string) => void,
   onProgress?: (progress: number) => void,
-  onError?: (message: string) => void
+  onError?: (message: string) => void,
+  customSize?: ExportSize | null
 ) {
   try {
-    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress);
+    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no frames.");
       return;
@@ -499,11 +507,12 @@ async function captureWebmWithRetry(
   scene: EditorScene,
   scale?: number,
   onStatus?: (message: string) => void,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
+  customSize?: ExportSize | null
 ): Promise<Blob | null> {
-  const first = await captureWebm(scene, scale, onStatus, onProgress);
+  const first = await captureWebm(scene, scale, onStatus, onProgress, customSize);
   if (first && first.size > 0) return first;
-  return captureWebm(scene, scale, onStatus, onProgress);
+  return captureWebm(scene, scale, onStatus, onProgress, customSize);
 }
 
 /**
@@ -516,10 +525,11 @@ export async function exportWebm(
   scale?: number,
   onStatus?: (message: string) => void,
   onProgress?: (progress: number) => void,
-  onError?: (message: string) => void
+  onError?: (message: string) => void,
+  customSize?: ExportSize | null
 ) {
   try {
-    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress);
+    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no video frames.");
       return;
@@ -542,10 +552,11 @@ export async function exportWebpAnim(
   scale?: number,
   onStatus?: (message: string) => void,
   onProgress?: (progress: number) => void,
-  onError?: (message: string) => void
+  onError?: (message: string) => void,
+  customSize?: ExportSize | null
 ) {
   try {
-    const webmBlob = await captureWebm(scene, scale, onStatus, onProgress);
+    const webmBlob = await captureWebm(scene, scale, onStatus, onProgress, customSize);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no frames.");
       return;
@@ -561,8 +572,12 @@ export async function exportWebpAnim(
     await ffmpeg.writeFile(inputName, new Uint8Array(await webmBlob.arrayBuffer()));
     onProgress?.(50);
     // Animated WebP is best kept small: cap the width per quality tier (2× is
-    // the baseline, so 1× halves and 4× doubles it) and drop to 15fps.
-    const width = Math.round(480 * quality.scale * (typeof scale === "number" && scale > 0 ? scale / 2 : 1));
+    // the baseline, so 1× halves and 4× doubles it) and drop to 15fps. A custom
+    // resolution is capped at its own width so it never exceeds it.
+    const hasCustomSize = customSize !== null && customSize !== undefined && customSize.width > 0;
+    const width = hasCustomSize
+      ? Math.round(Math.min(customSize.width, 480 * quality.scale))
+      : Math.round(480 * quality.scale * (typeof scale === "number" && scale > 0 ? scale / 2 : 1));
     const code = await ffmpeg.exec([
       "-i", inputName,
       "-vf", `fps=15,scale=${width}:-1:flags=lanczos`,
@@ -610,10 +625,11 @@ export async function exportGif(
   scale?: number,
   onStatus?: (message: string) => void,
   onProgress?: (progress: number) => void,
-  onError?: (message: string) => void
+  onError?: (message: string) => void,
+  customSize?: ExportSize | null
 ) {
   try {
-    const webmBlob = await captureWebm(scene, scale, onStatus, onProgress);
+    const webmBlob = await captureWebm(scene, scale, onStatus, onProgress, customSize);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no frames.");
       return;
@@ -631,8 +647,12 @@ export async function exportGif(
     onProgress?.(50);
     // Scale down for GIF: keep it crisp but cap width so the palette step
     // stays cheap. Quality tier and the chosen export scale drive the width
-    // (2× is the baseline, so 1× halves and 4× doubles it).
-    const width = Math.round(480 * quality.scale * (typeof scale === "number" && scale > 0 ? scale / 2 : 1));
+    // (2× is the baseline, so 1× halves and 4× doubles it). A custom resolution
+    // is capped at its own width.
+    const hasCustomSize = customSize !== null && customSize !== undefined && customSize.width > 0;
+    const width = hasCustomSize
+      ? Math.round(Math.min(customSize.width, 480 * quality.scale))
+      : Math.round(480 * quality.scale * (typeof scale === "number" && scale > 0 ? scale / 2 : 1));
     const code = await ffmpeg.exec([
       "-i", inputName,
       "-vf", `fps=15,scale=${width}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`,
