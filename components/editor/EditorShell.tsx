@@ -69,7 +69,7 @@ export function EditorShell() {
       await navigator.clipboard.writeText(url);
     } catch (err) {
       if (err instanceof ShareUrlTooLarge) {
-        setExportError(t("shareUrlTooLarge"));
+        setExportError(t("errors.shareUrlTooLarge"));
       } else {
         setExportError(err instanceof Error ? err.message : "Could not create share link");
       }
