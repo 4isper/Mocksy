@@ -104,6 +104,7 @@ test("fan layout renders consistently", async ({ page }) => {
 
 test("keyboard shortcuts dialog renders consistently", async ({ page }) => {
   await page.goto("/");
+  await waitForStable(page);
   await page.keyboard.press("Shift+Slash");
   await expect(page.locator(".modal[role='dialog']")).toBeVisible();
   await waitForStable(page);

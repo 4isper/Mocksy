@@ -461,7 +461,7 @@ test("grid overlay toggles from the preview chip", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("[data-grid-overlay]")).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Grid" }).click();
+  await page.getByLabel("Grid", { exact: true }).click();
   const overlay = page.locator("[data-grid-overlay]");
   await expect(overlay).toHaveCount(1);
   // 12 divisions by default -> 8.3333% cells (computed as one size per gradient layer).
@@ -472,7 +472,7 @@ test("grid overlay toggles from the preview chip", async ({ page }) => {
   await expect(overlay).toHaveCSS("background-size", "12.5% 12.5%, 12.5% 12.5%");
 
   // Toggling off removes the overlay.
-  await page.getByRole("button", { name: "Grid" }).click();
+  await page.getByLabel("Grid", { exact: true }).click();
   await expect(page.locator("[data-grid-overlay]")).toHaveCount(0);
 });
 
@@ -1264,11 +1264,11 @@ test("Russian locale renders translated UI strings", async ({ page }) => {
 test("grid controls are translated per locale", async ({ page }) => {
   const expectGridLabels = async (locale: string, gridLabel: string, divisionsLabel: string) => {
     await page.goto(`/${locale}`);
-    await page.getByLabel(gridLabel).click();
+    await page.getByLabel(gridLabel, { exact: true }).click();
     await expect(page.getByLabel(divisionsLabel)).toBeVisible();
   };
 
-  await expectGridLabels("ru", "Сетка", "Линий сетки");
+  await expectGridLabels("ru", "Сетка", "Линии сетки");
   await expectGridLabels("de", "Raster", "Rasterlinien");
   await expectGridLabels("ar", "شبكة", "خطوط الشبكة");
 });
@@ -1338,8 +1338,8 @@ test("exporting with a text annotation includes the annotation in the PNG", asyn
   await expect(previewMedia(page)).toBeVisible();
 
   // Add a text annotation.
-  await page.getByRole("button", { name: "Annotation" }).click();
-  await page.getByRole("button", { name: "Text" }).click();
+  await page.getByRole("tab", { name: "Annotations" }).click();
+  await page.locator('.segmented[aria-label="Add annotation"] button', { hasText: "+ Text" }).click();
   await page.waitForTimeout(200);
 
   await openExportDialog(page);
@@ -1366,8 +1366,8 @@ test("exporting with an arrow annotation includes the arrow in the PNG", async (
   await expect(previewMedia(page)).toBeVisible();
 
   // Add an arrow annotation.
-  await page.getByRole("button", { name: "Annotation" }).click();
-  await page.getByRole("button", { name: "Arrow" }).click();
+  await page.getByRole("tab", { name: "Annotations" }).click();
+  await page.locator('.segmented[aria-label="Add annotation"] button', { hasText: "+ Arrow" }).click();
   await page.waitForTimeout(200);
 
   await openExportDialog(page);
@@ -1390,8 +1390,7 @@ test("exporting with glassDark style preset draws the frame border", async ({ pa
   await expect(previewMedia(page)).toBeVisible();
 
   // Apply the glassDark style preset.
-  await page.getByRole("button", { name: "Style" }).click();
-  await page.getByRole("button", { name: "Glass Dark" }).click();
+  await page.getByRole("button", { name: "Dark glass" }).click();
   await page.waitForTimeout(200);
 
   await openExportDialog(page);
@@ -1438,8 +1437,7 @@ test("exporting with a gradient background produces a non-empty PNG", async ({ p
   await expect(previewMedia(page)).toBeVisible();
 
   // Switch to gradient background mode.
-  await page.getByRole("button", { name: "Background" }).click();
-  await page.getByRole("button", { name: "Gradient" }).click();
+  await page.getByRole("button", { name: "Sunset" }).click();
   await page.waitForTimeout(200);
 
   await openExportDialog(page);
