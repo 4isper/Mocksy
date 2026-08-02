@@ -9,6 +9,9 @@ import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { downloadBlob } from "@/lib/export/downloadBlob";
+import { sanitizeFilename } from "@/lib/export/filename";
+
+export { sanitizeFilename };
 
 let ffmpegSingleton: FFmpeg | null = null;
 
@@ -49,10 +52,6 @@ export async function cleanupFfmpegTempFiles(ffmpeg: FFmpeg | null, files: strin
   } catch {
     // ignore cleanup errors
   }
-}
-
-export function sanitizeFilename(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
 /** Media layer driving the export (active layer, falling back to the first). */

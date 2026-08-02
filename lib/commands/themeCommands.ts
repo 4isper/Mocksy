@@ -1,7 +1,7 @@
 import type { Command } from "@/lib/types/editor";
 
 export function createThemeCommands(
-  t: (key: string, values?: Record<string, any>) => string,
+  t: (key: string, values?: Record<string, string | number | Date>) => string,
   callbacks: {
     setThemeMode: (mode: "light" | "dark" | "system") => void;
   }

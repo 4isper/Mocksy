@@ -26,10 +26,10 @@ export function TemplatesPanel() {
             type="button"
             className="template-card"
             onClick={() => setScene(applySceneStylePreset(preset), true)}
-            title={t("templates.apply", { name: preset.name })}
+            title={t("templates.apply", { name: t(`preset.${preset.id}`) })}
             style={{ background: presetBackground(preset) }}
           >
-            <div className="t-name">{preset.name}</div>
+            <div className="t-name">{t(`preset.${preset.id}`)}</div>
           </button>
           ))}
       </div>

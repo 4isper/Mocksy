@@ -1,7 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
-import { loadImage, loadVideoFrame, drawFrameMediaFromLayer } from "@/lib/render/canvasMedia";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { loadImage, clearImageCache, loadVideoFrame, drawFrameMediaFromLayer } from "@/lib/render/canvasMedia";
 
 describe("loadImage", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    clearImageCache();
+  });
+
   it("resolves with the image element on successful load", async () => {
     const loadCallbacks: Array<() => void> = [];
     class MockImage {
@@ -16,7 +21,6 @@ describe("loadImage", () => {
     loadCallbacks[loadCallbacks.length - 1]?.();
     const img = await promise;
     expect(img).toBeDefined();
-    vi.unstubAllGlobals();
   });
 
   it("rejects with descriptive error on load failure", async () => {
@@ -29,7 +33,50 @@ describe("loadImage", () => {
     }
     vi.stubGlobal("Image", MockImage);
     await expect(loadImage("broken.png")).rejects.toThrow("Failed to load image: broken.png");
-    vi.unstubAllGlobals();
+  });
+
+  it("reuses the cached element for the same source", async () => {
+    const instances: unknown[] = [];
+    let fired = false;
+    class MockImage {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      constructor() {
+        instances.push(this);
+      }
+      set src(_v: string) {
+        if (!fired) {
+          fired = true;
+          this.onload?.();
+        }
+      }
+    }
+    vi.stubGlobal("Image", MockImage);
+    const first = await loadImage("shared.png");
+    const second = await loadImage("shared.png");
+    expect(second).toBe(first);
+    expect(instances).toHaveLength(1);
+  });
+
+  it("evicts failed loads so they can be retried", async () => {
+    let shouldFail = true;
+    const callbacks: Array<() => void> = [];
+    class MockImage {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      set src(_v: string) {
+        callbacks.push(() => (shouldFail ? this.onerror?.() : this.onload?.()));
+      }
+    }
+    vi.stubGlobal("Image", MockImage);
+    const first = loadImage("flaky.png");
+    callbacks[0]!();
+    await expect(first).rejects.toThrow("Failed to load image: flaky.png");
+    shouldFail = false;
+    const second = loadImage("flaky.png");
+    callbacks[1]!();
+    await expect(second).resolves.toBeDefined();
+    expect(callbacks).toHaveLength(2);
   });
 });
 

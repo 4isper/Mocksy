@@ -64,7 +64,7 @@ describe("sceneStylePresets", () => {
   });
 
   it("applying a preset to a scene does not touch its layers", () => {
-    const preset = sceneStylePresets.find((p) => p.name === "Bold Gradient") ?? sceneStylePresets[0]!;
+    const preset = sceneStylePresets.find((p) => p.id === "bold-gradient") ?? sceneStylePresets[0]!;
     const scene = structuredClone(initialScene);
     const patch = applySceneStylePreset(preset);
     const next = { ...scene, ...patch };

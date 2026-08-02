@@ -2,13 +2,31 @@ import type { MediaLayer } from "@/lib/types/editor";
 import type { FrameBox } from "./frameGeometry";
 import { roundedRectPath } from "./canvasDrawing";
 
+const imageCache = new Map<string, Promise<HTMLImageElement>>();
+
+/** Loads an image, reusing a cached element for the same source. Media is
+ *  held as immutable data URLs, so a cached element can be shared safely
+ *  across the preview and every export path without re-decoding. Failed
+ *  loads are evicted so a transient error doesn't poison the cache. */
 export function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
+  const cached = imageCache.get(src);
+  if (cached) return cached;
+  const pending = new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+    img.onerror = () => {
+      imageCache.delete(src);
+      reject(new Error(`Failed to load image: ${src}`));
+    };
     img.src = src;
   });
+  imageCache.set(src, pending);
+  return pending;
+}
+
+/** Drops every cached image element. */
+export function clearImageCache(): void {
+  imageCache.clear();
 }
 
 export function loadVideoFrame(url: string, time = 0): Promise<HTMLVideoElement> {

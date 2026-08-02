@@ -182,7 +182,10 @@
     "watermarkPosition": "Vandens ženklo padėtis",
     "watermarkSize": "Vandens ženklo dydis ({val}px)",
     "watermarkText": "Vandens ženklo tekstas",
-    "zoom": "Mastelis"
+    "zoom": "Mastelis",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Nėra",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Eksportuoti {format} (⌘E)",
     "copy": "Kopijuoti",
     "convertVideo": "Konvertuojama video…",
-    "exportComplete": "Eksportas baigtas!"
+    "exportComplete": "Eksportas baigtas!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Spartūs klavišai",
@@ -456,5 +466,26 @@
     "tryAgain": "Pabandyti dar kartą",
     "lastSceneSafe": "Jūsų paskutinė išsaugota scena yra saugi šiame naršyklėje.",
     "shareUrlTooLarge": "Bendrinimo nuoroda per ilga — eksportuokite projekto failą, kad bendrintumėte šį mockupą."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

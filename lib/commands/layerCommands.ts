@@ -1,7 +1,7 @@
 import type { Command, EditorScene, MediaType } from "@/lib/types/editor";
 
 export function createLayerCommands(
-  t: (key: string, values?: Record<string, any>) => string,
+  t: (key: string, values?: Record<string, string | number | Date>) => string,
   scene: EditorScene,
   callbacks: {
     addLayer: (url: string, type: MediaType, name?: string | null) => void;

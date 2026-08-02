@@ -16,6 +16,9 @@ export const RENDER = {
   glassLightStroke: "rgba(255,255,255,0.45)",
   emptyMediaFill: "rgba(255,255,255,0.04)",
   gradientAngleDeg: 120,
+  annoShadowBlur: 3,
+  annoShadowOffsetY: 1,
+  watermarkInset: 16
 } as const;
 
 export function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -74,9 +77,9 @@ export function drawAnnotations(
       }
       ctx.fillStyle = a.color;
       ctx.shadowColor = "rgba(0,0,0,0.5)";
-      ctx.shadowBlur = 3 * dpiScale;
+      ctx.shadowBlur = RENDER.annoShadowBlur * dpiScale;
       ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 1 * dpiScale;
+      ctx.shadowOffsetY = RENDER.annoShadowOffsetY * dpiScale;
       lines.forEach((line, i) => ctx.fillText(line, textX, by + i * lineHeight));
     } else if (a.type === "rect") {
       ctx.strokeStyle = a.color;
@@ -121,7 +124,7 @@ export function drawWatermark(
 ) {
   if (!scene.watermarkEnabled || !scene.watermarkText) return;
   const watermarkSize = scene.watermarkSize * dpiScale;
-  const inset = 16 * dpiScale;
+  const inset = RENDER.watermarkInset * dpiScale;
   const onLeft = scene.watermarkPosition === "bottom-left" || scene.watermarkPosition === "top-left";
   const onTop = scene.watermarkPosition === "top-right" || scene.watermarkPosition === "top-left";
   const textX = onLeft ? inset : width - inset;
@@ -132,9 +135,9 @@ export function drawWatermark(
   ctx.textAlign = onLeft ? "left" : "right";
   ctx.textBaseline = onTop ? "top" : "alphabetic";
   ctx.shadowColor = "rgba(0,0,0,0.6)";
-  ctx.shadowBlur = 3 * dpiScale;
+  ctx.shadowBlur = RENDER.annoShadowBlur * dpiScale;
   ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 1 * dpiScale;
+  ctx.shadowOffsetY = RENDER.annoShadowOffsetY * dpiScale;
   ctx.fillText(scene.watermarkText, textX, textY);
   ctx.restore();
 }

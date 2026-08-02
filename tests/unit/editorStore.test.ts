@@ -476,15 +476,17 @@ describe("layer management", () => {
     expect(store().past.length).toBe(pastBefore);
   });
 
-  it("selectLayer changes active layer and records history", () => {
+  it("selectLayer changes active layer without recording history", () => {
     reset();
     store().addLayer("data:image/png;base64,l2", "image");
     const first = store().scene.layers[0]!.id;
     const second = store().scene.layers[1]!.id;
+    const pastBefore = store().past.length;
     store().selectLayer(first);
     expect(store().scene.activeLayerId).toBe(first);
     store().selectLayer(second);
     expect(store().scene.activeLayerId).toBe(second);
+    expect(store().past.length).toBe(pastBefore);
   });
 
   it("reorderLayers respects the supplied order", () => {

@@ -182,7 +182,10 @@
     "watermarkPosition": "ನೀರ್ ಗುರುತು ಸ್ಥಾನ",
     "watermarkSize": "ನೀರ್ ಗುರುತು ಗಾತ್ರ ({val}px)",
     "watermarkText": "ನೀರ್ ಗುರುತು ಪಠ್ಯ",
-    "zoom": "ಜೂಮ್"
+    "zoom": "ಜೂಮ್",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "ಯಾವುದೂ ಇಲ್ಲ",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "ಎಕ್ಸಪೋರ್ಟ್ {format} (⌘E)",
     "copy": "ನಕಲು",
     "convertVideo": "ವೀಡಿಯೋ ಪರಿವರ್ತಿಸಲಾಗುತ್ತಿದೆ…",
-    "exportComplete": "ಎಕ್ಸಪೋರ್ಟ್ ಪೂರ್ಣಗೊಂಡಿದೆ!"
+    "exportComplete": "ಎಕ್ಸಪೋರ್ಟ್ ಪೂರ್ಣಗೊಂಡಿದೆ!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "ಕೀಬೋರ್ಡ್ ಶಾರ್ಟ್ಕಟ್ಸ್",
@@ -456,5 +466,26 @@
     "tryAgain": "ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ",
     "lastSceneSafe": "ನಿಮ್ಮ ಕಾಲಾಂತರದ ಉಳಿಸಿದ ದೃಶ್ಯವು ಈ ಬ್ರೌಜರ್‌ನಲ್ಲಿ ಸುರಕ್ಷಿತವಾಗಿದೆ.",
     "shareUrlTooLarge": "share URL ಚಾಲು ಉದ್ದವಾಗಿದೆ — ಈ mockup ಅನ್ನು ಹಂಚಿಕೊಳ್ಳಲು ಪ್ರಾಜೆಕ್ಟ್ ಫೈಲ್ ಅನ್ನು ಎಕ್ಸಪೋರ್ಟ್ ಮಾಡಿ."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

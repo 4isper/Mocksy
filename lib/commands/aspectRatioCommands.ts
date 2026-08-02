@@ -2,7 +2,7 @@ import type { Command } from "@/lib/types/editor";
 import { ASPECT_RATIOS } from "@/lib/render/frames";
 
 export function createAspectRatioCommands(
-  t: (key: string, values?: Record<string, any>) => string,
+  t: (key: string, values?: Record<string, string | number | Date>) => string,
   callbacks: {
     setAspectRatio: (ratio: string) => void;
   }

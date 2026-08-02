@@ -7,6 +7,7 @@ interface Props {
   children: ReactNode;
   fallback?: ReactNode;
   message?: string;
+  retryLabel?: string;
 }
 
 interface State {
@@ -48,7 +49,7 @@ export class ErrorBoundary extends Component<Props, State> {
               className="btn"
               onClick={() => this.setState({ hasError: false, error: null })}
             >
-              Retry
+              {this.props.retryLabel ?? "Retry"}
             </button>
           </div>
         )

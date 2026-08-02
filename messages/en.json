@@ -3,6 +3,9 @@
     "title": "Mocksy — Free mockup editor",
     "description": "Create mockups, animations and exports without subscriptions."
   },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
   "nav": {
     "export": "Export",
     "shortcuts": "Shortcuts",
@@ -113,6 +116,9 @@
     "frameY": "Y",
     "gradientAngle": "Angle ({val}°)",
     "gradientFrom": "From",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial",
     "gradientTo": "To",
     "grid": "Grid",
     "gridDivisions": "Grid lines",
@@ -299,7 +305,14 @@
     "exportActionShortcut": "Export {format}",
     "copy": "Copy",
     "convertVideo": "Converting video…",
-    "exportComplete": "Export complete!"
+    "exportComplete": "Export complete!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",
@@ -360,6 +373,24 @@
     "light": "Light",
     "dark": "Dark",
     "system": "System"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   },
   "commandPalette": {
     "title": "Command palette",

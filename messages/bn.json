@@ -182,7 +182,10 @@
     "watermarkPosition": "জলছাপের অবস্থান",
     "watermarkSize": "জলছাপের আকার ({val}px)",
     "watermarkText": "জলছাপের টেক্সট",
-    "zoom": "জুম"
+    "zoom": "জুম",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "কোনোটি নয়",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "প্রস্তুত {format} (⌘E)",
     "copy": "কপি",
     "convertVideo": "ভিডিও রূপান্তর করা হচ্ছে…",
-    "exportComplete": "প্রস্তুতি সম্পন্ন!"
+    "exportComplete": "প্রস্তুতি সম্পন্ন!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "কীবোর্ড শর্টকাট",
@@ -456,5 +466,26 @@
     "tryAgain": "আবার চেষ্টা করুন",
     "lastSceneSafe": "আপনার শেষ সংরক্ষিত দৃশ্য এই ব্রাউজারে নিরাপদ।",
     "shareUrlTooLarge": "শেয়ার লিংক খুব দীর্ঘ — এই mockup শেয়ার করতে প্রকল্প ফাইল প্রস্তুত করুন।"
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

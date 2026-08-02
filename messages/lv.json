@@ -182,7 +182,10 @@
     "watermarkPosition": "Ūdenszīmes novietojums",
     "watermarkSize": "Ūdenszīmes izmērs — {val}px",
     "watermarkText": "Ūdenszīmes teksts",
-    "zoom": "Mēroga soliņš"
+    "zoom": "Mēroga soliņš",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Nekur",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Eksportēt {format} (⌘E)",
     "copy": "Kopēt",
     "convertVideo": "Konvertēt video…",
-    "exportComplete": "Eksports pabeigts!"
+    "exportComplete": "Eksports pabeigts!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Īslaidi",
@@ -456,5 +466,26 @@
     "tryAgain": "Mēģināt vēlreiz",
     "lastSceneSafe": "Pēdējais skats ir droši saglabāts pārlūkā.",
     "shareUrlTooLarge": "Koplietošanas URL ir pārāk garš — eksportējiet projektu, lai dalītos ar šo mockup."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

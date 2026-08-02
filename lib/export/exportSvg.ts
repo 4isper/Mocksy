@@ -2,28 +2,13 @@
 
 import type { EditorScene } from "@/lib/types/editor";
 import { computeFrameBox, computeFrameInstances, type FrameBox } from "@/lib/render/frameGeometry";
-import { loadVideoFrame } from "@/lib/render/canvasMedia";
+import { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
 import { frameViewBox, getFrameSpec, DEFAULT_VIEWBOX } from "@/lib/render/frames";
 import { resolveExportTransform, waitForImage } from "@/lib/export/exportImage";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { buildEmbeddedFontCss, collectFontStacks } from "@/lib/export/fontEmbed";
 import { downloadBlob } from "@/lib/export/downloadBlob";
-
-const RENDER = {
-  shadowBlur: 70,
-  shadowOffsetY: 28,
-  outlineStroke: 2,
-  glassStroke: 1,
-  glassDarkFill: "rgba(7,7,9,0.35)",
-  glassLightFill: "rgba(255,255,255,0.06)",
-  glassDarkStroke: "rgba(255,255,255,0.2)",
-  glassLightStroke: "rgba(255,255,255,0.45)",
-  emptyMediaFill: "rgba(255,255,255,0.04)",
-  gradientAngleDeg: 120,
-  annoShadowBlur: 3,
-  annoShadowOffsetY: 1,
-  watermarkInset: 16
-} as const;
+import { RENDER } from "@/lib/render/canvasDrawing";
 
 /** Rounds to 2 decimals so generated SVG stays compact but accurate. */
 function num(n: number): string {
@@ -277,12 +262,7 @@ export async function mediaToDataUrl(src: string): Promise<{ href: string; width
 }
 
 function loadMediaElement(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
-    img.src = src;
-  });
+  return loadImage(src);
 }
 
 /** Captures the current frame of a preview <video> as a PNG data URL. */

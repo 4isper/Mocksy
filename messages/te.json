@@ -182,7 +182,10 @@
     "watermarkPosition": "నీర్ గీర్గింపు స్థానం",
     "watermarkSize": "నీర్ గీర్గింపు పరిమాణం ({val}px)",
     "watermarkText": "నీర్ గీర్గింపు వచనం",
-    "zoom": "జూమ్"
+    "zoom": "జూమ్",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "ఏదీ లేదు",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "ఎక్స్‌పోర్ట్ {format} (⌘E)",
     "copy": "నకలు",
     "convertVideo": "వీడియో మార్చబడుతోంది…",
-    "exportComplete": "ఎక్స్‌పోర్ట్ పూర్తి అయింది!"
+    "exportComplete": "ఎక్స్‌పోర్ట్ పూర్తి అయింది!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "కీబోర్డ్ షార్ట్‌కట్స్",
@@ -456,5 +466,26 @@
     "tryAgain": "మళ్ళీ ప్రయత్నించండి",
     "lastSceneSafe": "మీ చివరి సేవ్ చేసిన దృశ్యం ఈ బ్రౌజర్‌లో సురక్షితంగా ఉంది.",
     "shareUrlTooLarge": "share URL చాలా పొడవు — ఈ mockup ని పంపడానికి ప్రాజెక్ట్ ఫైల్ ఎక్స్‌పోర్ట్ చేయండి."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

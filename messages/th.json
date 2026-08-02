@@ -182,7 +182,10 @@
     "watermarkPosition": "ตำแหน่งลายน้ำ",
     "watermarkSize": "ขนาดลายน้ำ ({val}px)",
     "watermarkText": "ข้อความลายน้ำ",
-    "zoom": "ซูม"
+    "zoom": "ซูม",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "ไม่มี",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "ส่งออก {format} (⌘E)",
     "copy": "คัดลอก",
     "convertVideo": "กำลังแปลงวิดีโอ…",
-    "exportComplete": "ส่งออกเสร็จสมบูรณ์!"
+    "exportComplete": "ส่งออกเสร็จสมบูรณ์!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "ปุ่มลัดคีย์บอร์ด",
@@ -456,5 +466,26 @@
     "tryAgain": "ลองอีกครั้ง",
     "lastSceneSafe": "ฉากที่บันทึกล่าสุดของคุณปลอดภัยในเบราว์เซอร์นี้",
     "shareUrlTooLarge": "URL แชร์ยาวเกินไป — ส่งออกไฟล์โปรเจกต์เพื่อแชร์ mockup นี้"
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

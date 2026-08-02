@@ -15,14 +15,14 @@ describe("TemplatesPanel", () => {
   it("renders all scene style presets", () => {
     render(<TemplatesPanel />);
     for (const preset of sceneStylePresets) {
-      expect(screen.getByText(preset.name)).toBeInTheDocument();
+      expect(screen.getByText(`preset.${preset.id}`)).toBeInTheDocument();
     }
   });
 
   it("applies preset on click", async () => {
     render(<TemplatesPanel />);
     const preset = sceneStylePresets[0]!;
-    await userEvent.click(screen.getByText(preset.name));
+    await userEvent.click(screen.getByText(`preset.${preset.id}`));
     const scene = useEditorStore.getState().scene;
     expect(scene.frame).toBe(preset.frame);
     expect(scene.stylePreset).toBe(preset.stylePreset);

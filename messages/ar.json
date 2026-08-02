@@ -182,7 +182,10 @@
     "watermarkPosition": "موقع العلامة المائية",
     "watermarkSize": "حجم العلامة المائية ({val}px)",
     "watermarkText": "نص العلامة المائية",
-    "zoom": "تكبير"
+    "zoom": "تكبير",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "بلا",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "تصدير {format} (⌘E)",
     "copy": "نسخ",
     "convertVideo": "جاري تحويل الفيديو…",
-    "exportComplete": "اكتمل التصدير!"
+    "exportComplete": "اكتمل التصدير!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "اختصارات لوحة المفاتيح",
@@ -456,5 +466,26 @@
     "tryAgain": "حاول مرة أخرى",
     "lastSceneSafe": "المشهد المحفوظ الأخير آمن في هذا المتصفح.",
     "shareUrlTooLarge": "رابط المشاركة طويل جدًا — قم بتصدير ملف المشروع لمشاركة هذا mockup."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

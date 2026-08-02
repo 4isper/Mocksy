@@ -142,7 +142,6 @@ export interface EditorScene {
  *  preset restyles the mockup without discarding the user's uploaded media. */
 export interface SceneStylePreset {
   id: string;
-  name: string;
   frame: MockupFrame;
   stylePreset: StylePreset;
   backgroundMode: BackgroundMode;

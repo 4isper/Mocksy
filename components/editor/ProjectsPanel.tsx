@@ -90,6 +90,10 @@ export function ProjectsPanel() {
             <li
               key={project.id}
               className={active ? "project-item is-active" : "project-item"}
+              role="button"
+              tabIndex={editing ? -1 : 0}
+              aria-pressed={active}
+              aria-label={project.name}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -101,6 +105,12 @@ export function ProjectsPanel() {
                 cursor: "pointer"
               }}
               onClick={() => !editing && switchProject(project.id)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" && e.key !== " ") return;
+                if (e.target !== e.currentTarget) return;
+                e.preventDefault();
+                if (!editing) switchProject(project.id);
+              }}
             >
               <span style={{ flex: 1, minWidth: 0, overflow: "hidden", fontSize: 12 }}>
                 {editing ? (

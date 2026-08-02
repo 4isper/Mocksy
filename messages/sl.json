@@ -182,7 +182,10 @@
     "watermarkPosition": "Položaj vodnega žiga",
     "watermarkSize": "Velikost vodnega žiga — {val}px",
     "watermarkText": "Besedilo vodnega žiga",
-    "zoom": "Zoom"
+    "zoom": "Zoom",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Brez",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Izvozi {format} (⌘E)",
     "copy": "Kopiraj",
     "convertVideo": "Pretvarjanje videa…",
-    "exportComplete": "Izvoz dokončan!"
+    "exportComplete": "Izvoz dokončan!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Bližnjice tipkovnice",
@@ -456,5 +466,26 @@
     "tryAgain": "Poskusite znova",
     "lastSceneSafe": "Zadnja scena je varno shranjena v brskalniku.",
     "shareUrlTooLarge": "URL deljenja je predolg — izvozite projekt za deljenje tega mockupa."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

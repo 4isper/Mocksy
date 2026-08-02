@@ -13,6 +13,7 @@ import type {
 } from "@/lib/types/editor";
 import { FRAME_SPECS, ANIMATION_PRESETS } from "@/lib/render/frames";
 import { initialScene } from "@/lib/state/editorStore";
+import { nextAnnotationId, nextFrameInstanceId, nextLayerId } from "@/lib/state/ids";
 
 const FRAMES = Object.keys(FRAME_SPECS) as MockupFrame[];
 const STYLE_PRESETS: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
@@ -36,18 +37,6 @@ function num(value: unknown, fallback: number, min: number, max: number): number
 
 function str(value: unknown, fallback: string | null): string | null {
   return typeof value === "string" && value.length > 0 ? value : fallback;
-}
-
-let layerSeq = 0;
-function nextLayerId(): string {
-  layerSeq += 1;
-  return `layer-${layerSeq}-${Date.now().toString(36)}`;
-}
-
-let annotationSeq = 0;
-function nextAnnotationId(): string {
-  annotationSeq += 1;
-  return `anno-${annotationSeq}-${Date.now().toString(36)}`;
 }
 
 /** Normalizes one raw annotation-shaped object into a valid Annotation. */
@@ -108,7 +97,7 @@ function normalizeFrameInstance(raw: unknown, fallback: FrameInstance): FrameIns
   if (!raw || typeof raw !== "object") return fallback;
   const r = raw as Record<string, unknown>;
   return {
-    id: typeof r.id === "string" && r.id.length > 0 ? r.id : `frame-${Date.now().toString(36)}`,
+    id: typeof r.id === "string" && r.id.length > 0 ? r.id : nextFrameInstanceId(),
     frame: pick(r.frame, FRAMES, fallback.frame),
     x: num(r.x, fallback.x, 0, 1),
     y: num(r.y, fallback.y, 0, 1),

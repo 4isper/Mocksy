@@ -1,7 +1,7 @@
 import type { Command, EditorScene, AnnotationType } from "@/lib/types/editor";
 
 export function createAnnotationCommands(
-  t: (key: string, values?: Record<string, any>) => string,
+  t: (key: string, values?: Record<string, string | number | Date>) => string,
   scene: EditorScene,
   callbacks: {
     addAnnotation: (type: AnnotationType) => void;

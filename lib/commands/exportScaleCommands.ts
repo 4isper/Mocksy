@@ -1,7 +1,7 @@
 import type { Command } from "@/lib/types/editor";
 
 export function createExportScaleCommands(
-  t: (key: string, values?: Record<string, any>) => string,
+  t: (key: string, values?: Record<string, string | number | Date>) => string,
   callbacks: {
     setExportScale: (scale: 1 | 2 | 4) => void;
   }

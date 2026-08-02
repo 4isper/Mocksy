@@ -157,7 +157,7 @@ export function BackgroundControls({
             <button
               key={preset.id}
               type="button"
-              title={preset.name}
+              title={t(`preset.${preset.id}`)}
               aria-pressed={active}
               onClick={() => {
                 if (preset.kind === "transparent") setBackgroundTransparent();
@@ -197,11 +197,11 @@ export function BackgroundControls({
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
             <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <input type="radio" name="grad-type" checked={gradientType === "linear"} onChange={() => setGradientType("linear")} />
-              Linear
+              {t("editor.gradientLinear")}
             </label>
             <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <input type="radio" name="grad-type" checked={gradientType === "radial"} onChange={() => setGradientType("radial")} />
-              Radial
+              {t("editor.gradientRadial")}
             </label>
           </div>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
@@ -210,7 +210,7 @@ export function BackgroundControls({
               style={{ width: 32, height: 28, padding: 0, border: "1px solid var(--panel-border)", borderRadius: 6, cursor: "pointer", background: "none" }} />
           </label>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-            <span>Middle</span>
+            <span>{t("editor.gradientMiddle")}</span>
             <input type="color" value={gradientVia ?? "#ffffff"} onChange={(e) => setGradientVia(e.target.value)}
               style={{ width: 32, height: 28, padding: 0, border: "1px solid var(--panel-border)", borderRadius: 6, cursor: "pointer", background: "none" }} />
           </label>

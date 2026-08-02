@@ -5,15 +5,10 @@ import type { EditorScene, Project } from "@/lib/types/editor";
 import { makeDemoScene } from "@/lib/state/editorStore";
 import { normalizeScene } from "@/lib/state/normalizeScene";
 import { readSceneFromUrl } from "@/lib/state/shareState";
+import { nextProjectId } from "@/lib/state/ids";
 
 const STORAGE_KEY = "mocksy-projects";
 const AUTOSAVE_KEY = "mocksy-scene";
-
-let projectSeq = 0;
-function nextProjectId(): string {
-  projectSeq += 1;
-  return `proj-${projectSeq}-${Date.now().toString(36)}`;
-}
 
 function cloneScene(scene: EditorScene): EditorScene {
   return JSON.parse(JSON.stringify(scene)) as EditorScene;

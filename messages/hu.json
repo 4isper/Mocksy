@@ -182,7 +182,10 @@
     "watermarkPosition": "Vízjel pozíciója",
     "watermarkSize": "Vízjel mérete — {val}px",
     "watermarkText": "Vízjel szövege",
-    "zoom": "Nagyítás"
+    "zoom": "Nagyítás",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Egyik sem",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Exportálás: {format} (⌘E)",
     "copy": "Másolás",
     "convertVideo": "Videó átalakítása…",
-    "exportComplete": "Az exportálás kész!"
+    "exportComplete": "Az exportálás kész!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Billentyűparancsok",
@@ -456,5 +466,26 @@
     "tryAgain": "Próbálja újra",
     "lastSceneSafe": "Az utolsó jelenet biztonságosan mentve a böngészőben.",
     "shareUrlTooLarge": "A megosztási URL túl hosszú — exportálja a projektet a mockup megosztásához."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

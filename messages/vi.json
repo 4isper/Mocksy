@@ -182,7 +182,10 @@
     "watermarkPosition": "Vị trí dấu nước",
     "watermarkSize": "Kích thước dấu nước — {val}px",
     "watermarkText": "Văn bản dấu nước",
-    "zoom": "Phóng to"
+    "zoom": "Phóng to",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Không",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Xuất {format} (⌘E)",
     "copy": "Sao chép",
     "convertVideo": "Chuyển đổi video…",
-    "exportComplete": "Xuất hoàn tất!"
+    "exportComplete": "Xuất hoàn tất!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Phím tắt bàn phím",
@@ -456,5 +466,26 @@
     "tryAgain": "Thử lại",
     "lastSceneSafe": "Cảnh cuối cùng đã được lưu an toàn trong trình duyệt.",
     "shareUrlTooLarge": "URL chia sẻ quá dài — hãy xuất dự án để chia sẻ mockup này."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

@@ -54,6 +54,21 @@ describe("ProjectsPanel", () => {
     expect(useProjectsStore.getState().activeProjectId).toBe("p2");
   });
 
+  it("switches project on Enter key", async () => {
+    useProjectsStore.setState({
+      projects: [
+        { id: "p1", name: "One", scene: null as any, updatedAt: Date.now() },
+        { id: "p2", name: "Two", scene: null as any, updatedAt: Date.now() },
+      ],
+      activeProjectId: "p1",
+    });
+    render(<ProjectsPanel />);
+    const items = document.querySelectorAll(".project-item");
+    (items[1] as HTMLElement).focus();
+    await userEvent.keyboard("{Enter}");
+    expect(useProjectsStore.getState().activeProjectId).toBe("p2");
+  });
+
   it("shows active project with is-active class", () => {
     useProjectsStore.setState({
       projects: [

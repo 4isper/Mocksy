@@ -2,16 +2,8 @@
 
 import type { EditorScene, Project } from "@/lib/types/editor";
 import { normalizeScene } from "@/lib/state/normalizeScene";
-
-let fileSeq = 0;
-function nextProjectId(): string {
-  fileSeq += 1;
-  return `proj-${fileSeq}-${Date.now().toString(36)}`;
-}
-
-function sanitizeFilename(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]/g, "_");
-}
+import { nextProjectId } from "@/lib/state/ids";
+import { sanitizeFilename } from "@/lib/export/filename";
 
 /** Triggers a browser download of a project as a JSON file. */
 export function exportProjectToFile(project: Project): void {

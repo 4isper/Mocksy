@@ -182,7 +182,10 @@
     "watermarkPosition": "מיקום סימן מים",
     "watermarkSize": "גודל סימן מים ({val}px)",
     "watermarkText": "טקסט סימן מים",
-    "zoom": "זום"
+    "zoom": "זום",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "אף אחד",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "יצוא {format} (⌘E)",
     "copy": "העתק",
     "convertVideo": "ממיר וידאו…",
-    "exportComplete": "היצוא הושלם!"
+    "exportComplete": "היצוא הושלם!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "קיצורי מקלדת",
@@ -456,5 +466,26 @@
     "tryAgain": "נסה שוב",
     "lastSceneSafe": "הסצנה האחרונה שלך מאובטחת בדפדפן הזה.",
     "shareUrlTooLarge": "הקישור לשיתוף ארוך מדי — יצוא את קובץ הפרויקט כדי לשתף את ה mockup הזה."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

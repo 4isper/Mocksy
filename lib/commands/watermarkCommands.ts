@@ -2,7 +2,7 @@ import type { Command, EditorScene } from "@/lib/types/editor";
 import { useEditorStore } from "@/lib/state/editorStore";
 
 export function createWatermarkCommands(
-  t: (key: string, values?: Record<string, any>) => string,
+  t: (key: string, values?: Record<string, string | number | Date>) => string,
   scene: EditorScene,
   callbacks: {
     toggleWatermark: (enabled: boolean) => void;

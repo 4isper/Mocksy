@@ -182,7 +182,10 @@
     "watermarkPosition": "Posisyon ng watermark",
     "watermarkSize": "Laki ng watermark — {val}px",
     "watermarkText": "Tekst ng watermark",
-    "zoom": "Zoom"
+    "zoom": "Zoom",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Wala",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "I-export ang {format} (⌘E)",
     "copy": "Kopyahin",
     "convertVideo": "Nag-convert ng video…",
-    "exportComplete": "Na-export na!"
+    "exportComplete": "Na-export na!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Mga shortcut ng keyboard",
@@ -456,5 +466,26 @@
     "tryAgain": "Subukang muli",
     "lastSceneSafe": "Ang huling tanawin ay naka-save nang ligtas sa browser.",
     "shareUrlTooLarge": "Ang URL ng share ay labis na mahaba — i-export ang proyekto upang ibahagi ang mockup na ito."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

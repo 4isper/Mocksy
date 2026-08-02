@@ -71,7 +71,7 @@ export function EditorShell() {
       if (err instanceof ShareUrlTooLarge) {
         setExportError(t("errors.shareUrlTooLarge"));
       } else {
-        setExportError(err instanceof Error ? err.message : "Could not create share link");
+        setExportError(err instanceof Error ? err.message : t("export.shareLinkFailed"));
       }
     }
   }, [scene, t]);
@@ -97,9 +97,9 @@ export function EditorShell() {
       const { exportSvg } = await import("@/lib/export/exportSvg");
       await exportSvg(scene, "preview-canvas", "mocksy-export", setExportError);
     } catch (err) {
-      setExportError(err instanceof Error ? err.message : "SVG export failed.");
+      setExportError(err instanceof Error ? err.message : t("export.svgFailed"));
     }
-  }, [scene]);
+  }, [scene, t]);
 
   const handleExportHtml = useCallback(async () => {
     setExportError(null);
@@ -107,14 +107,14 @@ export function EditorShell() {
       const { exportHtml } = await import("@/lib/export/exportHtml");
       await exportHtml(scene, "preview-canvas", "mocksy-export", setExportError);
     } catch (err) {
-      setExportError(err instanceof Error ? err.message : "HTML export failed.");
+      setExportError(err instanceof Error ? err.message : t("export.htmlFailed"));
     }
-  }, [scene]);
+  }, [scene, t]);
 
   const handleExportMp4 = useCallback(async () => {
     setExportError(null);
     try {
-      setVideoExportStatus("Exporting video…");
+      setVideoExportStatus(t("export.exportingVideo"));
       setVideoExportProgress(0);
       const { exportVideo } = await import("@/lib/export/exportVideo");
       await exportVideo(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError, customExportSize);
@@ -124,12 +124,12 @@ export function EditorShell() {
         setVideoExportProgress(0);
       }, 800);
     }
-  }, [scene, exportScale, customExportSize]);
+  }, [scene, exportScale, customExportSize, t]);
 
   const handleExportWebm = useCallback(async () => {
     setExportError(null);
     try {
-      setVideoExportStatus("Exporting WebM…");
+      setVideoExportStatus(t("export.exportingWebm"));
       setVideoExportProgress(0);
       const { exportWebm } = await import("@/lib/export/exportVideo");
       await exportWebm(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError, customExportSize);
@@ -139,12 +139,12 @@ export function EditorShell() {
         setVideoExportProgress(0);
       }, 800);
     }
-  }, [scene, exportScale, customExportSize]);
+  }, [scene, exportScale, customExportSize, t]);
 
   const handleExportWebpAnim = useCallback(async () => {
     setExportError(null);
     try {
-      setVideoExportStatus("Exporting WebP…");
+      setVideoExportStatus(t("export.exportingWebpAnim"));
       setVideoExportProgress(0);
       const { exportWebpAnim } = await import("@/lib/export/exportVideo");
       await exportWebpAnim(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError, customExportSize);
@@ -154,12 +154,12 @@ export function EditorShell() {
         setVideoExportProgress(0);
       }, 800);
     }
-  }, [scene, exportScale, customExportSize]);
+  }, [scene, exportScale, customExportSize, t]);
 
   const handleExportGif = useCallback(async () => {
     setExportError(null);
     try {
-      setGifExportStatus("Exporting GIF…");
+      setGifExportStatus(t("export.exportingGif"));
       setGifExportProgress(0);
       const { exportGif } = await import("@/lib/export/exportVideo");
       await exportGif(scene, exportScale, setGifExportStatus, setGifExportProgress, setExportError, customExportSize);
@@ -169,7 +169,7 @@ export function EditorShell() {
         setGifExportProgress(0);
       }, 800);
     }
-  }, [scene, exportScale, customExportSize]);
+  }, [scene, exportScale, customExportSize, t]);
 
   const handleExport = useCallback(
     (format: ExportFormat) => {

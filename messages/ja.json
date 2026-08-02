@@ -182,7 +182,10 @@
     "watermarkPosition": "ウォーターマーク位置",
     "watermarkSize": "ウォーターマークサイズ ({val}px)",
     "watermarkText": "ウォーターマークテキスト",
-    "zoom": "ズーム"
+    "zoom": "ズーム",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "なし",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "{format} をエクスポート (⌘E)",
     "copy": "コピー",
     "convertVideo": "ビデオを変換中…",
-    "exportComplete": "エクスポート完了！"
+    "exportComplete": "エクスポート完了！",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "キーボードショートカット",
@@ -456,5 +466,26 @@
     "tryAgain": "再試行",
     "lastSceneSafe": "最後に保存したシーンはこのブラウザで安全です。",
     "shareUrlTooLarge": "共有リンクが大きすぎます — このモックアップを共有するにはプロジェクトファイルをエクスポートしてください。"
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

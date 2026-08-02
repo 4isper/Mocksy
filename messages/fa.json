@@ -182,7 +182,10 @@
     "watermarkPosition": "موقعیت watermark",
     "watermarkSize": "اندازه watermark ({val}px)",
     "watermarkText": "متن watermark",
-    "zoom": "بزرگ‌نمایی"
+    "zoom": "بزرگ‌نمایی",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "هیچ",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "خروجی {format} (⌘E)",
     "copy": "کپی",
     "convertVideo": "در حال تبدیل ویدیو…",
-    "exportComplete": "خروجی کامل شد!"
+    "exportComplete": "خروجی کامل شد!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "میانبرهای کیبورد",
@@ -456,5 +466,26 @@
     "tryAgain": "دوباره امتحان کنید",
     "lastSceneSafe": "صحنه آخرین شما به صورت امن در این مرورگر ذخیره شده است.",
     "shareUrlTooLarge": "لینک اشتراک‌گذاری خیلی طولانی است — فایل پروژه را خروجی بگیرید تا این mockup را به اشتراک بگذارید."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

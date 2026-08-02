@@ -1,23 +1,3 @@
-export let layerSeq = 0;
-export function nextLayerId(): string {
-  layerSeq += 1;
-  return `layer-${layerSeq}-${Date.now().toString(36)}`;
-}
-
-export let frameInstanceSeq = 0;
-export function nextFrameInstanceId(): string {
-  frameInstanceSeq += 1;
-  return `frame-${frameInstanceSeq}-${Date.now().toString(36)}`;
-}
-
-export let annotationSeq = 0;
-export function nextAnnotationId(): string {
-  annotationSeq += 1;
-  return `anno-${annotationSeq}-${Date.now().toString(36)}`;
-}
-
-const ANNOTATION_COLORS = ["#00d9ff", "#f87171", "#fbbf24", "#4ade80", "#c084fc", "#ffffff"];
-
 import type {
   Annotation,
   AnnotationType,
@@ -32,11 +12,16 @@ import type {
 } from "@/lib/types/editor";
 import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
 import type { LayoutPreset } from "@/lib/types/editor";
+import { countOf, nextAnnotationId, nextFrameInstanceId, nextLayerId } from "@/lib/state/ids";
+
+export { nextLayerId, nextFrameInstanceId, nextAnnotationId };
+
+const ANNOTATION_COLORS = ["#00d9ff", "#f87171", "#fbbf24", "#4ade80", "#c084fc", "#ffffff"];
 
 export const LAYOUT_PRESETS: LayoutPreset[] = ["grid", "fan", "cascade", "masonry", "stack"];
 
 export function makeAnnotation(type: AnnotationType): Annotation {
-  const color = ANNOTATION_COLORS[annotationSeq % ANNOTATION_COLORS.length] ?? "#00d9ff";
+  const color = ANNOTATION_COLORS[countOf("anno") % ANNOTATION_COLORS.length] ?? "#00d9ff";
   const base = {
     id: nextAnnotationId(),
     type,

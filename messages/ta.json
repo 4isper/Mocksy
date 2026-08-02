@@ -182,7 +182,10 @@
     "watermarkPosition": "நீர்நிறம் நிலையிடம்",
     "watermarkSize": "நீர்நிறம் அளவு ({val}px)",
     "watermarkText": "நீர்நிறம் உரை",
-    "zoom": "பெரிதாக்கல்"
+    "zoom": "பெரிதாக்கல்",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "ஏதுமில்லை",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "ஏற்றுமதி {format} (⌘E)",
     "copy": "நகல்",
     "convertVideo": "வீடியோ மாற்றிக்கொள்ளப்படுகிறது…",
-    "exportComplete": "ஏற்றுமதி முடிந்தது!"
+    "exportComplete": "ஏற்றுமதி முடிந்தது!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "விரைவுக் குறியீடுகள்",
@@ -456,5 +466,26 @@
     "tryAgain": "மீண்டும் முயற்சிக்கவும்",
     "lastSceneSafe": "உங்கள் கடைசி சேமிக்கப்பட்ட காட்சி இந்த வி��ர்வில் பாதுகாக்கப்பட்டுள்ளது.",
     "shareUrlTooLarge": "பகித்தல் இணையத்தடம் மிகவும் நீண்டது — இந்த mockup-ஐப் பகிர்ந்துகொள்ள திட்டக் கோப்பை ஏற்றுமதி செய்யவும்."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

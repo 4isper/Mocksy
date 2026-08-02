@@ -182,7 +182,10 @@
     "watermarkPosition": "Su damlası konumu",
     "watermarkSize": "Su damlası boyutu — {val}px",
     "watermarkText": "Su damlası metni",
-    "zoom": "Yakınlaştır"
+    "zoom": "Yakınlaştır",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Yok",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Dışa Aktar {format} (⌘E)",
     "copy": "Kopyala",
     "convertVideo": "Video dönüştürülüyor…",
-    "exportComplete": "Dışa aktarma tamamlandı!"
+    "exportComplete": "Dışa aktarma tamamlandı!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Klavye kısayolları",
@@ -456,5 +466,26 @@
     "tryAgain": "Tekrar dene",
     "lastSceneSafe": "Son sahne tarayıcıda güvenli kaydedildi.",
     "shareUrlTooLarge": "Paylaşım URL'si çok uzun — bu mockup'ı paylaşmak için projeyi dışa aktarın."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

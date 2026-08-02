@@ -7,14 +7,14 @@ import { PwaRegister } from "@/components/editor/PwaRegister";
 import { SkipLink } from "@/components/editor/SkipLink";
 import { ErrorBoundary } from "@/components/editor/ErrorBoundary";
 import { isRtlLocale } from "@/i18n/request";
-
-const VALID_LOCALES = ["en", "ru", "de", "es", "fr", "pt", "it", "ja", "ko", "zh", "tr", "pl", "nl", "uk", "ar", "hi", "id", "vi", "th", "sv", "no", "da", "fi", "cs", "bg", "el", "et", "he", "hr", "lt", "ro", "sl", "sr", "bn", "pa", "ms", "sw", "fa", "te", "mr", "ta", "ur", "gu", "kn", "am", "tl", "hu", "lv", "is", "ga", "cy", "sq", "hy", "ka", "az", "kk", "ne"];
+import { isValidLocale } from "@/i18n/locales";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
-  const resolvedLocale = VALID_LOCALES.includes(locale) ? locale : "en";
+  const resolvedLocale = isValidLocale(locale) ? locale : "en";
   const messages = await getMessages({ locale: resolvedLocale });
   const t = messages.metadata;
+  const errors = messages.errors;
   return {
     title: t?.title ?? "Mocksy — Free mockup editor",
     description: t?.description ?? "Create mockups, animations and exports without subscriptions.",
@@ -38,15 +38,16 @@ export default async function LocaleLayout({
   params: Promise<{ locale: string }>;
 }>) {
   const { locale } = await params;
-  const resolvedLocale = VALID_LOCALES.includes(locale) ? locale : "en";
+  const resolvedLocale = isValidLocale(locale) ? locale : "en";
   const messages = await getMessages({ locale: resolvedLocale });
+  const errors = messages.errors;
 
   return (
     <html lang={resolvedLocale} dir={isRtlLocale(resolvedLocale) ? "rtl" : "ltr"} suppressHydrationWarning>
       <body>
         <SkipLink />
         <NextIntlClientProvider messages={messages}>
-          <ErrorBoundary message="An unexpected error occurred.">
+          <ErrorBoundary message={errors?.message ?? "An unexpected error occurred."} retryLabel={errors?.tryAgain ?? "Try again"}>
             <ThemeProvider>{children}</ThemeProvider>
           </ErrorBoundary>
         </NextIntlClientProvider>

@@ -2,17 +2,18 @@
 
 ## Project overview
 
-Free browser-based mockup editor (Next.js 15 + React 19 + TypeScript). All media is data URLs; state lives in `localStorage`. No auth, no backend.
+Free browser-based mockup editor (Next.js 16 + React 19 + TypeScript). All media is data URLs; state lives in `localStorage`. No auth, no backend.
 
 ## i18n (next-intl)
 
 - `next-intl` v4 is used for internationalization.
-- Locales live in `messages/en.json` and `messages/ru.json`.
-- Routing is file-based: `app/[locale]/` — middleware detects locale from cookie/header, defaults to `en`.
+- 57 locales live in `messages/*.json`. Add new keys to `messages/en.json` and `messages/ru.json` only; missing keys in other locales fall back to English via `deepMerge`.
+- The canonical locale list is `i18n/locales.ts` (`locales`, `Locale`, `defaultLocale`, `isValidLocale`). Never redefine it elsewhere.
+- Routing is file-based: `app/[locale]/` — `proxy.ts` detects locale from cookie/header, defaults to `en`.
 - Use `useTranslations(namespace)` in client components; `getMessages()` in server components/layouts.
 - All user-facing strings must be in message files, never hardcoded in JSX.
 - Translation keys follow dot-notation namespaces: `editor.frame`, `export.png`, `shortcuts.undo`, etc.
-- `LocaleSwitcher` component (`components/editor/LocaleSwitcher.tsx`) toggles EN/РУС in the toolbar.
+- `LocaleSwitcher` component (`components/editor/LocaleSwitcher.tsx`) toggles locales in the toolbar.
 
 ## Key conventions
 
@@ -31,7 +32,7 @@ Free browser-based mockup editor (Next.js 15 + React 19 + TypeScript). All media
 
 1. Add value to `StylePreset` in `lib/types/editor.ts`.
 2. Add to `STYLE_PRESETS` in `lib/state/normalizeScene.ts`.
-3. Handle in `buildSceneCss` (`lib/render/mockupRenderer.ts`) and `renderMockupToCanvas` (`lib/export/renderMockup.ts`).
+3. Handle in `buildSceneCss` (`lib/render/mockupRenderer.ts`) and `renderMockupToCanvas` (`lib/render/renderMockup.ts`).
 4. Add test to `tests/unit/normalizeScene.test.ts`.
 
 ### Adding an animation preset
@@ -56,15 +57,15 @@ Free browser-based mockup editor (Next.js 15 + React 19 + TypeScript). All media
 
 ## State management
 
-- **`editorStore.ts`** — scene, layers, annotations, undo/redo (`pushHistory` with 100-entry limit, 400ms slider-drag coalescing). UI-only state (`exportScale`, `isMediaLoading`, `scenePalette`, `selectedAnnotationId`) lives **outside** `scene` so it doesn't pollute undo history or share URLs.
+- **`editorStore.ts`** — scene, layers, annotations, undo/redo (`pushHistory` with 100-entry limit, 400ms slider-drag coalescing). UI-only state (`exportScale`, `customExportSize`, `isMediaLoading`, `scenePalette`, `selectedAnnotationId`, `activeFrameInstanceId`, `videoCurrentTime`, `showGrid`, `gridDivisions`) lives **outside** `scene` so it doesn't pollute undo history or share URLs. Selecting a layer/annotation/frame instance is **not** undoable.
 - **`projectsStore.ts`** — project CRUD, localStorage persistence.
 - **`themeStore.ts`** — light/dark/system theme with persisted preference.
-- Helpers in `lib/state/editorHelpers.ts`: `activeLayer`, `patchActive`, `pushHistory`, `makeAnnotation`, `makeDemoLayer`, `nextLayerId`, `activePosterTime`.
+- Helpers in `lib/state/editorHelpers.ts`: `activeLayer`, `patchActive`, `pushHistory`, `makeAnnotation`, `makeDemoLayer`, `nextLayerId`, `activePosterTime`. ID generators are shared via `lib/state/ids.ts` (`nextLayerId`, `nextAnnotationId`, `nextFrameInstanceId`, `nextProjectId`) — don't reimplement them.
 
 ## Rendering pipeline
 
 - **Live preview**: `lib/render/mockupRenderer.ts` → CSS.
-- **Canvas export**: `lib/export/renderMockup.ts` + `lib/render/renderMockup.ts` → 2D canvas.
+- **Canvas export**: `lib/render/renderMockup.ts` → 2D canvas.
 - **Video export**: `lib/render/videoComposer.ts` → keyframes → `MediaRecorder` + `@ffmpeg/ffmpeg` for WebM→MP4.
 
 ## Export
@@ -80,23 +81,30 @@ Scene serialized as base64 JSON; demo media stripped to keep URLs short. 16KB UR
 ## Project structure
 
 ```
-app/              Next.js router (layout, page, error boundary)
-components/editor/ 13 React components (EditorShell, ControlPanel, PreviewCanvas, ...)
-lib/state/        Zustand stores, normalization, share URL, projects
-lib/render/       Frame specs, CSS/canvas geometry, video timeline
-lib/export/       PNG, MP4/GIF export, canvas rendering
+app/              Next.js router ([locale]/layout, page, error boundary)
+components/editor/ 26 React components (EditorShell, ControlPanel, PreviewCanvas, ...)
+i18n/             Locale request config + canonical locale list (locales.ts)
+lib/state/        Zustand stores, normalization, id generators, share URL, projects
+lib/render/       Frame specs, CSS/canvas geometry, video timeline, canvas drawing
+lib/export/       PNG/SVG/HTML/MP4-GIF export, canvas rendering, filename helpers
+lib/commands/     Command-palette command factories (per feature area)
 lib/media/        File loading, demo image, palette extraction
 lib/presets/      Background swatches, scene style presets
+lib/hooks/        Client hooks (commands, focus trap, frame transform, scene palette)
+lib/search/       Frame search utilities
 lib/types/        TypeScript interfaces
+messages/         57 locale JSON files (en.json is the source of truth)
 public/devices/   SVG device skins for overlay frames
+proxy.ts          Locale middleware for next-intl
 tests/unit/       Vitest (mirrors lib/ structure)
-tests/e2e/        Playwright (42 tests in editor.spec.ts)
+tests/components/ Vitest + Testing Library (component tests)
+tests/e2e/        Playwright (editor.spec.ts, visual.spec.ts)
 ```
 
 ## Testing
 
-- `npm run test` — Vitest (165 tests, 16 files)
-- `npm run test:e2e` — Playwright (requires browser install, needs dev server)
+- `npm run test` — Vitest (912 tests, 60 files)
+- `npm run test:e2e` — Playwright (76 tests in editor.spec.ts, 9 in visual.spec.ts; requires browser install, needs dev server)
 - `npm run test:vrt` — Visual regression tests via Playwright
 - `npm run test:vrt:update` — Update visual regression baselines
 - `npm run test:lhci` — Lighthouse CI (requires built app + server)

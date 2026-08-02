@@ -182,7 +182,10 @@
     "watermarkPosition": "Pozicioni i vulas së ujit",
     "watermarkSize": "Madhësia e vulas së ujit — {val}px",
     "watermarkText": "Teksti i vulas së ujit",
-    "zoom": "Zoom"
+    "zoom": "Zoom",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Asnjë",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Eksporto {format} (⌘E)",
     "copy": "Kopjo",
     "convertVideo": "Po konverton video-n…",
-    "exportComplete": "Eksporti u kry!"
+    "exportComplete": "Eksporti u kry!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Shkurtoret e tastierës",
@@ -456,5 +466,26 @@
     "tryAgain": "Provo përsëri",
     "lastSceneSafe": "Skena e fundit është ruajtur sigurisht në shfletues.",
     "shareUrlTooLarge": "URL-ja e ndarjes është shumë e gjatë — eksportoni projektin për të ndarë këtë mockup."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

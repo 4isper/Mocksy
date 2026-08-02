@@ -182,7 +182,10 @@
     "watermarkPosition": "水印位置",
     "watermarkSize": "水印大小 ({val}px)",
     "watermarkText": "水印文字",
-    "zoom": "缩放"
+    "zoom": "缩放",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "无",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "导出 {format} (⌘E)",
     "copy": "复制",
     "convertVideo": "转换视频中…",
-    "exportComplete": "导出完成！"
+    "exportComplete": "导出完成！",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "键盘快捷键",
@@ -456,5 +466,26 @@
     "tryAgain": "重试",
     "lastSceneSafe": "您最后保存的场景在此浏览器中是安全的。",
     "shareUrlTooLarge": "分享链接太大 — 请导出项目文件以分享此模型。"
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

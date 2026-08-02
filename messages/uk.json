@@ -182,7 +182,10 @@
     "watermarkPosition": "Позиція водяного знака",
     "watermarkSize": "Розмір водяного знака ({val}px)",
     "watermarkText": "Текст водяного знака",
-    "zoom": "Зум"
+    "zoom": "Зум",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Немає",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Експортувати {format} (⌘E)",
     "copy": "Копіювати",
     "convertVideo": "Конвертування відео…",
-    "exportComplete": "Експорт завершено!"
+    "exportComplete": "Експорт завершено!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Гарячі клавіші",
@@ -456,5 +466,26 @@
     "tryAgain": "Спробувати ще раз",
     "lastSceneSafe": "Ваша остання збережена сцена в безпеці в цьому браузері.",
     "shareUrlTooLarge": "Посилання для спільного доступу занадто довге — експортуйте файл проєкту, щоб поділитися цим mockup'ом."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

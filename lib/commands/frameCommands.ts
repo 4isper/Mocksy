@@ -2,7 +2,7 @@ import type { Command, MockupFrame } from "@/lib/types/editor";
 import { FRAME_ORDER, FRAME_SPECS } from "@/lib/render/frames";
 
 export function createFrameCommands(
-  t: (key: string, values?: Record<string, any>) => string,
+  t: (key: string, values?: Record<string, string | number | Date>) => string,
   callbacks: {
     setFrame: (frame: MockupFrame) => void;
   }

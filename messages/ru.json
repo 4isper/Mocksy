@@ -3,6 +3,9 @@
     "title": "Mocksy — Бесплатный редактор mockup'ов",
     "description": "Создавайте mockup'ы, анимации и экспорты без подписок."
   },
+  "accessibility": {
+    "skipToContent": "Перейти к содержимому"
+  },
   "nav": {
     "export": "Экспорт",
     "shortcuts": "Сочетания клавиш",
@@ -113,6 +116,9 @@
     "frameY": "Y",
     "gradientAngle": "Угол ({val}°)",
     "gradientFrom": "От",
+    "gradientLinear": "Линейный",
+    "gradientMiddle": "Средний",
+    "gradientRadial": "Радиальный",
     "gradientTo": "До",
     "grid": "Сетка",
     "gridDivisions": "Линии сетки",
@@ -299,7 +305,14 @@
     "exportActionShortcut": "Экспорт {format}",
     "copy": "Копировать",
     "convertVideo": "Конвертация видео…",
-    "exportComplete": "Экспорт завершён!"
+    "exportComplete": "Экспорт завершён!",
+    "exportingGif": "Экспорт GIF…",
+    "exportingVideo": "Экспорт видео…",
+    "exportingWebm": "Экспорт WebM…",
+    "exportingWebpAnim": "Экспорт WebP…",
+    "htmlFailed": "Ошибка экспорта HTML.",
+    "shareLinkFailed": "Не удалось создать ссылку для публикации",
+    "svgFailed": "Ошибка экспорта SVG."
   },
   "shortcuts": {
     "title": "Сочетания клавиш",
@@ -360,6 +373,24 @@
     "light": "Светлая",
     "dark": "Тёмная",
     "system": "Системная"
+  },
+  "preset": {
+    "transparent": "Прозрачный",
+    "zinc": "Цинк",
+    "slate": "Графит",
+    "rose": "Роза",
+    "blue-violet": "Синий → Фиолетовый",
+    "sunset": "Закат",
+    "mint": "Мята",
+    "dots": "Точки",
+    "grid": "Сетка",
+    "diagonal": "Диагональ",
+    "noise": "Шум",
+    "dark-studio": "Тёмная студия",
+    "soft-glass": "Мягкое стекло",
+    "bold-gradient": "Яркий градиент",
+    "minimal": "Минимализм",
+    "warm": "Тёплый"
   },
   "commandPalette": {
     "title": "Палитра команд",

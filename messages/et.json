@@ -182,7 +182,10 @@
     "watermarkPosition": "Veemärgi asukoht",
     "watermarkSize": "Veemärgi suurus — {val}px",
     "watermarkText": "Veemärgi tekst",
-    "zoom": "Suum"
+    "zoom": "Suum",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Mitte ükski",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Eksport {format} (⌘E)",
     "copy": "Kopeerimine",
     "convertVideo": "Konverteerimine video…",
-    "exportComplete": "Eksport lõpetatud!"
+    "exportComplete": "Eksport lõpetatud!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Klaviatuuri otsetõstukad",
@@ -456,5 +466,26 @@
     "tryAgain": "Proovi uuesti",
     "lastSceneSafe": "Viimane streen on turvaliselt salvestatud brauseris.",
     "shareUrlTooLarge": "Jagamise URL on liiga pikk — eksporti projekt selle mockup'i jagamiseks."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

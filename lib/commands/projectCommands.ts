@@ -1,7 +1,7 @@
 import type { Command, Project } from "@/lib/types/editor";
 
 export function createProjectCommands(
-  t: (key: string, values?: Record<string, any>) => string,
+  t: (key: string, values?: Record<string, string | number | Date>) => string,
   projects: Project[],
   activeProjectId: string | null,
   callbacks: {

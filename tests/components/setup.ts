@@ -62,7 +62,8 @@ vi.mock("next-intl", () => ({
       kk: "Қазақша",
       ne: "नेपाली",
       language: "Language",
-      locale: "Locale"
+      locale: "Locale",
+      "accessibility.skipToContent": "Skip to content"
     };
     return messages[key] ?? key;
   }

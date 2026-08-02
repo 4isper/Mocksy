@@ -182,7 +182,10 @@
     "watermarkPosition": "Lleoliad dŵr nodyn",
     "watermarkSize": "Maint dŵr nodyn ({val}px)",
     "watermarkText": "Testun dŵr nodyn",
-    "zoom": "Zoom"
+    "zoom": "Zoom",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Dim",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Allforio {format} (⌘E)",
     "copy": "Copio",
     "convertVideo": "Yn trosi fideo…",
-    "exportComplete": "Allforio wedi cwblhau!"
+    "exportComplete": "Allforio wedi cwblhau!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Llwybrau byr y bwrdd allweddau",
@@ -456,5 +466,26 @@
     "tryAgain": "Ceisiwch eto",
     "lastSceneSafe": "Mae'r ysgynfa diwethaf a gadwyd yn ddiogel yn y porwr hwn.",
     "shareUrlTooLarge": "Mae'r URL rhannu yn rhy hir — allforiwch ffeil y prosiect i rannu'r mockup hwn."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

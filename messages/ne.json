@@ -182,7 +182,10 @@
     "watermarkPosition": "जलचिह्न स्थान",
     "watermarkSize": "जलचिह्न आकार ({val}px)",
     "watermarkText": "जलचिह्न पाठ",
-    "zoom": "जूम"
+    "zoom": "जूम",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "कुनै छैन",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "निर्यात {format} (⌘E)",
     "copy": "कपी",
     "convertVideo": "भिडियो रूपान्तरण गरिँदैछ…",
-    "exportComplete": "निर्यात पूरा भयो!"
+    "exportComplete": "निर्यात पूरा भयो!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "कुर्सहरू",
@@ -456,5 +466,26 @@
     "tryAgain": "फरिकै प्रयास गर्नुहोस्",
     "lastSceneSafe": "तपाईंको अन्तिम सेव गरिएको दृश्य यो ब्राउजरमा सुरक्षित छ।",
     "shareUrlTooLarge": "साझा URL धेरै लामो छ — यो mockup साझा गर्न परियोजना फाइल निर्यात गर्नुहोस्।"
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

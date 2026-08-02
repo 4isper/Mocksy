@@ -182,7 +182,10 @@
     "watermarkPosition": "워터마크 위치",
     "watermarkSize": "워터마크 크기 ({val}px)",
     "watermarkText": "워터마크 텍스트",
-    "zoom": "줌"
+    "zoom": "줌",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "없음",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "{format} 내보내기 (⌘E)",
     "copy": "복사",
     "convertVideo": "비디오 변환 중…",
-    "exportComplete": "내보내기 완료!"
+    "exportComplete": "내보내기 완료!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "키보드 단축키",
@@ -456,5 +466,26 @@
     "tryAgain": "다시 시도",
     "lastSceneSafe": "마지막으로 저장한 장면은 이 브라우저에서 안전합니다.",
     "shareUrlTooLarge": "공유 링크가 너무 큽니다 — 이 모의편집을 공유하려면 프로젝트 파일을 내보내세요."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

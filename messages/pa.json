@@ -182,7 +182,10 @@
     "watermarkPosition": "ਵਾਟਰਮਾਰਕ ਸਥਾਨ",
     "watermarkSize": "ਵਾਟਰਮਾਰਕ ਸਾਈਜ਼ ({val}px)",
     "watermarkText": "ਵਾਟਰਮਾਰਕ ਟੈਕਸਟ",
-    "zoom": "ਜੂਮ"
+    "zoom": "ਜੂਮ",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "ਕੋਈ ਨਹੀਂ",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "ਐਕਸਪੋਰਟ {format} (⌘E)",
     "copy": "ਕਾਪੀ",
     "convertVideo": "ਵੀਡੀਓ ਤਬਦੀਲ ਹੋ ਰਿਹਾ ਹੈ…",
-    "exportComplete": "ਐਕਸਪੋਰਟ ਪੂਰਾ ਹੋਇਆ!"
+    "exportComplete": "ਐਕਸਪੋਰਟ ਪੂਰਾ ਹੋਇਆ!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "ਕੀਬੋਰਡ ਸ਼ਾਰਟਕੱਟਸ",
@@ -456,5 +466,26 @@
     "tryAgain": "ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ",
     "lastSceneSafe": "ਤੁਹਾਡਾ ਆਖਰੀ ਸੰਭਾਲਿਆ ਦ੍ਰਿਸ਼ ਇਸ ਬਰਾਊਜ਼ਰ ਵਿੱਚ ਸੁਰੱਖਿਅਤ ਹੈ।",
     "shareUrlTooLarge": "share URL ਬਹੁਤ ਲੰਬੀ ਹੈ — ਇਸ mockup ਨੂੰ ਸ਼ੇਅਰ ਕਰਨ ਲਈ ਪ੍ਰੋਜੈਕਟ ਫਾਈਲ ਐਕਸਪੋਰਟ ਕਰੋ।"
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

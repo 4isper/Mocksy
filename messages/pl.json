@@ -182,7 +182,10 @@
     "watermarkPosition": "Pozycja znaku wodnego",
     "watermarkSize": "Rozmiar znaku wodnego — {val}px",
     "watermarkText": "Tekst znaku wodnego",
-    "zoom": "Powiększenie"
+    "zoom": "Powiększenie",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Żaden",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Eksportuj {format} (⌘E)",
     "copy": "Kopiuj",
     "convertVideo": "Konwertowanie wideo…",
-    "exportComplete": "Eksport zakończony!"
+    "exportComplete": "Eksport zakończony!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Skróty klawiatury",
@@ -456,5 +466,26 @@
     "tryAgain": "Spróbuj ponownie",
     "lastSceneSafe": "Ostatnia scena jest bezpiecznie zapisana w przeglądarce.",
     "shareUrlTooLarge": "URL udostępniania jest zbyt długi — eksportuj projekt, aby udostępnić ten mockup."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

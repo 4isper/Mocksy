@@ -2,7 +2,7 @@ import type { Command } from "@/lib/types/editor";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 
 export function createFileCommands(
-  t: (key: string, values?: Record<string, any>) => string,
+  t: (key: string, values?: Record<string, string | number | Date>) => string,
   callbacks: {
     onExportPng: () => void;
     onExportWebp: () => void;

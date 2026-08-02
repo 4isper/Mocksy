@@ -182,7 +182,10 @@
     "watermarkPosition": "واٹر مارک کی پوزیشن",
     "watermarkSize": "واٹر مارک کا سائز ({val}px)",
     "watermarkText": "واٹر مارک کا متن",
-    "zoom": "زوم"
+    "zoom": "زوم",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "کوئی نہیں",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "خروجی {format} (⌘E)",
     "copy": "کاپی",
     "convertVideo": "ویڈیو تبدیل کر رہا ہے…",
-    "exportComplete": "خروجی مکمل ہو گیا!"
+    "exportComplete": "خروجی مکمل ہو گیا!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "کی بورڈ شارٹ کٹس",
@@ -456,5 +466,26 @@
     "tryAgain": "دوبارہ کوشش کریں",
     "lastSceneSafe": "آپ کا آخری محفوظ سین اس براؤزر میں محفوظ ہے۔",
     "shareUrlTooLarge": "شیئر لنک بہت طویل ہے — اس mockup کو شیئر کرنے کے لیے پروجیکٹ فائل خروجی لیں۔"
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

@@ -182,7 +182,10 @@
     "watermarkPosition": "Posisi tanda air",
     "watermarkSize": "Ukuran tanda air — {val}px",
     "watermarkText": "Teks tanda air",
-    "zoom": "Zoom"
+    "zoom": "Zoom",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Tidak ada",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Ekspor {format} (⌘E)",
     "copy": "Salin",
     "convertVideo": "Mengonversi video…",
-    "exportComplete": "Ekspor selesai!"
+    "exportComplete": "Ekspor selesai!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Pintasan keyboard",
@@ -456,5 +466,26 @@
     "tryAgain": "Coba lagi",
     "lastSceneSafe": "Adegan terakhir telah disimpan dengan aman di browser.",
     "shareUrlTooLarge": "URL bagikan terlalu panjang — ekspor proyek untuk membagikan mockup ini."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

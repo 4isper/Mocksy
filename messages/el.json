@@ -182,7 +182,10 @@
     "watermarkPosition": "Θέση υδατογραφήματος",
     "watermarkSize": "Μέγεθος υδατογραφήματος — {val}px",
     "watermarkText": "Κείμενο υδατογραφήματος",
-    "zoom": "Εστίαση"
+    "zoom": "Εστίαση",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Κανένα",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Εξαγωγή {format} (⌘E)",
     "copy": "Αντιγραφή",
     "convertVideo": "Μετατροπή βίντεο…",
-    "exportComplete": "Η εξαγωγή ολοκληρώθηκε!"
+    "exportComplete": "Η εξαγωγή ολοκληρώθηκε!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Συντομεύσεις πληκτρολογίου",
@@ -456,5 +466,26 @@
     "tryAgain": "Δοκίμασε ξανά",
     "lastSceneSafe": "Η τελευταία σκηνή αποθηκεύτηκε ασφαλώς στον browser.",
     "shareUrlTooLarge": "Η URL κοινοποίησης είναι πολύ μεγάλη — εξάγει το έργο για να μοιραστείς αυτό το mockup."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

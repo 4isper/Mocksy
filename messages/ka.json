@@ -182,7 +182,10 @@
     "watermarkPosition": "თვალსაჩვენებლის პოზიცია",
     "watermarkSize": "თვალსაჩვენებლის ზომა — {val}px",
     "watermarkText": "თვალსაჩვენებლის ტექსტი",
-    "zoom": "გადიდება"
+    "zoom": "გადიდება",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "არცერთი",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "ექსპორტი {format} (⌘E)",
     "copy": "ასლი",
     "convertVideo": "კონვერტაცია ვიდეო…",
-    "exportComplete": "ექსპორტი დასრულებულია!"
+    "exportComplete": "ექსპორტი დასრულებულია!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "ჩამოკიდებული ღილაკების დესკრიპცია",
@@ -456,5 +466,26 @@
     "tryAgain": "ცადეთ თავიდან",
     "lastSceneSafe": "ბოლო სცენა უსაფრთხოდ შენახულია ბრაუზერში.",
     "shareUrlTooLarge": "გაზიარების URL ძალიან გრძლიაა — ექსპორტირეთ პროექტი mockup-ის გასაზიარებლად."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

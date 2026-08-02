@@ -182,7 +182,10 @@
     "watermarkPosition": "Pozitia filigranului",
     "watermarkSize": "Dimensiunea filigranului — {val}px",
     "watermarkText": "Textul filigranului",
-    "zoom": "Zoom"
+    "zoom": "Zoom",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Niciunul",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Exportă {format} (⌘E)",
     "copy": "Copiază",
     "convertVideo": "Convertește video…",
-    "exportComplete": "Exportul este finalizat!"
+    "exportComplete": "Exportul este finalizat!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Scurtături de tastatură",
@@ -456,5 +466,26 @@
     "tryAgain": "Încercați din nou",
     "lastSceneSafe": "Ultima scenă este salvată în siguranță în browser.",
     "shareUrlTooLarge": "URL-ul de partajare este prea lung — exportați proiectul pentru a partaja acest mockup."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

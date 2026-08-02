@@ -182,7 +182,10 @@
     "watermarkPosition": "Vesileiman sijainti",
     "watermarkSize": "Vesileiman koko — {val}px",
     "watermarkText": "Vesileiman teksti",
-    "zoom": "Zoom"
+    "zoom": "Zoom",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Ei yhtään",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Vie {format} (⌘E)",
     "copy": "Kopioi",
     "convertVideo": "Muunnetaan videoa…",
-    "exportComplete": "Vienti valmis!"
+    "exportComplete": "Vienti valmis!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Pikanäppäimet",
@@ -456,5 +466,26 @@
     "tryAgain": "Yritä uudelleen",
     "lastSceneSafe": "Viimeisin näkymä on turvallisesti tallennettu selaimessa.",
     "shareUrlTooLarge": "Jaettava URL on liian pitkä — vie projekti jakaa tätä mockupia."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

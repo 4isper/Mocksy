@@ -182,7 +182,10 @@
     "watermarkPosition": "Позиция на воден знак",
     "watermarkSize": "Размер на воден знак ({val}px)",
     "watermarkText": "Текст на воден знак",
-    "zoom": "Увеличение"
+    "zoom": "Увеличение",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Няма",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Експортиране на {format} (⌘E)",
     "copy": "Копиране",
     "convertVideo": "Преобразуване на видео…",
-    "exportComplete": "Експортирането е завършено!"
+    "exportComplete": "Експортирането е завършено!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Клавиатурни бързи пътища",
@@ -456,5 +466,26 @@
     "tryAgain": "Опитайте отново",
     "lastSceneSafe": "Вашата последна запазена сцена е безопасна в този браузър.",
     "shareUrlTooLarge": "URL-адресът за споделяне е твърде дълъг — експортирайте файла на проекта, за да споделите този mockup."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

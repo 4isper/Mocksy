@@ -182,7 +182,10 @@
     "watermarkPosition": "Position du filigrane",
     "watermarkSize": "Taille du filigrane — {val}px",
     "watermarkText": "Texte du filigrane",
-    "zoom": "Zoom"
+    "zoom": "Zoom",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Aucun",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Exporter {format} (⌘E)",
     "copy": "Copier",
     "convertVideo": "Conversion de la vidéo…",
-    "exportComplete": "Exportation terminée !"
+    "exportComplete": "Exportation terminée !",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Raccourcis clavier",
@@ -456,5 +466,26 @@
     "tryAgain": "Réessayer",
     "lastSceneSafe": "La dernière scène est enregistrée en toute sécurité dans le navigateur.",
     "shareUrlTooLarge": "L'URL de partage est trop longue — exportez le projet pour partager ce mockup."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

@@ -182,7 +182,10 @@
     "watermarkPosition": "वॉटरमार्क स्थिति",
     "watermarkSize": "वॉटरमार्क आकार ({val}px)",
     "watermarkText": "वॉटरमार्क टेक्स्ट",
-    "zoom": "ज़ूम"
+    "zoom": "ज़ूम",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "कोई नहीं",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "{format} निर्यात करें (⌘E)",
     "copy": "कॉपी करें",
     "convertVideo": "वीडियो कनवर्ट कर रहा है…",
-    "exportComplete": "निर्यात पूर्ण!"
+    "exportComplete": "निर्यात पूर्ण!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "कीबोर्ड शॉर्टकट",
@@ -456,5 +466,26 @@
     "tryAgain": "फिर से प्रयास करें",
     "lastSceneSafe": "आपका अंतिम सेव किया गया दृश्य इस ब्राउज़र में सुरक्षित है।",
     "shareUrlTooLarge": "शेयर लिंक बहुत लंबा है — इस mockup को साझा करने के लिए परियोजना फ़ाइल निर्यात करें।"
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

@@ -182,7 +182,10 @@
     "watermarkPosition": "Position för vattenmärke",
     "watermarkSize": "Storlek på vattenmärke — {val}px",
     "watermarkText": "Text för vattenmärke",
-    "zoom": "Zoom"
+    "zoom": "Zoom",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Ingen",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Exportera {format} (⌘E)",
     "copy": "Kopiera",
     "convertVideo": "Konverterar video…",
-    "exportComplete": "Exporten är klar!"
+    "exportComplete": "Exporten är klar!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Snabbspår på tangentbordet",
@@ -456,5 +466,26 @@
     "tryAgain": "Försök igen",
     "lastSceneSafe": "Den senaste scenen är sparat säkert i webbläsaren.",
     "shareUrlTooLarge": "Delnings-URL:en är för lång — exportera projektet för att dela denna mockup."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

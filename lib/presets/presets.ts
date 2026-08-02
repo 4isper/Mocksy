@@ -4,7 +4,6 @@ export type BackgroundKind = "transparent" | "solid" | "gradient" | "pattern";
 
 export interface BackgroundPreset {
   id: string;
-  name: string;
   kind: BackgroundKind;
   /** Solid color, or the gradient's starting color (used for the swatch). */
   swatch: string;
@@ -15,17 +14,17 @@ export interface BackgroundPreset {
 }
 
 export const backgroundPresets: BackgroundPreset[] = [
-  { id: "transparent", name: "Transparent", kind: "transparent", swatch: "transparent" },
-  { id: "zinc", name: "Zinc", kind: "solid", swatch: "#09090b", backgroundColor: "#09090b" },
-  { id: "slate", name: "Slate", kind: "solid", swatch: "#0f172a", backgroundColor: "#0f172a" },
-  { id: "rose", name: "Rose", kind: "solid", swatch: "#4c0519", backgroundColor: "#4c0519" },
-  { id: "blue-violet", name: "Blue → Violet", kind: "gradient", swatch: "#1d4ed8", gradientFrom: "#1d4ed8", gradientTo: "#7c3aed" },
-  { id: "sunset", name: "Sunset", kind: "gradient", swatch: "#f97316", gradientFrom: "#f97316", gradientTo: "#db2777" },
-  { id: "mint", name: "Mint", kind: "gradient", swatch: "#059669", gradientFrom: "#059669", gradientTo: "#0ea5e9" },
-  { id: "dots", name: "Dots", kind: "pattern", swatch: "#18181b", patternId: "dots" },
-  { id: "grid", name: "Grid", kind: "pattern", swatch: "#18181b", patternId: "grid" },
-  { id: "diagonal", name: "Diagonal", kind: "pattern", swatch: "#18181b", patternId: "diagonal" },
-  { id: "noise", name: "Noise", kind: "pattern", swatch: "#18181b", patternId: "noise" }
+  { id: "transparent", kind: "transparent", swatch: "transparent" },
+  { id: "zinc", kind: "solid", swatch: "#09090b", backgroundColor: "#09090b" },
+  { id: "slate", kind: "solid", swatch: "#0f172a", backgroundColor: "#0f172a" },
+  { id: "rose", kind: "solid", swatch: "#4c0519", backgroundColor: "#4c0519" },
+  { id: "blue-violet", kind: "gradient", swatch: "#1d4ed8", gradientFrom: "#1d4ed8", gradientTo: "#7c3aed" },
+  { id: "sunset", kind: "gradient", swatch: "#f97316", gradientFrom: "#f97316", gradientTo: "#db2777" },
+  { id: "mint", kind: "gradient", swatch: "#059669", gradientFrom: "#059669", gradientTo: "#0ea5e9" },
+  { id: "dots", kind: "pattern", swatch: "#18181b", patternId: "dots" },
+  { id: "grid", kind: "pattern", swatch: "#18181b", patternId: "grid" },
+  { id: "diagonal", kind: "pattern", swatch: "#18181b", patternId: "diagonal" },
+  { id: "noise", kind: "pattern", swatch: "#18181b", patternId: "noise" }
 ];
 
 /** Named appearance presets. Each carries the scene's frame, frame style,
@@ -35,7 +34,6 @@ export const backgroundPresets: BackgroundPreset[] = [
 export const sceneStylePresets: SceneStylePreset[] = [
   {
     id: "dark-studio",
-    name: "Dark Studio",
     frame: "iphone",
     stylePreset: "default",
     backgroundMode: "solid",
@@ -53,7 +51,6 @@ export const sceneStylePresets: SceneStylePreset[] = [
   },
   {
     id: "soft-glass",
-    name: "Soft Glass",
     frame: "iphone16pro",
     stylePreset: "glassLight",
     backgroundMode: "gradient",
@@ -71,7 +68,6 @@ export const sceneStylePresets: SceneStylePreset[] = [
   },
   {
     id: "bold-gradient",
-    name: "Bold Gradient",
     frame: "desktop",
     stylePreset: "glassDark",
     backgroundMode: "gradient",
@@ -89,7 +85,6 @@ export const sceneStylePresets: SceneStylePreset[] = [
   },
   {
     id: "minimal",
-    name: "Minimal",
     frame: "none",
     stylePreset: "default",
     backgroundMode: "solid",
@@ -107,7 +102,6 @@ export const sceneStylePresets: SceneStylePreset[] = [
   },
   {
     id: "warm",
-    name: "Warm",
     frame: "iphone15",
     stylePreset: "glassDark",
     backgroundMode: "gradient",

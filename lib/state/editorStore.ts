@@ -337,7 +337,7 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
       const activeLayerId = s.scene.activeLayerId === id ? layers[0]?.id ?? null : s.scene.activeLayerId;
       return pushHistory(s, { ...s.scene, layers, activeLayerId });
     }),
-  selectLayer: (id) => set((s) => pushHistory(s, { ...s.scene, activeLayerId: id })),
+  selectLayer: (id) => set((s) => ({ scene: { ...s.scene, activeLayerId: id } })),
   reorderLayers: (orderedIds, coalesce) =>
     set((s) => {
       const byId = new Map(s.scene.layers.map((l) => [l.id, l]));

@@ -182,7 +182,10 @@
     "watermarkPosition": "Suíomh marcáil uisce",
     "watermarkSize": "Méid marcáil uisce ({val}px)",
     "watermarkText": "Téacs marcáil uisce",
-    "zoom": "Zúm"
+    "zoom": "Zúm",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Aon cheann",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Eiportáil {format} (⌘E)",
     "copy": "Cóipeáil",
     "convertVideo": "Ag trosiú físeáin…",
-    "exportComplete": "Eiportáil críochnaithe!"
+    "exportComplete": "Eiportáil críochnaithe!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Gairrthochtanna bànall na méarchlár",
@@ -456,5 +466,26 @@
     "tryAgain": "Bí iarracht arís",
     "lastSceneSafe": "Tá an radharc deireanach a shábháil sábháilte sa bhrabhsóir seo.",
     "shareUrlTooLarge": "Tá an URL roinnte rófhada — eiportáil an comhad tionscadail chun an mockup seo a roinnt."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

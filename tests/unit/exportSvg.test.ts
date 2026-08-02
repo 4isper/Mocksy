@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildSvgMarkup, exportSvg, inlineSvgAsset, mediaToDataUrl, videoToDataUrl } from "@/lib/export/exportSvg";
+import { clearImageCache } from "@/lib/render/canvasMedia";
 import { computeFrameBox } from "@/lib/render/frameGeometry";
 import { initialScene } from "@/lib/state/editorStore";
 import type { EditorScene } from "@/lib/types/editor";
@@ -7,6 +8,7 @@ import type { EditorScene } from "@/lib/types/editor";
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  clearImageCache();
 });
 
 /** Installs a fake global `Image` so `loadMediaElement` resolves deterministically. */

@@ -182,7 +182,10 @@
     "watermarkPosition": "Ջրանշանի դիրք",
     "watermarkSize": "Ջրանշանի չափ՝ {val}px",
     "watermarkText": "Ջրանշանի տեքստ",
-    "zoom": "Մեծացնել"
+    "zoom": "Մեծացնել",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Ոչ մեկ",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Էքսպորտ {format} (⌘E)",
     "copy": "Կրկնօրինակել",
     "convertVideo": "Ցուցադրում է տեսանյութը…",
-    "exportComplete": "Էքսպորտը ավարտված է!"
+    "exportComplete": "Էքսպորտը ավարտված է!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Կոճապատ սեղմների բացատրություն",
@@ -456,5 +466,26 @@
     "tryAgain": "Փորձել նորից",
     "lastSceneSafe": "Վերջին նայումը պահպանված է դիտարկիչում։",
     "shareUrlTooLarge": "Համագործակցության URL-ը շատ երկար է՝ էքսպորտացրեք նախագիծը ներկայացնելու համար։"
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }

@@ -182,7 +182,10 @@
     "watermarkPosition": "Positie watermerk",
     "watermarkSize": "Grootte watermerk — {val}px",
     "watermarkText": "Tekst watermerk",
-    "zoom": "Inzoomen"
+    "zoom": "Inzoomen",
+    "gradientLinear": "Linear",
+    "gradientMiddle": "Middle",
+    "gradientRadial": "Radial"
   },
   "frame": {
     "none": "Geen",
@@ -299,7 +302,14 @@
     "exportActionShortcut": "Exporteren {format} (⌘E)",
     "copy": "Kopiëren",
     "convertVideo": "Video converteren…",
-    "exportComplete": "Exporteren voltooid!"
+    "exportComplete": "Exporteren voltooid!",
+    "exportingGif": "Exporting GIF…",
+    "exportingVideo": "Exporting video…",
+    "exportingWebm": "Exporting WebM…",
+    "exportingWebpAnim": "Exporting WebP…",
+    "htmlFailed": "HTML export failed.",
+    "shareLinkFailed": "Could not create share link",
+    "svgFailed": "SVG export failed."
   },
   "shortcuts": {
     "title": "Sneltoetsen toetsenbord",
@@ -456,5 +466,26 @@
     "tryAgain": "Probeer het opnieuw",
     "lastSceneSafe": "De laatste scène is veilig opgeslagen in de browser.",
     "shareUrlTooLarge": "De deel-URL is te lang — exporteer het project om deze mockup te delen."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content"
+  },
+  "preset": {
+    "transparent": "Transparent",
+    "zinc": "Zinc",
+    "slate": "Slate",
+    "rose": "Rose",
+    "blue-violet": "Blue → Violet",
+    "sunset": "Sunset",
+    "mint": "Mint",
+    "dots": "Dots",
+    "grid": "Grid",
+    "diagonal": "Diagonal",
+    "noise": "Noise",
+    "dark-studio": "Dark Studio",
+    "soft-glass": "Soft Glass",
+    "bold-gradient": "Bold Gradient",
+    "minimal": "Minimal",
+    "warm": "Warm"
   }
 }
