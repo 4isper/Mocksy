@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
+import { useEditorExport } from "@/lib/hooks/useEditorExport";
+import { useEditorShortcuts } from "@/lib/hooks/useEditorShortcuts";
 import { ControlPanel } from "@/components/editor/ControlPanel";
 import { ExportDialog } from "@/components/editor/ExportDialog";
 import { ShortcutsDialog } from "@/components/editor/ShortcutsDialog";
@@ -11,9 +13,6 @@ import { CommandPalette } from "@/components/editor/CommandPalette";
 import { useCommands } from "@/lib/hooks/useCommands";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
-import { exportImage, copyPngToClipboard, exportWebp } from "@/lib/export/exportImage";
-import type { ExportFormat } from "@/components/editor/ExportDialog";
-import { sceneToShareUrl, ShareUrlTooLarge } from "@/lib/state/shareState";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { useThemeStore } from "@/lib/state/themeStore";
 import { LocaleSwitcher } from "@/components/editor/LocaleSwitcher";
@@ -21,18 +20,11 @@ import { ErrorBoundary } from "@/components/editor/ErrorBoundary";
 
 const AUTOSAVE_DELAY = 500;
 
-function useStableCallback<T extends (...args: unknown[]) => unknown>(callback: T): T {
-  const ref = useRef(callback);
-  useEffect(() => { ref.current = callback; }, [callback]);
-  return useCallback((...args: unknown[]) => ref.current(...args), []) as T;
-}
-
 export function EditorShell() {
   const t = useTranslations();
   const scene = useEditorStore((s) => s.scene);
   const setScene = useEditorStore((s) => s.setScene);
   const resetScene = useEditorStore((s) => s.resetScene);
-  const saveNowRef = useRef(() => {});
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
   const canUndo = useEditorStore((s) => s.past.length > 0);
@@ -43,15 +35,8 @@ export function EditorShell() {
   const setCustomExportSize = useEditorStore((s) => s.setCustomExportSize);
   const themeMode = useThemeStore((s) => s.mode);
   const setThemeMode = useThemeStore((s) => s.setMode);
-  const [videoExportStatus, setVideoExportStatus] = useState<string | null>(null);
-  const [videoExportProgress, setVideoExportProgress] = useState<number>(0);
-  const [gifExportStatus, setGifExportStatus] = useState<string | null>(null);
-  const [gifExportProgress, setGifExportProgress] = useState<number>(0);
-  const isExporting = videoExportStatus !== null || gifExportStatus !== null;
   const saveError = useProjectsStore((s) => s.saveError);
-  const [exportError, setExportError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -62,10 +47,8 @@ export function EditorShell() {
   }, [confirmResetOpen, exportOpen, shortcutsOpen, commandPaletteOpen]);
   const resetTrapRef = useFocusTrap(confirmResetOpen);
 
-  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Callbacks must be defined before useCommands
-  // Save ref is updated below in a separate effect so it stays stable
+  // Save ref is updated below in a separate effect so it stays stable.
+  const saveNowRef = useRef(() => {});
   const saveNow = useCallback(() => {
     saveNowRef.current();
   }, []);
@@ -77,203 +60,35 @@ export function EditorShell() {
     };
   }, [scene]);
 
-  const copyShareUrl = useCallback(async () => {
-    try {
-      const url = sceneToShareUrl(scene);
-      await navigator.clipboard.writeText(url);
-    } catch (err) {
-      if (err instanceof ShareUrlTooLarge) {
-        setExportError(t("errors.shareUrlTooLarge"));
-      } else {
-        setExportError(err instanceof Error ? err.message : t("export.shareLinkFailed"));
-      }
-    }
-  }, [scene, t]);
-
-  const handleExportPng = useCallback(() => {
-    setExportError(null);
-    exportImage(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize);
-  }, [scene, exportScale, customExportSize]);
-
-  const handleCopyPng = useCallback(async () => {
-    setExportError(null);
-    await copyPngToClipboard(scene, "preview-canvas", setExportError, setCopyStatus, exportScale, customExportSize);
-  }, [scene, exportScale, customExportSize]);
-
-  const handleExportWebp = useCallback(() => {
-    setExportError(null);
-    exportWebp(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize);
-  }, [scene, exportScale, customExportSize]);
-
-  const handleExportSvg = useCallback(async () => {
-    setExportError(null);
-    try {
-      const { exportSvg } = await import("@/lib/export/exportSvg");
-      await exportSvg(scene, "preview-canvas", "mocksy-export", setExportError);
-    } catch (err) {
-      setExportError(err instanceof Error ? err.message : t("export.svgFailed"));
-    }
-  }, [scene, t]);
-
-  const handleExportHtml = useCallback(async () => {
-    setExportError(null);
-    try {
-      const { exportHtml } = await import("@/lib/export/exportHtml");
-      await exportHtml(scene, "preview-canvas", "mocksy-export", setExportError);
-    } catch (err) {
-      setExportError(err instanceof Error ? err.message : t("export.htmlFailed"));
-    }
-  }, [scene, t]);
-
-  const handleExportMp4 = useCallback(async () => {
-    setExportError(null);
-    try {
-      setVideoExportStatus(t("export.exportingVideo"));
-      setVideoExportProgress(0);
-      const { exportVideo } = await import("@/lib/export/exportVideo");
-      await exportVideo(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError, customExportSize);
-    } finally {
-      setTimeout(() => {
-        setVideoExportStatus(null);
-        setVideoExportProgress(0);
-      }, 800);
-    }
-  }, [scene, exportScale, customExportSize, t]);
-
-  const handleExportWebm = useCallback(async () => {
-    setExportError(null);
-    try {
-      setVideoExportStatus(t("export.exportingWebm"));
-      setVideoExportProgress(0);
-      const { exportWebm } = await import("@/lib/export/exportVideo");
-      await exportWebm(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError, customExportSize);
-    } finally {
-      setTimeout(() => {
-        setVideoExportStatus(null);
-        setVideoExportProgress(0);
-      }, 800);
-    }
-  }, [scene, exportScale, customExportSize, t]);
-
-  const handleExportWebpAnim = useCallback(async () => {
-    setExportError(null);
-    try {
-      setVideoExportStatus(t("export.exportingWebpAnim"));
-      setVideoExportProgress(0);
-      const { exportWebpAnim } = await import("@/lib/export/exportVideo");
-      await exportWebpAnim(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError, customExportSize);
-    } finally {
-      setTimeout(() => {
-        setVideoExportStatus(null);
-        setVideoExportProgress(0);
-      }, 800);
-    }
-  }, [scene, exportScale, customExportSize, t]);
-
-  const handleExportGif = useCallback(async () => {
-    setExportError(null);
-    try {
-      setGifExportStatus(t("export.exportingGif"));
-      setGifExportProgress(0);
-      const { exportGif } = await import("@/lib/export/exportVideo");
-      await exportGif(scene, exportScale, setGifExportStatus, setGifExportProgress, setExportError, customExportSize);
-    } finally {
-      setTimeout(() => {
-        setGifExportStatus(null);
-        setGifExportProgress(0);
-      }, 800);
-    }
-  }, [scene, exportScale, customExportSize, t]);
-
-  const handleExport = useCallback(
-    (format: ExportFormat) => {
-      setExportOpen(false);
-      switch (format) {
-        case "png":
-          handleExportPng();
-          break;
-        case "webp":
-          handleExportWebp();
-          break;
-        case "svg":
-          void handleExportSvg();
-          break;
-        case "html":
-          void handleExportHtml();
-          break;
-        case "mp4":
-          void handleExportMp4();
-          break;
-        case "webm":
-          void handleExportWebm();
-          break;
-        case "gif":
-          void handleExportGif();
-          break;
-        case "webpAnim":
-          void handleExportWebpAnim();
-          break;
-      }
-    },
-    [
-      handleExportPng,
-      handleExportWebp,
-      handleExportSvg,
-      handleExportHtml,
-      handleExportMp4,
-      handleExportWebm,
-      handleExportGif,
-      handleExportWebpAnim
-    ]
-  );
-
-  const handleCopyFromDialog = useCallback(() => {
-    setExportOpen(false);
-    handleCopyPng();
-  }, [handleCopyPng]);
-
-  const handleReset = useCallback(() => {
-    setConfirmResetOpen(true);
-  }, []);
-
-  const confirmReset = useCallback(() => {
-    resetScene();
-    setSaved(false);
-    setConfirmResetOpen(false);
-  }, [resetScene]);
-
-  const cancelReset = useCallback(() => setConfirmResetOpen(false), []);
-
-  useEffect(() => {
-    if (!confirmResetOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") cancelReset();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [confirmResetOpen, cancelReset]);
-
-  // Clear the transient "Copied" status after a moment so it doesn't
-  // linger in the toolbar like the persistent Saved indicator.
-  useEffect(() => {
-    if (!copyStatus) return;
-    const t = setTimeout(() => setCopyStatus(null), 1500);
-    return () => clearTimeout(t);
-  }, [copyStatus]);
+  const closeExportDialog = useCallback(() => setExportOpen(false), []);
+  const exportApi = useEditorExport(scene, exportScale, customExportSize, closeExportDialog);
 
   const commands = useCommands(
-    handleExportPng,
-    handleExportWebp,
-    handleExportSvg,
-    handleExportHtml,
-    handleExportMp4,
-    handleExportWebm,
-    handleExportGif,
-    handleExportWebpAnim,
-    handleCopyPng,
-    copyShareUrl,
+    exportApi.handleExportPng,
+    exportApi.handleExportWebp,
+    exportApi.handleExportSvg,
+    exportApi.handleExportHtml,
+    exportApi.handleExportMp4,
+    exportApi.handleExportWebm,
+    exportApi.handleExportGif,
+    exportApi.handleExportWebpAnim,
+    exportApi.handleCopyPng,
+    exportApi.copyShareUrl,
     saveNow
   );
+
+  const handleReset = useCallback(() => setConfirmResetOpen(true), []);
+  useEditorShortcuts({
+    saveNow,
+    onReset: handleReset,
+    onExportPng: exportApi.handleExportPng,
+    onExportMp4: exportApi.handleExportMp4,
+    onExportGif: exportApi.handleExportGif,
+    onCopyPng: exportApi.handleCopyPng,
+    onOpenShortcuts: () => setShortcutsOpen(true),
+    onOpenCommandPalette: () => setCommandPaletteOpen(true),
+    isModalOpen: () => hasOpenModalRef.current
+  });
 
   useEffect(() => {
     // Bootstrap from projects (URL share, localStorage, or a fresh demo). The
@@ -283,6 +98,7 @@ export function EditorShell() {
     setScene(restored, false);
   }, [setScene]);
 
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevSceneRef = useRef(scene);
   useEffect(() => {
     if (prevSceneRef.current !== scene) {
@@ -302,140 +118,22 @@ export function EditorShell() {
     };
   }, [scene]);
 
+  const confirmReset = useCallback(() => {
+    resetScene();
+    setSaved(false);
+    setConfirmResetOpen(false);
+  }, [resetScene]);
+
+  const cancelReset = useCallback(() => setConfirmResetOpen(false), []);
+
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      const modifier = event.metaKey || event.ctrlKey;
-      // ? opens the keyboard-shortcuts cheat sheet. Skip while typing so it
-      // doesn't interfere with "?" typed into a text field. Match on the
-      // physical key (code "Slash" + Shift) so it's layout-independent
-      // and robust to how the "?" character is delivered (event.key).
-      const target = event.target as HTMLElement | null;
-      const typing =
-        !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT");
-      // Skip shortcuts when a modal dialog is open.
-      if (hasOpenModalRef.current) return;
-      if ((event.key === "?" || (event.code === "Slash" && event.shiftKey)) && !typing) {
-        event.preventDefault();
-        setShortcutsOpen(true);
-        return;
-      }
-      // ⌘K opens the command palette
-      if (modifier && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setCommandPaletteOpen(true);
-        return;
-      }
-      if (modifier && event.key.toLowerCase() === "z") {
-        event.preventDefault();
-        const st = useEditorStore.getState();
-        if (event.shiftKey) st.redo();
-        else st.undo();
-        return;
-      }
-      if (modifier && event.key.toLowerCase() === "y") {
-        event.preventDefault();
-        useEditorStore.getState().redo();
-        return;
-      }
-      if (modifier && event.key.toLowerCase() === "s") {
-        event.preventDefault();
-        saveNow();
-        return;
-      }
-      if (modifier && !event.shiftKey && event.key.toLowerCase() === "e") {
-        event.preventDefault();
-        handleExportPng();
-        return;
-      }
-      // ⌘⇧E exports MP4, ⌘⇧G exports GIF (the GIF module is
-      // still loaded lazily, via the same dynamic import as MP4).
-      if (modifier && event.shiftKey && event.key.toLowerCase() === "e") {
-        event.preventDefault();
-        handleExportMp4();
-        return;
-      }
-      if (modifier && event.shiftKey && event.key.toLowerCase() === "g") {
-        event.preventDefault();
-        handleExportGif();
-        return;
-      }
-      // ⌘⇧C copies a PNG snapshot to the clipboard (⌘C alone stays
-      // free for normal text copy while typing in a field).
-      if (modifier && event.shiftKey && event.key.toLowerCase() === "c") {
-        event.preventDefault();
-        handleCopyPng();
-        return;
-      }
-      // Layer shortcuts: ⌘D duplicates the active layer, ⌘↑/⌘↓ move it.
-      // Skip while typing in a field so they don't hijack text editing.
-      if (modifier && !typing && event.key.toLowerCase() === "d") {
-        event.preventDefault();
-        const st = useEditorStore.getState();
-        const id = st.scene.activeLayerId ?? st.scene.layers[0]?.id;
-        if (id) st.duplicateLayer(id);
-        return;
-      }
-      if (modifier && !typing && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
-        event.preventDefault();
-        const st = useEditorStore.getState();
-        const ids = st.scene.layers.map((l) => l.id);
-        const idx = ids.indexOf(st.scene.activeLayerId ?? st.scene.layers[0]?.id ?? "");
-        const dir = event.key === "ArrowUp" ? -1 : 1;
-        const next = idx + dir;
-        if (idx < 0 || next < 0 || next >= ids.length) return;
-        const a = ids[idx];
-        const b = ids[next];
-        if (a === undefined || b === undefined) return;
-        ids[idx] = b;
-        ids[next] = a;
-        st.reorderLayers(ids);
-        return;
-      }
-      if (modifier && !typing && (event.key === "[" || event.key === "]")) {
-        event.preventDefault();
-        const st = useEditorStore.getState();
-        const ids = st.scene.layers.map((l) => l.id);
-        const idx = ids.indexOf(st.scene.activeLayerId ?? st.scene.layers[0]?.id ?? "");
-        if (idx < 0) return;
-        const dir = event.key === "[" ? -1 : 1;
-        const nextIdx = Math.max(0, Math.min(ids.length - 1, idx + dir));
-        const id = ids[nextIdx];
-        if (id) st.selectLayer(id);
-        return;
-      }
-      // Arrow keys nudge the selected frame instance on the canvas.
-      if (!modifier && !typing && event.key.startsWith("Arrow")) {
-        event.preventDefault();
-        const st = useEditorStore.getState();
-        let id = st.activeFrameInstanceId;
-        if (!id && st.scene.frameInstances.length > 0) {
-          id = st.scene.frameInstances[0]!.id;
-          st.selectFrameInstance(id);
-        }
-        const inst = st.scene.frameInstances.find((fi) => fi.id === id);
-        if (!inst) return;
-        const step = event.shiftKey ? 0.05 : 0.01;
-        const dirs: Record<string, [number, number]> = {
-          ArrowUp: [0, -step],
-          ArrowDown: [0, step],
-          ArrowLeft: [-step, 0],
-          ArrowRight: [step, 0]
-        };
-        const [dx, dy] = dirs[event.key] ?? [0, 0];
-        const x = Math.max(0, Math.min(1, inst.x + dx));
-        const y = Math.max(0, Math.min(1, inst.y + dy));
-        st.updateFrameInstance(id!, { x, y });
-        return;
-      }
-      if (event.key.toLowerCase() === "r" && !modifier) {
-        if (typing) return;
-        event.preventDefault();
-        handleReset();
-      }
+    if (!confirmResetOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") cancelReset();
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [saveNow, handleReset, handleExportPng, handleExportMp4, handleExportGif, handleCopyPng, setShortcutsOpen, setCommandPaletteOpen]);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [confirmResetOpen, cancelReset]);
 
   return (
     <main className="editor-shell" id="main-content" tabIndex={-1}>
@@ -461,7 +159,7 @@ export function EditorShell() {
               <button
                 type="button"
                 className="btn-tb btn-tb-primary"
-                disabled={isExporting}
+                disabled={exportApi.isExporting}
                 onClick={() => setExportOpen(true)}
                 title={t("editor.exportTitle")}
               >
@@ -469,29 +167,29 @@ export function EditorShell() {
                 {t("nav.export")}
               </button>
             </div>
-            {videoExportStatus ? (
+            {exportApi.videoExportStatus ? (
               <div className="export-status">
-                <span className="label">{videoExportStatus}</span>
+                <span className="label">{exportApi.videoExportStatus}</span>
                 <div className="progress">
-                  <div style={{ width: `${videoExportProgress}%` }} />
+                  <div style={{ width: `${exportApi.videoExportProgress}%` }} />
                 </div>
-                <span className="pct">{Math.round(videoExportProgress)}%</span>
+                <span className="pct">{Math.round(exportApi.videoExportProgress)}%</span>
               </div>
             ) : null}
-            {gifExportStatus ? (
+            {exportApi.gifExportStatus ? (
               <div className="export-status">
-                <span className="label">{gifExportStatus}</span>
+                <span className="label">{exportApi.gifExportStatus}</span>
                 <div className="progress">
-                  <div style={{ width: `${gifExportProgress}%` }} />
+                  <div style={{ width: `${exportApi.gifExportProgress}%` }} />
                 </div>
-                <span className="pct">{Math.round(gifExportProgress)}%</span>
+                <span className="pct">{Math.round(exportApi.gifExportProgress)}%</span>
               </div>
             ) : null}
-            {copyStatus ? (
-              <span className="status saved">{copyStatus}</span>
-            ) : exportError ? (
+            {exportApi.copyStatus ? (
+              <span className="status saved">{exportApi.copyStatus}</span>
+            ) : exportApi.exportError ? (
               <span className="error" role="alert">
-                {exportError}
+                {exportApi.exportError}
               </span>
             ) : saveError ? (
               <span className="error" role="alert" title={saveError}>
@@ -536,7 +234,7 @@ export function EditorShell() {
               <button type="button" className="btn-tb btn-tb-icon" onClick={saveNow} title={t("editor.saveTitle")}>
                 <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M11.5 5.5V12a.5.5 0 01-.5.5H3a.5.5 0 01-.5-.5V2A.5.5 0 013 1.5h4.5l4 4z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M4.5 9.5h5M4.5 11.5h5M4.5 7.5h5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
               </button>
-              <button type="button" className="btn-tb btn-tb-icon" onClick={copyShareUrl} title={t("editor.shareTitle")}>
+              <button type="button" className="btn-tb btn-tb-icon" onClick={exportApi.copyShareUrl} title={t("editor.shareTitle")}>
                 <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M5.5 8.5l3-3M8 5.5l-1-1A2.5 2.5 0 119.5 3l.5.5M6 8.5l1 1A2.5 2.5 0 114.5 11l-.5-.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
               <button type="button" className="btn-tb btn-tb-icon" onClick={() => setShortcutsOpen(true)} title={t("editor.shortcutsTitle")}>
@@ -584,9 +282,9 @@ export function EditorShell() {
         onScaleChange={setExportScale}
         customSize={customExportSize}
         onCustomSizeChange={setCustomExportSize}
-        onExport={handleExport}
-        onCopy={handleCopyFromDialog}
-        busy={isExporting}
+        onExport={exportApi.handleExport}
+        onCopy={exportApi.handleCopyFromDialog}
+        busy={exportApi.isExporting}
       />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <CommandPalette
