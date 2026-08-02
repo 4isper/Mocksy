@@ -60,7 +60,7 @@ describe("shareState", () => {
     const scene = withLayer(initialScene, { mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: "mocksy-demo.svg" });
     scene.frame = "desktop";
     const url = sceneToShareUrl(scene);
-    const raw = decodeURIComponent(new URL(url).searchParams.get("scene") ?? "");
+    const raw = new URL(url).searchParams.get("scene") ?? "";
     expect(raw).not.toContain(DEMO_MEDIA_URL);
     stubLocation(url);
     const restored = readSceneFromUrl();
@@ -71,7 +71,7 @@ describe("shareState", () => {
   it("keeps a non-demo media URL in the share link", () => {
     const scene = withLayer(initialScene, { mediaUrl: "blob:abc", mediaType: "image", mediaName: "shot.png" });
     const url = sceneToShareUrl(scene);
-    const raw = decodeURIComponent(new URL(url).searchParams.get("scene") ?? "");
+    const raw = new URL(url).searchParams.get("scene") ?? "";
     expect(raw).toContain("blob:abc");
     stubLocation(url);
     const restored = readSceneFromUrl();
@@ -83,11 +83,29 @@ describe("shareState", () => {
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC";
     const scene = withLayer(initialScene, { mediaUrl: dataUrl, mediaType: "image", mediaName: "shot.png" });
     const url = sceneToShareUrl(scene);
-    const raw = decodeURIComponent(new URL(url).searchParams.get("scene") ?? "");
+    const raw = new URL(url).searchParams.get("scene") ?? "";
     expect(raw).toContain(dataUrl);
     stubLocation(url);
     const restored = readSceneFromUrl();
     expect(restored?.layers[0]!.mediaUrl).toBe(dataUrl);
+  });
+
+  it("encodes the scene payload only once", () => {
+    const scene: EditorScene = { ...initialScene, frame: "desktop" };
+    const url = sceneToShareUrl(scene);
+    const raw = new URL(url).searchParams.get("scene") ?? "";
+    // The decoded param is raw JSON — URLSearchParams did the only encoding.
+    expect(raw).toContain('"frame":"desktop"');
+    expect(raw).not.toContain("%7B");
+    expect(raw).not.toContain("%22");
+  });
+
+  it("reads legacy double-encoded share links", () => {
+    // Links created before the encoding fix carried encodeURIComponent(JSON).
+    const legacy = encodeURIComponent(JSON.stringify({ ...initialScene, frame: "desktop" }));
+    stubLocation(`https://mocksy.test/?scene=${encodeURIComponent(legacy)}`);
+    const restored = readSceneFromUrl();
+    expect(restored?.frame).toBe("desktop");
   });
 
   it("throws when the share URL exceeds the practical length limit", () => {
@@ -116,7 +134,7 @@ describe("shareState", () => {
       activeLayerId: "a"
     };
     const url = sceneToShareUrl(scene);
-    const raw = decodeURIComponent(new URL(url).searchParams.get("scene") ?? "");
+    const raw = new URL(url).searchParams.get("scene") ?? "";
     expect(raw).not.toContain(DEMO_MEDIA_URL);
     expect(raw).toContain("blob:abc");
     stubLocation(url);

@@ -75,7 +75,7 @@ export async function exportVideo(
   const blob = new Blob([bytes], { type: "video/mp4" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = sanitizeFilename(((scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0])?.mediaName || "mocksy-export").replace(/\.[^.]+$/, "")) + ".mp4";
+  link.download = `${exportBaseName(scene)}.mp4`;
   link.click();
   setTimeout(() => URL.revokeObjectURL(link.href), 200);
   await ffmpeg.deleteFile(inputName);
@@ -222,7 +222,7 @@ export async function exportGif(
     const blob = new Blob([bytes], { type: "image/gif" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = sanitizeFilename(((scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0])?.mediaName || "mocksy-export").replace(/\.[^.]+$/, "")) + ".gif";
+    link.download = `${exportBaseName(scene)}.gif`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 200);
     await ffmpeg.deleteFile(inputName);

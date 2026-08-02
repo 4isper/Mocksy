@@ -185,7 +185,8 @@
     "zoom": "ਜੂਮ",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "ਕੋਈ ਨਹੀਂ",
@@ -341,7 +342,13 @@
     "export": "ਐਕਸਪੋਰਟ",
     "layers": "ਲੇਅਰ",
     "scene": "ਦ੍ਰਿਸ਼",
-    "cmdHint": "⌘ = macOS ਵਿੱਚ Cmd, Windows ਅਤੇ Linux ਵਿੱਚ Ctrl। ਲੇਅਰ ਸ਼ਾਰਟਕੱਟਸ ਫੀਲਡ ਟਾਈਪ ਕਰਦਿਆਂ ਅਣਦਿੱਖੀ ਹੋ ਜਾਂਦੇ ਹਨ।"
+    "cmdHint": "⌘ = macOS ਵਿੱਚ Cmd, Windows ਅਤੇ Linux ਵਿੱਚ Ctrl। ਲੇਅਰ ਸ਼ਾਰਟਕੱਟਸ ਫੀਲਡ ਟਾਈਪ ਕਰਦਿਆਂ ਅਣਦਿੱਖੀ ਹੋ ਜਾਂਦੇ ਹਨ।",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "ਪ੍ਰੋਜੈਕਟ",

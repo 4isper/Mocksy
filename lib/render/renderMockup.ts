@@ -10,6 +10,20 @@ import { computeFrameBox, computeFrameInstances } from "@/lib/render/frameGeomet
 export { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
 export type { FrameBox, RenderTransform } from "@/lib/render/frameGeometry";
 
+/** Deterministic PRNG (mulberry32) so pattern fills render identically on
+ *  every pass — preview, PNG export and every frame of a video export must
+ *  agree, which Math.random() can never guarantee. */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 function fillGradientBackground(ctx: CanvasRenderingContext2D, scene: EditorScene, width: number, height: number) {
   if (scene.gradientType === "radial") {
     const grad = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, Math.max(width, height) / 2);
@@ -97,11 +111,16 @@ function fillPatternBackground(ctx: CanvasRenderingContext2D, scene: EditorScene
       ctx.fillRect(0, 0, width, height);
       const imageData = ctx.getImageData(0, 0, width, height);
       const data = imageData.data;
+      // Deterministic noise: Math.random() would make every rendered frame
+      // differ, so video exports flicker and a PNG never matches the preview.
+      // The seed is derived from the canvas size so the pattern stays stable
+      // across renders (and across export + preview) of the same canvas.
+      const rand = mulberry32((width * 374761393 + height * 668265263) >>> 0);
       for (let i = 0; i < data.length; i += 4) {
         const d0 = data[i] ?? 0;
         const d1 = data[i + 1] ?? 0;
         const d2 = data[i + 2] ?? 0;
-        const noise = (Math.random() - 0.5) * 30;
+        const noise = (rand() - 0.5) * 30;
         data[i] = Math.max(0, Math.min(255, d0 + noise));
         data[i + 1] = Math.max(0, Math.min(255, d1 + noise));
         data[i + 2] = Math.max(0, Math.min(255, d2 + noise));
@@ -218,116 +237,17 @@ export function renderMockupToCanvas(
     ctx.fillRect(0, 0, width, height);
   }
 
-  const { x, y, width: frameW, height: frameH, outerRadius, innerX, innerY, innerW, innerH, innerRadius } = computeFrameBox(
-    scene,
-    width,
-    height,
-    pixelRatio,
-    frameWidth,
-    frameHeight,
-    transform,
-    frameX,
-    frameY
-  );
+  const box = computeFrameBox(scene, width, height, pixelRatio, frameWidth, frameHeight, transform, frameX, frameY);
   const activeLayerForRender2 = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   const actualZoom = Math.max(0.01, transform?.zoom ?? activeLayerForRender2?.zoom ?? 1);
 
-  if (!spec.isOverlay) {
-    ctx.save();
-    ctx.shadowColor = `rgba(0,0,0,${Math.max(0, Math.min(1, scene.shadowOpacity))})`;
-    ctx.shadowBlur = RENDER.shadowBlur * dpiScale * actualZoom;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = RENDER.shadowOffsetY * dpiScale * actualZoom;
-    roundedRectPath(ctx, x, y, frameW, frameH, outerRadius);
-    ctx.fillStyle = scene.stylePreset === "glassDark" ? RENDER.glassDarkFill : RENDER.glassLightFill;
-    ctx.fill();
-    ctx.restore();
-
-    if (scene.stylePreset === "outline" || scene.stylePreset.startsWith("glass")) {
-      ctx.save();
-      roundedRectPath(ctx, x, y, frameW, frameH, outerRadius);
-      ctx.lineWidth = (scene.stylePreset === "outline" ? RENDER.outlineStroke : RENDER.glassStroke) * dpiScale * actualZoom;
-      ctx.strokeStyle = scene.stylePreset === "glassDark" ? RENDER.glassDarkStroke : RENDER.glassLightStroke;
-      ctx.stroke();
-      ctx.restore();
-    }
-  }
-
-  ctx.save();
-  roundedRectPath(ctx, innerX, innerY, innerW, innerH, innerRadius);
-  ctx.clip();
-  if (media) {
-    const m = media as {
-      width?: number;
-      height?: number;
-      naturalWidth?: number;
-      naturalHeight?: number;
-      videoWidth?: number;
-      videoHeight?: number;
-    };
-    const mw = m.videoWidth || m.naturalWidth || m.width || innerW;
-    const mh = m.videoHeight || m.naturalHeight || m.height || innerH;
-    const fit = activeLayerForRender?.mediaFit ?? "cover";
-    const scale = fit === "contain" ? Math.min(innerW / mw, innerH / mh) : Math.max(innerW / mw, innerH / mh);
-    const dw = mw * scale;
-    const dh = mh * scale;
-    const offsetX = activeLayerForRender?.mediaOffsetX ?? 0;
-    const offsetY = activeLayerForRender?.mediaOffsetY ?? 0;
-    const dx = innerX + (innerW - dw) / 2 + offsetX * (innerW - dw) / 2;
-    const dy = innerY + (innerH - dh) / 2 + offsetY * (innerH - dh) / 2;
-    ctx.drawImage(media, dx, dy, dw, dh);
-  } else {
-    ctx.fillStyle = RENDER.emptyMediaFill;
-    ctx.fillRect(innerX, innerY, innerW, innerH);
-  }
-  ctx.restore();
-
-  if (frameOverlay) {
-    ctx.save();
-    ctx.shadowColor = `rgba(0,0,0,${Math.max(0, Math.min(1, scene.shadowOpacity))})`;
-    ctx.shadowBlur = RENDER.shadowBlur * dpiScale * actualZoom;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = RENDER.shadowOffsetY * dpiScale * actualZoom;
-    ctx.drawImage(frameOverlay, x, y, frameW, frameH);
-    ctx.restore();
-  }
+  drawFrameAndMedia(ctx, scene, spec, activeLayerForRender2, box, dpiScale, actualZoom, media, frameOverlay ?? null);
 
   if (scene.watermarkEnabled && scene.watermarkText) {
-    const watermarkSize = scene.watermarkSize * dpiScale;
-    const inset = 16 * dpiScale;
-    const onLeft = scene.watermarkPosition === "bottom-left" || scene.watermarkPosition === "top-left";
-    const onTop = scene.watermarkPosition === "top-right" || scene.watermarkPosition === "top-left";
-    const textX = onLeft ? inset : width - inset;
-    const textY = onTop ? inset + watermarkSize : height - inset;
-    ctx.save();
-    ctx.fillStyle = "rgba(255,255,255,0.85)";
-    ctx.font = `500 ${watermarkSize}px Inter, system-ui, sans-serif`;
-    ctx.textAlign = onLeft ? "left" : "right";
-    ctx.textBaseline = onTop ? "top" : "alphabetic";
-    ctx.shadowColor = "rgba(0,0,0,0.6)";
-    ctx.shadowBlur = 3 * dpiScale;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 1 * dpiScale;
-    ctx.fillText(scene.watermarkText, textX, textY);
-    ctx.restore();
+    drawWatermark(ctx, scene, width, height, dpiScale);
   }
 
   if (scene.annotations.length > 0) {
     drawAnnotations(ctx, scene.annotations, width, height, dpiScale);
   }
-}
-
-function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  const radius = Math.max(0, Math.min(r, Math.min(w, h) / 2));
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + w - radius, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
-  ctx.lineTo(x + w, y + h - radius);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
-  ctx.lineTo(x + radius, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
 }

@@ -185,7 +185,8 @@
     "zoom": "Εστίαση",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "Κανένα",
@@ -341,7 +342,13 @@
     "export": "Εξαγωγή",
     "layers": "Στρώματα",
     "scene": "Σκηνή",
-    "cmdHint": "⌘ = Cmd σε macOS, Ctrl σε Windows και Linux. Οι συντομεύσεις στρωμάτων δεν είναι ενεργές και γίνονται εισαγωγή στο πεδίο."
+    "cmdHint": "⌘ = Cmd σε macOS, Ctrl σε Windows και Linux. Οι συντομεύσεις στρωμάτων δεν είναι ενεργές και γίνονται εισαγωγή στο πεδίο.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "Έργα",

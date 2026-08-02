@@ -185,7 +185,8 @@
     "zoom": "Aðgla",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "Ekkert",
@@ -341,7 +342,13 @@
     "export": "Hafa út",
     "layers": "Lög",
     "scene": "Sýn",
-    "cmdHint": "⌘ = Cmd á macOS, Ctrl á Windows og Linux. Flýtilyklar laga eru ekki virka og skrifast í reit."
+    "cmdHint": "⌘ = Cmd á macOS, Ctrl á Windows og Linux. Flýtilyklar laga eru ekki virka og skrifast í reit.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "Verkefni",

@@ -185,7 +185,8 @@
     "zoom": "জুম",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "কোনোটি নয়",
@@ -341,7 +342,13 @@
     "export": "প্রস্তুত",
     "layers": "স্তর",
     "scene": "দৃশ্য",
-    "cmdHint": "⌘ = macOS-এ Cmd, Windows এবং Linux-এ Ctrl। লেয়ার শর্টকাট লেখার সময় উপেক্ষা করা হয়।"
+    "cmdHint": "⌘ = macOS-এ Cmd, Windows এবং Linux-এ Ctrl। লেয়ার শর্টকাট লেখার সময় উপেক্ষা করা হয়।",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "প্রকল্প",

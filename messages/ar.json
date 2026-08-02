@@ -185,7 +185,8 @@
     "zoom": "تكبير",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "بلا",
@@ -341,7 +342,13 @@
     "export": "تصدير",
     "layers": "طبقات",
     "scene": "مشهد",
-    "cmdHint": "⌘ = Cmd على macOS، Ctrl على Windows وLinux. اختصارات الطبقات تُتجاهل أثناء الكتابة في حقل."
+    "cmdHint": "⌘ = Cmd على macOS، Ctrl على Windows وLinux. اختصارات الطبقات تُتجاهل أثناء الكتابة في حقل.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "مشاريع",

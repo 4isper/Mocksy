@@ -185,7 +185,8 @@
     "zoom": "Zoom",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "Keiner",
@@ -341,7 +342,13 @@
     "export": "Exportieren",
     "layers": "Ebenen",
     "scene": "Szene",
-    "cmdHint": "⌘ = Cmd auf macOS, Ctrl auf Windows und Linux. Ebene-Kürzel sind nicht aktiv und werden in das Feld geschrieben."
+    "cmdHint": "⌘ = Cmd auf macOS, Ctrl auf Windows und Linux. Ebene-Kürzel sind nicht aktiv und werden in das Feld geschrieben.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "Projekte",

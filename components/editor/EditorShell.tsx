@@ -78,12 +78,22 @@ export function EditorShell() {
   );
 
   const handleReset = useCallback(() => setConfirmResetOpen(true), []);
+  const handleNewProject = useCallback(() => {
+    const id = useProjectsStore.getState().createProject("Untitled");
+    useProjectsStore.getState().switchProject(id);
+  }, []);
   useEditorShortcuts({
     saveNow,
     onReset: handleReset,
+    onNewProject: handleNewProject,
     onExportPng: exportApi.handleExportPng,
     onExportMp4: exportApi.handleExportMp4,
     onExportGif: exportApi.handleExportGif,
+    onExportWebm: exportApi.handleExportWebm,
+    onExportWebp: exportApi.handleExportWebp,
+    onExportWebpAnim: exportApi.handleExportWebpAnim,
+    onExportSvg: exportApi.handleExportSvg,
+    onExportHtml: exportApi.handleExportHtml,
     onCopyPng: exportApi.handleCopyPng,
     onOpenShortcuts: () => setShortcutsOpen(true),
     onOpenCommandPalette: () => setCommandPaletteOpen(true),

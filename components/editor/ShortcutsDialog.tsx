@@ -15,6 +15,7 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
     {
       title: t("shortcuts.edit"),
       items: [
+        { keys: ["⌘", "N"], label: t("shortcuts.newProject") },
         { keys: ["⌘", "Z"], label: t("shortcuts.undo") },
         { keys: ["⇧", "⌘", "Z"], label: t("shortcuts.redo") },
         { keys: ["⌘", "S"], label: t("shortcuts.saveLocalStorage") }
@@ -26,6 +27,11 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
         { keys: ["⌘", "E"], label: t("shortcuts.exportPng") },
         { keys: ["⇧", "⌘", "C"], label: t("shortcuts.copyPng") },
         { keys: ["⇧", "⌘", "E"], label: t("shortcuts.exportMp4") },
+        { keys: ["⇧", "⌘", "W"], label: t("shortcuts.exportWebm") },
+        { keys: ["⇧", "⌘", "P"], label: t("shortcuts.exportWebp") },
+        { keys: ["⇧", "⌘", "A"], label: t("shortcuts.exportWebpAnim") },
+        { keys: ["⇧", "⌘", "S"], label: t("shortcuts.exportSvg") },
+        { keys: ["⇧", "⌘", "H"], label: t("shortcuts.exportHtml") },
         { keys: ["⇧", "⌘", "G"], label: t("shortcuts.exportGif") }
       ]
     },

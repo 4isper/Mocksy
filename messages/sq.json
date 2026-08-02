@@ -185,7 +185,8 @@
     "zoom": "Zoom",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "Asnjë",
@@ -341,7 +342,13 @@
     "export": "Eksporto",
     "layers": "Shtresa",
     "scene": "Skena",
-    "cmdHint": "⌘ = Cmd në macOS, Ctrl në Windows dhe Linux. Shkurtoret e shtresave nuk janë aktive dhe shkruhen në fushë."
+    "cmdHint": "⌘ = Cmd në macOS, Ctrl në Windows dhe Linux. Shkurtoret e shtresave nuk janë aktive dhe shkruhen në fushë.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "Projekte",

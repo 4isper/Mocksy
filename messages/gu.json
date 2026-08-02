@@ -185,7 +185,8 @@
     "zoom": "ઝૂમ",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "કોઈ નહીં",
@@ -341,7 +342,13 @@
     "export": "એક્સપોર્ટ",
     "layers": "લેયરો",
     "scene": "દૃશ્ય",
-    "cmdHint": "⌘ = macOS માં Cmd, Windows અને Linux માં Ctrl. લેયર શોર્ટકટ્સ ફીલ્ડ ટાઇપ કરત્વાં અનદૃશ્ય થાય છે."
+    "cmdHint": "⌘ = macOS માં Cmd, Windows અને Linux માં Ctrl. લેયર શોર્ટકટ્સ ફીલ્ડ ટાઇપ કરત્વાં અનદૃશ્ય થાય છે.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "પ્રોજેક્ટ્સ",

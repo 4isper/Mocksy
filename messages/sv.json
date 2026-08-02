@@ -185,7 +185,8 @@
     "zoom": "Zoom",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "Ingen",
@@ -341,7 +342,13 @@
     "export": "Exportera",
     "layers": "Lager",
     "scene": "Scen",
-    "cmdHint": "⌘ = Cmd på macOS, Ctrl på Windows och Linux. Laggensnabbspår är inte aktiva och skrivs i fältet."
+    "cmdHint": "⌘ = Cmd på macOS, Ctrl på Windows och Linux. Laggensnabbspår är inte aktiva och skrivs i fältet.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "Projekt",

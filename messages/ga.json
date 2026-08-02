@@ -185,7 +185,8 @@
     "zoom": "Zúm",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "Aon cheann",
@@ -341,7 +342,13 @@
     "export": "Eiportáil",
     "layers": "Sruthanna",
     "scene": "Radharc",
-    "cmdHint": "⌘ = Cmd ar macOS, Ctrl ar Windows agus Linux. Déantar neamhaird de gairrthochtanna sruth agus scríobhtar i bhfeile."
+    "cmdHint": "⌘ = Cmd ar macOS, Ctrl ar Windows agus Linux. Déantar neamhaird de gairrthochtanna sruth agus scríobhtar i bhfeile.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "Tionscadail",

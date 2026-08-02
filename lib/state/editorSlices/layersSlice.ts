@@ -1,6 +1,5 @@
 import {
   activeLayer,
-  activeOf,
   makeDemoLayer,
   nextLayerId,
   patchActive,
@@ -169,7 +168,7 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         pushHistory(s, {
           ...s.scene,
           layers: patchActive(s.scene, {
-            videoTrimStart: Math.min(videoTrimStart, activeOf(s.scene)?.videoTrimEnd ?? videoTrimStart)
+            videoTrimStart: Math.min(videoTrimStart, activeLayer(s.scene)?.videoTrimEnd ?? videoTrimStart)
           })
         }, "trimStart")
       ),
@@ -180,7 +179,7 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
           layers: patchActive(s.scene, {
             // A zero (or negative) end means "not trimmed" — clamp to the full
             // duration so 0 never lingers in state as a confusing sentinel.
-            videoTrimEnd: videoTrimEnd <= 0 ? (activeOf(s.scene)?.videoDuration ?? 0) : Math.max(videoTrimEnd, activeOf(s.scene)?.videoTrimStart ?? 0)
+            videoTrimEnd: videoTrimEnd <= 0 ? (activeLayer(s.scene)?.videoDuration ?? 0) : Math.max(videoTrimEnd, activeLayer(s.scene)?.videoTrimStart ?? 0)
           })
         }, "trimEnd")
       ),

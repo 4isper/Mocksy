@@ -185,7 +185,8 @@
     "zoom": "Yakınlaştır",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "Yok",
@@ -341,7 +342,13 @@
     "export": "Dışa Aktar",
     "layers": "Katmanlar",
     "scene": "Sahne",
-    "cmdHint": "⌘ = macOS'de Cmd, Windows ve Linux'ta Ctrl. Katman kısayolları etkin değildir ve alana yazılır."
+    "cmdHint": "⌘ = macOS'de Cmd, Windows ve Linux'ta Ctrl. Katman kısayolları etkin değildir ve alana yazılır.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "Projeler",

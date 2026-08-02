@@ -185,7 +185,8 @@
     "zoom": "Yaxınlaşdırma",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "Yoxdur",
@@ -341,7 +342,13 @@
     "export": "Eksport",
     "layers": "Təbəqələr",
     "scene": "Səhnə",
-    "cmdHint": "⌘ = macOS-da Cmd, Windows və Linux-da Ctrl. Təbəqə qısayolları bir sahə yazarkən nəzərə alınmır."
+    "cmdHint": "⌘ = macOS-da Cmd, Windows və Linux-da Ctrl. Təbəqə qısayolları bir sahə yazarkən nəzərə alınmır.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "Layihələr",

@@ -114,7 +114,6 @@ export function createFileCommands(
       id: "copy-share-url",
       label: t("commandPalette.copyShareUrl"),
       description: t("commandPalette.copyShareUrlDesc"),
-      shortcut: "⌘L",
       keywords: ["copy", "share", "url", "link"],
       action: onCopyShareUrl,
     },

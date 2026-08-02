@@ -185,7 +185,8 @@
     "zoom": "بزرگ‌نمایی",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "هیچ",
@@ -341,7 +342,13 @@
     "export": "خروجی",
     "layers": "لایه‌ها",
     "scene": "صحنه",
-    "cmdHint": "⌘ = Cmd در macOS، Ctrl در Windows و Linux. میانبرهای لایه هنگام تایپ در یک فیلد نادیده گرفته می‌شوند."
+    "cmdHint": "⌘ = Cmd در macOS، Ctrl در Windows و Linux. میانبرهای لایه هنگام تایپ در یک فیلد نادیده گرفته می‌شوند.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "پروژه‌ها",

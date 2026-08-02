@@ -29,8 +29,11 @@ export function sceneToShareUrl(scene: EditorScene): string {
         )
       }
     : scene;
-  const serialized = encodeURIComponent(JSON.stringify(payload));
+  const serialized = JSON.stringify(payload);
   const url = new URL(window.location.href);
+  // URLSearchParams percent-encodes the value on its own; pre-encoding with
+  // encodeURIComponent here used to double-encode the payload (~2x the special
+  // characters, eating half the URL budget for nothing).
   url.searchParams.set("scene", serialized);
   if (url.toString().length > MAX_SHARE_URL_LENGTH) {
     // A full-resolution uploaded image/video can't travel in a URL — point the
@@ -40,26 +43,39 @@ export function sceneToShareUrl(scene: EditorScene): string {
   return url.toString();
 }
 
+/** Parses the `scene` query value. URLSearchParams already decoded the single
+ *  percent-encoding of current links; older links carried an extra
+ *  encodeURIComponent layer, so fall back to decoding that when the first parse
+ *  fails. */
+function parseShareScene(raw: string): EditorScene | null {
+  try {
+    return normalizeScene(JSON.parse(raw));
+  } catch {
+    try {
+      return normalizeScene(JSON.parse(decodeURIComponent(raw)));
+    } catch {
+      return null;
+    }
+  }
+}
+
 export function readSceneFromUrl(): EditorScene | null {
   const url = new URL(window.location.href);
   const raw = url.searchParams.get("scene");
   if (!raw) return null;
-  try {
-    const scene = normalizeScene(JSON.parse(decodeURIComponent(raw)));
-    // A share URL omits the demo media to stay short; restore it so the
-    // canvas isn't blank when the link is opened.
-    if (!scene.layers.some((l) => l.mediaUrl)) {
-      return {
-        ...scene,
-        layers: scene.layers.map((l) =>
-          l.mediaUrl == null ? { ...l, mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME } : l
-        )
-      };
-    }
-    return scene;
-  } catch {
-    return null;
+  const scene = parseShareScene(raw);
+  if (!scene) return null;
+  // A share URL omits the demo media to stay short; restore it so the
+  // canvas isn't blank when the link is opened.
+  if (!scene.layers.some((l) => l.mediaUrl)) {
+    return {
+      ...scene,
+      layers: scene.layers.map((l) =>
+        l.mediaUrl == null ? { ...l, mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME } : l
+      )
+    };
   }
+  return scene;
 }
 
 /** Removes the `scene` query param from the address bar after it has been

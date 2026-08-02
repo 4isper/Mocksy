@@ -185,7 +185,8 @@
     "zoom": "Մեծացնել",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "Ոչ մեկ",
@@ -341,7 +342,13 @@
     "export": "Էքսպորտ",
     "layers": "Շերտեր",
     "scene": "Նայում",
-    "cmdHint": "⌘ = Cmd macOS-ում, Ctrl Windows և Linux-ում։ Պարզ սեղմները դիտարկվում են և մուտքագրվում են դաշտում։"
+    "cmdHint": "⌘ = Cmd macOS-ում, Ctrl Windows և Linux-ում։ Պարզ սեղմները դիտարկվում են և մուտքագրվում են դաշտում։",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "Նախագծեր",

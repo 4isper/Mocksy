@@ -1337,3 +1337,61 @@ describe("renderMockupToCanvas multi-frame mode", () => {
     expect(shadowColorCalls).toBe(2);
   });
 });
+
+describe("noise background determinism", () => {
+  function mockCanvas(width: number, height: number) {
+    const data = new Uint8ClampedArray(width * height * 4);
+    const ctx = {
+      getImageData: () => ({ data, width, height }),
+      putImageData: vi.fn(),
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      fillText: () => {},
+      drawImage: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      createRadialGradient: () => ({ addColorStop: () => {} }),
+      set fillStyle(_v: unknown) {},
+      set strokeStyle(_v: unknown) {},
+      set shadowColor(_v: unknown) {},
+      set shadowBlur(_v: unknown) {},
+      set shadowOffsetX(_v: unknown) {},
+      set shadowOffsetY(_v: unknown) {},
+      set lineWidth(_v: unknown) {},
+      set font(_v: unknown) {},
+      set textAlign(_v: unknown) {},
+      set textBaseline(_v: unknown) {}
+    };
+    const canvas = { width, height, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    return { canvas, data };
+  }
+
+  it("renders the same noise pixels on every pass", () => {
+    const noiseScene = scene({ backgroundMode: "pattern", patternId: "noise", frame: "none" });
+    const first = mockCanvas(32, 24);
+    const second = mockCanvas(32, 24);
+    renderMockupToCanvas(first.canvas, noiseScene, null);
+    renderMockupToCanvas(second.canvas, noiseScene, null);
+    expect(Array.from(second.data)).toEqual(Array.from(first.data));
+    // noise was actually applied over the base fill
+    expect(Array.from(first.data).some((v) => v !== 0)).toBe(true);
+  });
+
+  it("produces different patterns for different canvas sizes", () => {
+    const noiseScene = scene({ backgroundMode: "pattern", patternId: "noise", frame: "none" });
+    const small = mockCanvas(32, 24);
+    const large = mockCanvas(40, 24);
+    renderMockupToCanvas(small.canvas, noiseScene, null);
+    renderMockupToCanvas(large.canvas, noiseScene, null);
+    expect(Array.from(large.data)).not.toEqual(Array.from(small.data));
+  });
+});

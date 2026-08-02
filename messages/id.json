@@ -185,7 +185,8 @@
     "zoom": "Zoom",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "Tidak ada",
@@ -341,7 +342,13 @@
     "export": "Ekspor",
     "layers": "Lapisan",
     "scene": "Adegan",
-    "cmdHint": "⌘ = Cmd di macOS, Ctrl di Windows dan Linux. Pintasan lapisan tidak aktif dan diketik di bidang."
+    "cmdHint": "⌘ = Cmd di macOS, Ctrl di Windows dan Linux. Pintasan lapisan tidak aktif dan diketik di bidang.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "Proyek",

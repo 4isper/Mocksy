@@ -185,7 +185,8 @@
     "zoom": "زوم",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "کوئی نہیں",
@@ -341,7 +342,13 @@
     "export": "خروجی",
     "layers": "لیئرز",
     "scene": "سین",
-    "cmdHint": "⌘ = macOS میں Cmd، Windows اور Linux میں Ctrl۔ لیئر کے شارٹ کٹس لکھتے ہوئے نظر انداز کر دیے جاتے ہیں۔"
+    "cmdHint": "⌘ = macOS میں Cmd، Windows اور Linux میں Ctrl۔ لیئر کے شارٹ کٹس لکھتے ہوئے نظر انداز کر دیے جاتے ہیں۔",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "پروجیکٹس",

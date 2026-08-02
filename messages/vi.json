@@ -185,7 +185,8 @@
     "zoom": "Phóng to",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "Không",
@@ -341,7 +342,13 @@
     "export": "Xuất",
     "layers": "Lớp",
     "scene": "Cảnh",
-    "cmdHint": "⌘ = Cmd trên macOS, Ctrl trên Windows và Linux. Phím tắt lớp không hoạt động và được gõ vào trường."
+    "cmdHint": "⌘ = Cmd trên macOS, Ctrl trên Windows và Linux. Phím tắt lớp không hoạt động và được gõ vào trường.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "Dự án",

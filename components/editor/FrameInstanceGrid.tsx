@@ -271,7 +271,7 @@ export function FrameInstanceGrid({
                 className="frame-instance-resize"
                 role="button"
                 tabIndex={0}
-                aria-label="Resize frame"
+                aria-label={t("editor.resizeFrame")}
                 onPointerDown={(e) => handleResizeDown(e, inst.id)}
                 onPointerMove={(e) => handleResizeMove(e, inst.id)}
                 onPointerUp={(e) => handleResizeUp(e, inst.id)}

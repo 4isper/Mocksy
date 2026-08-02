@@ -185,7 +185,8 @@
     "zoom": "Зум",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "Немає",
@@ -341,7 +342,13 @@
     "export": "Експорт",
     "layers": "Шари",
     "scene": "Сцена",
-    "cmdHint": "⌘ = Cmd на macOS, Ctrl на Windows і Linux. Гарячі клавіші шарів ігноруються під час введення тексту в поле."
+    "cmdHint": "⌘ = Cmd на macOS, Ctrl на Windows і Linux. Гарячі клавіші шарів ігноруються під час введення тексту в поле.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "Проєкти",

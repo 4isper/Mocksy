@@ -185,7 +185,8 @@
     "zoom": "జూమ్",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "ఏదీ లేదు",
@@ -341,7 +342,13 @@
     "export": "ఎక్స్‌పోర్ట్",
     "layers": "లేయర్లు",
     "scene": "దృశ్యం",
-    "cmdHint": "⌘ = macOS లో Cmd, Windows మరియు Linux లో Ctrl. లేయర్ షార్ట్‌కట్స్ ఫీల్డ్ నమోదు చేస్తున్నప్పుడు దట్టబడవు."
+    "cmdHint": "⌘ = macOS లో Cmd, Windows మరియు Linux లో Ctrl. లేయర్ షార్ట్‌కట్స్ ఫీల్డ్ నమోదు చేస్తున్నప్పుడు దట్టబడవు.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "ప్రాజెక్ట్స్",

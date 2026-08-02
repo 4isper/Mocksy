@@ -185,7 +185,8 @@
     "zoom": "缩放",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "无",
@@ -341,7 +342,13 @@
     "export": "导出",
     "layers": "图层",
     "scene": "场景",
-    "cmdHint": "⌘ = macOS 上的 Cmd，Windows 和 Linux 上的 Ctrl。在字段中输入时忽略图层快捷键。"
+    "cmdHint": "⌘ = macOS 上的 Cmd，Windows 和 Linux 上的 Ctrl。在字段中输入时忽略图层快捷键。",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "项目",

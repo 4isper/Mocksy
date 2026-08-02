@@ -185,7 +185,8 @@
     "zoom": "பெரிதாக்கல்",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "ஏதுமில்லை",
@@ -341,7 +342,13 @@
     "export": "ஏற்றுமதி",
     "layers": "அட்டைகள்",
     "scene": "காட்சி",
-    "cmdHint": "⌘ = macOS-ல் Cmd, Windows மற்றும் Linux-ல் Ctrl. அட்டை விரைவுக் குறியீடுகள் ஒரு கட்டளையைத் திருத்தும் போது கணக்கில் எடுக்கப்படாது."
+    "cmdHint": "⌘ = macOS-ல் Cmd, Windows மற்றும் Linux-ல் Ctrl. அட்டை விரைவுக் குறியீடுகள் ஒரு கட்டளையைத் திருத்தும் போது கணக்கில் எடுக்கப்படாது.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "திட்டங்கள்",

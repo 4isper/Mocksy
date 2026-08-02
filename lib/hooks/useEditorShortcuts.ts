@@ -4,9 +4,15 @@ import { useEditorStore } from "@/lib/state/editorStore";
 export interface EditorShortcutActions {
   saveNow: () => void;
   onReset: () => void;
+  onNewProject: () => void;
   onExportPng: () => void;
   onExportMp4: () => void;
   onExportGif: () => void;
+  onExportWebm: () => void;
+  onExportWebp: () => void;
+  onExportWebpAnim: () => void;
+  onExportSvg: () => void;
+  onExportHtml: () => void;
   onCopyPng: () => void;
   onOpenShortcuts: () => void;
   onOpenCommandPalette: () => void;
@@ -20,10 +26,11 @@ function isTypingTarget(target: EventTarget | null): boolean {
 
 /**
  * Global editor keyboard shortcuts: ⌘K command palette, ⌘Z/⌘⇧Z/⌘Y undo/redo,
- * ⌘S save, ⌘E/⌘⇧E/⌘⇧G exports, ⌘⇧C clipboard copy, ⌘D duplicate layer,
- * ⌘↑/⌘↓/⌘[/⌘] layer order, plain arrow keys nudge frames, "?" cheat sheet,
- * "R" reset. Actions are read through a ref so the window listener is bound
- * once and never needs re-subscribing.
+ * ⌘N new project, ⌘S save, ⌘E/⌘⇧E/⇧⌘G/⇧⌘W/⇧⌘P/⌘⇧A/⌘⇧S/⌘⇧H exports,
+ * ⌘⇧C clipboard copy, ⌘D duplicate layer, ⌘↑/⌘↓/⌘[/⌘] layer order, plain
+ * arrow keys nudge frames, "?" cheat sheet, "R" reset. Actions are read
+ * through a ref so the window listener is bound once and never needs
+ * re-subscribing.
  */
 export function useEditorShortcuts(actions: EditorShortcutActions): void {
   const actionsRef = useRef(actions);
@@ -65,9 +72,40 @@ export function useEditorShortcuts(actions: EditorShortcutActions): void {
         useEditorStore.getState().redo();
         return;
       }
+      // ⌘⇧S exports SVG — must be checked before the plain ⌘S save handler.
+      if (modifier && event.shiftKey && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        a.onExportSvg();
+        return;
+      }
       if (modifier && event.key.toLowerCase() === "s") {
         event.preventDefault();
         a.saveNow();
+        return;
+      }
+      if (modifier && !event.shiftKey && event.key.toLowerCase() === "n") {
+        event.preventDefault();
+        a.onNewProject();
+        return;
+      }
+      if (modifier && event.shiftKey && event.key.toLowerCase() === "w") {
+        event.preventDefault();
+        a.onExportWebm();
+        return;
+      }
+      if (modifier && event.shiftKey && event.key.toLowerCase() === "p") {
+        event.preventDefault();
+        a.onExportWebp();
+        return;
+      }
+      if (modifier && event.shiftKey && event.key.toLowerCase() === "a") {
+        event.preventDefault();
+        a.onExportWebpAnim();
+        return;
+      }
+      if (modifier && event.shiftKey && event.key.toLowerCase() === "h") {
+        event.preventDefault();
+        a.onExportHtml();
         return;
       }
       if (modifier && !event.shiftKey && event.key.toLowerCase() === "e") {

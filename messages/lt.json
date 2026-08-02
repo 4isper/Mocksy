@@ -185,7 +185,8 @@
     "zoom": "Mastelis",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "Nėra",
@@ -341,7 +342,13 @@
     "export": "Eksportuoti",
     "layers": "Sluoksniai",
     "scene": "Scena",
-    "cmdHint": "⌘ = Cmd macOS, Ctrl Windows ir Linux. Sluoksnių spartūs klavišai ignoruojami rašant lauke."
+    "cmdHint": "⌘ = Cmd macOS, Ctrl Windows ir Linux. Sluoksnių spartūs klavišai ignoruojami rašant lauke.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "Projektai",

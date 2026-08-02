@@ -185,7 +185,8 @@
     "zoom": "Zoom",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "Brez",
@@ -341,7 +342,13 @@
     "export": "Izvozi",
     "layers": "Plasti",
     "scene": "Scena",
-    "cmdHint": "⌘ = Cmd na macOS, Ctrl na Windowsu in Linuxu. Bližnjice plasti niso aktivne in se vtipkajo v polje."
+    "cmdHint": "⌘ = Cmd na macOS, Ctrl na Windowsu in Linuxu. Bližnjice plasti niso aktivne in se vtipkajo v polje.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "Projekti",

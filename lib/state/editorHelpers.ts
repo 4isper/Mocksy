@@ -113,11 +113,6 @@ export function patchActive(scene: EditorScene, patch: Partial<MediaLayer>): Med
   return scene.layers.map((l) => (l.id === id ? { ...l, ...patch } : l));
 }
 
-/** The active layer (or first), or undefined when there are no layers. */
-export function activeOf(scene: EditorScene): MediaLayer | undefined {
-  return scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
-}
-
 /**
  * Creates a horizontal or vertical grid of frame instances.
  * x = (i / (count-1)) for spacing, y = 0.5 (centered vertically).

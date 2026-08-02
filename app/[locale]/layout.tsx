@@ -47,7 +47,7 @@ export default async function LocaleLayout({
       <body>
         <NextIntlClientProvider messages={messages}>
           <SkipLink />
-          <ErrorBoundary message={errors?.message ?? "An unexpected error occurred."} retryLabel={errors?.tryAgain ?? "Try again"}>
+          <ErrorBoundary message={errors?.message} retryLabel={errors?.tryAgain}>
             <ThemeProvider>{children}</ThemeProvider>
           </ErrorBoundary>
         </NextIntlClientProvider>

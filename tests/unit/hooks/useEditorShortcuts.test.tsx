@@ -17,9 +17,15 @@ function makeActions() {
   return {
     saveNow: vi.fn(),
     onReset: vi.fn(),
+    onNewProject: vi.fn(),
     onExportPng: vi.fn(),
     onExportMp4: vi.fn(),
     onExportGif: vi.fn(),
+    onExportWebm: vi.fn(),
+    onExportWebp: vi.fn(),
+    onExportWebpAnim: vi.fn(),
+    onExportSvg: vi.fn(),
+    onExportHtml: vi.fn(),
     onCopyPng: vi.fn(),
     onOpenShortcuts: vi.fn(),
     onOpenCommandPalette: vi.fn(),
@@ -84,6 +90,51 @@ describe("useEditorShortcuts", () => {
     render(<Harness actions={actions} />);
     fireEvent.keyDown(window, { key: "e", metaKey: true, shiftKey: true });
     expect(actions.onExportMp4).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls onNewProject on ⌘N", () => {
+    const actions = makeActions();
+    render(<Harness actions={actions} />);
+    fireEvent.keyDown(window, { key: "n", metaKey: true });
+    expect(actions.onNewProject).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls onExportWebm on ⌘⇧W", () => {
+    const actions = makeActions();
+    render(<Harness actions={actions} />);
+    fireEvent.keyDown(window, { key: "w", metaKey: true, shiftKey: true });
+    expect(actions.onExportWebm).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls onExportWebp on ⌘⇧P", () => {
+    const actions = makeActions();
+    render(<Harness actions={actions} />);
+    fireEvent.keyDown(window, { key: "p", metaKey: true, shiftKey: true });
+    expect(actions.onExportWebp).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls onExportWebpAnim on ⌘⇧A", () => {
+    const actions = makeActions();
+    render(<Harness actions={actions} />);
+    fireEvent.keyDown(window, { key: "a", metaKey: true, shiftKey: true });
+    expect(actions.onExportWebpAnim).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls onExportSvg on ⌘⇧S (not the plain ⌘S save)", () => {
+    const actions = makeActions();
+    render(<Harness actions={actions} />);
+    fireEvent.keyDown(window, { key: "s", metaKey: true, shiftKey: true });
+    expect(actions.onExportSvg).toHaveBeenCalledTimes(1);
+    expect(actions.saveNow).not.toHaveBeenCalled();
+    fireEvent.keyDown(window, { key: "s", metaKey: true });
+    expect(actions.saveNow).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls onExportHtml on ⌘⇧H", () => {
+    const actions = makeActions();
+    render(<Harness actions={actions} />);
+    fireEvent.keyDown(window, { key: "h", metaKey: true, shiftKey: true });
+    expect(actions.onExportHtml).toHaveBeenCalledTimes(1);
   });
 
   it("calls onExportGif on ⌘⇧G", () => {

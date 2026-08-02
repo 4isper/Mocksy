@@ -185,7 +185,8 @@
     "zoom": "ज़ूम",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "कोई नहीं",
@@ -341,7 +342,13 @@
     "export": "निर्यात",
     "layers": "परतें",
     "scene": "दृश्य",
-    "cmdHint": "⌘ = macOS पर Cmd, Windows और Linux पर Ctrl। फ़ील्ड में टाइप करते समय परत शॉर्टकट अनदेखे किए जाते हैं।"
+    "cmdHint": "⌘ = macOS पर Cmd, Windows और Linux पर Ctrl। फ़ील्ड में टाइप करते समय परत शॉर्टकट अनदेखे किए जाते हैं।",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "परियोजनाएं",

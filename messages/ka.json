@@ -185,7 +185,8 @@
     "zoom": "გადიდება",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "არცერთი",
@@ -341,7 +342,13 @@
     "export": "ექსპორტი",
     "layers": "ჩარტყუნები",
     "scene": "სცენა",
-    "cmdHint": "⌘ = Cmd macOS-ში, Ctrl Windows და Linux-ში. ჩარტყუნთა ჩამოკიდებული ღილაკები არ არის აქტიური და ტიპირებულია ველში."
+    "cmdHint": "⌘ = Cmd macOS-ში, Ctrl Windows და Linux-ში. ჩარტყუნთა ჩამოკიდებული ღილაკები არ არის აქტიური და ტიპირებულია ველში.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "პროექტები",

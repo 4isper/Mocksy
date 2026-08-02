@@ -185,7 +185,8 @@
     "zoom": "זום",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "אף אחד",
@@ -341,7 +342,13 @@
     "export": "יצוא",
     "layers": "שכבות",
     "scene": "סצנה",
-    "cmdHint": "⌘ = Cmd ב macOS, Ctrl ב Windows ו Linux. קיצורי שכבות מתעלמים בעת הקלדה בשדה."
+    "cmdHint": "⌘ = Cmd ב macOS, Ctrl ב Windows ו Linux. קיצורי שכבות מתעלמים בעת הקלדה בשדה.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "פרויקטים",

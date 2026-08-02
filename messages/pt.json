@@ -185,7 +185,8 @@
     "zoom": "Zoom",
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
-    "gradientRadial": "Radial"
+    "gradientRadial": "Radial",
+    "resizeFrame": "Resize frame"
   },
   "frame": {
     "none": "Nenhum",
@@ -341,7 +342,13 @@
     "export": "Exportar",
     "layers": "Camadas",
     "scene": "Cena",
-    "cmdHint": "⌘ = Cmd no macOS, Ctrl no Windows e Linux. Os atalhos de camada não estão ativos e são digitados no campo."
+    "cmdHint": "⌘ = Cmd no macOS, Ctrl no Windows e Linux. Os atalhos de camada não estão ativos e são digitados no campo.",
+    "newProject": "New project",
+    "exportWebm": "Export WebM",
+    "exportWebp": "Export WebP",
+    "exportWebpAnim": "Export animated WebP",
+    "exportSvg": "Export SVG",
+    "exportHtml": "Export HTML"
   },
   "projects": {
     "title": "Projetos",
