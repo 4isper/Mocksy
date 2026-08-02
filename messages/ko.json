@@ -214,7 +214,10 @@
     "none": "없음",
     "zoomIn": "확대",
     "zoomOut": "축소",
-    "parallax": "패럴랙스"
+    "parallax": "패럴랙스",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "텍스트",

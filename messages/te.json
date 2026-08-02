@@ -214,7 +214,10 @@
     "none": "ఏదీ లేదు",
     "zoomIn": "జూమ్ ఇన్",
     "zoomOut": "జూమ్ అవుట్",
-    "parallax": "ప్యారలాక్స్"
+    "parallax": "ప్యారలాక్స్",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "వచనం",

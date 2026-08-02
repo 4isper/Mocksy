@@ -214,7 +214,10 @@
     "none": "ಯಾವುದೂ ಇಲ್ಲ",
     "zoomIn": "ಜೂಮ್ ಇನ್",
     "zoomOut": "ಜೂಮ್ ಔಟ್",
-    "parallax": "ಪ್ಯಾರಾಲ್ಯಾಕ್ಸ್"
+    "parallax": "ಪ್ಯಾರಾಲ್ಯಾಕ್ಸ್",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "ಪಠ್ಯ",

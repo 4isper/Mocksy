@@ -214,7 +214,10 @@
     "none": "Nėra",
     "zoomIn": "Artinti",
     "zoomOut": "Tolinti",
-    "parallax": "Paralaksė"
+    "parallax": "Paralaksė",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "Tekstas",

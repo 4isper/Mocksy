@@ -25,6 +25,22 @@ export function buildVideoTimeline(layer: MediaLayer): VideoKeyframe[] {
         { at: 0.5, zoom: 1.06, x: 10, y: 6 },
         { at: 1, zoom: 1.03, x: -10, y: -6 }
       ];
+    case "panLeft":
+      return [
+        { at: 0, zoom: 1, x: 20, y: 0 },
+        { at: 1, zoom: 1, x: -20, y: 0 }
+      ];
+    case "panRight":
+      return [
+        { at: 0, zoom: 1, x: -20, y: 0 },
+        { at: 1, zoom: 1, x: 20, y: 0 }
+      ];
+    case "breathe":
+      return [
+        { at: 0, zoom: 1, x: 0, y: 0 },
+        { at: 0.5, zoom: 1.06, x: 0, y: 0 },
+        { at: 1, zoom: 1, x: 0, y: 0 }
+      ];
     default:
       return [{ at: 0, zoom: layer.zoom, x: 0, y: 0 }];
   }

@@ -214,7 +214,10 @@
     "none": "Żaden",
     "zoomIn": "Powiększ w głąb",
     "zoomOut": "Powiększ na zewnątrz",
-    "parallax": "Parallax"
+    "parallax": "Parallax",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "Tekst",

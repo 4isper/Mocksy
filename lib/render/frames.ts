@@ -162,7 +162,7 @@ export const FRAME_ORDER: MockupFrame[] = [
   "watch"
 ];
 
-export const ANIMATION_PRESETS: AnimationPreset[] = ["none", "zoomIn", "zoomOut", "parallax"];
+export const ANIMATION_PRESETS: AnimationPreset[] = ["none", "zoomIn", "zoomOut", "parallax", "panLeft", "panRight", "breathe"];
 
 /** Aspect ratios selectable for the scene canvas. Kept here so the ControlPanel
  *  select and any preset/normalization code share a single source of truth. */

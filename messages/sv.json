@@ -214,7 +214,10 @@
     "none": "Ingen",
     "zoomIn": "Zooma in",
     "zoomOut": "Zooma ut",
-    "parallax": "Parallax"
+    "parallax": "Parallax",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "Text",

@@ -105,7 +105,7 @@ describe("FRAME_SPECS", () => {
 
 describe("ANIMATION_PRESETS", () => {
   it("lists all known animation presets including none", () => {
-    expect(ANIMATION_PRESETS).toEqual(["none", "zoomIn", "zoomOut", "parallax"]);
+    expect(ANIMATION_PRESETS).toEqual(["none", "zoomIn", "zoomOut", "parallax", "panLeft", "panRight", "breathe"]);
   });
 });
 

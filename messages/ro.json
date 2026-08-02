@@ -214,7 +214,10 @@
     "none": "Niciuna",
     "zoomIn": "Mărește",
     "zoomOut": "Micșorează",
-    "parallax": "Parallax"
+    "parallax": "Parallax",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "Text",

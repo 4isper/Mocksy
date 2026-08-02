@@ -214,7 +214,10 @@
     "none": "هیچ",
     "zoomIn": "بزرگ‌نمایی",
     "zoomOut": "کوچک‌نمایی",
-    "parallax": "پارالکس"
+    "parallax": "پارالکس",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "متن",

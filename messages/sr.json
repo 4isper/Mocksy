@@ -214,7 +214,10 @@
     "none": "Nijedna",
     "zoomIn": "Uvećaj",
     "zoomOut": "Smanji",
-    "parallax": "Parallax"
+    "parallax": "Parallax",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "Tekst",

@@ -214,7 +214,10 @@
     "none": "אף אחד",
     "zoomIn": "התקרב",
     "zoomOut": "התרחק",
-    "parallax": "פרלקס"
+    "parallax": "פרלקס",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "טקסט",

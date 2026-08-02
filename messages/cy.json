@@ -214,7 +214,10 @@
     "none": "Dim",
     "zoomIn": "Chwyddo i mewn",
     "zoomOut": "Chwyddo allan",
-    "parallax": "Parallax"
+    "parallax": "Parallax",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "Testun",

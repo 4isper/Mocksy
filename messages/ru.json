@@ -217,7 +217,10 @@
     "none": "Без анимации",
     "zoomIn": "Увеличение",
     "zoomOut": "Уменьшение",
-    "parallax": "Параллакс"
+    "parallax": "Параллакс",
+    "panLeft": "Влево",
+    "panRight": "Вправо",
+    "breathe": "Дыхание"
   },
   "annotation": {
     "text": "Текст",

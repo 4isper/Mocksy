@@ -214,7 +214,10 @@
     "none": "Ոչ մեկ",
     "zoomIn": "Մեծացնել",
     "zoomOut": "Փոքրացնել",
-    "parallax": "Պարալաքս"
+    "parallax": "Պարալաքս",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "Տեքստ",

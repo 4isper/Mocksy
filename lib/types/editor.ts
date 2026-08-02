@@ -42,7 +42,7 @@ export interface Annotation {
 }
 export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "pixel8pro" | "galaxy24" | "iphoneSE" | "ipad" | "galaxyTab" | "desktop" | "tablet" | "macbook" | "imac" | "notebook" | "watch";
 export type StylePreset = "default" | "glassLight" | "glassDark" | "outline";
-export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax";
+export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax" | "panLeft" | "panRight" | "breathe";
 export type MediaType = "none" | "image" | "video";
 export type VideoQuality = "low" | "medium" | "high";
 export type WatermarkPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";

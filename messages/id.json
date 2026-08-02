@@ -214,7 +214,10 @@
     "none": "Tidak ada",
     "zoomIn": "Perbesar",
     "zoomOut": "Perkecil",
-    "parallax": "Parallax"
+    "parallax": "Parallax",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "Teks",

@@ -214,7 +214,10 @@
     "none": "Ешқандай",
     "zoomIn": "Масштабтау",
     "zoomOut": "Кішірету",
-    "parallax": "Параллакс"
+    "parallax": "Параллакс",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "Мәтін",

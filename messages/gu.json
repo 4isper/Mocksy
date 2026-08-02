@@ -214,7 +214,10 @@
     "none": "કોઈ નહીં",
     "zoomIn": "ઝૂમ ઇન",
     "zoomOut": "ઝૂમ આઉટ",
-    "parallax": "પેરાલેક્સ"
+    "parallax": "પેરાલેક્સ",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "ટેક્સ્ટ",

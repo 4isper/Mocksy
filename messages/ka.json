@@ -214,7 +214,10 @@
     "none": "არცერთი",
     "zoomIn": "გადიდება",
     "zoomOut": "დახურვა",
-    "parallax": "პარალაქსი"
+    "parallax": "პარალაქსი",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "ტექსტი",

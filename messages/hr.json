@@ -214,7 +214,10 @@
     "none": "Nijedna",
     "zoomIn": "Zumiraj unutra",
     "zoomOut": "Zumiraj van",
-    "parallax": "Parallax"
+    "parallax": "Parallax",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "Tekst",

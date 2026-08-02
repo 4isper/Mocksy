@@ -214,7 +214,10 @@
     "none": "无",
     "zoomIn": "放大",
     "zoomOut": "缩小",
-    "parallax": "视差"
+    "parallax": "视差",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "文本",

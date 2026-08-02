@@ -214,7 +214,10 @@
     "none": "Καμία",
     "zoomIn": "Εστίαση εσωτερικά",
     "zoomOut": "Εστίαση εξωτερικά",
-    "parallax": "Parallax"
+    "parallax": "Parallax",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "Κείμενο",

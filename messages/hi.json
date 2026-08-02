@@ -214,7 +214,10 @@
     "none": "कोई नहीं",
     "zoomIn": "ज़ूम इन",
     "zoomOut": "ज़ूम आउट",
-    "parallax": "पैरालैक्स"
+    "parallax": "पैरालैक्स",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "पाठ",

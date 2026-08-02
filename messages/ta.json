@@ -214,7 +214,10 @@
     "none": "ஏதுமில்லை",
     "zoomIn": "பெரிதாக்கு",
     "zoomOut": "சிறிதாக்கு",
-    "parallax": "பரலாக்ஸ்"
+    "parallax": "பரலாக்ஸ்",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "உரை",

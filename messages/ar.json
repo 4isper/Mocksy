@@ -214,7 +214,10 @@
     "none": "بلا",
     "zoomIn": "تكبير",
     "zoomOut": "تصغير",
-    "parallax": "بارالاكس"
+    "parallax": "بارالاكس",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "نص",

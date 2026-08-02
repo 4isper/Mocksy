@@ -214,7 +214,10 @@
     "none": "ไม่มี",
     "zoomIn": "ซูมเข้า",
     "zoomOut": "ซูมออก",
-    "parallax": "พารัลแลกซ์"
+    "parallax": "พารัลแลกซ์",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "ข้อความ",

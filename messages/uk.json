@@ -214,7 +214,10 @@
     "none": "Немає",
     "zoomIn": "Збільшення",
     "zoomOut": "Зменшення",
-    "parallax": "Паралакс"
+    "parallax": "Паралакс",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "Текст",

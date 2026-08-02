@@ -214,7 +214,10 @@
     "none": "Hakuna",
     "zoomIn": "Panua ndani",
     "zoomOut": "Panua nje",
-    "parallax": "Parallax"
+    "parallax": "Parallax",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "Tungo",

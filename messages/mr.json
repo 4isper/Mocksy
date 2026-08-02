@@ -214,7 +214,10 @@
     "none": "काही नाही",
     "zoomIn": "जूम इन",
     "zoomOut": "जूम आउट",
-    "parallax": "पॅरालॅक्स"
+    "parallax": "पॅरालॅक्स",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "breathe": "Breathe"
   },
   "annotation": {
     "text": "मजकूर",

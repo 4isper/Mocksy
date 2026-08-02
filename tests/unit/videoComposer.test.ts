@@ -45,6 +45,40 @@ describe("buildVideoTimeline", () => {
     expect(timeline.length).toBe(1);
     expect(timeline[0]?.zoom).toBe(noneLayer.zoom);
   });
+
+  it("returns a horizontal pan timeline for panLeft", () => {
+    const panLeftLayer = { ...layer, animationPreset: "panLeft" as const };
+    const timeline = buildVideoTimeline(panLeftLayer);
+    expect(timeline.length).toBe(2);
+    expect(timeline[0]?.x).toBe(20);
+    expect(timeline[1]?.x).toBe(-20);
+    expect(timeline[0]?.y).toBe(0);
+    expect(timeline[1]?.y).toBe(0);
+    expect(timeline[0]?.zoom).toBe(timeline[1]?.zoom);
+  });
+
+  it("returns a horizontal pan timeline for panRight (mirror of panLeft)", () => {
+    const panRightLayer = { ...layer, animationPreset: "panRight" as const };
+    const timeline = buildVideoTimeline(panRightLayer);
+    expect(timeline.length).toBe(2);
+    expect(timeline[0]?.x).toBe(-20);
+    expect(timeline[1]?.x).toBe(20);
+    expect(timeline[0]?.zoom).toBe(timeline[1]?.zoom);
+  });
+
+  it("returns a breathe timeline with zoom pulse", () => {
+    const breatheLayer = { ...layer, animationPreset: "breathe" as const };
+    const timeline = buildVideoTimeline(breatheLayer);
+    expect(timeline.length).toBe(3);
+    expect(timeline[0]?.at).toBe(0);
+    expect(timeline[1]?.at).toBe(0.5);
+    expect(timeline[2]?.at).toBe(1);
+    expect(timeline[0]?.zoom).toBe(1);
+    expect(timeline[1]?.zoom).toBe(1.06);
+    expect(timeline[2]?.zoom).toBe(1);
+    expect(timeline[0]?.x).toBe(0);
+    expect(timeline[1]?.x).toBe(0);
+  });
 });
 
 describe("sampleVideoTransform", () => {
