@@ -15,7 +15,6 @@ function mockSwEnv() {
       list.push(handler);
       listeners.set(type, list);
     }),
-    // @ts-expect-error service-worker globals may differ from window
     caches: {
       open: vi.fn(() => Promise.resolve({
         addAll: vi.fn(() => Promise.resolve()),

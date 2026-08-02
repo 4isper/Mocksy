@@ -86,7 +86,10 @@ export function ControlPanel() {
     none: t("animation.none"),
     zoomIn: t("animation.zoomIn"),
     zoomOut: t("animation.zoomOut"),
-    parallax: t("animation.parallax")
+    parallax: t("animation.parallax"),
+    panLeft: t("animation.panLeft"),
+    panRight: t("animation.panRight"),
+    breathe: t("animation.breathe")
   };
 
   const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {

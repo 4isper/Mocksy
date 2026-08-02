@@ -24,7 +24,7 @@ const AUTOSAVE_DELAY = 500;
 function useStableCallback<T extends (...args: unknown[]) => unknown>(callback: T): T {
   const ref = useRef(callback);
   useEffect(() => { ref.current = callback; }, [callback]);
-  return useCallback(((...args: unknown[]) => ref.current(...args)) as T, []);
+  return useCallback((...args: unknown[]) => ref.current(...args), []) as T;
 }
 
 export function EditorShell() {
