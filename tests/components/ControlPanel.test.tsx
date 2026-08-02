@@ -201,4 +201,76 @@ describe("ControlPanel", () => {
     await userEvent.click(checkbox);
     expect(useEditorStore.getState().scene.watermarkEnabled).toBe(true);
   });
+
+  it("changes zoom via slider", () => {
+    render(<ControlPanel />);
+    const slider = screen.getByRole("slider", { name: "editor.zoom" });
+    fireEvent.change(slider, { target: { value: "1.2" } });
+    expect(useEditorStore.getState().scene.layers[0]!.zoom).toBeCloseTo(1.2);
+  });
+
+  it("changes media position X via slider", () => {
+    render(<ControlPanel />);
+    const slider = screen.getByRole("slider", { name: "editor.positionX" });
+    fireEvent.change(slider, { target: { value: "0.25" } });
+    expect(useEditorStore.getState().scene.layers[0]!.mediaOffsetX).toBeCloseTo(0.25);
+  });
+
+  it("changes media position Y via slider", () => {
+    render(<ControlPanel />);
+    const slider = screen.getByRole("slider", { name: "editor.positionY" });
+    fireEvent.change(slider, { target: { value: "-0.5" } });
+    expect(useEditorStore.getState().scene.layers[0]!.mediaOffsetY).toBeCloseTo(-0.5);
+  });
+
+  it("changes corner radius via slider", () => {
+    render(<ControlPanel />);
+    const slider = screen.getByRole("slider", { name: "editor.cornerRadius" });
+    fireEvent.change(slider, { target: { value: "32" } });
+    expect(useEditorStore.getState().scene.borderRadius).toBe(32);
+  });
+
+  it("uploads media and applies it to the active layer", async () => {
+    render(<ControlPanel />);
+    const input = document.querySelector('input[accept="image/*,video/*"]') as HTMLInputElement;
+    const file = new File(["x"], "photo.png", { type: "image/png" });
+    await userEvent.upload(input, file);
+    const st = useEditorStore.getState();
+    expect(st.scene.layers[0]!.mediaUrl).toBe("blob:mock");
+    expect(st.scene.layers[0]!.mediaType).toBe("image");
+    expect(st.scene.layers[0]!.mediaName).toBe("test.png");
+  });
+
+  it("surfaces an error for an unsupported media upload", async () => {
+    const { loadMediaFromFile, UnsupportedMediaError } = await import("@/lib/media/loadFile");
+    vi.mocked(loadMediaFromFile).mockRejectedValueOnce(new UnsupportedMediaError("unsupported type"));
+    render(<ControlPanel />);
+    const input = document.querySelector('input[accept="image/*,video/*"]') as HTMLInputElement;
+    const file = new File(["x"], "clip.mov", { type: "video/quicktime" });
+    await userEvent.upload(input, file);
+    expect(await screen.findByRole("alert")).toHaveTextContent("unsupported type");
+  });
+
+  it("shows a generic upload error for unexpected failures", async () => {
+    const { loadMediaFromFile } = await import("@/lib/media/loadFile");
+    vi.mocked(loadMediaFromFile).mockRejectedValueOnce(new Error("boom"));
+    render(<ControlPanel />);
+    const input = document.querySelector('input[accept="image/*,video/*"]') as HTMLInputElement;
+    const file = new File(["x"], "photo.png", { type: "image/png" });
+    await userEvent.upload(input, file);
+    expect(await screen.findByRole("alert")).toHaveTextContent("editor.uploadError");
+  });
+
+  it("renders video options for a video layer", () => {
+    const layer = initialScene.layers[0]!;
+    useEditorStore.setState({
+      scene: {
+        ...initialScene,
+        layers: [{ ...layer, mediaType: "video", mediaUrl: "data:video/mp4;base64,AAAA" }],
+        activeLayerId: layer.id
+      }
+    });
+    render(<ControlPanel />);
+    expect(screen.getByText("video.options")).toBeInTheDocument();
+  });
 });

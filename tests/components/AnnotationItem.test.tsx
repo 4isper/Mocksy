@@ -113,4 +113,121 @@ describe("AnnotationItem", () => {
 
     expect(onUpdate).toHaveBeenCalledWith("a1", { text: "Edited" });
   });
+
+  it("resizes the annotation via the resize handle", () => {
+    const canvas = document.createElement("div");
+    Object.defineProperty(canvas, "clientWidth", { value: 1000, configurable: true });
+    Object.defineProperty(canvas, "clientHeight", { value: 1000, configurable: true });
+    const canvasRef = { current: canvas } as React.RefObject<HTMLDivElement | null>;
+    const onUpdate = vi.fn();
+    render(
+      <AnnotationItem
+        annotation={makeAnnotation()}
+        selected
+        canvasRef={canvasRef}
+        snapDivisions={null}
+        onSelect={() => {}}
+        onUpdate={onUpdate}
+      />
+    );
+    const handle = screen.getByLabelText("editor.resizeAnnotation");
+    fireEvent.pointerDown(handle, { clientX: 100, clientY: 100, pointerId: 1 });
+    fireEvent.pointerMove(handle, { clientX: 160, clientY: 140, pointerId: 1 });
+    expect(onUpdate).toHaveBeenCalledTimes(1);
+    const call = onUpdate.mock.calls[0] as [string, { w: number; h: number }];
+    expect(call[0]).toBe("a1");
+    expect(call[1].w).toBeCloseTo(0.36, 6);
+    expect(call[1].h).toBeCloseTo(0.24, 6);
+  });
+
+  it("does not render a resize handle when not selected", () => {
+    render(
+      <AnnotationItem
+        annotation={makeAnnotation()}
+        selected={false}
+        canvasRef={{ current: null }}
+        onSelect={() => {}}
+        onUpdate={() => {}}
+      />
+    );
+    expect(screen.queryByLabelText("editor.resizeAnnotation")).not.toBeInTheDocument();
+  });
+
+  it("renders an arrow as an SVG overlay", () => {
+    const canvas = document.createElement("div");
+    Object.defineProperty(canvas, "clientWidth", { value: 1000, configurable: true });
+    Object.defineProperty(canvas, "clientHeight", { value: 1000, configurable: true });
+    const canvasRef = { current: canvas } as React.RefObject<HTMLDivElement | null>;
+    render(
+      <AnnotationItem
+        annotation={makeAnnotation({ type: "arrow", x: 0.1, y: 0.2, w: 0.4, h: 0.3 })}
+        selected
+        canvasRef={canvasRef}
+        onSelect={() => {}}
+        onUpdate={() => {}}
+      />
+    );
+    const svg = document.querySelector("svg");
+    expect(svg).not.toBeNull();
+    expect(svg!.querySelector("line")).not.toBeNull();
+    expect(svg!.querySelector("polygon")).not.toBeNull();
+  });
+
+  it("renders a circle overlay", () => {
+    const canvas = document.createElement("div");
+    Object.defineProperty(canvas, "clientWidth", { value: 1000, configurable: true });
+    Object.defineProperty(canvas, "clientHeight", { value: 1000, configurable: true });
+    const canvasRef = { current: canvas } as React.RefObject<HTMLDivElement | null>;
+    render(
+      <AnnotationItem
+        annotation={makeAnnotation({ type: "circle" })}
+        selected
+        canvasRef={canvasRef}
+        onSelect={() => {}}
+        onUpdate={() => {}}
+      />
+    );
+    expect(document.querySelector("div[style*='border-radius: 50%']")).not.toBeNull();
+  });
+
+  it("selects the annotation on pointer down", () => {
+    const canvas = document.createElement("div");
+    Object.defineProperty(canvas, "clientWidth", { value: 1000, configurable: true });
+    Object.defineProperty(canvas, "clientHeight", { value: 1000, configurable: true });
+    const canvasRef = { current: canvas } as React.RefObject<HTMLDivElement | null>;
+    const onSelect = vi.fn();
+    render(
+      <AnnotationItem
+        annotation={makeAnnotation()}
+        selected={false}
+        canvasRef={canvasRef}
+        onSelect={onSelect}
+        onUpdate={() => {}}
+      />
+    );
+    const box = document.querySelector("div[style*='cursor: move']") as HTMLDivElement;
+    fireEvent.pointerDown(box, { clientX: 10, clientY: 10, pointerId: 1 });
+    expect(onSelect).toHaveBeenCalledWith("a1");
+  });
+
+  it("closes the in-place editor on Escape", () => {
+    const canvas = document.createElement("div");
+    Object.defineProperty(canvas, "clientWidth", { value: 1000, configurable: true });
+    Object.defineProperty(canvas, "clientHeight", { value: 1000, configurable: true });
+    const canvasRef = { current: canvas } as React.RefObject<HTMLDivElement | null>;
+    render(
+      <AnnotationItem
+        annotation={makeAnnotation({ type: "text", text: "Hello" })}
+        selected
+        canvasRef={canvasRef}
+        onSelect={() => {}}
+        onUpdate={() => {}}
+      />
+    );
+    fireEvent.doubleClick(screen.getByText("Hello"));
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement;
+    expect(editable).toBeTruthy();
+    fireEvent.keyDown(editable, { key: "Escape" });
+    expect(document.querySelector('[contenteditable="true"]')).toBeNull();
+  });
 });
