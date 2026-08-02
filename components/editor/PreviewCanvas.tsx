@@ -149,6 +149,19 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
     setIsDragging(false);
     const file = event.dataTransfer.files?.[0];
     if (!file) return;
+    // JSON project import: drag a .json mockup file onto the canvas
+    if (file.type === "application/json" || file.name.endsWith(".json")) {
+      try {
+        const { importProjectFromFile } = await import("@/lib/state/projectFile");
+        const project = await importProjectFromFile(file);
+        const { useProjectsStore } = await import("@/lib/state/projectsStore");
+        useProjectsStore.getState().importProject(project);
+        setDropError(null);
+      } catch {
+        setDropError(t("projects.importError"));
+      }
+      return;
+    }
     try {
       const { url, mediaType, mediaName } = await loadMediaFromFile(file);
       setDropError(null);
