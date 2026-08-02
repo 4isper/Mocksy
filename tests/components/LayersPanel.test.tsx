@@ -1,9 +1,17 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { LayersPanel } from "@/components/editor/LayersPanel";
 import { useEditorStore } from "@/lib/state/editorStore";
+import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
+
+vi.mock("@/lib/media/loadFile", () => ({
+  loadMediaFromFile: vi.fn(),
+  UnsupportedMediaError: class extends Error { name = "UnsupportedMediaError" },
+}));
+
+const mockLoad = vi.mocked(loadMediaFromFile);
 
 function makeLayer(id: string, overrides: Record<string, unknown> = {}) {
   return {
@@ -31,6 +39,7 @@ function makeLayer(id: string, overrides: Record<string, unknown> = {}) {
 
 afterEach(() => {
   cleanup();
+  vi.clearAllMocks();
   useEditorStore.setState({ scene: useEditorStore.getState().scene });
 });
 
@@ -215,5 +224,114 @@ describe("LayersPanel", () => {
     fireEvent.dragStart(a);
     fireEvent.dragOver(a, { clientY: 0 });
     expect(useEditorStore.getState().scene.layers.map((l) => l.mediaName)).toEqual(["A", "B"]);
+  });
+
+  it("uploads media and adds a new layer", async () => {
+    mockLoad.mockResolvedValue({ url: "blob:layer", mediaType: "image", mediaName: "pic.png" });
+    render(<LayersPanel />);
+    const input = document.querySelector('input[accept="image/*,video/*"]') as HTMLInputElement;
+    await userEvent.upload(input, new File(["x"], "pic.png", { type: "image/png" }));
+    await waitFor(() => expect(useEditorStore.getState().scene.layers.length).toBeGreaterThan(1));
+    const newLayer = useEditorStore.getState().scene.layers.at(-1)!;
+    expect(newLayer.mediaUrl).toBe("blob:layer");
+    expect(newLayer.mediaType).toBe("image");
+    expect(newLayer.mediaName).toBe("pic.png");
+  });
+
+  it("shows the unsupported-media error on upload failure", async () => {
+    mockLoad.mockRejectedValue(new UnsupportedMediaError("bad format"));
+    render(<LayersPanel />);
+    const input = document.querySelector('input[accept="image/*,video/*"]') as HTMLInputElement;
+    await userEvent.upload(input, new File(["x"], "x.mov", { type: "video/quicktime" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("bad format");
+  });
+
+  it("shows a generic upload error for unexpected failures", async () => {
+    mockLoad.mockRejectedValue(new Error("boom"));
+    render(<LayersPanel />);
+    const input = document.querySelector('input[accept="image/*,video/*"]') as HTMLInputElement;
+    await userEvent.upload(input, new File(["x"], "x.png", { type: "image/png" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("editor.uploadError");
+  });
+
+  it("moves a layer up via the move-up button", async () => {
+    useEditorStore.setState({
+      scene: {
+        ...useEditorStore.getState().scene,
+        layers: [makeLayer("a", { mediaName: "A" }), makeLayer("b", { mediaName: "B" }), makeLayer("c", { mediaName: "C" })],
+        activeLayerId: "a",
+      }
+    });
+    render(<LayersPanel />);
+    const upButtons = screen.getAllByRole("button", { name: /editor.moveUp/ });
+    await userEvent.click(upButtons[1]!);
+    expect(useEditorStore.getState().scene.layers.map((l) => l.mediaName)).toEqual(["B", "A", "C"]);
+  });
+
+  it("moves a layer down via the move-down button", async () => {
+    useEditorStore.setState({
+      scene: {
+        ...useEditorStore.getState().scene,
+        layers: [makeLayer("a", { mediaName: "A" }), makeLayer("b", { mediaName: "B" }), makeLayer("c", { mediaName: "C" })],
+        activeLayerId: "a",
+      }
+    });
+    render(<LayersPanel />);
+    const downButtons = screen.getAllByRole("button", { name: /editor.moveDown/ });
+    await userEvent.click(downButtons[1]!);
+    expect(useEditorStore.getState().scene.layers.map((l) => l.mediaName)).toEqual(["A", "C", "B"]);
+  });
+
+  it("disables move-up for the top layer and move-down for the bottom layer", () => {
+    useEditorStore.setState({
+      scene: {
+        ...useEditorStore.getState().scene,
+        layers: [makeLayer("a", { mediaName: "A" }), makeLayer("b", { mediaName: "B" })],
+        activeLayerId: "a",
+      }
+    });
+    render(<LayersPanel />);
+    expect(screen.getAllByRole("button", { name: /editor.moveUp/ })[0]).toBeDisabled();
+    expect(screen.getAllByRole("button", { name: /editor.moveDown/ })[1]).toBeDisabled();
+  });
+
+  it("disables remove when only one layer remains", () => {
+    useEditorStore.setState({
+      scene: {
+        ...useEditorStore.getState().scene,
+        layers: [makeLayer("a", { mediaName: "A" })],
+        activeLayerId: "a",
+      }
+    });
+    render(<LayersPanel />);
+    expect(screen.getByRole("button", { name: /editor.removeLayer/ })).toBeDisabled();
+  });
+
+  it("renders a video layer with the video element and label", () => {
+    useEditorStore.setState({
+      scene: {
+        ...useEditorStore.getState().scene,
+        layers: [makeLayer("a", { mediaUrl: "data:video/mp4;base64,AAAA", mediaType: "video", mediaName: null })],
+        activeLayerId: "a",
+      }
+    });
+    render(<LayersPanel />);
+    expect(document.querySelector("video")).not.toBeNull();
+    expect(screen.getByLabelText("editor.videoLabel")).toBeInTheDocument();
+  });
+
+  it("clears the active layer's media via the clear button", async () => {
+    useEditorStore.setState({
+      scene: {
+        ...useEditorStore.getState().scene,
+        layers: [makeLayer("a", { mediaUrl: "test.jpg", mediaType: "image", mediaName: "Test" })],
+        activeLayerId: "a",
+      }
+    });
+    render(<LayersPanel />);
+    await userEvent.click(screen.getByText("editor.clearMedia"));
+    const layer = useEditorStore.getState().scene.layers[0]!;
+    expect(layer.mediaUrl).toBeNull();
+    expect(layer.mediaType).toBe("none");
   });
 });
