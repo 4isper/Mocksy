@@ -364,7 +364,11 @@
     "justNow": "זה עתה",
     "minAgo": "לפני {n} דקות",
     "hourAgo": "לפני {n} שעות",
-    "dayAgo": "לפני {n} ימים"
+    "dayAgo": "לפני {n} ימים",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "אור",

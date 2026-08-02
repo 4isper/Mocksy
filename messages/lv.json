@@ -364,7 +364,11 @@
     "justNow": "tieši tagad",
     "minAgo": "{n} minūtes agrāk",
     "hourAgo": "{n} stundas agrāk",
-    "dayAgo": "{n} dienas agrāk"
+    "dayAgo": "{n} dienas agrāk",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "Gaišs",

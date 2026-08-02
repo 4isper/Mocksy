@@ -364,7 +364,11 @@
     "justNow": "刚刚",
     "minAgo": "{n}分前",
     "hourAgo": "{n}時間前",
-    "dayAgo": "{n}日前"
+    "dayAgo": "{n}日前",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "ライト",

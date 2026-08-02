@@ -364,7 +364,11 @@
     "justNow": "právě teď",
     "minAgo": "před {n} min",
     "hourAgo": "před {n} h",
-    "dayAgo": "před {n} d"
+    "dayAgo": "před {n} d",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "Světlý",

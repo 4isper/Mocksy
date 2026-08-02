@@ -364,7 +364,11 @@
     "justNow": "હંગામ",
     "minAgo": "{n} મિનિટ પહેલાં",
     "hourAgo": "{n} કલાક પહેલાં",
-    "dayAgo": "{n} દિવસ પહેલાં"
+    "dayAgo": "{n} દિવસ પહેલાં",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "હલકું",

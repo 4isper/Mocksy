@@ -364,7 +364,11 @@
     "justNow": "เพิ่งตอนนี้",
     "minAgo": "{n} นาทีที่แล้ว",
     "hourAgo": "{n} ชั่วโมงที่แล้ว",
-    "dayAgo": "{n} วันที่แล้ว"
+    "dayAgo": "{n} วันที่แล้ว",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "สว่าง",

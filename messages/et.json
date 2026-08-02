@@ -364,7 +364,11 @@
     "justNow": "just nüüd",
     "minAgo": "{n} minutit tagasi",
     "hourAgo": "{n} tundi tagasi",
-    "dayAgo": "{n} päeva tagasi"
+    "dayAgo": "{n} päeva tagasi",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "Valge",

@@ -364,7 +364,11 @@
     "justNow": "এখনই",
     "minAgo": "{n} মিনিট আগে",
     "hourAgo": "{n} ঘণ্টা আগে",
-    "dayAgo": "{n} দিন আগে"
+    "dayAgo": "{n} দিন আগে",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "হালকা",

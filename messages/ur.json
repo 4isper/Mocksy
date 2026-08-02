@@ -364,7 +364,11 @@
     "justNow": "ابھی",
     "minAgo": "پہلے {n} منٹ",
     "hourAgo": "پہلے {n} گھنٹے",
-    "dayAgo": "پہلے {n} دن"
+    "dayAgo": "پہلے {n} دن",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "ہلکا",

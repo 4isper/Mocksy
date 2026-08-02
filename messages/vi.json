@@ -364,7 +364,11 @@
     "justNow": "vừa xong",
     "minAgo": "{n} phút trước",
     "hourAgo": "{n} giờ trước",
-    "dayAgo": "{n} ngày trước"
+    "dayAgo": "{n} ngày trước",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "Sáng",

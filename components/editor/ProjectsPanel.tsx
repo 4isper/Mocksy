@@ -31,12 +31,18 @@ export function ProjectsPanel() {
   const renameProject = useProjectsStore((s) => s.renameProject);
   const duplicateProject = useProjectsStore((s) => s.duplicateProject);
   const deleteProject = useProjectsStore((s) => s.deleteProject);
+  const restoreProject = useProjectsStore((s) => s.restoreProject);
+  const emptyTrash = useProjectsStore((s) => s.emptyTrash);
   const importProject = useProjectsStore((s) => s.importProject);
   const currentScene = useEditorStore((s) => s.scene);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [showTrash, setShowTrash] = useState(false);
+
+  const activeProjects = projects.filter((p) => p.deletedAt == null);
+  const trashedProjects = projects.filter((p) => p.deletedAt != null);
 
   const handleNew = () => {
     createProject(undefined, currentScene);
@@ -83,7 +89,7 @@ export function ProjectsPanel() {
         </span>
       ) : null}
       <ul className="projects-list" style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
-        {projects.map((project) => {
+        {activeProjects.map((project) => {
           const active = project.id === activeProjectId;
           const editing = editingId === project.id;
           return (
@@ -172,7 +178,7 @@ export function ProjectsPanel() {
                 type="button"
                 className="btn-icon"
                 aria-label={t("projects.deleteLabel", { name: project.name })}
-                disabled={projects.length <= 1}
+                disabled={activeProjects.length <= 1}
                 onClick={(e) => { e.stopPropagation(); deleteProject(project.id); }}
               >
                 <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
@@ -181,6 +187,68 @@ export function ProjectsPanel() {
           );
         })}
       </ul>
+            {trashedProjects.length > 0 ? (
+        <div style={{ borderTop: "1px solid var(--panel-border)", paddingTop: 8 }}>
+          <button
+            type="button"
+            className="btn"
+            style={{ width: "100%", fontSize: 12, padding: "7px 10px" }}
+            onClick={() => setShowTrash((v) => !v)}
+          >
+            {showTrash ? t("projects.hideTrash") : t("projects.showTrash", { n: trashedProjects.length })}
+          </button>
+          {showTrash ? (
+            <ul className="projects-list" style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6, marginTop: 8 }}>
+              {trashedProjects.map((project) => (
+                <li
+                  key={project.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "6px 8px",
+                    borderRadius: 8,
+                    border: "1px solid var(--panel-border)",
+                    opacity: 0.6
+                  }}
+                >
+                  <span style={{ flex: 1, minWidth: 0, overflow: "hidden", fontSize: 12 }}>
+                    <span
+                      style={{
+                        display: "block",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        fontSize: 12
+                      }}
+                      title={project.name}
+                    >
+                      {project.name}
+                    </span>
+                    <span style={{ fontSize: 10, color: "var(--text-dim)" }}>{relativeTime(project.updatedAt)}</span>
+                  </span>
+                  <button
+                    type="button"
+                    className="btn-icon"
+                    aria-label={t("projects.restoreLabel", { name: project.name })}
+                    onClick={() => restoreProject(project.id)}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M5 3l-3 3 3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <button
+            type="button"
+            className="btn"
+            style={{ width: "100%", fontSize: 12, padding: "7px 10px", marginTop: 8, color: "var(--danger)" }}
+            onClick={emptyTrash}
+          >
+            {t("projects.emptyTrash")}
+          </button>
+        </div>
+      ) : null}
       <p style={{ color: "var(--text-dim)", fontSize: 12, margin: 0 }}>
         {t("projects.autosaveNote")}
       </p>

@@ -364,7 +364,11 @@
     "justNow": "rétt í þessu",
     "minAgo": "{n} mínútur síðan",
     "hourAgo": "{n} klukkustund síðan",
-    "dayAgo": "{n} dagur síðan"
+    "dayAgo": "{n} dagur síðan",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "Ljóst",

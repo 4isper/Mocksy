@@ -364,7 +364,11 @@
     "justNow": "lige nu",
     "minAgo": "{n} minutter siden",
     "hourAgo": "{n} timer siden",
-    "dayAgo": "{n} dage siden"
+    "dayAgo": "{n} dage siden",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "Lys",

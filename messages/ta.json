@@ -364,7 +364,11 @@
     "justNow": "இப்போது",
     "minAgo": "{n} நிமிடம் முன்பு",
     "hourAgo": "{n} மணி நேரம் முன்பு",
-    "dayAgo": "{n} நாள் முன்பு"
+    "dayAgo": "{n} நாள் முன்பு",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "ஒளிமயம்",

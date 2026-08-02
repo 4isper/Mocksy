@@ -21,15 +21,22 @@ import { ErrorBoundary } from "@/components/editor/ErrorBoundary";
 
 const AUTOSAVE_DELAY = 500;
 
+function useStableCallback<T extends (...args: unknown[]) => unknown>(callback: T): T {
+  const ref = useRef(callback);
+  useEffect(() => { ref.current = callback; }, [callback]);
+  return useCallback(((...args: unknown[]) => ref.current(...args)) as T, []);
+}
+
 export function EditorShell() {
   const t = useTranslations();
   const scene = useEditorStore((s) => s.scene);
   const setScene = useEditorStore((s) => s.setScene);
   const resetScene = useEditorStore((s) => s.resetScene);
+  const saveNowRef = useRef(() => {});
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
-  const pastLength = useEditorStore((s) => s.past.length);
-  const futureLength = useEditorStore((s) => s.future.length);
+  const canUndo = useEditorStore((s) => s.past.length > 0);
+  const canRedo = useEditorStore((s) => s.future.length > 0);
   const exportScale = useEditorStore((s) => s.exportScale);
   const setExportScale = useEditorStore((s) => s.setExportScale);
   const customExportSize = useEditorStore((s) => s.customExportSize);
@@ -58,9 +65,16 @@ export function EditorShell() {
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Callbacks must be defined before useCommands
+  // Save ref is updated below in a separate effect so it stays stable
   const saveNow = useCallback(() => {
-    useProjectsStore.getState().updateActiveProjectScene(scene);
-    setSaved(true);
+    saveNowRef.current();
+  }, []);
+
+  useEffect(() => {
+    saveNowRef.current = () => {
+      useProjectsStore.getState().updateActiveProjectScene(scene);
+      setSaved(true);
+    };
   }, [scene]);
 
   const copyShareUrl = useCallback(async () => {
@@ -436,10 +450,10 @@ export function EditorShell() {
           <ErrorBoundary message={t("errors.message")}><PreviewCanvas scene={scene} /></ErrorBoundary>
           <div className="panel toolbar">
             <div className="toolbar-group">
-              <button type="button" className="btn-tb btn-tb-icon" onClick={undo} disabled={pastLength === 0} title={t("editor.undoTitle")}>
+              <button type="button" className="btn-tb btn-tb-icon" onClick={undo} disabled={!canUndo} title={t("editor.undoTitle")}>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 3H2v2M2 5l2.5-2.5A4.5 4.5 0 1111.5 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
-              <button type="button" className="btn-tb btn-tb-icon" onClick={redo} disabled={futureLength === 0} title={t("editor.redoTitle")}>
+              <button type="button" className="btn-tb btn-tb-icon" onClick={redo} disabled={!canRedo} title={t("editor.redoTitle")}>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 3h2v2M12 5l-2.5-2.5A4.5 4.5 0 102.5 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
             </div>

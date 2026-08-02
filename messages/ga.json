@@ -364,7 +364,11 @@
     "justNow": "anois",
     "minAgo": "{n} nóiméad ó shin",
     "hourAgo": "{n} uair ó shin",
-    "dayAgo": "{n} lá ó shin"
+    "dayAgo": "{n} lá ó shin",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "Solúbthach",

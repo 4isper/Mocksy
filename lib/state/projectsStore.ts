@@ -29,7 +29,12 @@ export interface ProjectsStoreState {
   switchProject: (id: string) => void;
   renameProject: (id: string, name: string) => void;
   duplicateProject: (id: string) => void;
+  /** Soft-deletes a project. Cannot trash the last non-deleted project. */
   deleteProject: (id: string) => void;
+  /** Restores a project from the trash. */
+  restoreProject: (id: string) => void;
+  /** Permanently removes all soft-deleted projects. */
+  emptyTrash: () => void;
   /** Writes the current editor scene into the active project. */
   updateActiveProjectScene: (scene: EditorScene) => void;
   /** Adds an already-built project (e.g. imported from file) and activates it. */
@@ -165,11 +170,24 @@ export const useProjectsStore = create<ProjectsStoreState>((set, get) => ({
   },
   deleteProject: (id) => {
     set((s) => {
-      if (s.projects.length <= 1) return {};
-      const projects = s.projects.filter((p) => p.id !== id);
-      const activeProjectId = s.activeProjectId === id ? (projects[0]?.id ?? null) : s.activeProjectId;
+      const nonDeleted = s.projects.filter((p) => p.deletedAt == null);
+      if (nonDeleted.length <= 1) return {};
+      const projects = s.projects.map((p) => (p.id === id ? { ...p, deletedAt: Date.now() } : p));
+      const activeProjectId = s.activeProjectId === id ? (nonDeleted.find((p) => p.id !== id)?.id ?? null) : s.activeProjectId;
       return { projects, activeProjectId };
     });
+    persist(get());
+  },
+  restoreProject: (id) => {
+    set((s) => ({
+      projects: s.projects.map((p) => (p.id === id ? { ...p, deletedAt: undefined } : p))
+    }));
+    persist(get());
+  },
+  emptyTrash: () => {
+    set((s) => ({
+      projects: s.projects.filter((p) => p.deletedAt == null)
+    }));
     persist(get());
   },
   duplicateProject: (id) => {

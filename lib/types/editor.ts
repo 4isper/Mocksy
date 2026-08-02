@@ -168,6 +168,8 @@ export interface Project {
   scene: EditorScene;
   /** Epoch ms of the last edit, used for the "updated" label and sorting. */
   updatedAt: number;
+  /** When set, the project is in the trash (soft-deleted). */
+  deletedAt?: number;
 }
 
 /** A searchable command shown in the command palette. */

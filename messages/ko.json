@@ -364,7 +364,11 @@
     "justNow": "방금 전",
     "minAgo": "{n}분 전",
     "hourAgo": "{n}시간 전",
-    "dayAgo": "{n}일 전"
+    "dayAgo": "{n}일 전",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "밝음",

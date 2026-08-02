@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildVideoTimeline, sampleVideoTransform } from "@/lib/render/videoComposer";
+import { buildVideoTimeline, sampleVideoTransform, easeInOutQuad } from "@/lib/render/videoComposer";
 import type { MediaLayer } from "@/lib/types/editor";
 
 const layer: MediaLayer = {
@@ -53,11 +53,19 @@ describe("sampleVideoTransform", () => {
     expect(sampleVideoTransform(noneLayer, 0).zoom).toBe(1.2);
   });
 
-  it("interpolates zoomIn from 1 to 1.12 across the progress", () => {
+  it("interpolates zoomIn from 1 to 1.12 with easing (midpoint is 0.5 of eased range, not linear)", () => {
     const mid = sampleVideoTransform(layer, 0.5);
-    expect(mid.zoom).toBeCloseTo(1.06, 5);
+    // easeInOutQuad(0.5) = 0.5, so midpoint is still 1.06 in this case
+    expect(mid.zoom).toBeCloseTo(1.06, 3);
     expect(sampleVideoTransform(layer, 0).zoom).toBe(1);
     expect(sampleVideoTransform(layer, 1).zoom).toBe(1.12);
+  });
+
+  it("applies easeInOutQuad to parallax interpolation", () => {
+    // At progress 0.25 (between 0 and 0.5) with easeInOutQuad:
+    // rawT = 0.5, easedT = 0.5, same as linear for x but zoom eases
+    const quarter = sampleVideoTransform({ ...layer, animationPreset: "parallax" }, 0.25);
+    expect(quarter.zoom).toBeCloseTo(1.045, 3);
   });
 
   it("sweeps parallax offsets from negative to positive and back", () => {
@@ -74,5 +82,27 @@ describe("sampleVideoTransform", () => {
     const over = sampleVideoTransform(layer, 2);
     expect(under.zoom).toBe(sampleVideoTransform(layer, 0).zoom);
     expect(over.zoom).toBe(sampleVideoTransform(layer, 1).zoom);
+  });
+});
+
+describe("easeInOutQuad", () => {
+  it("returns 0 at t=0", () => {
+    expect(easeInOutQuad(0)).toBe(0);
+  });
+
+  it("returns 1 at t=1", () => {
+    expect(easeInOutQuad(1)).toBe(1);
+  });
+
+  it("returns 0.5 at t=0.5", () => {
+    expect(easeInOutQuad(0.5)).toBe(0.5);
+  });
+
+  it("eases in slower than linear below 0.5", () => {
+    expect(easeInOutQuad(0.25)).toBeLessThan(0.25);
+  });
+
+  it("eases out faster than linear above 0.5", () => {
+    expect(easeInOutQuad(0.75)).toBeGreaterThan(0.75);
   });
 });

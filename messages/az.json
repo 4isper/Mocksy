@@ -364,7 +364,11 @@
     "justNow": "İndi",
     "minAgo": "{n} dəqiqə əvvəl",
     "hourAgo": "{n} saat əvvəl",
-    "dayAgo": "{n} gün əvvəl"
+    "dayAgo": "{n} gün əvvəl",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "Aydın",

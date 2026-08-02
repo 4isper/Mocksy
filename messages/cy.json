@@ -364,7 +364,11 @@
     "justNow": "rwan",
     "minAgo": "{n} munud yn ôl",
     "hourAgo": "{n} awr yn ôl",
-    "dayAgo": "{n} diwrnod yn ôl"
+    "dayAgo": "{n} diwrnod yn ôl",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "Goleuni",

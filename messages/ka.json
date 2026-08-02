@@ -364,7 +364,11 @@
     "justNow": "ახლა",
     "minAgo": "{n} წუთი ახლა",
     "hourAgo": "{n} საათი ახლა",
-    "dayAgo": "{n} დღე ახლა"
+    "dayAgo": "{n} დღე ახლა",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "ჩრდილიანი",

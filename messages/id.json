@@ -364,7 +364,11 @@
     "justNow": "baru saja",
     "minAgo": "{n} menit yang lalu",
     "hourAgo": "{n} jam yang lalu",
-    "dayAgo": "{n} hari yang lalu"
+    "dayAgo": "{n} hari yang lalu",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "Terang",

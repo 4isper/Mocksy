@@ -364,7 +364,11 @@
     "justNow": "հիմա",
     "minAgo": "{n} րոպե առաջ",
     "hourAgo": "{n} ժամ առաջ",
-    "dayAgo": "{n} օր առաջ"
+    "dayAgo": "{n} օր առաջ",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "Լուսավոր",

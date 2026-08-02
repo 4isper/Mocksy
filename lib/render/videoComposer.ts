@@ -36,10 +36,14 @@ export interface SampledTransform {
   y: number;
 }
 
+export function easeInOutQuad(t: number): number {
+  return t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
+}
+
 /**
  * Interpolates a layer's animation transform at a normalized progress (0..1).
  * For a single keyframe it returns that keyframe; otherwise it lerps between
- * the surrounding keyframes.
+ * the surrounding keyframes with ease-in-out easing.
  */
 export function sampleVideoTransform(layer: MediaLayer, progress: number): SampledTransform {
   const timeline = buildVideoTimeline(layer);
@@ -65,7 +69,8 @@ export function sampleVideoTransform(layer: MediaLayer, progress: number): Sampl
     }
   }
   const span = upper.at - lower.at;
-  const t = span > 0 ? (p - lower.at) / span : 0;
+  const rawT = span > 0 ? (p - lower.at) / span : 0;
+  const t = easeInOutQuad(rawT);
   const lerp = (a: number, b: number) => a + (b - a) * t;
   return {
     zoom: lerp(lower.zoom, upper.zoom),

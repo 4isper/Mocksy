@@ -364,7 +364,11 @@
     "justNow": "gerade eben",
     "minAgo": "{n} Minuten her",
     "hourAgo": "{n} Stunden her",
-    "dayAgo": "{n} Tage her"
+    "dayAgo": "{n} Tage her",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "Hell",

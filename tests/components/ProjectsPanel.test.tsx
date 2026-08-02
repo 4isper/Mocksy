@@ -81,7 +81,7 @@ describe("ProjectsPanel", () => {
     expect(items[0]!.className).toContain("is-active");
   });
 
-  it("deletes project on delete click", async () => {
+  it("soft-deletes project on delete click", async () => {
     useProjectsStore.setState({
       projects: [
         { id: "p1", name: "Project 1", scene: null as any, updatedAt: Date.now() },
@@ -95,6 +95,8 @@ describe("ProjectsPanel", () => {
     const btns = firstItem.querySelectorAll(".btn-icon");
     const delBtn = btns[btns.length - 1]! as HTMLButtonElement;
     await userEvent.click(delBtn);
-    expect(useProjectsStore.getState().projects.length).toBe(1);
+    // Soft delete: project stays in store but gets deletedAt timestamp
+    expect(useProjectsStore.getState().projects.length).toBe(2);
+    expect(useProjectsStore.getState().projects[0]!.deletedAt).toBeDefined();
   });
 });

@@ -364,7 +364,11 @@
     "justNow": "ಈಗಾಗಲೇ",
     "minAgo": "{n} ನಿಮಿಷಗಳ ಹಿಂದೆ",
     "hourAgo": "{n} ಗಂಟೆಗಳ ಹಿಂದೆ",
-    "dayAgo": "{n} ದಿನಗಳ ಹಿಂದೆ"
+    "dayAgo": "{n} ದಿನಗಳ ಹಿಂದೆ",
+    "showTrash": "Trash ({n})",
+    "hideTrash": "Hide trash",
+    "restoreLabel": "Restore {name}",
+    "emptyTrash": "Empty trash"
   },
   "theme": {
     "light": "ಲೆದಮಾನ",

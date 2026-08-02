@@ -96,18 +96,19 @@ describe("projectsStore", () => {
     useProjectsStore.getState().hydrate();
     const id = useProjectsStore.getState().activeProjectId!;
     useProjectsStore.getState().deleteProject(id);
-    // only one project existed, so it is kept
+    // only one project existed, so it is kept (not soft-deleted)
     expect(useProjectsStore.getState().projects).toHaveLength(1);
+    expect(useProjectsStore.getState().projects[0]!.deletedAt).toBeUndefined();
 
     const a = useProjectsStore.getState().createProject("A");
     const b = useProjectsStore.getState().createProject("B");
     useProjectsStore.getState().deleteProject(a);
     const state = useProjectsStore.getState();
-    expect(state.projects).toHaveLength(2);
-    expect(state.projects.some((p) => p.id === a)).toBe(false);
+    expect(state.projects).toHaveLength(3);
+    expect(state.projects.some((p) => p.id === a && p.deletedAt != null)).toBe(true);
     // deleting the active project falls back to the first remaining one
     useProjectsStore.getState().deleteProject(b);
-    expect(useProjectsStore.getState().activeProjectId).toBe(state.projects[0]!.id);
+    expect(useProjectsStore.getState().activeProjectId).toBe(state.projects.find((p) => p.id !== a && p.id !== b && p.deletedAt == null)?.id);
   });
 
   it("updateActiveProjectScene writes the scene and bumps updatedAt", () => {
@@ -344,6 +345,48 @@ describe("projectsStore", () => {
     useProjectsStore.getState().updateActiveProjectScene({ ...initialScene, frame: "watch" as const });
     expect(useProjectsStore.getState().projects.find((p) => p.id === a)!.scene.frame).toBe(initialScene.frame);
     expect(useProjectsStore.getState().projects.find((p) => p.id === b)!.scene.frame).toBe("watch");
+  });
+
+  it("deleteProject soft-deletes instead of hard-deleting", () => {
+    useProjectsStore.getState().hydrate();
+    const a = useProjectsStore.getState().createProject("A");
+    useProjectsStore.getState().deleteProject(a);
+    const state = useProjectsStore.getState();
+    // Project should still exist with deletedAt set
+    expect(state.projects.some((p) => p.id === a)).toBe(true);
+    const trashed = state.projects.find((p) => p.id === a)!;
+    expect(trashed.deletedAt).toBeGreaterThan(0);
+    // Active project should switch to remaining one
+    expect(state.activeProjectId).not.toBe(a);
+  });
+
+  it("restoreProject clears deletedAt", () => {
+    useProjectsStore.getState().hydrate();
+    const a = useProjectsStore.getState().createProject("A");
+    useProjectsStore.getState().deleteProject(a);
+    expect(useProjectsStore.getState().projects.find((p) => p.id === a)?.deletedAt).toBeDefined();
+    useProjectsStore.getState().restoreProject(a);
+    expect(useProjectsStore.getState().projects.find((p) => p.id === a)?.deletedAt).toBeUndefined();
+  });
+
+  it("emptyTrash permanently removes soft-deleted projects", () => {
+    useProjectsStore.getState().hydrate();
+    const a = useProjectsStore.getState().createProject("A");
+    const b = useProjectsStore.getState().createProject("B");
+    useProjectsStore.getState().deleteProject(a);
+    useProjectsStore.getState().deleteProject(b);
+    expect(useProjectsStore.getState().projects).toHaveLength(3); // original + 2 trashed
+    useProjectsStore.getState().emptyTrash();
+    expect(useProjectsStore.getState().projects).toHaveLength(1);
+    expect(useProjectsStore.getState().projects.some((p) => p.id === a || p.id === b)).toBe(false);
+  });
+
+  it("deleteProject refuses to trash the last active project", () => {
+    useProjectsStore.getState().hydrate();
+    const id = useProjectsStore.getState().activeProjectId!;
+    // Only one non-deleted project exists
+    useProjectsStore.getState().deleteProject(id);
+    expect(useProjectsStore.getState().projects.find((p) => p.id === id)?.deletedAt).toBeUndefined();
   });
 
   it("sets saveError for Firefox NS_ERROR_DOM_QUOTA_REACHED", () => {
