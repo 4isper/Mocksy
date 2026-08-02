@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useProjectsStore } from "@/lib/state/projectsStore";
-import { initialScene, makeDemoScene } from "@/lib/state/editorStore";
+import { initialScene, makeDemoScene, useEditorStore } from "@/lib/state/editorStore";
 import { sceneToShareUrl } from "@/lib/state/shareState";
 import type { EditorScene, Project } from "@/lib/types/editor";
 
@@ -180,6 +180,28 @@ describe("projectsStore", () => {
     expect(state.activeProjectId).not.toBe(existing);
   });
 
+  it("importProject loads the imported scene into the editor", () => {
+    useProjectsStore.getState().hydrate();
+    const external: Project = {
+      id: "ext",
+      name: "From file",
+      scene: { ...initialScene, frame: "tablet" },
+      updatedAt: Date.now()
+    };
+    useProjectsStore.getState().importProject(external);
+    expect(useProjectsStore.getState().activeProjectId).toBe(useProjectsStore.getState().projects.find((p) => p.name === "From file")!.id);
+    expect(useEditorStore.getState().scene.frame).toBe("tablet");
+  });
+
+  it("duplicateProject loads the copy's scene into the editor", () => {
+    useProjectsStore.getState().hydrate();
+    const source = useProjectsStore.getState().activeProjectId!;
+    const watchScene: EditorScene = { ...initialScene, frame: "watch" };
+    useProjectsStore.getState().updateActiveProjectScene(watchScene);
+    useProjectsStore.getState().duplicateProject(source);
+    expect(useEditorStore.getState().scene.frame).toBe("watch");
+  });
+
   it("sets saveError when localStorage throws QuotaExceededError", () => {
     const quotaError = new DOMException("Storage full", "QuotaExceededError");
     const origSetItem = storage.setItem;
@@ -239,6 +261,44 @@ describe("projectsStore", () => {
     expect(activeProjectId).toBe(projects[0]!.id);
     expect(result.frame).toBe("desktop");
     expect(result.layers.some((l) => l.mediaUrl)).toBe(true);
+  });
+
+  it("hydrate merges a shared scene with existing projects instead of wiping them", () => {
+    const saved: Project[] = [
+      { id: "p1", name: "Saved one", scene: makeDemoScene(), updatedAt: 1 },
+      { id: "p2", name: "Saved two", scene: makeDemoScene(), updatedAt: 2 }
+    ];
+    storage.setItem("mocksy-projects", JSON.stringify({ projects: saved, activeProjectId: "p1" }));
+    const url = sceneToShareUrl({ ...initialScene, frame: "tablet" });
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: { localStorage: storage, location: { href: url } }
+    });
+    const result = useProjectsStore.getState().hydrate();
+    const { projects, activeProjectId } = useProjectsStore.getState();
+    expect(projects).toHaveLength(3);
+    expect(projects.find((p) => p.id === "p1")).toBeDefined();
+    expect(projects.find((p) => p.id === "p2")).toBeDefined();
+    expect(projects.find((p) => p.name === "Shared mockup")).toBeDefined();
+    expect(activeProjectId).toBe(projects.find((p) => p.name === "Shared mockup")!.id);
+    expect(result.frame).toBe("tablet");
+  });
+
+  it("hydrate clears the scene param from the URL after reading it", () => {
+    const url = sceneToShareUrl({ ...initialScene, frame: "desktop" });
+    const replaceState = vi.fn();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        localStorage: storage,
+        location: { href: url },
+        history: { replaceState }
+      }
+    });
+    useProjectsStore.getState().hydrate();
+    expect(replaceState).toHaveBeenCalledTimes(1);
+    const cleared = new URL(replaceState.mock.calls[0]![2]);
+    expect(cleared.searchParams.has("scene")).toBe(false);
   });
 
   it("handles corrupted localStorage gracefully", () => {
@@ -308,6 +368,20 @@ describe("projectsStore", () => {
     expect(useProjectsStore.getState().activeProjectId).toBe(current);
   });
 
+  it("switchProject loads the target project's scene into the editor", () => {
+    useProjectsStore.getState().hydrate();
+    const first = useProjectsStore.getState().activeProjectId!;
+    const watchScene: EditorScene = { ...initialScene, frame: "watch" };
+    const second = useProjectsStore.getState().createProject("Second", watchScene);
+    // switch to the second project — the editor must show its scene
+    useProjectsStore.getState().switchProject(second);
+    expect(useEditorStore.getState().scene.frame).toBe("watch");
+    // switch back to the first — the editor must restore its scene
+    useProjectsStore.getState().switchProject(first);
+    expect(useEditorStore.getState().scene.frame).toBe(useProjectsStore.getState().projects.find((p) => p.id === first)!.scene.frame);
+    expect(useProjectsStore.getState().activeProjectId).toBe(first);
+  });
+
   it("renameProject is a no-op for empty name", () => {
     useProjectsStore.getState().hydrate();
     const id = useProjectsStore.getState().activeProjectId!;
@@ -367,6 +441,18 @@ describe("projectsStore", () => {
     expect(useProjectsStore.getState().projects.find((p) => p.id === a)?.deletedAt).toBeDefined();
     useProjectsStore.getState().restoreProject(a);
     expect(useProjectsStore.getState().projects.find((p) => p.id === a)?.deletedAt).toBeUndefined();
+  });
+
+  it("preserves deletedAt across hydrate so trash survives reloads", () => {
+    useProjectsStore.getState().hydrate();
+    const a = useProjectsStore.getState().createProject("A");
+    useProjectsStore.getState().deleteProject(a);
+    // Simulate a fresh page load: drop the in-memory store, then re-hydrate
+    // from localStorage. The soft-deleted project must stay in the trash.
+    useProjectsStore.setState({ projects: [], activeProjectId: null, hydrated: false });
+    useProjectsStore.getState().hydrate();
+    const trashed = useProjectsStore.getState().projects.find((p) => p.id === a);
+    expect(trashed?.deletedAt).toBeGreaterThan(0);
   });
 
   it("emptyTrash permanently removes soft-deleted projects", () => {

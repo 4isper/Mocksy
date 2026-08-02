@@ -18,7 +18,10 @@ export function resolveExportTransform(scene: EditorScene): RenderTransform {
   const active = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   if (!active) return { zoom: 1, offsetX: 0, offsetY: 0 };
   if (active.animationPreset === "none") {
-    return { zoom: active.zoom, offsetX: active.mediaOffsetX, offsetY: active.mediaOffsetY };
+    // The static preview does not translate the frame (only the media inside
+    // it pans, and that is drawn from mediaOffsetX/Y separately), so the frame
+    // transform offset stays zero here.
+    return { zoom: active.zoom, offsetX: 0, offsetY: 0 };
   }
   const sampled = sampleVideoTransform(active, 0.5);
   return { zoom: sampled.zoom, offsetX: sampled.x, offsetY: sampled.y };

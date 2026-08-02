@@ -2,9 +2,9 @@
 
 import { create } from "zustand";
 import type { EditorScene, Project } from "@/lib/types/editor";
-import { makeDemoScene } from "@/lib/state/editorStore";
+import { makeDemoScene, useEditorStore } from "@/lib/state/editorStore";
 import { normalizeScene } from "@/lib/state/normalizeScene";
-import { readSceneFromUrl } from "@/lib/state/shareState";
+import { readSceneFromUrl, clearSceneFromUrl } from "@/lib/state/shareState";
 import { nextProjectId } from "@/lib/state/ids";
 
 const STORAGE_KEY = "mocksy-projects";
@@ -12,6 +12,14 @@ const AUTOSAVE_KEY = "mocksy-scene";
 
 function cloneScene(scene: EditorScene): EditorScene {
   return JSON.parse(JSON.stringify(scene)) as EditorScene;
+}
+
+/** Loads a project's scene into the editor without recording undo history.
+ *  Keeps the editor scene and the active project in sync so the 500ms autosave
+ *  never writes one project's scene into another (project activation isn't an
+ *  edit, so it must not pollute the undo stack either). */
+function activateEditorScene(project: Project | undefined): void {
+  if (project) useEditorStore.getState().setScene(project.scene, false);
 }
 
 export interface ProjectsStoreState {
@@ -82,7 +90,8 @@ function readStorage(): { projects: Project[]; activeProjectId: string | null } 
           id: typeof r.id === "string" ? r.id : nextProjectId(),
           name: typeof r.name === "string" && r.name.length > 0 ? r.name : "Untitled",
           scene,
-          updatedAt: typeof r.updatedAt === "number" ? r.updatedAt : Date.now()
+          updatedAt: typeof r.updatedAt === "number" ? r.updatedAt : Date.now(),
+          ...(typeof r.deletedAt === "number" ? { deletedAt: r.deletedAt } : {})
         } satisfies Project;
       })
       .filter((p): p is Project => p !== null);
@@ -102,17 +111,23 @@ export const useProjectsStore = create<ProjectsStoreState>((set, get) => ({
   hydrated: false,
   saveError: null,
   hydrate: () => {
-    // A shared scene URL always wins: it is a one-off scene, not a saved project.
+    // A shared scene URL takes precedence as the active scene, but it must not
+    // wipe the user's saved projects — merge it in as a new project instead.
     const fromUrl = readSceneFromUrl();
     if (fromUrl) {
-      const project: Project = {
+      const stored = readStorage();
+      const projects = stored?.projects ?? [];
+      const shared: Project = {
         id: nextProjectId(),
         name: "Shared mockup",
         scene: fromUrl,
         updatedAt: Date.now()
       };
-      set({ projects: [project], activeProjectId: project.id, hydrated: true });
+      set({ projects: [...projects, shared], activeProjectId: shared.id, hydrated: true });
       persist(get());
+      // Drop the ?scene= param so a reload loads the persisted project list
+      // instead of re-importing the share (stacking duplicate projects).
+      clearSceneFromUrl();
       return fromUrl;
     }
 
@@ -158,8 +173,15 @@ export const useProjectsStore = create<ProjectsStoreState>((set, get) => ({
     return id;
   },
   switchProject: (id) => {
-    if (!get().projects.some((p) => p.id === id)) return;
+    const state = get();
+    const target = state.projects.find((p) => p.id === id);
+    if (!target) return;
     set({ activeProjectId: id });
+    // The editor scene and the active project must stay in sync: switch the
+    // stored scene into the editor (without recording undo history — project
+    // navigation isn't an edit), otherwise the autosave would write the old
+    // project's scene over the newly-activated one.
+    activateEditorScene(target);
     persist(get());
   },
   renameProject: (id, name) => {
@@ -201,6 +223,7 @@ export const useProjectsStore = create<ProjectsStoreState>((set, get) => ({
       updatedAt: Date.now()
     };
     set((s) => ({ projects: [...s.projects, copy], activeProjectId: newId }));
+    activateEditorScene(copy);
     persist(get());
   },
   updateActiveProjectScene: (scene) => {
@@ -220,6 +243,7 @@ export const useProjectsStore = create<ProjectsStoreState>((set, get) => ({
     // alias an existing one, breaking switch/delete by id.
     const imported: Project = { ...project, id: nextProjectId() };
     set((s) => ({ projects: [...s.projects, imported], activeProjectId: imported.id }));
+    activateEditorScene(imported);
     persist(get());
   }
 }));

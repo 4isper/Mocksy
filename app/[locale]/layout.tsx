@@ -45,8 +45,8 @@ export default async function LocaleLayout({
   return (
     <html lang={resolvedLocale} dir={isRtlLocale(resolvedLocale) ? "rtl" : "ltr"} suppressHydrationWarning>
       <body>
-        <SkipLink />
         <NextIntlClientProvider messages={messages}>
+          <SkipLink />
           <ErrorBoundary message={errors?.message ?? "An unexpected error occurred."} retryLabel={errors?.tryAgain ?? "Try again"}>
             <ThemeProvider>{children}</ThemeProvider>
           </ErrorBoundary>

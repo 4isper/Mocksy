@@ -687,6 +687,22 @@ describe("frame control", () => {
     expect(store().scene.activeLayerId).toBe(store().scene.frameInstances[0]!.layerId);
   });
 
+  it("re-applying a layout drops layers orphaned by the previous layout", () => {
+    reset();
+    const baseLayers = store().scene.layers;
+    store().layoutFrameGrid("iphone", 2, "horizontal");
+    const firstInstanceLayerIds = store().scene.frameInstances.map((fi) => fi.layerId);
+    expect(store().scene.layers.length).toBe(baseLayers.length + 2);
+    // Apply a different layout — the old layout's layers must be replaced,
+    // not accumulated, while the base layers survive.
+    store().applyFrameLayout("iphone", 3, "grid");
+    expect(store().scene.layers.length).toBe(baseLayers.length + 3);
+    for (const id of firstInstanceLayerIds) {
+      expect(store().scene.layers.some((l) => l.id === id)).toBe(false);
+    }
+    expect(store().scene.frameInstances).toHaveLength(3);
+  });
+
   it("layoutFrameGrid falls back to demo layer when no active layer", () => {
     reset();
     useEditorStore.setState({ scene: { ...initialScene, layers: [], activeLayerId: null } });

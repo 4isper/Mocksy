@@ -106,6 +106,23 @@ describe("computeFrameBox", () => {
     expect(zoomed.height).toBeCloseTo(base.height * 2, 3);
   });
 
+  it("translates the frame box by the transform offsets (preview scale × dpr)", () => {
+    const base = computeFrameBox(scene({ frame: "none" }), 1000, 500, 1, 400, 250);
+    const panned = computeFrameBox(scene({ frame: "none" }), 1000, 500, 1, 400, 250, { zoom: 1, offsetX: 10, offsetY: 6 });
+    expect(panned.x).toBeCloseTo(base.x + 10 * 2, 3);
+    expect(panned.y).toBeCloseTo(base.y + 6 * 2, 3);
+  });
+
+  it("scales the transform offsets by pixelRatio so exports match the preview", () => {
+    const atDpr = (dpr: number) =>
+      computeFrameBox(scene({ frame: "none" }), 1000 * dpr, 500 * dpr, dpr, 400 * dpr, 250 * dpr, { zoom: 1, offsetX: 10, offsetY: 6 });
+    const lo = atDpr(1);
+    const hi = atDpr(2);
+    // The frame is centered in both cases, so the pan must double with dpr.
+    expect(hi.x).toBeCloseTo(lo.x * 2, 3);
+    expect(hi.y).toBeCloseTo(lo.y * 2, 3);
+  });
+
   it("uses active layer zoom when transform is omitted", () => {
     const s = scene({ layer: { zoom: 1.5 } });
     const box = computeFrameBox(s, 1200, 1200, 2, 400, 250);
@@ -234,6 +251,18 @@ describe("computeFrameInstances", () => {
     const w = result[0]!.width;
     expect(result[0]!.x).toBeCloseTo(0.5 * 1200 - w / 2, 3);
     expect(result[0]!.y).toBeCloseTo(0.5 * 1200 - result[0]!.height / 2, 3);
+  });
+
+  it("translates instances by the transform offsets (preview scale × dpr)", () => {
+    const s = scene({
+      frameInstances: [
+        { id: "i1", frame: "iphone15", x: 0.5, y: 0.5, scale: 0.5, layerId: null }
+      ]
+    });
+    const base = computeFrameInstances(s, 1200, 1200, 2);
+    const panned = computeFrameInstances(s, 1200, 1200, 2, { zoom: 1, offsetX: 10, offsetY: -6 });
+    expect(panned[0]!.x).toBeCloseTo(base[0]!.x + 10 * 2 * 2, 3);
+    expect(panned[0]!.y).toBeCloseTo(base[0]!.y + -6 * 2 * 2, 3);
   });
 
   it("overlay frame instances have zero outerRadius", () => {

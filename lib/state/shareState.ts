@@ -61,3 +61,14 @@ export function readSceneFromUrl(): EditorScene | null {
     return null;
   }
 }
+
+/** Removes the `scene` query param from the address bar after it has been
+ *  consumed, so reloads load the persisted project list instead of re-importing
+ *  the same share scene (and stacking duplicate projects). */
+export function clearSceneFromUrl(): void {
+  if (typeof window === "undefined" || !window.history) return;
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has("scene")) return;
+  url.searchParams.delete("scene");
+  window.history.replaceState({}, "", url.toString());
+}

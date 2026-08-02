@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { MediaLayer } from "@/lib/types/editor";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
+import { PAN_PREVIEW_SCALE } from "@/lib/render/frameGeometry";
 
 /**
  * Drives the frame's zoomIn/zoomOut/parallax in the live preview by writing
@@ -24,7 +25,7 @@ export function useFrameTransform(node: React.RefObject<HTMLDivElement | null>, 
     const el = node.current;
     if (!el) return;
     const apply = (zoom: number, x: number, y: number) => {
-      el.style.setProperty("transform", `scale(${zoom}) translate(${x * 2}px, ${y * 2}px)`);
+      el.style.setProperty("transform", `scale(${zoom}) translate(${x * PAN_PREVIEW_SCALE}px, ${y * PAN_PREVIEW_SCALE}px)`);
     };
     if (!animates) {
       const base = sampleVideoTransform(layerRef.current ?? ({} as MediaLayer), 0);

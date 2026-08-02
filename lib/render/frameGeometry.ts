@@ -20,6 +20,20 @@ export interface RenderTransform {
   offsetY: number;
 }
 
+/** Animation pan keyframes store small offsets (e.g. ±20). The live preview
+ *  displaces the frame by that many units × this factor (CSS px), so the
+ *  canvas export must shift the frame box by the same factor × pixelRatio to
+ *  keep "what you see previews what you export". Shared so the two can't drift.
+ */
+export const PAN_PREVIEW_SCALE = 2;
+
+function panOffset(transform: RenderTransform | undefined, dpiScale: number): { panX: number; panY: number } {
+  return {
+    panX: (transform?.offsetX ?? 0) * PAN_PREVIEW_SCALE * dpiScale,
+    panY: (transform?.offsetY ?? 0) * PAN_PREVIEW_SCALE * dpiScale
+  };
+}
+
 export function computeFrameBox(
   scene: EditorScene,
   canvasWidth: number,
@@ -38,8 +52,9 @@ export function computeFrameBox(
   const defaultFrameW = Math.min(900, (canvasWidth / dpiScale) * 0.8) * dpiScale;
   const frameW = (typeof frameWidth === "number" && frameWidth > 0 ? frameWidth : defaultFrameW) * actualZoom;
   const frameH = (typeof frameHeight === "number" && frameHeight > 0 ? frameHeight : frameW * (10 / 16)) * actualZoom;
-  const x = typeof frameX === "number" ? frameX : (canvasWidth - frameW) / 2;
-  const y = typeof frameY === "number" ? frameY : (canvasHeight - frameH) / 2;
+  const { panX, panY } = panOffset(transform, dpiScale);
+  const x = (typeof frameX === "number" ? frameX : (canvasWidth - frameW) / 2) + panX;
+  const y = (typeof frameY === "number" ? frameY : (canvasHeight - frameH) / 2) + panY;
   const cutout = spec.cutout;
   const vb = frameViewBox(spec);
   const padX = cutout ? (cutout.x / vb.w) * frameW : spec.padding * dpiScale * actualZoom;
@@ -82,8 +97,9 @@ export function computeFrameInstances(
 
     const w = instScale * canvasWidth * actualZoom;
     const h = w * instAr;
-    const x = inst.x * canvasWidth - w / 2;
-    const y = inst.y * canvasHeight - h / 2;
+    const { panX, panY } = panOffset(transform, dpiScale);
+    const x = inst.x * canvasWidth - w / 2 + panX;
+    const y = inst.y * canvasHeight - h / 2 + panY;
 
     const cutout = spec.cutout;
     const vb = frameViewBox(spec);

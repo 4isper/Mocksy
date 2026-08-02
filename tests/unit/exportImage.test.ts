@@ -14,11 +14,14 @@ function sceneWith(preset: AnimationPreset, zoom = 1): EditorScene {
 }
 
 describe("resolveExportTransform", () => {
-  it("uses the base zoom and media offset for a static (none) scene", () => {
+  it("uses the base zoom and zero frame offset for a static (none) scene", () => {
+    // The media pan (mediaOffsetX/Y) is drawn separately inside the frame, so
+    // it must not be reported as a frame translation — that would shift the
+    // whole mockup in the export.
     const scene = sceneWith("none", 1.4);
     scene.layers[0]!.mediaOffsetX = 0.5;
     scene.layers[0]!.mediaOffsetY = -0.25;
-    expect(resolveExportTransform(scene)).toEqual({ zoom: 1.4, offsetX: 0.5, offsetY: -0.25 });
+    expect(resolveExportTransform(scene)).toEqual({ zoom: 1.4, offsetX: 0, offsetY: 0 });
   });
 
   it("samples the mid-animation frame for zoomIn", () => {

@@ -17,6 +17,11 @@ export type FramesSlice = Pick<
  * Turns laid-out frame instances into a real multi-frame scene: each instance
  * gets a fresh layer cloned from the active one (or the demo layer), and the
  * first new layer becomes active.
+ *
+ * Re-applying a layout replaces the previous one, so layers that were only
+ * referenced by the old frame instances are dropped — otherwise every apply
+ * would accumulate orphaned layers that render stacked in single-frame view
+ * and bloat undo history, share URLs and exports.
  */
 function materializeLayout(instances: FrameInstance[], scene: EditorScene) {
   const activeLayerData = activeLayer(scene);
@@ -26,14 +31,20 @@ function materializeLayout(instances: FrameInstance[], scene: EditorScene) {
     hidden: false,
     animationPreset: "none" as const
   }));
-  const allLayers = [...scene.layers, ...newLayers];
   const layerIds = newLayers.map((l) => l.id);
   const frameInstances = instances.map((inst, i) => ({
     ...inst,
     layerId: layerIds[i] ?? null
   }));
+  const newLayerIdSet = new Set(layerIds);
+  const orphaned = new Set(
+    scene.frameInstances
+      .map((fi) => fi.layerId)
+      .filter((id): id is string => id != null && !newLayerIdSet.has(id))
+  );
+  const layers = [...scene.layers.filter((l) => !orphaned.has(l.id)), ...newLayers];
   return {
-    layers: allLayers,
+    layers,
     frameInstances,
     activeLayerId: layerIds[0] ?? scene.activeLayerId
   };
