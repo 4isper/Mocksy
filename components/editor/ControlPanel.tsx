@@ -3,6 +3,7 @@
 import type { ChangeEvent } from "react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/lib/state/editorStore";
 import type { AnimationPreset, MockupFrame, StylePreset } from "@/lib/types/editor";
 import { FRAME_ORDER, ANIMATION_PRESETS, ASPECT_RATIOS } from "@/lib/render/frames";
@@ -57,7 +58,43 @@ export function ControlPanel() {
     setWatermarkPosition,
     setWatermarkSize,
     setAspectRatio
-  } = useEditorStore();
+  } = useEditorStore(
+    useShallow((s) => ({
+      scene: s.scene,
+      scenePalette: s.scenePalette,
+      setMedia: s.setMedia,
+      setFrame: s.setFrame,
+      setFrameInstances: s.setFrameInstances,
+      removeFrameInstance: s.removeFrameInstance,
+      updateFrameInstance: s.updateFrameInstance,
+      selectFrameInstance: s.selectFrameInstance,
+      layoutFrameGrid: s.layoutFrameGrid,
+      applyFrameLayout: s.applyFrameLayout,
+      setStylePreset: s.setStylePreset,
+      setAnimationPreset: s.setAnimationPreset,
+      setZoom: s.setZoom,
+      setMediaOffsetX: s.setMediaOffsetX,
+      setMediaOffsetY: s.setMediaOffsetY,
+      setMediaFit: s.setMediaFit,
+      setShadowOpacity: s.setShadowOpacity,
+      setBorderRadius: s.setBorderRadius,
+      setAnimationDuration: s.setAnimationDuration,
+      setBackgroundSolid: s.setBackgroundSolid,
+      setBackgroundGradient: s.setBackgroundGradient,
+      setBackgroundTransparent: s.setBackgroundTransparent,
+      setBackgroundImage: s.setBackgroundImage,
+      setBackgroundPattern: s.setBackgroundPattern,
+      setGradientType: s.setGradientType,
+      setGradientVia: s.setGradientVia,
+      setBackgroundBlur: s.setBackgroundBlur,
+      setScenePalette: s.setScenePalette,
+      toggleWatermark: s.toggleWatermark,
+      setWatermarkText: s.setWatermarkText,
+      setWatermarkPosition: s.setWatermarkPosition,
+      setWatermarkSize: s.setWatermarkSize,
+      setAspectRatio: s.setAspectRatio
+    }))
+  );
 
   const frameLabels: Record<MockupFrame, string> = {
     none: t("frame.none"),

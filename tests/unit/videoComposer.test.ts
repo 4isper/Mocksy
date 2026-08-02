@@ -24,6 +24,14 @@ const layer: MediaLayer = {
 };
 
 describe("buildVideoTimeline", () => {
+  it("returns the cached timeline array for a given preset", () => {
+    // The export/render loop samples every frame; re-allocating the keyframe
+    // array 60x per second is pure garbage. Same preset must share the array.
+    const a = buildVideoTimeline({ ...layer, animationPreset: "parallax" as const });
+    const b = buildVideoTimeline({ ...layer, animationPreset: "parallax" as const });
+    expect(a).toBe(b);
+  });
+
   it("returns zoom keyframes for zoomIn preset", () => {
     const timeline = buildVideoTimeline(layer);
     expect(timeline.length).toBe(2);

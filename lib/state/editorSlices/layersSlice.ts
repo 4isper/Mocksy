@@ -110,7 +110,14 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         const activeLayerId = s.scene.activeLayerId === id ? layers[0]?.id ?? null : s.scene.activeLayerId;
         return pushHistory(s, { ...s.scene, layers, activeLayerId });
       }),
-    selectLayer: (id) => set((s) => ({ scene: { ...s.scene, activeLayerId: id } })),
+    selectLayer: (id) =>
+      set((s) => {
+        // Re-selecting the active layer must not mint a fresh scene object —
+        // that would re-render every `scene` subscriber (and rebuild the whole
+        // preview CSS) for no state change.
+        if (s.scene.activeLayerId === id) return {};
+        return { scene: { ...s.scene, activeLayerId: id } };
+      }),
     reorderLayers: (orderedIds, coalesce) =>
       set((s) => {
         const byId = new Map(s.scene.layers.map((l) => [l.id, l]));
@@ -132,8 +139,8 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
     setAnimationPreset: (animationPreset) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationPreset }) }, "animation")),
     setAnimationDuration: (animationDurationMs) => set((s) => pushHistory(s, { ...s.scene, animationDurationMs: Math.max(500, Math.min(20000, Math.round(animationDurationMs))) }, "animationDuration")),
     setZoom: (zoom) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { zoom }) }, "zoom")),
-    setMediaOffsetX: (mediaOffsetX) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetX }) }, "mediaOffsetX")),
-    setMediaOffsetY: (mediaOffsetY) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetY }) }, "mediaOffsetY")),
+    setMediaOffsetX: (mediaOffsetX) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetX }) }, "mediaOffset")),
+    setMediaOffsetY: (mediaOffsetY) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetY }) }, "mediaOffset")),
     setMediaFit: (mediaFit) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaFit }) }, "mediaFit")),
     setShadowOpacity: (shadowOpacity) => set((s) => pushHistory(s, { ...s.scene, shadowOpacity }, "shadow")),
     setBorderRadius: (borderRadius) => set((s) => pushHistory(s, { ...s.scene, borderRadius }, "radius")),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/lib/state/editorStore";
 
 interface VideoTrimControlProps {
@@ -14,7 +15,9 @@ interface VideoTrimControlProps {
  */
 export function VideoTrimControl({ duration }: VideoTrimControlProps) {
   const t = useTranslations();
-  const { scene, setVideoTrimStart, setVideoTrimEnd } = useEditorStore();
+  const { scene, setVideoTrimStart, setVideoTrimEnd } = useEditorStore(
+    useShallow((s) => ({ scene: s.scene, setVideoTrimStart: s.setVideoTrimStart, setVideoTrimEnd: s.setVideoTrimEnd }))
+  );
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   const layer = activeLayer ?? { videoTrimStart: 0, videoTrimEnd: 0 };
   const max = Math.max(duration, 0.1);

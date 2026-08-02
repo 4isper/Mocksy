@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useShallow } from "zustand/react/shallow";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { VideoTrimControl } from "@/components/editor/VideoTrimControl";
@@ -20,7 +21,19 @@ export function VideoOptions() {
     setVideoQuality,
     setBackgroundAudio,
     clearBackgroundAudio
-  } = useEditorStore();
+  } = useEditorStore(
+    useShallow((s) => ({
+      scene: s.scene,
+      setVideoMuted: s.setVideoMuted,
+      setVideoLoop: s.setVideoLoop,
+      setVideoAutoplay: s.setVideoAutoplay,
+      setVideoPosterTime: s.setVideoPosterTime,
+      setVideoCurrentTime: s.setVideoCurrentTime,
+      setVideoQuality: s.setVideoQuality,
+      setBackgroundAudio: s.setBackgroundAudio,
+      clearBackgroundAudio: s.clearBackgroundAudio
+    }))
+  );
   const videoCurrentTime = useEditorStore((s) => s.videoCurrentTime);
   const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   if (!activeLayer || activeLayer.mediaType !== "video") return null;

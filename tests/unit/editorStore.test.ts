@@ -790,6 +790,19 @@ describe("scene-wide settings", () => {
     expect(store().scene.layers[0]!.mediaOffsetY).toBe(0.1);
   });
 
+  it("coalesces interleaved X/Y pan calls into one undo step", () => {
+    reset();
+    // A pointer-drag pan fires setMediaOffsetX and setMediaOffsetY together on
+    // every move; both must share one coalesce key or each move floods history.
+    store().setMediaOffsetX(0.1);
+    store().setMediaOffsetY(0.2);
+    store().setMediaOffsetX(0.3);
+    store().setMediaOffsetY(0.4);
+    expect(store().past.length).toBe(1);
+    expect(store().scene.layers[0]!.mediaOffsetX).toBe(0.3);
+    expect(store().scene.layers[0]!.mediaOffsetY).toBe(0.4);
+  });
+
   it("setAspectRatio changes the canvas ratio", () => {
     reset();
     store().setAspectRatio("1 / 1");
