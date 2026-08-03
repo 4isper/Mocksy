@@ -5,4 +5,9 @@ declare module "@/scripts/i18n-sync.mjs" {
   export function syncMessagesDir(
     dir?: string
   ): { changed: { file: string; addedKeys: string[] }[]; fileCount: number };
+  export function runCliSync(
+    dir?: string,
+    checkMode?: boolean
+  ): { errors: string[]; logs: string[]; exitCode: number };
+  export function main(dir?: string): Promise<void>;
 }

@@ -87,38 +87,51 @@ export function syncMessagesDir(dir = MESSAGES_DIR) {
   return { changed, fileCount: files.length };
 }
 
-async function main() {
-  const checkMode = process.argv.includes("--check");
-  const { changed, fileCount } = syncMessagesDir();
+/** Runs the sync without touching the process: in `checkMode` it only reports
+ *  drift (exitCode 1 when any locale is out of sync); otherwise it rewrites
+ *  out-of-sync locales and reports what changed. */
+export function runCliSync(dir = MESSAGES_DIR, checkMode = false) {
+  const { changed, fileCount } = syncMessagesDir(dir);
+  const errors = [];
+  const logs = [];
 
   if (checkMode) {
-    if (changed.length > 0) {
-      for (const { file, addedKeys } of changed) {
-        const detail = addedKeys.length > 0 ? ` missing ${addedKeys.length} key(s): ${addedKeys.join(", ")}` : " differs from a sync run";
-        console.error(`i18n-sync: ${file}${detail}`);
-      }
-      console.error(`i18n-sync FAIL: ${changed.length} of ${fileCount} locale(s) out of sync — run \`npm run i18n:sync\`.`);
-      process.exit(1);
+    for (const { file, addedKeys } of changed) {
+      const detail = addedKeys.length > 0 ? ` missing ${addedKeys.length} key(s): ${addedKeys.join(", ")}` : " differs from a sync run";
+      errors.push(`i18n-sync: ${file}${detail}`);
     }
-    console.log(`i18n-sync ok: ${fileCount} locale(s) in sync with en.json.`);
-    return;
+    if (changed.length > 0) {
+      errors.push(`i18n-sync FAIL: ${changed.length} of ${fileCount} locale(s) out of sync — run \`npm run i18n:sync\`.`);
+      return { errors, logs, exitCode: 1 };
+    }
+    logs.push(`i18n-sync ok: ${fileCount} locale(s) in sync with en.json.`);
+    return { errors, logs, exitCode: 0 };
   }
 
+  const en = JSON.parse(readFileSync(path.join(dir, "en.json"), "utf-8"));
   let updated = 0;
   for (const { file, addedKeys } of changed) {
-    const full = path.join(MESSAGES_DIR, file);
+    const full = path.join(dir, file);
     const original = JSON.parse(readFileSync(full, "utf-8"));
-    const synced = syncLocale(JSON.parse(readFileSync(path.join(MESSAGES_DIR, "en.json"), "utf-8")), original);
-    writeFileSync(full, `${JSON.stringify(synced, null, 2)}\n`);
-    const detail = addedKeys.length > 0 ? ` added ${addedKeys.length} key(s)` : " restructured";
-    console.log(`i18n-sync: ${file}${detail}`);
+    writeFileSync(full, `${JSON.stringify(syncLocale(en, original), null, 2)}\n`);
+    logs.push(`i18n-sync: ${file}${addedKeys.length > 0 ? ` added ${addedKeys.length} key(s)` : " restructured"}`);
     updated += 1;
   }
   if (updated === 0) {
-    console.log(`i18n-sync: ${fileCount} locale(s) already in sync, nothing to do.`);
+    logs.push(`i18n-sync: ${fileCount} locale(s) already in sync, nothing to do.`);
   } else {
-    console.log(`i18n-sync: updated ${updated} of ${fileCount} locale(s).`);
+    logs.push(`i18n-sync: updated ${updated} of ${fileCount} locale(s).`);
   }
+  return { errors, logs, exitCode: 0 };
+}
+
+/** CLI entrypoint: prints results and exits non-zero on check drift. */
+export async function main(dir = MESSAGES_DIR) {
+  const checkMode = process.argv.includes("--check");
+  const { errors, logs, exitCode } = runCliSync(dir, checkMode);
+  for (const text of errors) console.error(text);
+  for (const text of logs) console.log(text);
+  if (exitCode !== 0) process.exit(exitCode);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
