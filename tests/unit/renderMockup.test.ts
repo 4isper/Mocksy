@@ -1395,3 +1395,86 @@ describe("noise background determinism", () => {
     expect(Array.from(large.data)).not.toEqual(Array.from(small.data));
   });
 });
+
+describe("renderMockupToCanvas pattern edge cases", () => {
+  function patternCtx(overrides: Partial<Record<string, unknown>> = {}) {
+    const fillStyles: string[] = [];
+    let strokeCalls = 0;
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => { strokeCalls++; },
+      arc: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(v: unknown) { fillStyles.push(String(v)); },
+      get fillStyle() { return fillStyles[fillStyles.length - 1] ?? ""; },
+      set strokeStyle(_v: unknown) {},
+      set lineWidth(_v: unknown) {},
+      ...overrides
+    };
+    const canvas = { width: 400, height: 300, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    return { ctx, canvas, fillStyles, strokeCount: () => strokeCalls };
+  }
+
+  it("fills the base color when pattern mode has no patternId", () => {
+    const { canvas, fillStyles } = patternCtx();
+    renderMockupToCanvas(canvas, { ...initialScene, backgroundMode: "pattern", patternId: null, layers: [] }, null, undefined, undefined, 400, 300, 1);
+    expect(fillStyles).toContain("#18181b");
+  });
+
+  it("renders the diagonal pattern background", () => {
+    const { canvas, strokeCount } = patternCtx();
+    renderMockupToCanvas(canvas, { ...initialScene, backgroundMode: "pattern", patternId: "diagonal", layers: [] }, null, undefined, undefined, 400, 300, 1);
+    expect(strokeCount()).toBeGreaterThan(0);
+  });
+
+  it("falls back to the base fill for an unknown pattern id", () => {
+    const { canvas, fillStyles } = patternCtx();
+    renderMockupToCanvas(canvas, { ...initialScene, backgroundMode: "pattern", patternId: "bogus" as never, layers: [] }, null, undefined, undefined, 400, 300, 1);
+    expect(fillStyles).toContain("#18181b");
+  });
+
+  it("renders a pattern background in multi-frame mode", () => {
+    let strokeCalls = 0;
+    const fillStyles: string[] = [];
+    const ctx = {
+      clearRect: () => {},
+      fillRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => { strokeCalls++; },
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      set fillStyle(v: unknown) { fillStyles.push(String(v)); },
+      set strokeStyle(_v: unknown) {},
+      set lineWidth(_v: unknown) {}
+    };
+    const canvas = { width: 400, height: 300, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    const scn: EditorScene = {
+      ...initialScene,
+      backgroundMode: "pattern",
+      patternId: "grid",
+      frameInstances: [{ id: "f1", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }]
+    };
+    renderMockupToCanvas(canvas, scn, null, undefined, undefined, 400, 300, 1);
+    expect(strokeCalls).toBeGreaterThan(0);
+    expect(fillStyles).toContain("#18181b");
+  });
+});

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { initialScene } from "@/lib/state/editorStore";
+import { loadImage } from "@/lib/render/canvasMedia";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 
 // renderMockup pulls in canvas APIs we don't need for the export orchestration
@@ -453,5 +454,334 @@ describe("exportVideo orchestration", () => {
     await exportGif(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), undefined, undefined, undefined, (m) => errors.push(m));
     expect(errors).toContain("GIF encoding failed.");
     ffmpegHarness.execCode = 0;
+  });
+
+  describe("exportVideoCore capture branches", () => {
+  /** A <video> stub whose metadata/seek events fire on microtasks, mirroring
+   *  the event ordering captureWebm relies on. */
+  function makeVideoClass(captureStream: () => { getAudioTracks: () => unknown[] } = () => ({ getAudioTracks: () => [] })) {
+    return class VideoStub {
+      src = "";
+      crossOrigin = "";
+      muted = false;
+      playsInline = false;
+      _currentTime = 0;
+      onloadedmetadata: (() => void) | null = null;
+      onseeked: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      play = vi.fn().mockResolvedValue(undefined);
+      pause = vi.fn();
+      remove = vi.fn();
+      captureStream = vi.fn().mockImplementation(() => captureStream());
+      set currentTime(t: number) {
+        this._currentTime = t;
+        queueMicrotask(() => this.onseeked?.());
+      }
+      get currentTime() { return this._currentTime; }
+    };
+  }
+
+  function installDomWithVideo(preview: HTMLElement, canvas: HTMLCanvasElement, VideoClass: new () => unknown) {
+    const doc = {
+      getElementById: vi.fn().mockReturnValue(preview),
+      createElement: vi.fn().mockImplementation((tag: string) => {
+        if (tag === "canvas") return canvas;
+        if (tag === "a") return { click: vi.fn(), set href(_v: string) {}, get href() { return ""; } };
+        if (tag === "video") {
+          const v = new VideoClass() as { onloadedmetadata: (() => void) | null };
+          queueMicrotask(() => v.onloadedmetadata?.());
+          return v;
+        }
+        if (tag === "audio") return { src: "", crossOrigin: "", loop: false, play: vi.fn().mockResolvedValue(undefined), pause: vi.fn(), remove: vi.fn(), captureStream: vi.fn().mockReturnValue({ getAudioTracks: () => [] }) };
+        return {};
+      }),
+      body: { appendChild: vi.fn(), removeChild: vi.fn() }
+    };
+    vi.stubGlobal("document", doc);
+  }
+
+  it("loads the overlay skin for overlay frames during capture", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+
+    const statuses: string[] = [];
+    await exportWebm({ ...sceneWithLayer({ mediaUrl: null, mediaType: "none" }), frame: "iphone15" }, undefined, (m) => statuses.push(m));
+    expect(statuses).toContain("Done");
+    expect(vi.mocked(loadImage)).toHaveBeenCalled();
+  });
+
+  it("keeps capturing when the overlay skin fails to load", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+    vi.mocked(loadImage).mockRejectedValueOnce(new Error("skin failed"));
+
+    const statuses: string[] = [];
+    await exportWebm({ ...sceneWithLayer({ mediaUrl: null, mediaType: "none" }), frame: "iphone15" }, undefined, (m) => statuses.push(m));
+    expect(statuses).toContain("Done");
+  });
+
+  it("preloads the scene background image for the capture", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+
+    const scene: EditorScene = { ...sceneWithLayer({ mediaUrl: null, mediaType: "none" }), backgroundMode: "image", backgroundImageUrl: "data:image/png;base64,bg" };
+    await exportWebm(scene);
+    expect(vi.mocked(loadImage)).toHaveBeenCalledWith("data:image/png;base64,bg");
+  });
+
+  it("keeps capturing when the background image fails to load", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+    vi.mocked(loadImage).mockRejectedValueOnce(new Error("bg failed"));
+
+    const statuses: string[] = [];
+    const scene: EditorScene = { ...sceneWithLayer({ mediaUrl: null, mediaType: "none" }), backgroundMode: "image", backgroundImageUrl: "data:image/png;base64,bg" };
+    await exportWebm(scene, undefined, (m) => statuses.push(m));
+    expect(statuses).toContain("Done");
+  });
+
+  it("errors when the scene has no layers", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+
+    const errors: string[] = [];
+    await exportWebm({ ...initialScene, layers: [] }, undefined, undefined, undefined, (m) => errors.push(m));
+    expect(errors).toContain("Cannot export a scene with no layers.");
+  });
+
+  it("reports a friendly error when canvas capture is blocked", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    canvas.captureStream = vi.fn().mockImplementation(() => {
+      throw new DOMException("blocked", "SecurityError");
+    });
+    installDom(preview, canvas);
+    installMediaRecorder();
+
+    const errors: string[] = [];
+    await exportWebm(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), undefined, undefined, undefined, (m) => errors.push(m));
+    expect(errors.some((e) => e.includes("cross-origin capture"))).toBe(true);
+  });
+
+  it("propagates unknown captureStream failures", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    canvas.captureStream = vi.fn().mockImplementation(() => {
+      throw new Error("boom");
+    });
+    installDom(preview, canvas);
+    installMediaRecorder();
+
+    const errors: string[] = [];
+    await exportWebm(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), undefined, undefined, undefined, (m) => errors.push(m));
+    expect(errors).toContain("boom");
+  });
+
+  it("merges background audio tracks into the capture", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    const videoTrack = { stop: vi.fn() };
+    const bgAudioTrack = { stop: vi.fn() };
+    canvas.captureStream = vi.fn().mockReturnValue({ getTracks: () => [videoTrack], getVideoTracks: () => [videoTrack] });
+    const msInstances: unknown[][] = [];
+    vi.stubGlobal("MediaStream", class {
+      constructor(public tracks: unknown[]) { msInstances.push(tracks); }
+      getTracks() { return this.tracks; }
+    });
+
+    const doc = {
+      getElementById: vi.fn().mockReturnValue(preview),
+      createElement: vi.fn().mockImplementation((tag: string) => {
+        if (tag === "canvas") return canvas;
+        if (tag === "a") return { click: vi.fn(), set href(_v: string) {}, get href() { return ""; } };
+        if (tag === "video") return { src: "", crossOrigin: "", muted: false, playsInline: false, play: vi.fn().mockResolvedValue(undefined), pause: vi.fn(), remove: vi.fn(), captureStream: vi.fn().mockReturnValue({ getAudioTracks: () => [] }) };
+        if (tag === "audio") return { src: "", crossOrigin: "", loop: false, play: vi.fn().mockResolvedValue(undefined), pause: vi.fn(), remove: vi.fn(), captureStream: vi.fn().mockReturnValue({ getAudioTracks: () => [bgAudioTrack] }) };
+        return {};
+      }),
+      body: { appendChild: vi.fn(), removeChild: vi.fn() }
+    };
+    vi.stubGlobal("document", doc);
+    installMediaRecorder();
+
+    const statuses: string[] = [];
+    const scene = { ...sceneWithLayer({ mediaUrl: null, mediaType: "none" }), backgroundAudioUrl: "blob:audio" };
+    await exportWebm(scene, undefined, (m) => statuses.push(m));
+    expect(statuses).toContain("Done");
+    expect(msInstances.some((t) => t.length === 2)).toBe(true);
+  });
+
+  it("exports a video scene with per-tick frames and merged audio", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    const videoTrack = { stop: vi.fn() };
+    const audioTrack = { stop: vi.fn() };
+    canvas.captureStream = vi.fn().mockReturnValue({ getTracks: () => [videoTrack], getVideoTracks: () => [videoTrack] });
+    const msInstances: unknown[][] = [];
+    vi.stubGlobal("MediaStream", class {
+      constructor(public tracks: unknown[]) { msInstances.push(tracks); }
+      getTracks() { return this.tracks; }
+    });
+
+    const VideoClass = makeVideoClass(() => ({ getAudioTracks: () => [audioTrack], getVideoTracks: () => [videoTrack] }));
+    vi.stubGlobal("HTMLVideoElement", VideoClass);
+    installDomWithVideo(preview, canvas, VideoClass);
+    installMediaRecorder();
+
+    // First tick keeps animating (elapsed < duration), the second stops.
+    let rafCalls = 0;
+    let nowCalls = 0;
+    vi.stubGlobal("requestAnimationFrame", (cb: (t: number) => void) => {
+      if (rafCalls++ < 2) queueMicrotask(() => cb(0));
+      return 0;
+    });
+    vi.stubGlobal("cancelAnimationFrame", () => undefined);
+    vi.stubGlobal("performance", { now: () => { nowCalls += 1; return nowCalls === 1 ? 0 : nowCalls === 2 ? 0.5 : 10000; } });
+
+    const statuses: string[] = [];
+    await exportWebm(
+      sceneWithLayer({ mediaUrl: "blob:vid", mediaType: "video", mediaName: "clip.mp4", videoDuration: 10, videoTrimStart: 2, videoTrimEnd: 8, videoMuted: false }),
+      undefined,
+      (m) => statuses.push(m)
+    );
+    expect(statuses).toContain("Done");
+    expect(msInstances.some((t) => t.length === 2)).toBe(true);
+  });
+
+  it("exports a video scene with no trim without seeking", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    canvas.captureStream = vi.fn().mockReturnValue({ getTracks: () => [], getVideoTracks: () => [] });
+    const VideoClass = makeVideoClass();
+    vi.stubGlobal("HTMLVideoElement", VideoClass);
+    installDomWithVideo(preview, canvas, VideoClass);
+    installMediaRecorder();
+
+    const statuses: string[] = [];
+    await exportWebm(
+      sceneWithLayer({ mediaUrl: "blob:vid", mediaType: "video", mediaName: "clip.mp4", videoDuration: 10, videoTrimStart: 0, videoTrimEnd: 0 }),
+      undefined,
+      (m) => statuses.push(m)
+    );
+    expect(statuses).toContain("Done");
+  });
+
+  it("loads image media for each frame instance", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+
+    const imgLayer = layer({ id: "img", mediaUrl: "data:image/png;base64,abc", mediaType: "image" });
+    const scene: EditorScene = {
+      ...sceneWithLayer(imgLayer),
+      frameInstances: [{ id: "i1", layerId: "img", frame: "iphone", x: 0.5, y: 0.5, scale: 1 }]
+    };
+    await exportWebm(scene);
+    expect(vi.mocked(loadImage)).toHaveBeenCalledWith("data:image/png;base64,abc");
+  });
+
+  it("tolerates a failed image load for a frame instance", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+    vi.mocked(loadImage).mockRejectedValueOnce(new Error("img failed"));
+
+    const imgLayer = layer({ id: "img", mediaUrl: "data:image/png;base64,abc", mediaType: "image" });
+    const scene: EditorScene = {
+      ...sceneWithLayer(imgLayer),
+      frameInstances: [{ id: "i1", layerId: "img", frame: "iphone", x: 0.5, y: 0.5, scale: 1 }]
+    };
+    const statuses: string[] = [];
+    await exportWebm(scene, undefined, (m) => statuses.push(m));
+    expect(statuses).toContain("Done");
+  });
+
+  it("resolves frame-instance videos without seeking when no trim is set", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    const VideoClass = makeVideoClass();
+    vi.stubGlobal("HTMLVideoElement", VideoClass);
+    installDomWithVideo(preview, canvas, VideoClass);
+    installMediaRecorder();
+
+    const videoLayer = layer({ id: "vl", mediaUrl: "blob:vid", mediaType: "video", mediaName: "clip.mp4", videoDuration: 10, videoTrimStart: 0, videoTrimEnd: 0 });
+    const scene: EditorScene = {
+      ...sceneWithLayer(videoLayer),
+      frameInstances: [{ id: "i1", layerId: "vl", frame: "iphone", x: 0.5, y: 0.5, scale: 1 }]
+    };
+    const statuses: string[] = [];
+    await exportWebm(scene, undefined, (m) => statuses.push(m));
+    expect(statuses).toContain("Done");
+  });
+
+  it("retries the capture once when the first recording is empty", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+
+    let captures = 0;
+    const recorder = {
+      ondataavailable: null as ((e: { data: { size: number } }) => void) | null,
+      onstop: null as (() => void) | null,
+      onerror: null as (() => void) | null,
+      start: vi.fn(function (this: { ondataavailable: ((e: { data: { size: number } }) => void) | null; onstop: (() => void) | null }) {
+        captures += 1;
+        queueMicrotask(() => {
+          if (captures > 1) this.ondataavailable?.({ data: { size: 8 } });
+          this.onstop?.();
+        });
+      }),
+      stop: vi.fn()
+    };
+    const MR = vi.fn().mockImplementation(function () { return recorder; });
+    (MR as unknown as { isTypeSupported: (t: string) => boolean }).isTypeSupported = (t: string) => t.includes("vp9");
+    vi.stubGlobal("MediaRecorder", MR);
+
+    const statuses: string[] = [];
+    await exportWebm(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), undefined, (m) => statuses.push(m));
+    expect(captures).toBe(2);
+    expect(statuses).toContain("Done");
+  });
+
+  it("reuses the preview image element when the active layer has no media", async () => {
+    const Img = class {};
+    vi.stubGlobal("HTMLImageElement", Img);
+    const preview = fakePreview();
+    const imgEl = new Img() as unknown as HTMLImageElement;
+    preview.querySelector = vi.fn((sel: string) => (sel === "img" ? imgEl : null)) as unknown as typeof preview.querySelector;
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+
+    const statuses: string[] = [];
+    await exportWebm(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), undefined, (m) => statuses.push(m));
+    expect(statuses).toContain("Done");
+  });
+
+  it("reuses the preview video element for still-image scenes", async () => {
+    const VideoClass = makeVideoClass();
+    vi.stubGlobal("HTMLVideoElement", VideoClass);
+    const preview = fakePreview();
+    const vidEl = new VideoClass() as unknown as HTMLVideoElement;
+    preview.querySelector = vi.fn((sel: string) => (sel === "video" ? vidEl : null)) as unknown as typeof preview.querySelector;
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+
+    const statuses: string[] = [];
+    await exportWebm(sceneWithLayer({ mediaUrl: null, mediaType: "none" }), undefined, (m) => statuses.push(m));
+    expect(statuses).toContain("Done");
+  });
   });
 });
