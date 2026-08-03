@@ -1,5 +1,6 @@
 import type { EditorScene } from "@/lib/types/editor";
 import { getFrameSpec, frameViewBox } from "@/lib/render/frames";
+import { RENDER } from "@/lib/render/canvasDrawing";
 
 export interface FrameBox {
   x: number;
@@ -25,12 +26,12 @@ export interface RenderTransform {
  *  canvas export must shift the frame box by the same factor × pixelRatio to
  *  keep "what you see previews what you export". Shared so the two can't drift.
  */
-export const PAN_PREVIEW_SCALE = 2;
+export const PAN_OFFSET_SCALE = 2;
 
 function panOffset(transform: RenderTransform | undefined, dpiScale: number): { panX: number; panY: number } {
   return {
-    panX: (transform?.offsetX ?? 0) * PAN_PREVIEW_SCALE * dpiScale,
-    panY: (transform?.offsetY ?? 0) * PAN_PREVIEW_SCALE * dpiScale
+    panX: (transform?.offsetX ?? 0) * PAN_OFFSET_SCALE * dpiScale,
+    panY: (transform?.offsetY ?? 0) * PAN_OFFSET_SCALE * dpiScale
   };
 }
 
@@ -49,8 +50,8 @@ export function computeFrameBox(
   const spec = getFrameSpec(scene.frame);
   const dpiScale = pixelRatio;
   const activeLayerForRender = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
-  const actualZoom = Math.max(0.01, transform?.zoom ?? activeLayerForRender?.zoom ?? 1);
-  const defaultFrameW = Math.min(900, (canvasWidth / dpiScale) * 0.8) * dpiScale;
+   const actualZoom = Math.max(RENDER.minZoom, transform?.zoom ?? activeLayerForRender?.zoom ?? 1);
+   const defaultFrameW = Math.min(RENDER.defaultFrameWidth, (canvasWidth / dpiScale) * RENDER.defaultFrameFill) * dpiScale;
   const frameW = (typeof frameWidth === "number" && frameWidth > 0 ? frameWidth : defaultFrameW) * actualZoom;
   const frameH = (typeof frameHeight === "number" && frameHeight > 0 ? frameHeight : frameW * (10 / 16)) * actualZoom;
   const { panX, panY } = panOffset(transform, dpiScale);
@@ -88,7 +89,7 @@ export function computeFrameInstances(
   if (instances.length === 0) return [];
   const dpiScale = pixelRatio;
   const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
-  const actualZoom = Math.max(0.01, transform?.zoom ?? activeLayer?.zoom ?? 1);
+   const actualZoom = Math.max(RENDER.minZoom, transform?.zoom ?? activeLayer?.zoom ?? 1);
 
   return instances.map((inst) => {
     const spec = getFrameSpec(inst.frame);

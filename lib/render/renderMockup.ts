@@ -97,7 +97,7 @@ function fillPatternBackground(ctx: CanvasRenderingContext2D, scene: EditorScene
       ctx.fillRect(0, 0, width, height);
       ctx.strokeStyle = "rgba(255,255,255,0.08)";
       ctx.lineWidth = 1;
-      const step = 28;
+      const step = RENDER.shadowOffsetY;
       for (let i = -height; i < width + height; i += step) {
         ctx.beginPath();
         ctx.moveTo(i, 0);
@@ -240,7 +240,7 @@ export function renderMockupToCanvas(
 
   const box = computeFrameBox(scene, width, height, pixelRatio, frameWidth, frameHeight, transform, frameX, frameY, activeLayerId);
   const activeLayerForRender2 = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
-  const actualZoom = Math.max(0.01, transform?.zoom ?? activeLayerForRender2?.zoom ?? 1);
+   const actualZoom = Math.max(RENDER.minZoom, transform?.zoom ?? activeLayerForRender2?.zoom ?? 1);
 
   drawFrameAndMedia(ctx, scene, spec, activeLayerForRender2, box, dpiScale, actualZoom, media, frameOverlay ?? null);
 

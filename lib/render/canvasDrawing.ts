@@ -18,7 +18,10 @@ export const RENDER = {
   gradientAngleDeg: 120,
   annoShadowBlur: 3,
   annoShadowOffsetY: 1,
-  watermarkInset: 16
+  watermarkInset: 16,
+  lineHeightMultiplier: 1.2,
+  arrowHead: 14,
+  minZoom: 0.01
 } as const;
 
 export function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -59,7 +62,7 @@ export function drawAnnotations(
       ctx.textAlign = align === "center" ? "center" : align === "right" ? "right" : "left";
       const textX = align === "center" ? bx + bw / 2 : align === "right" ? bx + bw : bx;
       const lines = a.text.split("\n");
-      const lineHeight = fontSize * 1.2;
+      const lineHeight = fontSize * RENDER.lineHeightMultiplier;
       const textHeight = lines.length * lineHeight;
       const textWidth = Math.max(...lines.map((line) => ctx.measureText(line).width), 0);
       const padding = (a.bgPadding ?? 0) * dpiScale;
@@ -97,7 +100,7 @@ export function drawAnnotations(
       const endX = (a.x + a.w) * width;
       const endY = (a.y + a.h) * height;
       const angle = Math.atan2(endY - startY, endX - startX);
-      const head = 14 * dpiScale;
+      const head = RENDER.arrowHead * dpiScale;
       const a1 = angle + Math.PI - 0.45;
       const a2 = angle + Math.PI + 0.45;
       ctx.beginPath();

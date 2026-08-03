@@ -8,6 +8,7 @@ import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { renderSceneToImageBlob } from "@/lib/export/exportImage";
 import { buildEmbeddedFontCss, collectFontStacks } from "@/lib/export/fontEmbed";
+import { RENDER } from "@/lib/render/canvasDrawing";
 import { downloadBlob } from "@/lib/export/downloadBlob";
 
 const UNITLESS = new Set(["opacity", "zIndex", "flexGrow", "flexShrink", "aspectRatio", "fontWeight", "lineHeight", "tabSize"]);
@@ -189,7 +190,7 @@ ${backgroundCss}
 }
 .anno-text {
   font-weight: 600;
-  line-height: 1.2;
+  line-height: ${RENDER.lineHeightMultiplier};
   white-space: pre-line;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }

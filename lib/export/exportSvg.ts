@@ -167,7 +167,7 @@ function annotationsMarkup(scene: EditorScene, width: number, height: number): s
       const style = a.fontStyle === "italic" ? ' font-style="italic"' : "";
       const anchor = a.textAlign === "center" ? "middle" : a.textAlign === "right" ? "end" : "start";
       const textX = anchor === "start" ? bx : anchor === "end" ? bx + bw : bx + bw / 2;
-      const lineHeight = a.fontSize * 1.2;
+       const lineHeight = a.fontSize * RENDER.lineHeightMultiplier;
       const tspans = a.text
         .split("\n")
         .map((line, i) => `<tspan x="${num(textX)}" dy="${i === 0 ? 0 : num(lineHeight)}">${escapeXml(line)}</tspan>`)
@@ -181,7 +181,7 @@ function annotationsMarkup(scene: EditorScene, width: number, height: number): s
       const endX = (a.x + a.w) * width;
       const endY = (a.y + a.h) * height;
       const angle = Math.atan2(endY - startY, endX - startX);
-      const head = 14;
+       const head = RENDER.arrowHead;
       const a1 = angle + Math.PI - 0.45;
       const a2 = angle + Math.PI + 0.45;
       const p1x = num(endX + head * Math.cos(a1));
