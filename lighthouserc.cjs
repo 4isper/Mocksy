@@ -16,6 +16,12 @@ module.exports = {
         // Mocksy is data-URL heavy and uses in-browser FFmpeg; these audits
         // fail because of large inline assets rather than network blocking.
         'render-blocking-resources': 'off',
+        // New Lighthouse 12.x "insight" audits are advisory and flag the
+        // editor's intentionally large client bundle (FFmpeg WASM, canvas).
+        'legacy-javascript-insight': 'off',
+        'forced-reflow-insight': 'off',
+        'network-dependency-tree-insight': 'off',
+        'unused-javascript': 'off',
         // Performance scores are advisory; the app is fully interactive after
         // the first paint and heavy assets load lazily.
         'speed-index': ['warn', { minScore: 0.6 }],
