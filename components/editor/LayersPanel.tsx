@@ -24,6 +24,8 @@ export function LayersPanel() {
   const duplicateLayer = useEditorStore((s) => s.duplicateLayer);
   const toggleLayerHidden = useEditorStore((s) => s.toggleLayerHidden);
   const setMedia = useEditorStore((s) => s.setMedia);
+  const isMediaLoading = useEditorStore((s) => s.isMediaLoading);
+  const setMediaLoading = useEditorStore((s) => s.setMediaLoading);
   const [error, setError] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
@@ -33,12 +35,14 @@ export function LayersPanel() {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
+      setMediaLoading(true);
       const { url, mediaType, mediaName } = await loadMediaFromFile(file);
       setError(null);
       addLayer(url, mediaType, mediaName);
     } catch (err) {
       setError(err instanceof UnsupportedMediaError ? err.message : t("editor.uploadError"));
     } finally {
+      setMediaLoading(false);
       event.target.value = "";
     }
   };
@@ -113,16 +117,31 @@ export function LayersPanel() {
           {error}
         </span>
       ) : null}
-      <ul className="layers-list" style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 6,  minWidth: 0 }}>
-        {scene.layers.map((layer, index) => {
-          const active = layer.id === activeLayerId;
-          const label = layer.mediaName ?? (layer.mediaType === "video" ? t("editor.videoLabel") : t("editor.imageLabel"));
-          const isDragging = dragId === layer.id;
-          const isTarget = dropTarget?.id === layer.id;
-          const dropIndicator = isTarget && !isDragging
-            ? { boxShadow: dropTarget?.pos === "above" ? "0 -2px 0 0 var(--accent) inset" : "0 2px 0 0 var(--accent) inset" }
-            : undefined;
-          return (
+      {isMediaLoading && scene.layers.length === 0 ? (
+        <div aria-busy="true" aria-label={t("editor.loadingMedia")} style={{ display: "grid", gap: 6 }}>
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="skeleton skeleton-row" style={{ height: 36, borderRadius: 8 }} />
+          ))}
+        </div>
+      ) : scene.layers.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-state-icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M3 9h18M9 3v18" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+          </div>
+          <p className="empty-state-text">{t("editor.noLayers")}</p>
+          <p className="empty-state-text" style={{ fontSize: 11, color: "var(--text-dim)" }}>{t("help.layersStack")}</p>
+        </div>
+      ) : (
+        <ul className="layers-list" style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 6, minWidth: 0 }}>
+          {scene.layers.map((layer, index) => {
+            const active = layer.id === activeLayerId;
+            const label = layer.mediaName ?? (layer.mediaType === "video" ? t("editor.videoLabel") : t("editor.imageLabel"));
+            const isDragging = dragId === layer.id;
+            const isTarget = dropTarget?.id === layer.id;
+            const dropIndicator = isTarget && !isDragging
+              ? { boxShadow: dropTarget?.pos === "above" ? "0 -2px 0 0 var(--accent) inset" : "0 2px 0 0 var(--accent) inset" }
+              : undefined;
+            return (
               <li
                   key={layer.id}
                   className={active ? "layer-item is-active" : "layer-item"}
@@ -208,8 +227,9 @@ export function LayersPanel() {
                   </button>
                   <button
                     type="button"
-                    className="btn-icon"
+                    className="btn-icon tooltip"
                     aria-label={t("editor.moveUp")}
+                    data-tooltip={t("editor.moveUp")}
                     disabled={index === 0}
                     onClick={(e) => { e.stopPropagation(); move(layer.id, -1); }}
                   >
@@ -217,8 +237,9 @@ export function LayersPanel() {
                   </button>
                   <button
                     type="button"
-                    className="btn-icon"
+                    className="btn-icon tooltip"
                     aria-label={t("editor.moveDown")}
+                    data-tooltip={t("editor.moveDown")}
                     disabled={index === scene.layers.length - 1}
                     onClick={(e) => { e.stopPropagation(); move(layer.id, 1); }}
                   >
@@ -226,8 +247,9 @@ export function LayersPanel() {
                   </button>
                   <button
                     type="button"
-                    className="btn-icon"
+                    className="btn-icon tooltip"
                     aria-label={t("editor.removeLayer", { label })}
+                    data-tooltip={t("editor.removeLayer", { label })}
                     disabled={scene.layers.length <= 1}
                     onClick={(e) => { e.stopPropagation(); removeLayer(layer.id); }}
                   >
@@ -236,7 +258,8 @@ export function LayersPanel() {
             </li>
           );
         })}
-      </ul>
+        </ul>
+      )}
       {activeLayer?.mediaUrl ? (
         <button
           type="button"

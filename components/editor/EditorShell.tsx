@@ -11,19 +11,19 @@ import { ShortcutsDialog } from "@/components/editor/ShortcutsDialog";
 import { PreviewCanvas } from "@/components/editor/PreviewCanvas";
 import { RightPanel } from "@/components/editor/RightPanel";
 import { CommandPalette } from "@/components/editor/CommandPalette";
+import { ErrorBoundary } from "@/components/editor/ErrorBoundary";
+import { LocaleSwitcher } from "@/components/editor/LocaleSwitcher";
 import { useCommands } from "@/lib/hooks/useCommands";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { useThemeStore } from "@/lib/state/themeStore";
-import { LocaleSwitcher } from "@/components/editor/LocaleSwitcher";
-import { ErrorBoundary } from "@/components/editor/ErrorBoundary";
 
 const AUTOSAVE_DELAY = 500;
 
 export function EditorShell() {
-  const t = useTranslations();
-  const scene = useEditorStore((s) => s.scene);
+    const t = useTranslations();
+    const scene = useEditorStore((s) => s.scene);
   const activeLayerId = useEditorStore((s) => s.activeLayerId);
   const setScene = useEditorStore((s) => s.setScene);
   const resetScene = useEditorStore((s) => s.resetScene);
@@ -150,6 +150,23 @@ export function EditorShell() {
     };
   }, [scene, activeLayerId]);
 
+  const toastStatus = exportApi.copyStatus
+    ? { msg: exportApi.copyStatus, type: "success" as const }
+    : exportApi.exportError
+      ? { msg: exportApi.exportError, type: "error" as const }
+      : saveError
+        ? { msg: saveError, type: "error" as const }
+        : { msg: saved ? t("editor.saved") : t("editor.unsaved"), type: "info" as const };
+
+  useEffect(() => {
+    if (toastStatus.msg) {
+      const timer = setTimeout(() => {
+        // auto-dismiss handled by toastStatus reactivity
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [toastStatus.msg]);
+
   const confirmReset = useCallback(() => {
     resetScene();
     setSaved(false);
@@ -217,19 +234,11 @@ export function EditorShell() {
                 <span className="pct">{Math.round(exportApi.gifExportProgress)}%</span>
               </div>
             ) : null}
-            {exportApi.copyStatus ? (
-              <span className="status saved">{exportApi.copyStatus}</span>
-            ) : exportApi.exportError ? (
-              <span className="error" role="alert">
-                {exportApi.exportError}
-              </span>
-            ) : saveError ? (
-              <span className="error" role="alert" title={saveError}>
-                {saveError}
-              </span>
-            ) : (
-              <span className={`status${saved ? " saved" : ""}`}>{saved ? t("editor.saved") : t("editor.unsaved")}</span>
-            )}
+{toastStatus.msg ? (
+                <span className="toast-status" role={toastStatus.type === "error" ? "alert" : undefined} style={{ color: toastStatus.type === "error" ? "var(--danger)" : toastStatus.type === "success" ? "var(--success)" : "var(--text-secondary)", fontSize: 12, whiteSpace: "nowrap" }}>
+                  {toastStatus.msg}
+                </span>
+              ) : null}
             <span className="spacer" />
             <div className="toolbar-group">
               <div className="segmented" style={{ gap: 0 }} role="group" aria-label={t("editor.themeLabel")}>

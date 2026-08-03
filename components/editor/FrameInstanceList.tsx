@@ -58,9 +58,10 @@ export function FrameInstanceList({
                 <div className="frame-card-head">
                   <button
                     type="button"
-                    className="btn-icon"
+                    className="btn-icon tooltip"
                     onClick={() => { setExpandedFrameId(open ? null : inst.id); selectFrameInstance(open ? null : inst.id); }}
                     aria-label={open ? t("editor.collapse") : t("editor.expand")}
+                    data-tooltip={open ? t("editor.collapse") : t("editor.expand")}
                     style={{ fontSize: 10 }}
                   >
                     {open ? "▾" : "▸"}
@@ -75,7 +76,7 @@ export function FrameInstanceList({
                   <span className="frame-idx">{i + 1}</span>
                   <button
                     type="button"
-                    className="btn-icon"
+                    className="btn-icon tooltip"
                     disabled={i === 0}
                     onClick={() => {
                       const next = [...scene.frameInstances];
@@ -83,12 +84,13 @@ export function FrameInstanceList({
                       setFrameInstances(next);
                     }}
                     aria-label={t("editor.moveUp")}
+                    data-tooltip={t("editor.moveUp")}
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 10V2M6 2L2 6M6 2L10 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </button>
                   <button
                     type="button"
-                    className="btn-icon"
+                    className="btn-icon tooltip"
                     disabled={i === scene.frameInstances.length - 1}
                     onClick={() => {
                       const next = [...scene.frameInstances];
@@ -96,6 +98,7 @@ export function FrameInstanceList({
                       setFrameInstances(next);
                     }}
                     aria-label={t("editor.moveDown")}
+                    data-tooltip={t("editor.moveDown")}
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M6 10l4-4M6 10l-4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </button>

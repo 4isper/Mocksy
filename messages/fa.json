@@ -186,7 +186,9 @@
     "gradientLinear": "Linear",
     "gradientMiddle": "Middle",
     "gradientRadial": "Radial",
-    "resizeFrame": "Resize frame"
+    "resizeFrame": "Resize frame",
+    "noLayers": "No layers yet.",
+    "noAnnotations": "No annotations yet."
   },
   "frame": {
     "none": "هیچ",

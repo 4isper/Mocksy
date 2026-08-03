@@ -21,7 +21,7 @@ function project(id: string, name: string, updatedAt = Date.now()) {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
-  useProjectsStore.setState({ projects: [], activeProjectId: null });
+  useProjectsStore.setState({ projects: [], activeProjectId: null, hydrated: true });
 });
 
 describe("ProjectsPanel", () => {

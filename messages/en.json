@@ -189,7 +189,9 @@
     "watermarkPosition": "Watermark position",
     "watermarkSize": "Watermark size ({val}px)",
     "watermarkText": "Watermark text",
-    "zoom": "Zoom"
+    "zoom": "Zoom",
+    "noLayers": "No layers yet.",
+    "noAnnotations": "No annotations yet."
   },
   "frame": {
     "none": "None",

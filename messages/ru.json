@@ -189,7 +189,9 @@
     "watermarkPosition": "Позиция водяного знака",
     "watermarkSize": "Размер водяного знака ({val}px)",
     "watermarkText": "Текст водяного знака",
-    "zoom": "Масштаб"
+    "zoom": "Масштаб",
+    "noLayers": "Нет слоёв.",
+    "noAnnotations": "Нет аннотаций."
   },
   "frame": {
     "none": "Без рамки",
