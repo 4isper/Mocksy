@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { MediaLayer } from "@/lib/types/editor";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { PAN_OFFSET_SCALE } from "@/lib/render/frameGeometry";
+import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
 
 /**
  * Drives the frame's zoomIn/zoomOut/parallax in the live preview by writing
@@ -13,13 +14,16 @@ import { PAN_OFFSET_SCALE } from "@/lib/render/frameGeometry";
  * see previews what you export. Zoom/animation scale the whole mockup (device
  * + media together), matching the export where the frame box is multiplied by
  * the zoom. `durationMs` is the length of one animation loop.
+ * When the user prefers reduced motion, the animation loop is skipped and a
+ * static frame is shown instead.
  */
 export function useFrameTransform(node: React.RefObject<HTMLDivElement | null>, layer: MediaLayer | undefined, durationMs = 3000) {
   const layerRef = useRef(layer);
   useEffect(() => {
     layerRef.current = layer;
   });
-  const animates = !!layer && layer.animationPreset !== "none";
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const animates = !prefersReducedMotion && !!layer && layer.animationPreset !== "none";
 
   useEffect(() => {
     const el = node.current;

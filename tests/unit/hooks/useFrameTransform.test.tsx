@@ -21,6 +21,7 @@ beforeEach(() => {
   });
   vi.stubGlobal("cancelAnimationFrame", vi.fn());
   vi.stubGlobal("performance", { now: () => now });
+  vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
 });
 
 afterEach(() => {
@@ -65,6 +66,15 @@ describe("useFrameTransform", () => {
     renderHook(() => useFrameTransform(node, layer, 3000));
     rafCallbacks[0]!(performance.now());
     expect(node.current.style.transform).toBe("scale(1.03) translate(-20px, -12px)");
+  });
+
+  it("skips the rAF loop and pins a static frame when the user prefers reduced motion", () => {
+    vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    const node = { current: document.createElement("div") };
+    const layer = { ...baseLayer, animationPreset: "zoomIn" as const, zoom: 1 };
+    renderHook(() => useFrameTransform(node, layer, 3000));
+    expect(rafCallbacks.length).toBe(0);
+    expect(node.current.style.transform).toBe("scale(1) translate(0px, 0px)");
   });
 
   it("cancels the rAF loop on unmount", () => {

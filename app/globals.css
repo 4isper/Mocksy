@@ -2172,3 +2172,18 @@ select {
 .empty-state-action {
   margin-top: 4px;
 }
+
+/* ---- Reduced motion ---- */
+/* Users who prefer reduced motion get instant state changes instead of
+   transitions and looping UI animations (spinners, skeletons, slide-ins).
+   The preview Ken-Burns loop is JS-driven and handled in useFrameTransform. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

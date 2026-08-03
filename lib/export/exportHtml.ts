@@ -3,7 +3,7 @@
 import type { CSSProperties } from "react";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
-import { buildVideoTimeline } from "@/lib/render/videoComposer";
+import { buildVideoTimeline, sampleVideoTransform } from "@/lib/render/videoComposer";
 import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { renderSceneToImageBlob } from "@/lib/export/exportImage";
@@ -53,7 +53,9 @@ export function buildAnimationCss(layer: MediaLayer | undefined, durationSec = 3
   const keyframes = timeline
     .map((k) => `${num(k.at * 100)}% { transform: ${transformFor(k.zoom, k.x, k.y)}; }`)
     .join("\n");
-  return `@keyframes mockup-anim {\n${keyframes}\n}\n.frame {\n  animation: mockup-anim ${durationSec}s linear infinite;\n  transform-origin: center;\n}\n`;
+  const { zoom: staticZoom, x: staticX, y: staticY } = sampleVideoTransform(layer, 0);
+  const staticTransform = transformFor(staticZoom, staticX, staticY);
+  return `@keyframes mockup-anim {\n${keyframes}\n}\n.frame {\n  animation: mockup-anim ${durationSec}s linear infinite;\n  transform-origin: center;\n}\n@media (prefers-reduced-motion: reduce) {\n  .frame {\n    animation: none;\n    transform: ${staticTransform};\n  }\n}\n`;
 }
 
 function annotationsHtml(scene: EditorScene, arW: number, arH: number): string {

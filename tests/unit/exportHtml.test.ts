@@ -55,6 +55,12 @@ describe("buildAnimationCss", () => {
     expect(css).toContain("animation: mockup-anim 5s linear infinite;");
   });
 
+  it("pins a static frame under prefers-reduced-motion", () => {
+    const css = buildAnimationCss(layerWith({ animationPreset: "zoomIn", zoom: 1 }));
+    expect(css).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(css).toContain("  .frame {\n    animation: none;\n    transform: scale(1) translate(0px, 0px);");
+  });
+
   it("returns empty CSS for a static or missing layer", () => {
     expect(buildAnimationCss(layerWith({ animationPreset: "none" }))).toBe("");
     expect(buildAnimationCss(undefined)).toBe("");

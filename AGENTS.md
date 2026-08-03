@@ -103,7 +103,7 @@ tests/e2e/        Playwright (editor.spec.ts, visual.spec.ts)
 
 ## Testing
 
-- `npm run test` — Vitest (1,114 tests, 65 files)
+- `npm run test` — Vitest (1,121 tests, 66 files)
 - `npm run test:e2e` — Playwright (73 tests in editor.spec.ts, 9 in visual.spec.ts; requires browser install, needs dev server)
 - `npm run test:vrt` — Visual regression tests via Playwright
 - `npm run test:vrt:update` — Update visual regression baselines
