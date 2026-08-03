@@ -14,6 +14,7 @@ import { Segmented } from "@/components/editor/Segmented";
 import { FrameInstanceList } from "@/components/editor/FrameInstanceList";
 import { BackgroundControls } from "@/components/editor/BackgroundControls";
 import { WatermarkControls } from "@/components/editor/WatermarkControls";
+import { Section } from "@/components/editor/Section";
 
 const frames: MockupFrame[] = FRAME_ORDER;
 const styles: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
@@ -151,190 +152,209 @@ export function ControlPanel() {
 
   const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
 
+  const sectionIcons = {
+    media: (
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.5" y="1.5" width="9" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.2"/><circle cx="4.2" cy="4.2" r="0.9" fill="currentColor"/><path d="M1.5 8l2.6-2.6L8 9.2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    ),
+    frame: (
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.5" y="2.5" width="9" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.2"/><path d="M5 2.5v7M1.5 5h9" stroke="currentColor" strokeWidth="0.8" opacity="0.45"/></svg>
+    ),
+    position: (
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 2.5h2v2h-2zM7.5 2.5h2v2h-2zM2.5 7.5h2v2h-2zM7.5 7.5h2v2h-2z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round"/></svg>
+    ),
+    background: (
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2"/><path d="M6 1.5a4.5 4.5 0 010 9z" fill="currentColor" opacity="0.5"/></svg>
+    ),
+    watermark: (
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 8.5V6a4 4 0 018 0v2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><rect x="1" y="8.5" width="2.6" height="2" rx="0.8" stroke="currentColor" strokeWidth="1" /></svg>
+    )
+  };
+
   return (
-    <div className="panel control-panel" style={{ padding: 16, display: "grid", gap: 16 }}>
+    <div className="panel control-panel" style={{ padding: 16, display: "grid", gap: 12 }}>
       <h2 className="panel-title">{t("editor.controls")}</h2>
-      <div className="field-group">
-        <div className="field">
-          <span>{t("editor.media")}</span>
-          <label className="file-trigger">
-            {t("editor.uploadMediaShort")}
-            <input type="file" accept="image/*,video/*" onChange={handleFile} />
-          </label>
-          {activeLayer?.mediaUrl ? (
-            <button
-              type="button"
-              className="btn btn-sm"
-              title={t("editor.clearMedia")}
-              onClick={() => setMedia(null, "none", null)}
-            >
-              {t("editor.clearMedia")}
-            </button>
+
+      <Section id="media" title={t("editor.media")} icon={sectionIcons.media}>
+        <div className="field-group">
+          <div className="field">
+            <label className="file-trigger">
+              {t("editor.uploadMediaShort")}
+              <input type="file" accept="image/*,video/*" onChange={handleFile} />
+            </label>
+            {activeLayer?.mediaUrl ? (
+              <button
+                type="button"
+                className="btn btn-sm"
+                title={t("editor.clearMedia")}
+                onClick={() => setMedia(null, "none", null)}
+              >
+                {t("editor.clearMedia")}
+              </button>
+            ) : null}
+          </div>
+          {mediaError ? (
+            <span role="alert" style={{ color: "var(--danger)", fontSize: 13 }}>
+              {mediaError}
+            </span>
           ) : null}
+          {activeLayer && isVideoLayer(activeLayer) && <VideoOptions />}
         </div>
-        {mediaError ? (
-          <span role="alert" style={{ color: "var(--danger)", fontSize: 13 }}>
-            {mediaError}
-          </span>
-        ) : null}
-        {activeLayer && isVideoLayer(activeLayer) && <VideoOptions />}
-      </div>
+      </Section>
 
-      <div className="divider" />
-
-      <div className="field-group">
-        <Segmented
-          label={t("editor.frame")}
-          value={scene.frame}
-          options={frames.map((f) => ({ value: f, label: frameLabels[f] }))}
-          onChange={setFrame}
-        />
-        <div className="field" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.frameGrid")}</span>
-          <div style={{ display: "flex", gap: 4, alignItems: "center", width: "100%" }}>
-            <span style={{ fontSize: 13 }}>↔</span>
-            {[2, 3, 4].map((n) => (
-              <button
-                key={`h-${n}`}
-                type="button"
-                className="btn btn-sm"
-                onClick={() => layoutFrameGrid(scene.frame, n, "horizontal")}
-              >
-                {n}
-              </button>
-            ))}
+      <Section id="frame" title={t("editor.frame")} icon={sectionIcons.frame}>
+        <div className="field-group">
+          <Segmented
+            label={t("editor.frame")}
+            value={scene.frame}
+            options={frames.map((f) => ({ value: f, label: frameLabels[f] }))}
+            onChange={setFrame}
+          />
+          <div className="field" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.frameGrid")}</span>
+            <div style={{ display: "flex", gap: 4, alignItems: "center", width: "100%" }}>
+              <span style={{ fontSize: 13 }}>↔</span>
+              {[2, 3, 4].map((n) => (
+                <button
+                  key={`h-${n}`}
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => layoutFrameGrid(scene.frame, n, "horizontal")}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 4, alignItems: "center", width: "100%" }}>
+              <span style={{ fontSize: 13 }}>↕</span>
+              {[2, 3, 4].map((n) => (
+                <button
+                  key={`v-${n}`}
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => layoutFrameGrid(scene.frame, n, "vertical")}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 4, alignItems: "center", width: "100%" }}>
-            <span style={{ fontSize: 13 }}>↕</span>
-            {[2, 3, 4].map((n) => (
-              <button
-                key={`v-${n}`}
-                type="button"
-                className="btn btn-sm"
-                onClick={() => layoutFrameGrid(scene.frame, n, "vertical")}
-              >
-                {n}
-              </button>
-            ))}
+          <div className="field" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.layoutLabel")}</span>
+            <div style={{ display: "flex", gap: 4, width: "100%" }}>
+              {(["grid", "fan", "cascade", "masonry", "stack"] as const).map((layout) => (
+                <button
+                  key={layout}
+                  type="button"
+                  className="btn btn-sm"
+                  title={t(`editor.layout${layout.charAt(0).toUpperCase() + layout.slice(1)}`)}
+                  onClick={() => {
+                    const count = Math.max(2, scene.frameInstances.length || 2);
+                    applyFrameLayout(scene.frame, count, layout);
+                  }}
+                >
+                  {t(`editor.layout${layout.charAt(0).toUpperCase() + layout.slice(1)}`)}
+                </button>
+              ))}
+            </div>
           </div>
+          <FrameInstanceList
+            scene={scene}
+            expandedFrameId={expandedFrameId}
+            setExpandedFrameId={setExpandedFrameId}
+            selectFrameInstance={selectFrameInstance}
+            setFrameInstances={setFrameInstances}
+            updateFrameInstance={updateFrameInstance}
+            removeFrameInstance={removeFrameInstance}
+          />
+          <Segmented
+            label={t("editor.aspectRatio")}
+            value={scene.aspectRatio}
+            options={aspectRatios.map((r) => ({ value: r, label: r }))}
+            onChange={setAspectRatio}
+          />
+          <Segmented
+            label={t("editor.style")}
+            value={scene.stylePreset}
+            options={styles.map((s) => ({ value: s, label: styleLabels[s] }))}
+            onChange={setStylePreset}
+          />
+          <Segmented
+            label={t("editor.animation")}
+            value={activeLayer?.animationPreset ?? "none"}
+            options={animations.map((a) => ({ value: a, label: animLabels[a] }))}
+            onChange={setAnimationPreset}
+          />
+          <label className="field">
+            <span>{t("editor.animationDuration", { val: scene.animationDurationMs / 1000 })}</span>
+            <div className="range-wrap">
+              <input
+                type="range"
+                min={0.5}
+                max={10}
+                step={0.5}
+                value={scene.animationDurationMs / 1000}
+                disabled={activeLayer?.animationPreset === "none"}
+                aria-label={t("editor.animationDuration", { val: scene.animationDurationMs / 1000 })}
+                aria-valuetext={`${scene.animationDurationMs / 1000}s`}
+                onChange={(e) => setAnimationDuration(Math.round(Number(e.target.value) * 1000))}
+              />
+              <span className="range-val">{scene.animationDurationMs / 1000}s</span>
+            </div>
+          </label>
         </div>
-        <div className="field" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.layoutLabel")}</span>
-          <div style={{ display: "flex", gap: 4, width: "100%" }}>
-            {(["grid", "fan", "cascade", "masonry", "stack"] as const).map((layout) => (
-              <button
-                key={layout}
-                type="button"
-                className="btn btn-sm"
-                title={t(`editor.layout${layout.charAt(0).toUpperCase() + layout.slice(1)}`)}
-                onClick={() => {
-                  const count = Math.max(2, scene.frameInstances.length || 2);
-                  applyFrameLayout(scene.frame, count, layout);
-                }}
-              >
-                {t(`editor.layout${layout.charAt(0).toUpperCase() + layout.slice(1)}`)}
-              </button>
-            ))}
-          </div>
-        </div>
-        <FrameInstanceList
-          scene={scene}
-          expandedFrameId={expandedFrameId}
-          setExpandedFrameId={setExpandedFrameId}
-          selectFrameInstance={selectFrameInstance}
-          setFrameInstances={setFrameInstances}
-          updateFrameInstance={updateFrameInstance}
-          removeFrameInstance={removeFrameInstance}
-        />
-        <Segmented
-          label={t("editor.aspectRatio")}
-          value={scene.aspectRatio}
-          options={aspectRatios.map((r) => ({ value: r, label: r }))}
-          onChange={setAspectRatio}
-        />
-        <Segmented
-          label={t("editor.style")}
-          value={scene.stylePreset}
-          options={styles.map((s) => ({ value: s, label: styleLabels[s] }))}
-          onChange={setStylePreset}
-        />
-        <Segmented
-          label={t("editor.animation")}
-          value={activeLayer?.animationPreset ?? "none"}
-          options={animations.map((a) => ({ value: a, label: animLabels[a] }))}
-          onChange={setAnimationPreset}
-        />
-        <label className="field">
-          <span>{t("editor.animationDuration", { val: scene.animationDurationMs / 1000 })}</span>
-          <div className="range-wrap">
-            <input
-              type="range"
-              min={0.5}
-              max={10}
-              step={0.5}
-              value={scene.animationDurationMs / 1000}
-              disabled={activeLayer?.animationPreset === "none"}
-              aria-label={t("editor.animationDuration", { val: scene.animationDurationMs / 1000 })}
-              aria-valuetext={`${scene.animationDurationMs / 1000}s`}
-              onChange={(e) => setAnimationDuration(Math.round(Number(e.target.value) * 1000))}
-            />
-            <span className="range-val">{scene.animationDurationMs / 1000}s</span>
-          </div>
-        </label>
-      </div>
+      </Section>
 
-      <div className="divider" />
+      <Section id="position" title={t("editor.position")} icon={sectionIcons.position}>
+        <div className="field-group">
+          <Segmented
+            label={t("editor.fillFitLabel")}
+            value={activeLayer?.mediaFit ?? "cover"}
+            options={[
+              { value: "cover", label: t("editor.fill") },
+              { value: "contain", label: t("editor.fit") }
+            ]}
+            onChange={setMediaFit}
+          />
+          <label className="field">
+            <span>{t("editor.zoom")}</span>
+            <div className="range-wrap">
+              <input type="range" min={0.8} max={1.5} step={0.01} value={activeLayer?.zoom ?? 1} aria-label={t("editor.zoom")} aria-valuetext={`${Math.round((activeLayer?.zoom ?? 1) * 100)}%`} onChange={(e) => setZoom(Number(e.target.value))} />
+              <span className="range-val">{Math.round((activeLayer?.zoom ?? 1) * 100)}%</span>
+            </div>
+          </label>
+          <label className="field">
+            <span>{t("editor.positionX")}</span>
+            <div className="range-wrap">
+              <input type="range" min={-1} max={1} step={0.01} value={activeLayer?.mediaOffsetX ?? 0} aria-label={t("editor.positionX")} aria-valuetext={`${Math.round((activeLayer?.mediaOffsetX ?? 0) * 100)}%`} onChange={(e) => setMediaOffsetX(Number(e.target.value))} />
+              <span className="range-val">{Math.round((activeLayer?.mediaOffsetX ?? 0) * 100)}%</span>
+            </div>
+          </label>
+          <label className="field">
+            <span>{t("editor.positionY")}</span>
+            <div className="range-wrap">
+              <input type="range" min={-1} max={1} step={0.01} value={activeLayer?.mediaOffsetY ?? 0} aria-label={t("editor.positionY")} aria-valuetext={`${Math.round((activeLayer?.mediaOffsetY ?? 0) * 100)}%`} onChange={(e) => setMediaOffsetY(Number(e.target.value))} />
+              <span className="range-val">{Math.round((activeLayer?.mediaOffsetY ?? 0) * 100)}%</span>
+            </div>
+          </label>
+          <label className="field">
+            <span>{t("editor.shadowOpacity")}</span>
+            <div className="range-wrap">
+              <input type="range" min={0} max={1} step={0.01} value={scene.shadowOpacity} aria-label={t("editor.shadowOpacity")} aria-valuetext={`${Math.round(scene.shadowOpacity * 100)}%`} onChange={(e) => setShadowOpacity(Number(e.target.value))} />
+              <span className="range-val">{Math.round(scene.shadowOpacity * 100)}%</span>
+            </div>
+          </label>
+          <label className="field">
+            <span>{t("editor.cornerRadius")}</span>
+            <div className="range-wrap">
+              <input type="range" min={0} max={48} step={1} value={scene.borderRadius} aria-label={t("editor.cornerRadius")} aria-valuetext={`${scene.borderRadius}px`} onChange={(e) => setBorderRadius(Number(e.target.value))} />
+              <span className="range-val">{scene.borderRadius}px</span>
+            </div>
+          </label>
+          </div>
+      </Section>
 
-      <div className="field-group">
-        <Segmented
-          label={t("editor.fillFitLabel")}
-          value={activeLayer?.mediaFit ?? "cover"}
-          options={[
-            { value: "cover", label: t("editor.fill") },
-            { value: "contain", label: t("editor.fit") }
-          ]}
-          onChange={setMediaFit}
-        />
-        <label className="field">
-          <span>{t("editor.zoom")}</span>
-          <div className="range-wrap">
-            <input type="range" min={0.8} max={1.5} step={0.01} value={activeLayer?.zoom ?? 1} aria-label={t("editor.zoom")} aria-valuetext={`${Math.round((activeLayer?.zoom ?? 1) * 100)}%`} onChange={(e) => setZoom(Number(e.target.value))} />
-            <span className="range-val">{Math.round((activeLayer?.zoom ?? 1) * 100)}%</span>
-          </div>
-        </label>
-        <label className="field">
-          <span>{t("editor.positionX")}</span>
-          <div className="range-wrap">
-            <input type="range" min={-1} max={1} step={0.01} value={activeLayer?.mediaOffsetX ?? 0} aria-label={t("editor.positionX")} aria-valuetext={`${Math.round((activeLayer?.mediaOffsetX ?? 0) * 100)}%`} onChange={(e) => setMediaOffsetX(Number(e.target.value))} />
-            <span className="range-val">{Math.round((activeLayer?.mediaOffsetX ?? 0) * 100)}%</span>
-          </div>
-        </label>
-        <label className="field">
-          <span>{t("editor.positionY")}</span>
-          <div className="range-wrap">
-            <input type="range" min={-1} max={1} step={0.01} value={activeLayer?.mediaOffsetY ?? 0} aria-label={t("editor.positionY")} aria-valuetext={`${Math.round((activeLayer?.mediaOffsetY ?? 0) * 100)}%`} onChange={(e) => setMediaOffsetY(Number(e.target.value))} />
-            <span className="range-val">{Math.round((activeLayer?.mediaOffsetY ?? 0) * 100)}%</span>
-          </div>
-        </label>
-        <label className="field">
-          <span>{t("editor.shadowOpacity")}</span>
-          <div className="range-wrap">
-            <input type="range" min={0} max={1} step={0.01} value={scene.shadowOpacity} aria-label={t("editor.shadowOpacity")} aria-valuetext={`${Math.round(scene.shadowOpacity * 100)}%`} onChange={(e) => setShadowOpacity(Number(e.target.value))} />
-            <span className="range-val">{Math.round(scene.shadowOpacity * 100)}%</span>
-          </div>
-        </label>
-        <label className="field">
-          <span>{t("editor.cornerRadius")}</span>
-          <div className="range-wrap">
-            <input type="range" min={0} max={48} step={1} value={scene.borderRadius} aria-label={t("editor.cornerRadius")} aria-valuetext={`${scene.borderRadius}px`} onChange={(e) => setBorderRadius(Number(e.target.value))} />
-            <span className="range-val">{scene.borderRadius}px</span>
-          </div>
-        </label>
-      </div>
-
-      <div className="divider" />
-
-      <BackgroundControls
+      <Section id="background" title={t("editor.background")} icon={sectionIcons.background}>
+        <BackgroundControls
         scenePalette={scenePalette}
         backgroundMode={scene.backgroundMode}
         backgroundColor={scene.backgroundColor}
@@ -354,19 +374,20 @@ export function ControlPanel() {
         setGradientVia={setGradientVia}
         setBackgroundBlur={setBackgroundBlur}
       />
+      </Section>
 
-      <div className="divider" />
-
-      <WatermarkControls
-        watermarkEnabled={scene.watermarkEnabled}
-        watermarkText={scene.watermarkText}
-        watermarkPosition={scene.watermarkPosition}
-        watermarkSize={scene.watermarkSize}
-        toggleWatermark={toggleWatermark}
-        setWatermarkText={setWatermarkText}
-        setWatermarkPosition={setWatermarkPosition}
-        setWatermarkSize={setWatermarkSize}
-      />
+      <Section id="watermark" title={t("editor.watermark")} icon={sectionIcons.watermark}>
+        <WatermarkControls
+          watermarkEnabled={scene.watermarkEnabled}
+          watermarkText={scene.watermarkText}
+          watermarkPosition={scene.watermarkPosition}
+          watermarkSize={scene.watermarkSize}
+          toggleWatermark={toggleWatermark}
+          setWatermarkText={setWatermarkText}
+          setWatermarkPosition={setWatermarkPosition}
+          setWatermarkSize={setWatermarkSize}
+        />
+      </Section>
     </div>
   );
 }

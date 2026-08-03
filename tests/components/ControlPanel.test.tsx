@@ -114,7 +114,7 @@ describe("ControlPanel", () => {
 
   it("renders watermark toggle", () => {
     render(<ControlPanel />);
-    expect(screen.getByText("editor.watermark")).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "editor.watermark" })).toBeInTheDocument();
   });
 
   it("renders watermark text input", () => {
