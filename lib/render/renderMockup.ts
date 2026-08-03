@@ -148,7 +148,8 @@ export function renderMockupToCanvas(
   frameOverlay?: CanvasImageSource | null,
   backgroundImage?: CanvasImageSource | null,
   layerMedias?: Map<string, CanvasImageSource | null>,
-  frameOverlays?: Map<string, CanvasImageSource | null>
+  frameOverlays?: Map<string, CanvasImageSource | null>,
+  activeLayerId: string | null = scene.activeLayerId
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -157,7 +158,7 @@ export function renderMockupToCanvas(
   const width = canvas.width;
   const height = canvas.height;
   const dpiScale = pixelRatio;
-  const activeLayerForRender = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const activeLayerForRender = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
   ctx.clearRect(0, 0, width, height);
 
   if (scene.frameInstances.length > 0) {
@@ -189,7 +190,7 @@ export function renderMockupToCanvas(
       ctx.fillRect(0, 0, width, height);
     }
 
-    const frameBoxes = computeFrameInstances(scene, width, height, pixelRatio, transform);
+    const frameBoxes = computeFrameInstances(scene, width, height, pixelRatio, transform, activeLayerId);
     for (let i = 0; i < frameBoxes.length; i++) {
       const box = frameBoxes[i];
       const inst = scene.frameInstances[i];
@@ -237,8 +238,8 @@ export function renderMockupToCanvas(
     ctx.fillRect(0, 0, width, height);
   }
 
-  const box = computeFrameBox(scene, width, height, pixelRatio, frameWidth, frameHeight, transform, frameX, frameY);
-  const activeLayerForRender2 = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const box = computeFrameBox(scene, width, height, pixelRatio, frameWidth, frameHeight, transform, frameX, frameY, activeLayerId);
+  const activeLayerForRender2 = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
   const actualZoom = Math.max(0.01, transform?.zoom ?? activeLayerForRender2?.zoom ?? 1);
 
   drawFrameAndMedia(ctx, scene, spec, activeLayerForRender2, box, dpiScale, actualZoom, media, frameOverlay ?? null);

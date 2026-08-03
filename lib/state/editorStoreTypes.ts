@@ -24,6 +24,11 @@ export interface EditorStoreState {
   /** Id of the annotation currently selected for editing; kept out of `scene`
    *  so selecting doesn't churn undo history or serialize into share URLs. */
   selectedAnnotationId: string | null;
+  /** Id of the layer currently selected for editing. Kept out of `scene` so
+   *  selecting a layer doesn't re-create the scene object (re-rendering the
+   *  whole preview tree) or churn undo history. `scene.activeLayerId` stays as
+   *  the persisted snapshot carried by stored scenes and share URLs. */
+  activeLayerId: string | null;
   /** Id of the frame instance currently selected for editing/nudging; kept out
    *  of `scene` so selecting doesn't churn undo history or serialize into share
    *  URLs. */

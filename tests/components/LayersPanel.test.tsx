@@ -55,7 +55,8 @@ describe("LayersPanel", () => {
         ...useEditorStore.getState().scene,
         layers: [makeLayer("a", { mediaName: "Layer A" }), makeLayer("b", { mediaName: "Layer B" })],
         activeLayerId: "a",
-      }
+      },
+      activeLayerId: "a"
     });
     render(<LayersPanel />);
     expect(screen.getByText("Layer A")).toBeInTheDocument();
@@ -68,11 +69,12 @@ describe("LayersPanel", () => {
         ...useEditorStore.getState().scene,
         layers: [makeLayer("a", { mediaName: "A" }), makeLayer("b", { mediaName: "B" })],
         activeLayerId: "a",
-      }
+      },
+      activeLayerId: "a"
     });
     render(<LayersPanel />);
     await userEvent.click(screen.getByText("B"));
-    expect(useEditorStore.getState().scene.activeLayerId).toBe("b");
+    expect(useEditorStore.getState().activeLayerId).toBe("b");
   });
 
   it("duplicates layer on duplicate button click", async () => {
@@ -81,7 +83,8 @@ describe("LayersPanel", () => {
         ...useEditorStore.getState().scene,
         layers: [makeLayer("a", { mediaName: "A" })],
         activeLayerId: "a",
-      }
+      },
+      activeLayerId: "a"
     });
     render(<LayersPanel />);
     const dupBtns = screen.getAllByRole("button", { name: /editor.duplicateLayer/i });
@@ -95,7 +98,8 @@ describe("LayersPanel", () => {
         ...useEditorStore.getState().scene,
         layers: [makeLayer("a", { mediaName: "A", hidden: false })],
         activeLayerId: "a",
-      }
+      },
+      activeLayerId: "a"
     });
     render(<LayersPanel />);
     const hideBtn = screen.getByRole("button", { name: /editor.hideLayer/i });
@@ -110,7 +114,8 @@ describe("LayersPanel", () => {
         ...useEditorStore.getState().scene,
         layers: [makeLayer("a", { mediaName: "A" }), makeLayer("b", { mediaName: "B" })],
         activeLayerId: "a",
-      }
+      },
+      activeLayerId: "a"
     });
     render(<LayersPanel />);
     const removeBtns = screen.getAllByRole("button", { name: /editor.removeLayer/i });
@@ -124,7 +129,8 @@ describe("LayersPanel", () => {
         ...useEditorStore.getState().scene,
         layers: [makeLayer("a", { mediaUrl: "test.jpg", mediaType: "image", mediaName: "Test" })],
         activeLayerId: "a",
-      }
+      },
+      activeLayerId: "a"
     });
     render(<LayersPanel />);
     expect(screen.getByText("editor.clearMedia")).toBeInTheDocument();
@@ -140,7 +146,8 @@ describe("LayersPanel", () => {
           makeLayer("c", { mediaName: "C" }),
         ],
         activeLayerId: "a",
-      }
+      },
+      activeLayerId: "a"
     });
     render(<LayersPanel />);
     const items = screen.getAllByRole("listitem");
@@ -165,7 +172,8 @@ describe("LayersPanel", () => {
           makeLayer("c", { mediaName: "C" }),
         ],
         activeLayerId: "a",
-      }
+      },
+      activeLayerId: "a"
     });
     render(<LayersPanel />);
     const items = screen.getAllByRole("listitem");
@@ -193,7 +201,8 @@ describe("LayersPanel", () => {
           makeLayer("c", { mediaName: "C" }),
         ],
         activeLayerId: "a",
-      }
+      },
+      activeLayerId: "a"
     });
     render(<LayersPanel />);
     const items = screen.getAllByRole("listitem");
@@ -217,7 +226,8 @@ describe("LayersPanel", () => {
           makeLayer("b", { mediaName: "B" }),
         ],
         activeLayerId: "a",
-      }
+      },
+      activeLayerId: "a"
     });
     render(<LayersPanel />);
     const a = screen.getAllByRole("listitem")[0]!;
@@ -260,7 +270,8 @@ describe("LayersPanel", () => {
         ...useEditorStore.getState().scene,
         layers: [makeLayer("a", { mediaName: "A" }), makeLayer("b", { mediaName: "B" }), makeLayer("c", { mediaName: "C" })],
         activeLayerId: "a",
-      }
+      },
+      activeLayerId: "a"
     });
     render(<LayersPanel />);
     const upButtons = screen.getAllByRole("button", { name: /editor.moveUp/ });
@@ -274,7 +285,8 @@ describe("LayersPanel", () => {
         ...useEditorStore.getState().scene,
         layers: [makeLayer("a", { mediaName: "A" }), makeLayer("b", { mediaName: "B" }), makeLayer("c", { mediaName: "C" })],
         activeLayerId: "a",
-      }
+      },
+      activeLayerId: "a"
     });
     render(<LayersPanel />);
     const downButtons = screen.getAllByRole("button", { name: /editor.moveDown/ });
@@ -288,7 +300,8 @@ describe("LayersPanel", () => {
         ...useEditorStore.getState().scene,
         layers: [makeLayer("a", { mediaName: "A" }), makeLayer("b", { mediaName: "B" })],
         activeLayerId: "a",
-      }
+      },
+      activeLayerId: "a"
     });
     render(<LayersPanel />);
     expect(screen.getAllByRole("button", { name: /editor.moveUp/ })[0]).toBeDisabled();
@@ -301,7 +314,8 @@ describe("LayersPanel", () => {
         ...useEditorStore.getState().scene,
         layers: [makeLayer("a", { mediaName: "A" })],
         activeLayerId: "a",
-      }
+      },
+      activeLayerId: "a"
     });
     render(<LayersPanel />);
     expect(screen.getByRole("button", { name: /editor.removeLayer/ })).toBeDisabled();
@@ -313,7 +327,8 @@ describe("LayersPanel", () => {
         ...useEditorStore.getState().scene,
         layers: [makeLayer("a", { mediaUrl: "data:video/mp4;base64,AAAA", mediaType: "video", mediaName: null })],
         activeLayerId: "a",
-      }
+      },
+      activeLayerId: "a"
     });
     render(<LayersPanel />);
     expect(document.querySelector("video")).not.toBeNull();
@@ -326,7 +341,8 @@ describe("LayersPanel", () => {
         ...useEditorStore.getState().scene,
         layers: [makeLayer("a", { mediaUrl: "test.jpg", mediaType: "image", mediaName: "Test" })],
         activeLayerId: "a",
-      }
+      },
+      activeLayerId: "a"
     });
     render(<LayersPanel />);
     await userEvent.click(screen.getByText("editor.clearMedia"));

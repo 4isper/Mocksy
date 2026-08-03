@@ -18,7 +18,8 @@ export function VideoTrimControl({ duration }: VideoTrimControlProps) {
   const { scene, setVideoTrimStart, setVideoTrimEnd } = useEditorStore(
     useShallow((s) => ({ scene: s.scene, setVideoTrimStart: s.setVideoTrimStart, setVideoTrimEnd: s.setVideoTrimEnd }))
   );
-  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const activeLayerId = useEditorStore((s) => s.activeLayerId);
+  const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
   const layer = activeLayer ?? { videoTrimStart: 0, videoTrimEnd: 0 };
   const max = Math.max(duration, 0.1);
   const startPct = (layer.videoTrimStart / max) * 100;

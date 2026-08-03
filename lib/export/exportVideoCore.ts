@@ -55,13 +55,13 @@ export async function cleanupFfmpegTempFiles(ffmpeg: FFmpeg | null, files: strin
 }
 
 /** Media layer driving the export (active layer, falling back to the first). */
-export function activeLayerOf(scene: EditorScene): MediaLayer | null {
-  return scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0] ?? null;
+export function activeLayerOf(scene: EditorScene, activeLayerId: string | null = scene.activeLayerId): MediaLayer | null {
+  return scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0] ?? null;
 }
 
 /** Base export filename (media name with its extension stripped, or the default). */
-export function exportBaseName(scene: EditorScene): string {
-  const name = activeLayerOf(scene)?.mediaName || "mocksy-export";
+export function exportBaseName(scene: EditorScene, activeLayerId: string | null = scene.activeLayerId): string {
+  const name = activeLayerOf(scene, activeLayerId)?.mediaName || "mocksy-export";
   return sanitizeFilename(name.replace(/\.[^.]+$/, ""));
 }
 
@@ -81,8 +81,8 @@ export function resolvePixelRatio(videoQuality: VideoQuality): number {
  * Records video scenes for their trimmed length; still-image scenes play the
  * configured animation loop. Returns seconds.
  */
-export function computeCaptureDuration(scene: EditorScene): number {
-  const active = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+export function computeCaptureDuration(scene: EditorScene, activeLayerId: string | null = scene.activeLayerId): number {
+  const active = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
   const isVideo = active ? isVideoLayer(active) && active.mediaUrl != null : false;
   const fallbackSec = Math.max(0.5, scene.animationDurationMs / 1000);
   if (!isVideo || !active) return fallbackSec;
@@ -124,7 +124,8 @@ async function recordCanvasToWebm(
   onStatus?: (message: string) => void,
   onProgress?: (progress: number) => void,
   layerMedias?: Map<string, CanvasImageSource | null>,
-  frameOverlays?: Map<string, CanvasImageSource | null>
+  frameOverlays?: Map<string, CanvasImageSource | null>,
+  activeLayerId: string | null = scene.activeLayerId
 ) {
   const spec = getFrameSpec(scene.frame);
   let overlay: CanvasImageSource | null = null;
@@ -169,7 +170,7 @@ async function recordCanvasToWebm(
 
   // Resolve the active layer before stream setup so the audio capture branch
   // below can check its muted state.
-  const activeForCapture = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const activeForCapture = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
   if (!activeForCapture) {
     canvas.remove();
     throw new Error("Cannot export a scene with no layers.");
@@ -180,7 +181,7 @@ async function recordCanvasToWebm(
   // never been painted, which MediaRecorder would otherwise turn into an empty
   // blob (the "Recording produced no frames." guard below).
   try {
-    renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, { zoom: 1, offsetX: 0, offsetY: 0 }, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays);
+    renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, { zoom: 1, offsetX: 0, offsetY: 0 }, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId);
   } catch {
     // The per-tick render runs again right after; a warm-up failure alone
     // must not abort the export.
@@ -242,7 +243,7 @@ async function recordCanvasToWebm(
   const start = Math.max(0, activeForCapture.videoTrimStart || 0);
   const end = activeForCapture.videoTrimEnd > start ? activeForCapture.videoTrimEnd : activeForCapture.videoDuration;
   const isVideo = media instanceof HTMLVideoElement;
-  const duration = computeCaptureDuration(scene);
+  const duration = computeCaptureDuration(scene, activeLayerId);
 
   await new Promise<void>((resolve, reject) => {
     recorder.onstop = () => resolve();
@@ -271,7 +272,7 @@ async function recordCanvasToWebm(
         const stopAt = typeof end === "number" && isFinite(end) && end > 0 ? end : Infinity;
         if (media.currentTime >= stopAt || elapsed >= duration) {
           media.pause();
-          renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays);
+          renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId);
           recorder.stop();
           cancelAnimationFrame(raf);
           onProgress?.(100);
@@ -284,7 +285,7 @@ async function recordCanvasToWebm(
         return;
       }
 
-      renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays);
+      renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId);
       raf = requestAnimationFrame(tick);
     };
 
@@ -315,12 +316,13 @@ export async function captureWebm(
   scale?: number,
   onStatus?: (message: string) => void,
   onProgress?: (progress: number) => void,
-  customSize?: ExportSize | null
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
 ): Promise<Blob | null> {
   const previewNode = document.getElementById("preview-canvas");
   if (!previewNode) throw new Error("Preview area not found.");
 
-  const exportQuality = (scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0])?.videoQuality ?? "medium";
+  const exportQuality = (scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0])?.videoQuality ?? "medium";
   const quality = QUALITY[exportQuality] ?? QUALITY.medium;
   const hasCustomSize = customSize !== null && customSize !== undefined && customSize.width > 0 && customSize.height > 0;
   // Custom resolutions record the canvas at exactly that size and scale the
@@ -338,7 +340,7 @@ export async function captureWebm(
   // When exporting a video scene we create a detached <video> from the active
   // video layer's URL; track it so we can stop/remove it and free its blob: URL
   // afterwards. For image scenes we reuse the element already in the preview.
-  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
   let sourceVideo: HTMLVideoElement | null = null;
   let media: HTMLVideoElement | HTMLImageElement | null = null;
   if (activeLayer && isVideoLayer(activeLayer) && activeLayer.mediaUrl) {
@@ -428,7 +430,7 @@ export async function captureWebm(
 
   let webmBlob: Blob | null = null;
   try {
-    webmBlob = await recordCanvasToWebm(scene, canvas, media, frameElement, pixelRatio, onStatus, onProgress, layerMedias, frameOverlays);
+    webmBlob = await recordCanvasToWebm(scene, canvas, media, frameElement, pixelRatio, onStatus, onProgress, layerMedias, frameOverlays, activeLayerId);
   } finally {
     if (sourceVideo) {
       sourceVideo.pause();
@@ -449,9 +451,10 @@ export async function captureWebmWithRetry(
   scale?: number,
   onStatus?: (message: string) => void,
   onProgress?: (progress: number) => void,
-  customSize?: ExportSize | null
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
 ): Promise<Blob | null> {
-  const first = await captureWebm(scene, scale, onStatus, onProgress, customSize);
+  const first = await captureWebm(scene, scale, onStatus, onProgress, customSize, activeLayerId);
   if (first && first.size > 0) return first;
-  return captureWebm(scene, scale, onStatus, onProgress, customSize);
+  return captureWebm(scene, scale, onStatus, onProgress, customSize, activeLayerId);
 }

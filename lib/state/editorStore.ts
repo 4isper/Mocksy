@@ -24,6 +24,7 @@ export const useEditorStore = create<EditorStoreState>()((set) => ({
   future: [],
   videoCurrentTime: 0,
   selectedAnnotationId: null,
+  activeLayerId: initialScene.activeLayerId ?? null,
   activeFrameInstanceId: null,
   lastHistoryKey: null,
   lastHistoryAt: 0,

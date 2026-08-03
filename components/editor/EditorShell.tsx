@@ -23,6 +23,7 @@ const AUTOSAVE_DELAY = 500;
 export function EditorShell() {
   const t = useTranslations();
   const scene = useEditorStore((s) => s.scene);
+  const activeLayerId = useEditorStore((s) => s.activeLayerId);
   const setScene = useEditorStore((s) => s.setScene);
   const resetScene = useEditorStore((s) => s.resetScene);
   const undo = useEditorStore((s) => s.undo);
@@ -55,13 +56,13 @@ export function EditorShell() {
 
   useEffect(() => {
     saveNowRef.current = () => {
-      useProjectsStore.getState().updateActiveProjectScene(scene);
+      useProjectsStore.getState().updateActiveProjectScene({ ...scene, activeLayerId });
       setSaved(true);
     };
-  }, [scene]);
+  }, [scene, activeLayerId]);
 
   const closeExportDialog = useCallback(() => setExportOpen(false), []);
-  const exportApi = useEditorExport(scene, exportScale, customExportSize, closeExportDialog);
+  const exportApi = useEditorExport(scene, exportScale, customExportSize, closeExportDialog, activeLayerId);
 
   const commands = useCommands(
     exportApi.handleExportPng,
@@ -120,13 +121,13 @@ export function EditorShell() {
       // Persist the current scene into the active project (which writes the
       // whole project list to localStorage). Dead blob: layers are handled by
       // the orphaned-blob subscription, so a refresh simply shows the demo.
-      useProjectsStore.getState().updateActiveProjectScene(scene);
+      useProjectsStore.getState().updateActiveProjectScene({ ...scene, activeLayerId });
       setSaved(true);
     }, AUTOSAVE_DELAY);
     return () => {
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     };
-  }, [scene]);
+  }, [scene, activeLayerId]);
 
   const confirmReset = useCallback(() => {
     resetScene();

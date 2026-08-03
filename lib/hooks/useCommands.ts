@@ -21,6 +21,7 @@ export function useCommands(
 ): Command[] {
   const t = useTranslations();
   const scene = useEditorStore(s => s.scene);
+  const activeLayerId = useEditorStore(s => s.activeLayerId);
   const undo = useEditorStore(s => s.undo);
   const redo = useEditorStore(s => s.redo);
   const pastLength = useEditorStore(s => s.past.length);
@@ -54,7 +55,7 @@ export function useCommands(
   const setThemeMode = useThemeStore(s => s.setMode);
 
   return useMemo(() => createCommands(
-    t, scene, undo, redo, pastLength, futureLength, resetScene,
+    t, scene, activeLayerId, undo, redo, pastLength, futureLength, resetScene,
     setFrame, setStylePreset, setAnimationPreset,
     setBackgroundSolid, setBackgroundGradient, setBackgroundTransparent, setBackgroundImage,
     setAspectRatio, addLayer, duplicateLayer, removeLayer, toggleLayerHidden,
@@ -65,7 +66,7 @@ export function useCommands(
     onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim,
     onCopyPng, onCopyShareUrl, onSave
   ), [
-    t, scene, pastLength, futureLength, activeProjectId, projects, themeMode, exportScale,
+    t, scene, activeLayerId, pastLength, futureLength, activeProjectId, projects, themeMode, exportScale,
     onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim,
     onCopyPng, onCopyShareUrl, onSave,
     undo, redo, resetScene,

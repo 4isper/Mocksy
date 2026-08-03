@@ -16,6 +16,7 @@ interface DropTarget {
 export function LayersPanel() {
   const t = useTranslations();
   const scene = useEditorStore((s) => s.scene);
+  const activeLayerId = useEditorStore((s) => s.activeLayerId);
   const addLayer = useEditorStore((s) => s.addLayer);
   const removeLayer = useEditorStore((s) => s.removeLayer);
   const selectLayer = useEditorStore((s) => s.selectLayer);
@@ -26,7 +27,7 @@ export function LayersPanel() {
   const [error, setError] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
-  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
 
   const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -114,7 +115,7 @@ export function LayersPanel() {
       ) : null}
       <ul className="layers-list" style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 6,  minWidth: 0 }}>
         {scene.layers.map((layer, index) => {
-          const active = layer.id === scene.activeLayerId;
+          const active = layer.id === activeLayerId;
           const label = layer.mediaName ?? (layer.mediaType === "video" ? t("editor.videoLabel") : t("editor.imageLabel"));
           const isDragging = dragId === layer.id;
           const isTarget = dropTarget?.id === layer.id;

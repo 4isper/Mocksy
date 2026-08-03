@@ -43,11 +43,12 @@ export function computeFrameBox(
   frameHeight?: number,
   transform?: RenderTransform,
   frameX?: number,
-  frameY?: number
+  frameY?: number,
+  activeLayerId: string | null = scene.activeLayerId
 ): FrameBox {
   const spec = getFrameSpec(scene.frame);
   const dpiScale = pixelRatio;
-  const activeLayerForRender = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const activeLayerForRender = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
   const actualZoom = Math.max(0.01, transform?.zoom ?? activeLayerForRender?.zoom ?? 1);
   const defaultFrameW = Math.min(900, (canvasWidth / dpiScale) * 0.8) * dpiScale;
   const frameW = (typeof frameWidth === "number" && frameWidth > 0 ? frameWidth : defaultFrameW) * actualZoom;
@@ -80,12 +81,13 @@ export function computeFrameInstances(
   canvasWidth: number,
   canvasHeight: number,
   pixelRatio: number,
-  transform?: RenderTransform
+  transform?: RenderTransform,
+  activeLayerId: string | null = scene.activeLayerId
 ): FrameBox[] {
   const instances = scene.frameInstances.length > 0 ? scene.frameInstances : [];
   if (instances.length === 0) return [];
   const dpiScale = pixelRatio;
-  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
   const actualZoom = Math.max(0.01, transform?.zoom ?? activeLayer?.zoom ?? 1);
 
   return instances.map((inst) => {

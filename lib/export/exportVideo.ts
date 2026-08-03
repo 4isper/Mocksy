@@ -36,10 +36,11 @@ export async function exportVideo(
   onStatus?: (message: string) => void,
   onProgress?: (progress: number) => void,
   onError?: (message: string) => void,
-  customSize?: ExportSize | null
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
 ) {
   try {
-    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize);
+    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no frames.");
       return;
@@ -47,7 +48,7 @@ export async function exportVideo(
 
   onStatus?.("Encoding MP4…");
   onProgress?.(0);
-  const exportQuality = (scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0])?.videoQuality ?? "medium";
+  const exportQuality = (scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0])?.videoQuality ?? "medium";
   const quality = QUALITY[exportQuality] ?? QUALITY.medium;
   const ffmpeg = await getFfmpegInstance(onStatus);
   const inputName = "input.webm";
@@ -75,7 +76,7 @@ export async function exportVideo(
   const blob = new Blob([bytes], { type: "video/mp4" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = `${exportBaseName(scene)}.mp4`;
+  link.download = `${exportBaseName(scene, activeLayerId)}.mp4`;
   link.click();
   setTimeout(() => URL.revokeObjectURL(link.href), 200);
   await ffmpeg.deleteFile(inputName);
@@ -96,15 +97,16 @@ export async function exportWebm(
   onStatus?: (message: string) => void,
   onProgress?: (progress: number) => void,
   onError?: (message: string) => void,
-  customSize?: ExportSize | null
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
 ) {
   try {
-    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize);
+    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no video frames.");
       return;
     }
-    downloadBlob(webmBlob, `${exportBaseName(scene)}.webm`);
+    downloadBlob(webmBlob, `${exportBaseName(scene, activeLayerId)}.webm`);
     onStatus?.("Done");
     onProgress?.(100);
   } catch (err) {
@@ -118,10 +120,11 @@ export async function exportWebpAnim(
   onStatus?: (message: string) => void,
   onProgress?: (progress: number) => void,
   onError?: (message: string) => void,
-  customSize?: ExportSize | null
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
 ) {
   try {
-    const webmBlob = await captureWebm(scene, scale, onStatus, onProgress, customSize);
+    const webmBlob = await captureWebm(scene, scale, onStatus, onProgress, customSize, activeLayerId);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no frames.");
       return;
@@ -129,7 +132,7 @@ export async function exportWebpAnim(
 
     onStatus?.("Encoding WebP…");
     onProgress?.(0);
-    const exportQuality = activeLayerOf(scene)?.videoQuality ?? "medium";
+    const exportQuality = activeLayerOf(scene, activeLayerId)?.videoQuality ?? "medium";
     const quality = QUALITY[exportQuality] ?? QUALITY.medium;
     const ffmpeg = await getFfmpegInstance(onStatus);
     const inputName = "input.webm";
@@ -160,7 +163,7 @@ export async function exportWebpAnim(
     if (bytes.length === 0) {
       throw new Error("WebP encoding produced no output.");
     }
-    downloadBlob(new Blob([bytes], { type: "image/webp" }), `${exportBaseName(scene)}.webp`);
+    downloadBlob(new Blob([bytes], { type: "image/webp" }), `${exportBaseName(scene, activeLayerId)}.webp`);
     await ffmpeg.deleteFile(inputName);
     await ffmpeg.deleteFile(outputName);
     onStatus?.("Done");
@@ -177,10 +180,11 @@ export async function exportGif(
   onStatus?: (message: string) => void,
   onProgress?: (progress: number) => void,
   onError?: (message: string) => void,
-  customSize?: ExportSize | null
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
 ) {
   try {
-    const webmBlob = await captureWebm(scene, scale, onStatus, onProgress, customSize);
+    const webmBlob = await captureWebm(scene, scale, onStatus, onProgress, customSize, activeLayerId);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no frames.");
       return;
@@ -188,7 +192,7 @@ export async function exportGif(
 
     onStatus?.("Encoding GIF…");
     onProgress?.(0);
-    const exportQuality = (scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0])?.videoQuality ?? "medium";
+    const exportQuality = (scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0])?.videoQuality ?? "medium";
     const quality = QUALITY[exportQuality] ?? QUALITY.medium;
     const ffmpeg = await getFfmpegInstance(onStatus);
     const inputName = "input.webm";
@@ -222,7 +226,7 @@ export async function exportGif(
     const blob = new Blob([bytes], { type: "image/gif" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `${exportBaseName(scene)}.gif`;
+    link.download = `${exportBaseName(scene, activeLayerId)}.gif`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 200);
     await ffmpeg.deleteFile(inputName);

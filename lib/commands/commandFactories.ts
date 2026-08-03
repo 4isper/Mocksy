@@ -30,6 +30,7 @@ export { createProjectCommands } from "./projectCommands";
 export function createCommands(
   t: ReturnType<typeof useTranslations>,
   scene: EditorScene,
+  activeLayerId: string | null,
   undo: () => void,
   redo: () => void,
   pastLength: number,
@@ -78,7 +79,7 @@ export function createCommands(
     ...createStyleCommands(t),
     ...createBackgroundCommands(t, { setBackgroundSolid, setBackgroundGradient, setBackgroundTransparent }),
     ...createAspectRatioCommands(t, { setAspectRatio }),
-    ...createLayerCommands(t, scene, { addLayer, duplicateLayer, removeLayer, toggleLayerHidden, selectLayer }),
+    ...createLayerCommands(t, scene, { addLayer, duplicateLayer, removeLayer, toggleLayerHidden, selectLayer }, activeLayerId),
     ...createAnnotationCommands(t, scene, { addAnnotation, clearAnnotations }),
     ...createWatermarkCommands(t, scene, { toggleWatermark }),
     ...createExportScaleCommands(t, { setExportScale }),

@@ -23,8 +23,8 @@ export type FramesSlice = Pick<
  * would accumulate orphaned layers that render stacked in single-frame view
  * and bloat undo history, share URLs and exports.
  */
-function materializeLayout(instances: FrameInstance[], scene: EditorScene) {
-  const activeLayerData = activeLayer(scene);
+function materializeLayout(instances: FrameInstance[], scene: EditorScene, activeLayerId: string | null) {
+  const activeLayerData = activeLayer(scene, activeLayerId);
   const newLayers = instances.map((inst) => ({
     ...(activeLayerData ?? makeDemoLayer()),
     id: nextLayerId(),
@@ -46,7 +46,7 @@ function materializeLayout(instances: FrameInstance[], scene: EditorScene) {
   return {
     layers,
     frameInstances,
-    activeLayerId: layerIds[0] ?? scene.activeLayerId
+    activeLayerId: layerIds[0] ?? activeLayerId
   };
 }
 
@@ -69,10 +69,10 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
         const layers = inst.layerId && !remaining.some((fi) => fi.layerId === inst.layerId)
           ? s.scene.layers.filter((l) => l.id !== inst.layerId)
           : s.scene.layers;
-        const activeLayerId = layers.some((l) => l.id === s.scene.activeLayerId)
-          ? s.scene.activeLayerId
+        const activeLayerId = layers.some((l) => l.id === s.activeLayerId)
+          ? s.activeLayerId
           : layers[0]?.id ?? null;
-        return pushHistory(s, { ...s.scene, layers, frameInstances: remaining, activeLayerId });
+        return { ...pushHistory(s, { ...s.scene, layers, frameInstances: remaining }), activeLayerId };
       }),
     updateFrameInstance: (id, patch, coalesce) =>
       set((s) => {
@@ -84,12 +84,14 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
     layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") =>
       set((s) => {
         const instances = layoutFrameGrid(frame, count, direction);
-        return pushHistory(s, { ...s.scene, ...materializeLayout(instances, s.scene) });
+        const { layers, frameInstances, activeLayerId } = materializeLayout(instances, s.scene, s.activeLayerId);
+        return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId };
       }),
     applyFrameLayout: (frame: MockupFrame, count: number, layout: import("@/lib/types/editor").LayoutPreset) =>
       set((s) => {
         const instances = buildAutoLayout(frame, count, layout, s.scene.aspectRatio);
-        return pushHistory(s, { ...s.scene, ...materializeLayout(instances, s.scene) });
+        const { layers, frameInstances, activeLayerId } = materializeLayout(instances, s.scene, s.activeLayerId);
+        return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId };
       }),
     selectFrameInstance: (id) => set({ activeFrameInstanceId: id })
   };

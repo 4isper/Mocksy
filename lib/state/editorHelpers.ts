@@ -96,20 +96,23 @@ export function pushHistory(
   return { past, future: [], scene, lastHistoryKey: coalesceKey ?? null, lastHistoryAt: now };
 }
 
-/** Returns the layer currently targeted by scene-level controls. */
-export function activeLayer(scene: EditorScene): MediaLayer | undefined {
-  return scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+/** Returns the layer currently targeted by scene-level controls. The id comes
+ *  from the store root (`activeLayerId`); the scene's own field is only the
+ *  persisted snapshot, so pass it explicitly. Defaults to the snapshot for
+ *  callers that only have a scene (e.g. tests). */
+export function activeLayer(scene: EditorScene, activeLayerId: string | null = scene.activeLayerId): MediaLayer | undefined {
+  return scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
 }
 
 /** Poster time of the active video layer (or 0 when none). */
-export function activePosterTime(scene: EditorScene): number {
-  const layer = activeLayer(scene);
+export function activePosterTime(scene: EditorScene, activeLayerId: string | null = scene.activeLayerId): number {
+  const layer = activeLayer(scene, activeLayerId);
   return layer?.videoPosterTime ?? 0;
 }
 
 /** Applies a patch to the active layer, returning a new layers array. */
-export function patchActive(scene: EditorScene, patch: Partial<MediaLayer>): MediaLayer[] {
-  const id = scene.activeLayerId ?? scene.layers[0]?.id;
+export function patchActive(scene: EditorScene, patch: Partial<MediaLayer>, activeLayerId: string | null = scene.activeLayerId): MediaLayer[] {
+  const id = activeLayerId ?? scene.layers[0]?.id;
   return scene.layers.map((l) => (l.id === id ? { ...l, ...patch } : l));
 }
 

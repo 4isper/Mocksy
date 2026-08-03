@@ -299,20 +299,25 @@ describe("EditorShell keyboard shortcuts", () => {
   });
 
   it("selects the previous layer on ⌘[", () => {
-    useEditorStore.setState({ scene: makeDemoScene() });
+    const demo = makeDemoScene();
+    useEditorStore.setState({ scene: demo, activeLayerId: demo.activeLayerId });
     render(<EditorShell />);
-    useEditorStore.setState({ scene: { ...useEditorStore.getState().scene, activeLayerId: useEditorStore.getState().scene.layers[1]!.id } });
+    useEditorStore.setState({
+      scene: { ...useEditorStore.getState().scene, activeLayerId: useEditorStore.getState().scene.layers[1]!.id },
+      activeLayerId: useEditorStore.getState().scene.layers[1]!.id
+    });
     const firstId = useEditorStore.getState().scene.layers[0]!.id;
     fireEvent.keyDown(window, { key: "[", metaKey: true });
-    expect(useEditorStore.getState().scene.activeLayerId).toBe(firstId);
+    expect(useEditorStore.getState().activeLayerId).toBe(firstId);
   });
 
   it("selects the next layer on ⌘]", () => {
-    useEditorStore.setState({ scene: makeDemoScene() });
+    const demo = makeDemoScene();
+    useEditorStore.setState({ scene: demo, activeLayerId: demo.activeLayerId });
     render(<EditorShell />);
     const secondId = useEditorStore.getState().scene.layers[1]!.id;
     fireEvent.keyDown(window, { key: "]", metaKey: true });
-    expect(useEditorStore.getState().scene.activeLayerId).toBe(secondId);
+    expect(useEditorStore.getState().activeLayerId).toBe(secondId);
   });
 
   it("nudges the selected frame with plain arrow keys", () => {

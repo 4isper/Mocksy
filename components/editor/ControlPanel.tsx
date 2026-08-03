@@ -57,11 +57,13 @@ export function ControlPanel() {
     setWatermarkText,
     setWatermarkPosition,
     setWatermarkSize,
-    setAspectRatio
+    setAspectRatio,
+    activeLayerId
   } = useEditorStore(
     useShallow((s) => ({
       scene: s.scene,
       scenePalette: s.scenePalette,
+      activeLayerId: s.activeLayerId,
       setMedia: s.setMedia,
       setFrame: s.setFrame,
       setFrameInstances: s.setFrameInstances,
@@ -147,7 +149,7 @@ export function ControlPanel() {
     }
   };
 
-  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
 
   return (
     <div className="panel control-panel" style={{ padding: 16, display: "grid", gap: 16 }}>

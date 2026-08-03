@@ -35,7 +35,7 @@ function makeActions() {
 
 afterEach(() => {
   cleanup();
-  useEditorStore.setState({ scene: initialScene, past: [], future: [] });
+  useEditorStore.setState({ scene: initialScene, past: [], future: [], activeLayerId: initialScene.activeLayerId });
 });
 
 describe("useEditorShortcuts", () => {
@@ -163,7 +163,8 @@ describe("useEditorShortcuts", () => {
   });
 
   it("duplicates the active layer on ⌘D", () => {
-    useEditorStore.setState({ scene: makeDemoScene() });
+    const demo = makeDemoScene();
+    useEditorStore.setState({ scene: demo, activeLayerId: demo.activeLayerId });
     const before = useEditorStore.getState().scene.layers.length;
     const actions = makeActions();
     render(<Harness actions={actions} />);

@@ -39,7 +39,7 @@ let api: EditorExportApi;
 let closeDialog: () => void;
 
 function Harness({ scene, scale, size }: { scene: EditorScene; scale: number; size: ExportSize | null }) {
-  const result = useEditorExport(scene, scale, size, closeDialog);
+  const result = useEditorExport(scene, scale, size, closeDialog, scene.activeLayerId);
   useEffect(() => {
     api = result;
   }, [result]);
@@ -68,7 +68,7 @@ describe("useEditorExport", () => {
     await act(async () => {
       api.handleExportPng();
     });
-    expect(mockImage.exportImage).toHaveBeenCalledWith(initialScene, "preview-canvas", "mocksy-export", expect.any(Function), 4, size);
+    expect(mockImage.exportImage).toHaveBeenCalledWith(initialScene, "preview-canvas", "mocksy-export", expect.any(Function), 4, size, initialScene.activeLayerId);
   });
 
   it("copies PNG to clipboard and surfaces the transient copy status", async () => {
@@ -103,7 +103,7 @@ describe("useEditorExport", () => {
     await act(async () => {
       await api.handleExportSvg();
     });
-    expect(mockSvg.exportSvg).toHaveBeenCalledWith(initialScene, "preview-canvas", "mocksy-export", expect.any(Function));
+    expect(mockSvg.exportSvg).toHaveBeenCalledWith(initialScene, "preview-canvas", "mocksy-export", expect.any(Function), initialScene.activeLayerId);
   });
 
   it("exports HTML via the lazy module", async () => {

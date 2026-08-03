@@ -9,11 +9,12 @@ export function createLayerCommands(
     removeLayer: (id: string) => void;
     toggleLayerHidden: (id: string) => void;
     selectLayer: (id: string) => void;
-  }
+  },
+  activeLayerId: string | null = scene.activeLayerId
 ): Command[] {
   const { addLayer, duplicateLayer, removeLayer, toggleLayerHidden, selectLayer } = callbacks;
   const layers = scene.layers;
-  const activeLayerId = scene.activeLayerId ?? layers[0]?.id;
+  const activeLayer = activeLayerId ?? layers[0]?.id;
 
   return [
     {
@@ -43,9 +44,9 @@ export function createLayerCommands(
       shortcut: "⌘D",
       keywords: ["layer", "duplicate", "clone", "copy"],
       action: () => {
-        if (activeLayerId) duplicateLayer(activeLayerId);
+        if (activeLayer) duplicateLayer(activeLayer);
       },
-      disabled: !activeLayerId,
+      disabled: !activeLayer,
     },
     {
       id: "layer-remove",
@@ -53,9 +54,9 @@ export function createLayerCommands(
       description: t("commandPalette.removeLayerDesc"),
       keywords: ["layer", "remove", "delete", "trash"],
       action: () => {
-        if (activeLayerId && layers.length > 1) removeLayer(activeLayerId);
+        if (activeLayer && layers.length > 1) removeLayer(activeLayer);
       },
-      disabled: !activeLayerId || layers.length <= 1,
+      disabled: !activeLayer || layers.length <= 1,
     },
     {
       id: "layer-toggle-hidden",
@@ -63,9 +64,9 @@ export function createLayerCommands(
       description: t("commandPalette.toggleLayerVisibilityDesc"),
       keywords: ["layer", "hide", "show", "visibility", "eye"],
       action: () => {
-        if (activeLayerId) toggleLayerHidden(activeLayerId);
+        if (activeLayer) toggleLayerHidden(activeLayer);
       },
-      disabled: !activeLayerId,
+      disabled: !activeLayer,
     },
     ...layers.map(layer => ({
       id: `layer-select-${layer.id}`,

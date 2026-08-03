@@ -35,7 +35,8 @@ export function VideoOptions() {
     }))
   );
   const videoCurrentTime = useEditorStore((s) => s.videoCurrentTime);
-  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const activeLayerId = useEditorStore((s) => s.activeLayerId);
+  const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
   if (!activeLayer || activeLayer.mediaType !== "video") return null;
 
   async function handleAudioUpload(e: React.ChangeEvent<HTMLInputElement>) {

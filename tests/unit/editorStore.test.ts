@@ -244,6 +244,7 @@ describe("background image + blur", () => {
       future: [],
       scene: { ...initialScene },
       selectedAnnotationId: null,
+      activeLayerId: initialScene.activeLayerId,
       lastHistoryKey: null,
       lastHistoryAt: 0
     });
@@ -274,6 +275,7 @@ describe("background audio", () => {
       future: [],
       scene: { ...initialScene },
       selectedAnnotationId: null,
+      activeLayerId: initialScene.activeLayerId,
       lastHistoryKey: null,
       lastHistoryAt: 0
     });
@@ -302,6 +304,7 @@ describe("annotations", () => {
       future: [],
       scene: { ...initialScene },
       selectedAnnotationId: null,
+      activeLayerId: initialScene.activeLayerId,
       lastHistoryKey: null,
       lastHistoryAt: 0
     });
@@ -388,6 +391,7 @@ describe("layer management", () => {
       scene: { ...initialScene },
       selectedAnnotationId: null,
       activeFrameInstanceId: null,
+      activeLayerId: initialScene.activeLayerId,
       lastHistoryKey: null,
       lastHistoryAt: 0
     });
@@ -401,7 +405,7 @@ describe("layer management", () => {
     const added = store().scene.layers[store().scene.layers.length - 1]!;
     expect(added.mediaUrl).toBe("data:image/png;base64,new");
     expect(added.mediaName).toBe("new.png");
-    expect(store().scene.activeLayerId).toBe(added.id);
+    expect(store().activeLayerId).toBe(added.id);
   });
 
   it("addLayer sets isMediaLoading while media decodes", () => {
@@ -420,7 +424,7 @@ describe("layer management", () => {
     expect(clone.mediaType).toBe(source.mediaType);
     expect(clone.zoom).toBe(source.zoom);
     expect(clone.mediaFit).toBe(source.mediaFit);
-    expect(store().scene.activeLayerId).toBe(clone.id);
+    expect(store().activeLayerId).toBe(clone.id);
   });
 
   it("duplicateLayer returns empty when source not found", () => {
@@ -456,7 +460,7 @@ describe("layer management", () => {
     const layer2 = store().scene.layers[1]!;
     store().removeLayer(layer2.id);
     expect(store().scene.layers.length).toBe(1);
-    expect(store().scene.activeLayerId).toBe(store().scene.layers[0]!.id);
+    expect(store().activeLayerId).toBe(store().scene.layers[0]!.id);
   });
 
   it("removeLayer switches active layer when removing the active one", () => {
@@ -465,7 +469,7 @@ describe("layer management", () => {
     const first = store().scene.layers[0]!.id;
     store().removeLayer(first);
     expect(store().scene.layers.some(l => l.id === first)).toBe(false);
-    expect(store().scene.activeLayerId).toBe(store().scene.layers[0]!.id);
+    expect(store().activeLayerId).toBe(store().scene.layers[0]!.id);
   });
 
   it("removeLayer is a no-op when only 1 layer remains", () => {
@@ -483,9 +487,9 @@ describe("layer management", () => {
     const second = store().scene.layers[1]!.id;
     const pastBefore = store().past.length;
     store().selectLayer(first);
-    expect(store().scene.activeLayerId).toBe(first);
+    expect(store().activeLayerId).toBe(first);
     store().selectLayer(second);
-    expect(store().scene.activeLayerId).toBe(second);
+    expect(store().activeLayerId).toBe(second);
     expect(store().past.length).toBe(pastBefore);
   });
 
@@ -563,6 +567,7 @@ describe("frame control", () => {
       scene: { ...initialScene },
       selectedAnnotationId: null,
       activeFrameInstanceId: null,
+      activeLayerId: initialScene.activeLayerId,
       lastHistoryKey: null,
       lastHistoryAt: 0
     });
@@ -684,7 +689,7 @@ describe("frame control", () => {
     store().layoutFrameGrid("iphone", 3, "horizontal");
     expect(store().scene.frameInstances.length).toBe(3);
     expect(store().scene.layers.length).toBe(layersBefore + 3);
-    expect(store().scene.activeLayerId).toBe(store().scene.frameInstances[0]!.layerId);
+    expect(store().activeLayerId).toBe(store().scene.frameInstances[0]!.layerId);
   });
 
   it("re-applying a layout drops layers orphaned by the previous layout", () => {
@@ -716,7 +721,7 @@ describe("frame control", () => {
     reset();
     store().layoutFrameGrid("iphone", 0, "horizontal");
     expect(store().scene.frameInstances).toHaveLength(0);
-    expect(store().scene.activeLayerId).toBe(store().scene.layers[0]!.id);
+    expect(store().activeLayerId).toBe(store().scene.layers[0]!.id);
   });
 
   it("selectFrameInstance sets activeFrameInstanceId without history", () => {
@@ -734,6 +739,7 @@ describe("scene-wide settings", () => {
       past: [],
       future: [],
       scene: { ...initialScene },
+      activeLayerId: initialScene.activeLayerId,
       lastHistoryKey: null,
       lastHistoryAt: 0
     });
@@ -996,6 +1002,7 @@ describe("media fit + PNG export scale", () => {
       future: [],
       scene: { ...initialScene },
       selectedAnnotationId: null,
+      activeLayerId: initialScene.activeLayerId,
       lastHistoryKey: null,
       lastHistoryAt: 0
     });
@@ -1040,6 +1047,7 @@ describe("grid overlay state", () => {
       scene: { ...initialScene },
       showGrid: false,
       gridDivisions: 12,
+      activeLayerId: initialScene.activeLayerId,
       lastHistoryKey: null,
       lastHistoryAt: 0
     });

@@ -21,7 +21,8 @@ interface PreviewCanvasProps {
 
 export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const t = useTranslations();
-  const sceneCss = useMemo(() => buildSceneCss(scene), [scene]);
+  const activeLayerId = useEditorStore((s) => s.activeLayerId);
+  const sceneCss = useMemo(() => buildSceneCss(scene, activeLayerId), [scene, activeLayerId]);
   const dragDepth = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dropError, setDropError] = useState<string | null>(null);
@@ -43,8 +44,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const setShowGrid = useEditorStore((s) => s.setShowGrid);
   const setGridDivisions = useEditorStore((s) => s.setGridDivisions);
 
-  const { analyzeMedia } = useScenePalette(scene);
-  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const { analyzeMedia } = useScenePalette(scene, activeLayerId);
+  const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
   const frameInstanceCssMap = useMemo(() => {
     const map = new Map<string, ReturnType<typeof buildSceneCss>>();
     for (const inst of scene.frameInstances) {

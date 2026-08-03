@@ -14,8 +14,8 @@ import { downloadBlob } from "@/lib/export/downloadBlob";
  * frame (progress 0.5) so the static image matches what the user sees
  * animating in the live preview, instead of always snapping to the base zoom.
  */
-export function resolveExportTransform(scene: EditorScene): RenderTransform {
-  const active = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+export function resolveExportTransform(scene: EditorScene, activeLayerId: string | null = scene.activeLayerId): RenderTransform {
+  const active = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
   if (!active) return { zoom: 1, offsetX: 0, offsetY: 0 };
   if (active.animationPreset === "none") {
     // The static preview does not translate the frame (only the media inside
@@ -62,7 +62,9 @@ export async function renderSceneToImageBlob(
   /** Absolute output size in pixels. When width/height > 0, overrides `scale`:
    *  the canvas is exactly that size and the frame scales to fit (keeping its
    *  aspect ratio, letterboxed within the canvas). */
-  customSize?: ExportSize | null
+  customSize?: ExportSize | null,
+  /** Live layer selection from the store root; defaults to the scene snapshot. */
+  activeLayerId: string | null = scene.activeLayerId
 ): Promise<Blob | null> {
   try {
     const node = document.getElementById(containerId);
@@ -75,7 +77,7 @@ export async function renderSceneToImageBlob(
     const img = node.querySelector("img");
     const frameElement = node.querySelector<HTMLElement>("[data-mockup-frame]");
     const isMultiFrame = scene.frameInstances.length > 0;
-    const active = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+    const active = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
     let media: CanvasImageSource | null = null;
 
     // A hidden active layer renders nothing, matching the preview.
@@ -148,7 +150,7 @@ export async function renderSceneToImageBlob(
       }
     }
 
-    const transform = resolveExportTransform(scene);
+    const transform = resolveExportTransform(scene, activeLayerId);
 
     // For multi-frame mode, load media for each frame's layer
     let layerMedias: Map<string, CanvasImageSource | null> | undefined;
@@ -202,7 +204,8 @@ export async function renderSceneToImageBlob(
       overlay,
       backgroundImage,
       layerMedias,
-      frameOverlays
+      frameOverlays,
+      activeLayerId
     );
 
     const imageBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), mimeType));
@@ -223,9 +226,10 @@ export async function renderSceneToPngBlob(
   containerId: string,
   onError?: (message: string) => void,
   scale?: number,
-  customSize?: ExportSize | null
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
 ): Promise<Blob | null> {
-  return renderSceneToImageBlob(scene, containerId, "image/png", onError, scale, customSize);
+  return renderSceneToImageBlob(scene, containerId, "image/png", onError, scale, customSize, activeLayerId);
 }
 
 export async function exportImage(
@@ -236,9 +240,10 @@ export async function exportImage(
   /** Export pixel ratio (1×/2×/4×), read from the editor's PNG scale control. */
   scale?: number,
   /** Absolute output size in pixels; overrides `scale` when set. */
-  customSize?: ExportSize | null
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
 ) {
-  const blob = await renderSceneToPngBlob(scene, containerId, onError, scale, customSize);
+  const blob = await renderSceneToPngBlob(scene, containerId, onError, scale, customSize, activeLayerId);
   if (blob) downloadBlob(blob, `${filename}.png`);
 }
 
@@ -255,9 +260,10 @@ export async function exportWebp(
   /** Export pixel ratio (1×/2×/4×), read from the editor's scale control. */
   scale?: number,
   /** Absolute output size in pixels; overrides `scale` when set. */
-  customSize?: ExportSize | null
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
 ) {
-  const blob = await renderSceneToImageBlob(scene, containerId, "image/webp", onError, scale, customSize);
+  const blob = await renderSceneToImageBlob(scene, containerId, "image/webp", onError, scale, customSize, activeLayerId);
   if (blob) downloadBlob(blob, `${filename}.webp`);
 }
 
@@ -275,14 +281,15 @@ export async function copyPngToClipboard(
   /** Export pixel ratio (1×/2×/4×), read from the editor's PNG scale control. */
   scale?: number,
   /** Absolute output size in pixels; overrides `scale` when set. */
-  customSize?: ExportSize | null
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
 ) {
   try {
     if (typeof navigator === "undefined" || !navigator.clipboard || typeof ClipboardItem === "undefined") {
       onError?.("Clipboard isn't available here (open over https or localhost).");
       return;
     }
-    const blob = await renderSceneToPngBlob(scene, containerId, onError, scale, customSize);
+    const blob = await renderSceneToPngBlob(scene, containerId, onError, scale, customSize, activeLayerId);
     if (!blob) return;
     await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
     onStatus?.("Copied PNG to clipboard");

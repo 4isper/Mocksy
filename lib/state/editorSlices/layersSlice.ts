@@ -42,7 +42,7 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
   return {
     setMedia: (mediaUrl, mediaType, mediaName = null) =>
       set((s) => {
-        const layer = activeLayer(s.scene);
+        const layer = activeLayer(s.scene, s.activeLayerId);
         const nextLayers = layer
           ? s.scene.layers.map((l) =>
               l.id === layer.id
@@ -60,7 +60,8 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
           : [{ ...makeDemoLayer(), mediaUrl, mediaType, mediaName }];
         const activeLayerId = layer?.id ?? nextLayers[0]?.id ?? null;
         return {
-          ...pushHistory(s, { ...s.scene, layers: nextLayers, activeLayerId }),
+          ...pushHistory(s, { ...s.scene, layers: nextLayers }),
+          activeLayerId,
           videoCurrentTime: 0,
           // A real upload decodes asynchronously; clear media stops loading.
           isMediaLoading: mediaUrl != null
@@ -78,7 +79,8 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         };
         const layers = [...s.scene.layers, newLayer];
         return {
-          ...pushHistory(s, { ...s.scene, layers, activeLayerId: newLayer.id }),
+          ...pushHistory(s, { ...s.scene, layers }),
+          activeLayerId: newLayer.id,
           videoCurrentTime: 0,
           isMediaLoading: mediaUrl != null
         };
@@ -92,7 +94,8 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         const clone: MediaLayer = { ...source, id: nextLayerId() };
         const layers = [...s.scene.layers, clone];
         return {
-          ...pushHistory(s, { ...s.scene, layers, activeLayerId: clone.id }),
+          ...pushHistory(s, { ...s.scene, layers }),
+          activeLayerId: clone.id,
           videoCurrentTime: 0,
           isMediaLoading: false
         };
@@ -106,16 +109,16 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
       set((s) => {
         if (s.scene.layers.length <= 1) return {};
         const layers = s.scene.layers.filter((l) => l.id !== id);
-        const activeLayerId = s.scene.activeLayerId === id ? layers[0]?.id ?? null : s.scene.activeLayerId;
-        return pushHistory(s, { ...s.scene, layers, activeLayerId });
+        const activeLayerId = s.activeLayerId === id ? layers[0]?.id ?? null : s.activeLayerId;
+        return { ...pushHistory(s, { ...s.scene, layers }), activeLayerId };
       }),
     selectLayer: (id) =>
       set((s) => {
-        // Re-selecting the active layer must not mint a fresh scene object —
-        // that would re-render every `scene` subscriber (and rebuild the whole
-        // preview CSS) for no state change.
-        if (s.scene.activeLayerId === id) return {};
-        return { scene: { ...s.scene, activeLayerId: id } };
+        // Selecting lives in store-root state, never touching `scene` — a new
+        // scene object would re-render every `scene` subscriber (and rebuild the
+        // whole preview CSS) for a pure selection change.
+        if (s.activeLayerId === id) return {};
+        return { activeLayerId: id };
       }),
     reorderLayers: (orderedIds, coalesce) =>
       set((s) => {
@@ -129,27 +132,27 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
       }),
     updateActiveLayer: (patch) =>
       set((s) => {
-        const layer = activeLayer(s.scene);
+        const layer = activeLayer(s.scene, s.activeLayerId);
         if (!layer) return {};
         const layers = s.scene.layers.map((l) => (l.id === layer.id ? { ...l, ...patch } : l));
         return pushHistory(s, { ...s.scene, layers }, Object.keys(patch).join(","));
       }),
     setStylePreset: (stylePreset) => set((s) => pushHistory(s, { ...s.scene, stylePreset })),
-    setAnimationPreset: (animationPreset) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationPreset }) }, "animation")),
+    setAnimationPreset: (animationPreset) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationPreset }, s.activeLayerId) }, "animation")),
     setAnimationDuration: (animationDurationMs) => set((s) => pushHistory(s, { ...s.scene, animationDurationMs: Math.max(500, Math.min(20000, Math.round(animationDurationMs))) }, "animationDuration")),
-    setZoom: (zoom) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { zoom }) }, "zoom")),
-    setMediaOffsetX: (mediaOffsetX) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetX }) }, "mediaOffset")),
-    setMediaOffsetY: (mediaOffsetY) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetY }) }, "mediaOffset")),
-    setMediaFit: (mediaFit) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaFit }) }, "mediaFit")),
+    setZoom: (zoom) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { zoom }, s.activeLayerId) }, "zoom")),
+    setMediaOffsetX: (mediaOffsetX) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetX }, s.activeLayerId) }, "mediaOffset")),
+    setMediaOffsetY: (mediaOffsetY) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetY }, s.activeLayerId) }, "mediaOffset")),
+    setMediaFit: (mediaFit) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaFit }, s.activeLayerId) }, "mediaFit")),
     setShadowOpacity: (shadowOpacity) => set((s) => pushHistory(s, { ...s.scene, shadowOpacity }, "shadow")),
     setBorderRadius: (borderRadius) => set((s) => pushHistory(s, { ...s.scene, borderRadius }, "radius")),
-    setVideoMuted: (videoMuted) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoMuted }) })),
-    setVideoLoop: (videoLoop) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoLoop }) })),
-    setVideoAutoplay: (videoAutoplay) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoAutoplay }) })),
-    setVideoPosterTime: (videoPosterTime) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoPosterTime }) }, "poster")),
+    setVideoMuted: (videoMuted) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoMuted }, s.activeLayerId) })),
+    setVideoLoop: (videoLoop) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoLoop }, s.activeLayerId) })),
+    setVideoAutoplay: (videoAutoplay) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoAutoplay }, s.activeLayerId) })),
+    setVideoPosterTime: (videoPosterTime) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoPosterTime }, s.activeLayerId) }, "poster")),
     setVideoDuration: (videoDuration, layerId) =>
       set((s) => {
-        const targetId = layerId ?? s.scene.activeLayerId ?? s.scene.layers[0]?.id;
+        const targetId = layerId ?? s.activeLayerId ?? s.scene.layers[0]?.id;
         return pushHistory(s, {
           ...s.scene,
           layers: s.scene.layers.map((l) =>
@@ -168,8 +171,8 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         pushHistory(s, {
           ...s.scene,
           layers: patchActive(s.scene, {
-            videoTrimStart: Math.min(videoTrimStart, activeLayer(s.scene)?.videoTrimEnd ?? videoTrimStart)
-          })
+            videoTrimStart: Math.min(videoTrimStart, activeLayer(s.scene, s.activeLayerId)?.videoTrimEnd ?? videoTrimStart)
+          }, s.activeLayerId)
         }, "trimStart")
       ),
     setVideoTrimEnd: (videoTrimEnd) =>
@@ -179,10 +182,10 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
           layers: patchActive(s.scene, {
             // A zero (or negative) end means "not trimmed" — clamp to the full
             // duration so 0 never lingers in state as a confusing sentinel.
-            videoTrimEnd: videoTrimEnd <= 0 ? (activeLayer(s.scene)?.videoDuration ?? 0) : Math.max(videoTrimEnd, activeLayer(s.scene)?.videoTrimStart ?? 0)
-          })
+            videoTrimEnd: videoTrimEnd <= 0 ? (activeLayer(s.scene, s.activeLayerId)?.videoDuration ?? 0) : Math.max(videoTrimEnd, activeLayer(s.scene, s.activeLayerId)?.videoTrimStart ?? 0)
+          }, s.activeLayerId)
         }, "trimEnd")
       ),
-    setVideoQuality: (videoQuality) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoQuality }) }))
+    setVideoQuality: (videoQuality) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoQuality }, s.activeLayerId) }))
   };
 }

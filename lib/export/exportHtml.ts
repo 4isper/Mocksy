@@ -107,11 +107,11 @@ export interface HtmlSnippetOptions {
  * background embedded as data URLs, device skins inlined, and the animation
  * preset replayed with CSS keyframes. Pure and DOM-free for testability.
  */
-export function buildHtmlSnippet(scene: EditorScene, opts: HtmlSnippetOptions): string {
-  const css = buildSceneCss(scene);
+export function buildHtmlSnippet(scene: EditorScene, opts: HtmlSnippetOptions, activeLayerId: string | null = scene.activeLayerId): string {
+  const css = buildSceneCss(scene, activeLayerId);
   const [arW, arH] = scene.aspectRatio.split("/").map((n) => Number(n.trim()));
   const ar = `${arW ?? 16}/${arH ?? 9}`;
-  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
 
   const containerCss = serializeCssProperties(css.container);
   let frameCss = serializeCssProperties(css.frame);
@@ -278,18 +278,19 @@ export async function exportHtml(
   scene: EditorScene,
   containerId: string,
   filename = "mocksy-export",
-  onError?: (message: string) => void
+  onError?: (message: string) => void,
+  activeLayerId: string | null = scene.activeLayerId
 ) {
   try {
     if (scene.frameInstances.length > 0) {
-      const blob = await renderSceneToImageBlob(scene, containerId, "image/png", onError, 2);
+      const blob = await renderSceneToImageBlob(scene, containerId, "image/png", onError, 2, undefined, activeLayerId);
       if (!blob) return;
       const href = await blobToDataUrl(blob);
       downloadBlob(new Blob([buildRasterHtmlSnippet(href)], { type: "text/html;charset=utf-8" }), `${filename}.html`);
       return;
     }
 
-    const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+    const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
     let mediaHref: string | null = null;
     let mediaType: "image" | "video" | null = null;
     if (activeLayer && !activeLayer.hidden && activeLayer.mediaUrl) {
@@ -304,7 +305,7 @@ export async function exportHtml(
     const overlayHref = spec.isOverlay && spec.asset ? await svgAssetToDataUrl(spec.asset) : null;
 
     const fontCss = await buildEmbeddedFontCss(collectFontStacks(scene));
-    const html = buildHtmlSnippet(scene, { mediaHref, mediaType, backgroundHref, overlayHref, fontCss });
+    const html = buildHtmlSnippet(scene, { mediaHref, mediaType, backgroundHref, overlayHref, fontCss }, activeLayerId);
     downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), `${filename}.html`);
   } catch (err) {
     onError?.(err instanceof Error ? err.message : "HTML export failed.");

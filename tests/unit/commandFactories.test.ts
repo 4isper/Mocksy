@@ -377,7 +377,7 @@ describe("createCommands", () => {
     const scene = makeScene(2);
     const a = makeOrchestratorArgs(scene);
     const cmds = createCommands(
-      t as never, scene,
+      t as never, scene, scene.activeLayerId,
       a.undo, a.redo, 1, 0, a.resetScene,
       a.setFrame, a.setStylePreset, a.setAnimationPreset,
       a.setBackgroundSolid, a.setBackgroundGradient, a.setBackgroundTransparent, a.setBackgroundImage,

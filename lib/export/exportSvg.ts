@@ -306,7 +306,8 @@ export async function exportSvg(
   scene: EditorScene,
   containerId: string,
   filename = "mocksy-export",
-  onError?: (message: string) => void
+  onError?: (message: string) => void,
+  activeLayerId: string | null = scene.activeLayerId
 ) {
   try {
     const node = document.getElementById(containerId);
@@ -330,12 +331,12 @@ export async function exportSvg(
     }
 
     const isMultiFrame = scene.frameInstances.length > 0;
-    const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
-    const transform = resolveExportTransform(scene);
+    const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
+    const transform = resolveExportTransform(scene, activeLayerId);
     const groups: SvgFrameGroup[] = [];
 
     if (isMultiFrame) {
-      const boxes = computeFrameInstances(scene, width, height, 1, transform);
+      const boxes = computeFrameInstances(scene, width, height, 1, transform, activeLayerId);
       for (let i = 0; i < boxes.length; i++) {
         const box = boxes[i];
         const inst = scene.frameInstances[i];
@@ -390,7 +391,7 @@ export async function exportSvg(
           };
         }
       }
-      const box = computeFrameBox(scene, width, height, 1, frameElement?.offsetWidth, frameElement?.offsetHeight, transform);
+      const box = computeFrameBox(scene, width, height, 1, frameElement?.offsetWidth, frameElement?.offsetHeight, transform, undefined, undefined, activeLayerId);
       const overlayInner = spec.isOverlay && spec.asset ? await inlineSvgAsset(spec.asset) : null;
       groups.push({
         box,

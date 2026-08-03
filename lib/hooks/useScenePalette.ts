@@ -6,7 +6,7 @@ import { extractPalette, mergeWeightedPalettes, paletteColorsFlat } from "@/lib/
 import type { PaletteResult } from "@/lib/media/palette";
 import { useEditorStore } from "@/lib/state/editorStore";
 
-export function useScenePalette(scene: EditorScene) {
+export function useScenePalette(scene: EditorScene, activeLayerId: string | null = scene.activeLayerId) {
   const setScenePalette = useEditorStore((s) => s.setScenePalette);
 
   // Cache palette results per media URL so we don't re-analyse the same media
@@ -20,7 +20,7 @@ export function useScenePalette(scene: EditorScene) {
     const isMultiFrame = scene.frameInstances.length > 0;
     if (!isMultiFrame) {
       // Single-frame mode: use the active layer's media palette.
-      const active = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+      const active = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
       const cached = active?.mediaUrl ? paletteCacheRef.current.get(active.mediaUrl) : null;
       setScenePalette(cached ? paletteColorsFlat(cached) : null);
       return;
@@ -41,7 +41,7 @@ export function useScenePalette(scene: EditorScene) {
     }
     const merged = mergeWeightedPalettes(inputs);
     setScenePalette(merged.colors.length > 0 ? paletteColorsFlat(merged) : null);
-  }, [scene, setScenePalette]);
+  }, [scene, activeLayerId, setScenePalette]);
 
   // Extract palette from a loaded media element, cache by its src URL, then
   // recompute the merged palette for the current scene mode.
@@ -68,7 +68,7 @@ export function useScenePalette(scene: EditorScene) {
     if (!el) {
       // If no element is rendered but the active layer has a cached palette,
       // use that rather than clearing — makes layer switches instant.
-      const active = scene.layers.find((l) => l.id === scene.activeLayerId);
+      const active = scene.layers.find((l) => l.id === activeLayerId);
       if (active?.mediaUrl && paletteCacheRef.current.has(active.mediaUrl)) {
         computeMergedPalette();
         return;
@@ -80,7 +80,7 @@ export function useScenePalette(scene: EditorScene) {
     if (ready) analyzeMedia(el);
     else computeMergedPalette();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scene.activeLayerId]);
+  }, [activeLayerId]);
 
   // Recompute the merged palette whenever visible frame instances or layer
   // media/hidden state changes (e.g. adding/removing a frame instance,

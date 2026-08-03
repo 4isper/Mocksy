@@ -137,7 +137,7 @@ export function useEditorShortcuts(actions: EditorShortcutActions): void {
       if (modifier && !typing && event.key.toLowerCase() === "d") {
         event.preventDefault();
         const st = useEditorStore.getState();
-        const id = st.scene.activeLayerId ?? st.scene.layers[0]?.id;
+        const id = st.activeLayerId ?? st.scene.layers[0]?.id;
         if (id) st.duplicateLayer(id);
         return;
       }
@@ -145,7 +145,7 @@ export function useEditorShortcuts(actions: EditorShortcutActions): void {
         event.preventDefault();
         const st = useEditorStore.getState();
         const ids = st.scene.layers.map((l) => l.id);
-        const idx = ids.indexOf(st.scene.activeLayerId ?? st.scene.layers[0]?.id ?? "");
+        const idx = ids.indexOf(st.activeLayerId ?? st.scene.layers[0]?.id ?? "");
         const dir = event.key === "ArrowUp" ? -1 : 1;
         const next = idx + dir;
         if (idx < 0 || next < 0 || next >= ids.length) return;
@@ -161,7 +161,7 @@ export function useEditorShortcuts(actions: EditorShortcutActions): void {
         event.preventDefault();
         const st = useEditorStore.getState();
         const ids = st.scene.layers.map((l) => l.id);
-        const idx = ids.indexOf(st.scene.activeLayerId ?? st.scene.layers[0]?.id ?? "");
+        const idx = ids.indexOf(st.activeLayerId ?? st.scene.layers[0]?.id ?? "");
         if (idx < 0) return;
         const dir = event.key === "[" ? -1 : 1;
         const nextIdx = Math.max(0, Math.min(ids.length - 1, idx + dir));

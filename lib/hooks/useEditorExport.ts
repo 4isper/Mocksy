@@ -40,7 +40,8 @@ export function useEditorExport(
   scene: EditorScene,
   exportScale: number,
   customExportSize: ExportSize | null,
-  onExportDialogClose: () => void
+  onExportDialogClose: () => void,
+  activeLayerId: string | null
 ): EditorExportApi {
   const t = useTranslations();
   const [videoExportStatus, setVideoExportStatus] = useState<string | null>(null);
@@ -62,7 +63,7 @@ export function useEditorExport(
 
   const copyShareUrl = useCallback(async () => {
     try {
-      const url = sceneToShareUrl(scene);
+      const url = sceneToShareUrl({ ...scene, activeLayerId });
       await navigator.clipboard.writeText(url);
     } catch (err) {
       if (err instanceof ShareUrlTooLarge) {
@@ -71,42 +72,42 @@ export function useEditorExport(
         setExportError(err instanceof Error ? err.message : t("export.shareLinkFailed"));
       }
     }
-  }, [scene, t]);
+  }, [scene, activeLayerId, t]);
 
   const handleExportPng = useCallback(() => {
     setExportError(null);
-    exportImage(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize);
-  }, [scene, exportScale, customExportSize]);
+    exportImage(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId);
+  }, [scene, exportScale, customExportSize, activeLayerId]);
 
   const handleCopyPng = useCallback(async () => {
     setExportError(null);
-    await copyPngToClipboard(scene, "preview-canvas", setExportError, setCopyStatus, exportScale, customExportSize);
-  }, [scene, exportScale, customExportSize]);
+    await copyPngToClipboard(scene, "preview-canvas", setExportError, setCopyStatus, exportScale, customExportSize, activeLayerId);
+  }, [scene, exportScale, customExportSize, activeLayerId]);
 
   const handleExportWebp = useCallback(() => {
     setExportError(null);
-    exportWebp(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize);
-  }, [scene, exportScale, customExportSize]);
+    exportWebp(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId);
+  }, [scene, exportScale, customExportSize, activeLayerId]);
 
   const handleExportSvg = useCallback(async () => {
     setExportError(null);
     try {
       const { exportSvg } = await import("@/lib/export/exportSvg");
-      await exportSvg(scene, "preview-canvas", "mocksy-export", setExportError);
+      await exportSvg(scene, "preview-canvas", "mocksy-export", setExportError, activeLayerId);
     } catch (err) {
       setExportError(err instanceof Error ? err.message : t("export.svgFailed"));
     }
-  }, [scene, t]);
+  }, [scene, t, activeLayerId]);
 
   const handleExportHtml = useCallback(async () => {
     setExportError(null);
     try {
       const { exportHtml } = await import("@/lib/export/exportHtml");
-      await exportHtml(scene, "preview-canvas", "mocksy-export", setExportError);
+      await exportHtml(scene, "preview-canvas", "mocksy-export", setExportError, activeLayerId);
     } catch (err) {
       setExportError(err instanceof Error ? err.message : t("export.htmlFailed"));
     }
-  }, [scene, t]);
+  }, [scene, t, activeLayerId]);
 
   const handleExportMp4 = useCallback(async () => {
     setExportError(null);
@@ -114,11 +115,11 @@ export function useEditorExport(
       setVideoExportStatus(t("export.exportingVideo"));
       setVideoExportProgress(0);
       const { exportVideo } = await import("@/lib/export/exportVideo");
-      await exportVideo(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError, customExportSize);
+      await exportVideo(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError, customExportSize, activeLayerId);
     } finally {
       setTimeout(clearVideoStatus, STATUS_CLEAR_DELAY);
     }
-  }, [scene, exportScale, customExportSize, t, clearVideoStatus]);
+  }, [scene, exportScale, customExportSize, t, clearVideoStatus, activeLayerId]);
 
   const handleExportWebm = useCallback(async () => {
     setExportError(null);
@@ -126,11 +127,11 @@ export function useEditorExport(
       setVideoExportStatus(t("export.exportingWebm"));
       setVideoExportProgress(0);
       const { exportWebm } = await import("@/lib/export/exportVideo");
-      await exportWebm(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError, customExportSize);
+      await exportWebm(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError, customExportSize, activeLayerId);
     } finally {
       setTimeout(clearVideoStatus, STATUS_CLEAR_DELAY);
     }
-  }, [scene, exportScale, customExportSize, t, clearVideoStatus]);
+  }, [scene, exportScale, customExportSize, t, clearVideoStatus, activeLayerId]);
 
   const handleExportWebpAnim = useCallback(async () => {
     setExportError(null);
@@ -138,11 +139,11 @@ export function useEditorExport(
       setVideoExportStatus(t("export.exportingWebpAnim"));
       setVideoExportProgress(0);
       const { exportWebpAnim } = await import("@/lib/export/exportVideo");
-      await exportWebpAnim(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError, customExportSize);
+      await exportWebpAnim(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError, customExportSize, activeLayerId);
     } finally {
       setTimeout(clearVideoStatus, STATUS_CLEAR_DELAY);
     }
-  }, [scene, exportScale, customExportSize, t, clearVideoStatus]);
+  }, [scene, exportScale, customExportSize, t, clearVideoStatus, activeLayerId]);
 
   const handleExportGif = useCallback(async () => {
     setExportError(null);
@@ -150,11 +151,11 @@ export function useEditorExport(
       setGifExportStatus(t("export.exportingGif"));
       setGifExportProgress(0);
       const { exportGif } = await import("@/lib/export/exportVideo");
-      await exportGif(scene, exportScale, setGifExportStatus, setGifExportProgress, setExportError, customExportSize);
+      await exportGif(scene, exportScale, setGifExportStatus, setGifExportProgress, setExportError, customExportSize, activeLayerId);
     } finally {
       setTimeout(clearGifStatus, STATUS_CLEAR_DELAY);
     }
-  }, [scene, exportScale, customExportSize, t, clearGifStatus]);
+  }, [scene, exportScale, customExportSize, t, clearGifStatus, activeLayerId]);
 
   const handleExport = useCallback(
     (format: ExportFormat) => {

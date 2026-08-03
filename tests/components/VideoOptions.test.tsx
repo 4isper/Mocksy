@@ -36,7 +36,8 @@ function setVideoLayer() {
         hidden: false,
         mediaName: "test.mp4",
       }],
-    }
+    },
+    activeLayerId: "v1"
   });
 }
 
@@ -65,7 +66,8 @@ function setImageLayer() {
         hidden: false,
         mediaName: "test.jpg",
       }],
-    }
+    },
+    activeLayerId: "i1"
   });
 }
 
