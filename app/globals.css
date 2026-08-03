@@ -579,6 +579,96 @@ select {
   outline-offset: 2px;
 }
 
+/* ---- Visual frame picker ---- */
+.frame-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.frame-picker-cell {
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px 6px;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: var(--hover);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+
+.frame-picker-cell:hover {
+  border-color: var(--panel-border-strong);
+  transform: translateY(-1px);
+}
+
+.frame-picker-cell:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.frame-picker-cell.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.frame-picker-device {
+  position: relative;
+  flex-shrink: 0;
+  border: 1.5px solid var(--text-dim);
+}
+
+.frame-picker-device.is-none {
+  border-style: dashed;
+}
+
+.frame-picker-cell.is-active .frame-picker-device {
+  border-color: var(--accent);
+}
+
+.frame-picker-notch {
+  position: absolute;
+  top: 14%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30%;
+  height: 15%;
+  border-radius: 3px;
+  background: var(--text-dim);
+  opacity: 0.75;
+}
+
+.frame-picker-cell.is-active .frame-picker-notch {
+  background: var(--accent);
+}
+
+.frame-picker-img {
+  height: 32px;
+  width: auto;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+.frame-picker-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.frame-picker-cell.is-active .frame-picker-label {
+  color: var(--text);
+  font-weight: 600;
+}
+
 /* ---- Custom export size (Export dialog) ---- */
 .custom-size {
   display: flex;

@@ -5,8 +5,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/lib/state/editorStore";
-import type { AnimationPreset, MockupFrame, StylePreset } from "@/lib/types/editor";
-import { FRAME_ORDER, ANIMATION_PRESETS, ASPECT_RATIOS } from "@/lib/render/frames";
+import type { AnimationPreset, StylePreset } from "@/lib/types/editor";
+import { ANIMATION_PRESETS, ASPECT_RATIOS } from "@/lib/render/frames";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { VideoOptions } from "@/components/editor/VideoOptions";
@@ -15,8 +15,8 @@ import { FrameInstanceList } from "@/components/editor/FrameInstanceList";
 import { BackgroundControls } from "@/components/editor/BackgroundControls";
 import { WatermarkControls } from "@/components/editor/WatermarkControls";
 import { Section } from "@/components/editor/Section";
+import { FramePicker } from "@/components/editor/FramePicker";
 
-const frames: MockupFrame[] = FRAME_ORDER;
 const styles: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
 const animations = ANIMATION_PRESETS;
 const aspectRatios = ASPECT_RATIOS;
@@ -99,23 +99,6 @@ export function ControlPanel() {
     }))
   );
 
-  const frameLabels: Record<MockupFrame, string> = {
-    none: t("frame.none"),
-    iphone: t("frame.iphone"),
-    iphone15: t("frame.iphone15"),
-    iphone16pro: t("frame.iphone16pro"),
-    pixel8pro: t("frame.pixel8pro"),
-    galaxy24: t("frame.galaxy24"),
-    iphoneSE: t("frame.iphoneSE"),
-    ipad: t("frame.ipad"),
-    galaxyTab: t("frame.galaxyTab"),
-    desktop: t("frame.desktop"),
-    tablet: t("frame.tablet"),
-    macbook: t("frame.macbook"),
-    imac: t("frame.imac"),
-    notebook: t("frame.notebook"),
-    watch: t("frame.watch")
-  };
   const styleLabels: Record<StylePreset, string> = {
     default: t("style.default"),
     glassLight: t("style.glassLight"),
@@ -203,12 +186,7 @@ export function ControlPanel() {
 
       <Section id="frame" title={t("editor.frame")} icon={sectionIcons.frame}>
         <div className="field-group">
-          <Segmented
-            label={t("editor.frame")}
-            value={scene.frame}
-            options={frames.map((f) => ({ value: f, label: frameLabels[f] }))}
-            onChange={setFrame}
-          />
+          <FramePicker value={scene.frame} onChange={setFrame} />
           <div className="field" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.frameGrid")}</span>
             <div style={{ display: "flex", gap: 4, alignItems: "center", width: "100%" }}>
