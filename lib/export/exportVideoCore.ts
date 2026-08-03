@@ -119,12 +119,18 @@ export function computeCaptureDuration(scene: EditorScene, activeLayerId: string
   return Math.max(0.2, end - start);
 }
 
-/** Picks the best WebM codec the browser can record. */
+/**
+ * Picks a WebM codec the browser can record. VP8 is preferred over VP9: the
+ * WebM blob is an intermediate (MP4/GIF are re-encoded by FFmpeg anyway), and
+ * VP8's software encoder is several times faster than VP9's — important on
+ * GPU-less machines and CI runners, where a VP9 capture of motion-heavy video
+ * scenes can stall for minutes.
+ */
 export function chooseWebmMimeType(): string {
-  if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
-    return "video/webm;codecs=vp9";
+  if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported("video/webm;codecs=vp8")) {
+    return "video/webm;codecs=vp8";
   }
-  return "video/webm;codecs=vp8";
+  return "video/webm;codecs=vp9";
 }
 
 /**

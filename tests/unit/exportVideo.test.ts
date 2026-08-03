@@ -128,20 +128,20 @@ describe("exportVideo pure helpers", () => {
     expect(computeCaptureDuration(scene)).toBe(3);
   });
 
-  it("chooseWebmMimeType prefers vp9 when supported", () => {
+  it("chooseWebmMimeType prefers vp8 when supported", () => {
     Object.defineProperty(globalThis, "MediaRecorder", {
       configurable: true,
-      value: { isTypeSupported: (t: string) => t.includes("vp9") }
+      value: { isTypeSupported: (t: string) => t.includes("vp8") }
     });
-    expect(chooseWebmMimeType()).toBe("video/webm;codecs=vp9");
+    expect(chooseWebmMimeType()).toBe("video/webm;codecs=vp8");
   });
 
-  it("chooseWebmMimeType falls back to vp8", () => {
+  it("chooseWebmMimeType falls back to vp9", () => {
     Object.defineProperty(globalThis, "MediaRecorder", {
       configurable: true,
       value: { isTypeSupported: () => false }
     });
-    expect(chooseWebmMimeType()).toBe("video/webm;codecs=vp8");
+    expect(chooseWebmMimeType()).toBe("video/webm;codecs=vp9");
   });
 
   it("exportBaseName strips the media extension and sanitizes", () => {
