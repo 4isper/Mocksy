@@ -32,6 +32,7 @@ export function useCommands(
   const setAnimationPreset = useEditorStore(s => s.setAnimationPreset);
   const setBackgroundSolid = useEditorStore(s => s.setBackgroundSolid);
   const setBackgroundGradient = useEditorStore(s => s.setBackgroundGradient);
+  const setBackgroundPattern = useEditorStore(s => s.setBackgroundPattern);
   const setBackgroundTransparent = useEditorStore(s => s.setBackgroundTransparent);
   const setBackgroundImage = useEditorStore(s => s.setBackgroundImage);
   const setAspectRatio = useEditorStore(s => s.setAspectRatio);
@@ -57,7 +58,7 @@ export function useCommands(
   return useMemo(() => createCommands(
     t, scene, activeLayerId, undo, redo, pastLength, futureLength, resetScene,
     setFrame, setStylePreset, setAnimationPreset,
-    setBackgroundSolid, setBackgroundGradient, setBackgroundTransparent, setBackgroundImage,
+    setBackgroundSolid, setBackgroundGradient, setBackgroundPattern, setBackgroundTransparent, setBackgroundImage,
     setAspectRatio, addLayer, duplicateLayer, removeLayer, toggleLayerHidden,
     selectLayer, reorderLayers, addAnnotation, clearAnnotations,
     toggleWatermark, setExportScale, exportScale,
@@ -71,7 +72,7 @@ export function useCommands(
     onCopyPng, onCopyShareUrl, onSave,
     undo, redo, resetScene,
     setFrame, setStylePreset, setAnimationPreset,
-    setBackgroundSolid, setBackgroundGradient, setBackgroundTransparent, setBackgroundImage,
+    setBackgroundSolid, setBackgroundGradient, setBackgroundPattern, setBackgroundTransparent, setBackgroundImage,
     setAspectRatio, addLayer, duplicateLayer, removeLayer, toggleLayerHidden,
     selectLayer, reorderLayers, addAnnotation, clearAnnotations,
     toggleWatermark, setExportScale, switchProject, setThemeMode

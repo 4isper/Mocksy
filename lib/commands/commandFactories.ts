@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import type { Command, EditorScene, MediaType, MockupFrame, Project, StylePreset, AnimationPreset, AnnotationType } from "@/lib/types/editor";
+import type { Command, EditorScene, MediaType, MockupFrame, PatternId, Project, StylePreset, AnimationPreset, AnnotationType } from "@/lib/types/editor";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { createFileCommands } from "./fileCommands";
 import { createEditCommands } from "./editCommands";
@@ -41,6 +41,7 @@ export function createCommands(
   setAnimationPreset: (preset: AnimationPreset) => void,
   setBackgroundSolid: (color: string) => void,
   setBackgroundGradient: (from: string, to: string) => void,
+  setBackgroundPattern: (patternId: PatternId) => void,
   setBackgroundTransparent: () => void,
   setBackgroundImage: (url: string) => void,
   setAspectRatio: (ratio: string) => void,
@@ -77,7 +78,7 @@ export function createCommands(
     ...createEditCommands(t, { undo, redo, pastLength, futureLength, resetScene }),
     ...createFrameCommands(t, { setFrame }),
     ...createStyleCommands(t),
-    ...createBackgroundCommands(t, { setBackgroundSolid, setBackgroundGradient, setBackgroundTransparent }),
+    ...createBackgroundCommands(t, { setBackgroundSolid, setBackgroundGradient, setBackgroundPattern, setBackgroundTransparent }),
     ...createAspectRatioCommands(t, { setAspectRatio }),
     ...createLayerCommands(t, scene, { addLayer, duplicateLayer, removeLayer, toggleLayerHidden, selectLayer }, activeLayerId),
     ...createAnnotationCommands(t, scene, { addAnnotation, clearAnnotations }),

@@ -66,6 +66,7 @@ function makeOrchestratorArgs(scene: EditorScene) {
     setAnimationPreset: vi.fn(),
     setBackgroundSolid: vi.fn(),
     setBackgroundGradient: vi.fn(),
+    setBackgroundPattern: vi.fn(),
     setBackgroundTransparent: vi.fn(),
     setBackgroundImage: vi.fn(),
     setAspectRatio: vi.fn(),
@@ -197,19 +198,22 @@ describe("createBackgroundCommands", () => {
   it("routes background presets to the right setter", () => {
     const setBackgroundSolid = vi.fn();
     const setBackgroundGradient = vi.fn();
+    const setBackgroundPattern = vi.fn();
     const setBackgroundTransparent = vi.fn();
-    const cmds = createBackgroundCommands(t, { setBackgroundSolid, setBackgroundGradient, setBackgroundTransparent });
+    const cmds = createBackgroundCommands(t, { setBackgroundSolid, setBackgroundGradient, setBackgroundPattern, setBackgroundTransparent });
     expect(cmds).toHaveLength(backgroundPresets.length);
     for (const preset of backgroundPresets) {
-      const cmd = cmds.find((c) => c.id === `bg-${preset.id}`)!;
-      cmd.action();
+      cmds.find((c) => c.id === `bg-${preset.id}`)!.action();
     }
     for (const preset of backgroundPresets) {
       if (preset.kind === "transparent") expect(setBackgroundTransparent).toHaveBeenCalled();
       else if (preset.kind === "solid")
         expect(setBackgroundSolid).toHaveBeenCalledWith(preset.backgroundColor);
+      else if (preset.kind === "pattern")
+        expect(setBackgroundPattern).toHaveBeenCalledWith(preset.patternId);
       else expect(setBackgroundGradient).toHaveBeenCalledWith(preset.gradientFrom, preset.gradientTo);
     }
+    expect(setBackgroundGradient).not.toHaveBeenCalledWith(undefined, undefined);
   });
 });
 
@@ -380,7 +384,7 @@ describe("createCommands", () => {
       t as never, scene, scene.activeLayerId,
       a.undo, a.redo, 1, 0, a.resetScene,
       a.setFrame, a.setStylePreset, a.setAnimationPreset,
-      a.setBackgroundSolid, a.setBackgroundGradient, a.setBackgroundTransparent, a.setBackgroundImage,
+      a.setBackgroundSolid, a.setBackgroundGradient, a.setBackgroundPattern, a.setBackgroundTransparent, a.setBackgroundImage,
       a.setAspectRatio,
       a.addLayer, a.duplicateLayer, a.removeLayer, a.toggleLayerHidden, a.selectLayer, a.reorderLayers,
       a.addAnnotation, a.clearAnnotations,
