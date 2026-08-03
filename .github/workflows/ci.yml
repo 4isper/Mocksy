@@ -61,7 +61,10 @@ jobs:
 
   e2e-tests:
     name: E2E (Playwright)
-    runs-on: ubuntu-latest
+    # macOS runner: Linux headless chromium with SwiftShader doesn't deliver
+    # canvas.captureStream() frames reliably, which breaks the video export
+    # tests there. macOS is slow but works; retries absorb its speed variance.
+    runs-on: macos-latest
     needs: [lint-and-typecheck, unit-tests]
     steps:
       - name: Checkout
