@@ -474,7 +474,22 @@
     "themeSystemDesc": "Ακολουθία επιλογών συστήματος",
     "switchProject": "Αλλαγή σε έργο: {name}",
     "current": "(τρέχον)",
-    "updated": "Ενημερώθηκε {date}"
+    "updated": "Ενημερώθηκε {date}",
+    "navHint": "↑↓ Navigate · ⏎ Select · Esc Close",
+    "category": {
+      "file": "File",
+      "edit": "Edit",
+      "frame": "Frame",
+      "style": "Style",
+      "background": "Background",
+      "aspect": "Aspect Ratio",
+      "layer": "Layer",
+      "annotation": "Annotation",
+      "watermark": "Watermark",
+      "export": "Export",
+      "project": "Project",
+      "theme": "Theme"
+    }
   },
   "errors": {
     "title": "Κάτι πήγε στραβά",

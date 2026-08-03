@@ -179,6 +179,7 @@ export interface Command {
   description?: string;
   shortcut?: string;
   keywords: string[];
+  category: string;
   action: () => void;
   disabled?: boolean;
 }

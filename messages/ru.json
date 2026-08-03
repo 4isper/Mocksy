@@ -409,6 +409,7 @@
     "warm": "Тёплый"
   },
   "commandPalette": {
+    "navHint": "↑↓ Выбор · ⏎ Выполнить · Esc Закрыть",
     "title": "Палитра команд",
     "search": "Поиск действий…",
     "noResults": "Ничего не найдено",
@@ -495,7 +496,21 @@
     "themeSystemDesc": "Следовать системным настройкам",
     "switchProject": "Переключиться на проект: {name}",
     "current": "(текущий)",
-    "updated": "Обновлён {date}"
+    "updated": "Обновлён {date}",
+    "category": {
+      "file": "Файл",
+      "edit": "Правка",
+      "frame": "Фрейм",
+      "style": "Стиль",
+      "background": "Фон",
+      "aspect": "Пропорции",
+      "layer": "Слой",
+      "annotation": "Аннотация",
+      "watermark": "Водяной знак",
+      "export": "Экспорт",
+      "project": "Проект",
+      "theme": "Тема"
+    }
   },
   "errors": {
     "title": "Что-то пошло не так",

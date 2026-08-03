@@ -12,6 +12,7 @@ export function createAnnotationCommands(
   return [
     {
       id: "anno-text",
+      category: "annotation",
       label: t("commandPalette.addTextAnnotation"),
       description: t("commandPalette.addTextAnnotationDesc"),
       keywords: ["annotation", "text", "label", "caption"],
@@ -19,6 +20,7 @@ export function createAnnotationCommands(
     },
     {
       id: "anno-arrow",
+      category: "annotation",
       label: t("commandPalette.addArrowAnnotation"),
       description: t("commandPalette.addArrowAnnotationDesc"),
       keywords: ["annotation", "arrow", "pointer", "direction"],
@@ -26,6 +28,7 @@ export function createAnnotationCommands(
     },
     {
       id: "anno-rect",
+      category: "annotation",
       label: t("commandPalette.addRectangleAnnotation"),
       description: t("commandPalette.addRectangleAnnotationDesc"),
       keywords: ["annotation", "rectangle", "box", "highlight", "shape"],
@@ -33,6 +36,7 @@ export function createAnnotationCommands(
     },
     {
       id: "anno-clear",
+      category: "annotation",
       label: t("commandPalette.clearAnnotations"),
       description: t("commandPalette.clearAnnotationsDesc"),
       keywords: ["annotation", "clear", "remove", "delete", "all"],

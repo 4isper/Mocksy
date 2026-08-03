@@ -474,7 +474,22 @@
     "themeSystemDesc": "Sekot sistēmas izvēlēm",
     "switchProject": "Pārslēgties uz projektu: {name}",
     "current": "(pašreizējais)",
-    "updated": "Atjaunināts {date}"
+    "updated": "Atjaunināts {date}",
+    "navHint": "↑↓ Navigate · ⏎ Select · Esc Close",
+    "category": {
+      "file": "File",
+      "edit": "Edit",
+      "frame": "Frame",
+      "style": "Style",
+      "background": "Background",
+      "aspect": "Aspect Ratio",
+      "layer": "Layer",
+      "annotation": "Annotation",
+      "watermark": "Watermark",
+      "export": "Export",
+      "project": "Project",
+      "theme": "Theme"
+    }
   },
   "errors": {
     "title": "Kas izgāja greizi",

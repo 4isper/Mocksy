@@ -474,7 +474,22 @@
     "themeSystemDesc": "Følg systemvalg",
     "switchProject": "Skift til projekt: {name}",
     "current": "(nuværende)",
-    "updated": "Opdateret {date}"
+    "updated": "Opdateret {date}",
+    "navHint": "↑↓ Navigate · ⏎ Select · Esc Close",
+    "category": {
+      "file": "File",
+      "edit": "Edit",
+      "frame": "Frame",
+      "style": "Style",
+      "background": "Background",
+      "aspect": "Aspect Ratio",
+      "layer": "Layer",
+      "annotation": "Annotation",
+      "watermark": "Watermark",
+      "export": "Export",
+      "project": "Project",
+      "theme": "Theme"
+    }
   },
   "errors": {
     "title": "Noget gik galt",

@@ -474,7 +474,22 @@
     "themeSystemDesc": "Följ systemvalen",
     "switchProject": "Byt till projekt: {name}",
     "current": "(nuvarande)",
-    "updated": "Uppdaterad {date}"
+    "updated": "Uppdaterad {date}",
+    "navHint": "↑↓ Navigate · ⏎ Select · Esc Close",
+    "category": {
+      "file": "File",
+      "edit": "Edit",
+      "frame": "Frame",
+      "style": "Style",
+      "background": "Background",
+      "aspect": "Aspect Ratio",
+      "layer": "Layer",
+      "annotation": "Annotation",
+      "watermark": "Watermark",
+      "export": "Export",
+      "project": "Project",
+      "theme": "Theme"
+    }
   },
   "errors": {
     "title": "Något gick fel",

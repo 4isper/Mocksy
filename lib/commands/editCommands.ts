@@ -14,6 +14,7 @@ export function createEditCommands(
   return [
     {
       id: "undo",
+      category: "edit",
       label: t("commandPalette.undo"),
       description: t("commandPalette.undoDesc"),
       shortcut: "⌘Z",
@@ -23,6 +24,7 @@ export function createEditCommands(
     },
     {
       id: "redo",
+      category: "edit",
       label: t("commandPalette.redo"),
       description: t("commandPalette.redoDesc"),
       shortcut: "⇧⌘Z",
@@ -32,6 +34,7 @@ export function createEditCommands(
     },
     {
       id: "reset-scene",
+      category: "edit",
       label: t("commandPalette.resetScene"),
       description: t("commandPalette.resetSceneDesc"),
       shortcut: "R",

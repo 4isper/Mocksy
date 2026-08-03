@@ -474,7 +474,22 @@
     "themeSystemDesc": "시스템 설정 따르기",
     "switchProject": "프로젝트 전환: {name}",
     "current": "(현재)",
-    "updated": "업데이트됨 {date}"
+    "updated": "업데이트됨 {date}",
+    "navHint": "↑↓ Navigate · ⏎ Select · Esc Close",
+    "category": {
+      "file": "File",
+      "edit": "Edit",
+      "frame": "Frame",
+      "style": "Style",
+      "background": "Background",
+      "aspect": "Aspect Ratio",
+      "layer": "Layer",
+      "annotation": "Annotation",
+      "watermark": "Watermark",
+      "export": "Export",
+      "project": "Project",
+      "theme": "Theme"
+    }
   },
   "errors": {
     "title": "문제가 발생했습니다",

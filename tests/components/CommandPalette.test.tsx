@@ -12,6 +12,7 @@ function makeCommands(overrides?: Partial<Command>): Command[] {
     description: "A test command description",
     shortcut: "⌘T",
     keywords: ["test", "command", "demo"],
+    category: "test",
     action: vi.fn(),
     ...overrides,
   };
@@ -72,8 +73,8 @@ describe("CommandPalette", () => {
 
   it("navigates with ArrowDown and ArrowUp", async () => {
     const cmds: Command[] = [
-      { id: "a", label: "Alpha", keywords: [], action: vi.fn() },
-      { id: "b", label: "Beta", keywords: [], action: vi.fn() },
+      { id: "a", label: "Alpha", keywords: [], category: "test", action: vi.fn() },
+      { id: "b", label: "Beta", keywords: [], category: "test", action: vi.fn() },
     ];
     render(<CommandPalette commands={cmds} isOpen={true} onClose={vi.fn()} />);
     const input = screen.getByRole("textbox");
@@ -89,8 +90,8 @@ describe("CommandPalette", () => {
     const a = vi.fn();
     const b = vi.fn();
     const cmds: Command[] = [
-      { id: "a", label: "Alpha", keywords: [], action: a },
-      { id: "b", label: "Beta", keywords: [], action: b },
+      { id: "a", label: "Alpha", keywords: [], category: "test", action: a },
+      { id: "b", label: "Beta", keywords: [], category: "test", action: b },
     ];
     const onClose = vi.fn();
     render(<CommandPalette commands={cmds} isOpen={true} onClose={onClose} />);
@@ -102,8 +103,8 @@ describe("CommandPalette", () => {
 
   it("wraps selection with Tab", async () => {
     const cmds: Command[] = [
-      { id: "a", label: "Alpha", keywords: [], action: vi.fn() },
-      { id: "b", label: "Beta", keywords: [], action: vi.fn() },
+      { id: "a", label: "Alpha", keywords: [], category: "test", action: vi.fn() },
+      { id: "b", label: "Beta", keywords: [], category: "test", action: vi.fn() },
     ];
     render(<CommandPalette commands={cmds} isOpen={true} onClose={vi.fn()} />);
     const input = screen.getByRole("textbox");
@@ -116,22 +117,22 @@ describe("CommandPalette", () => {
 
   it("filters commands by search query matching label", async () => {
     const cmds: Command[] = [
-      { id: "a", label: "Apple", keywords: [], action: vi.fn() },
-      { id: "b", label: "Banana", keywords: [], action: vi.fn() },
-      { id: "c", label: "Cherry", keywords: [], action: vi.fn() },
+      { id: "a", label: "Apple", keywords: [], category: "test", action: vi.fn() },
+      { id: "b", label: "Banana", keywords: [], category: "test", action: vi.fn() },
+      { id: "c", label: "Cherry", keywords: [], category: "test", action: vi.fn() },
     ];
     render(<CommandPalette commands={cmds} isOpen={true} onClose={vi.fn()} />);
     const input = screen.getByRole("textbox");
     await userEvent.type(input, "app");
-    expect(screen.getByText("Apple")).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Apple" })).toBeInTheDocument();
     expect(screen.queryByText("Banana")).not.toBeInTheDocument();
     expect(screen.queryByText("Cherry")).not.toBeInTheDocument();
   });
 
   it("filters commands by search query matching description", async () => {
     const cmds: Command[] = [
-      { id: "a", label: "Foo", description: "export something", keywords: [], action: vi.fn() },
-      { id: "b", label: "Bar", description: "import something", keywords: [], action: vi.fn() },
+      { id: "a", label: "Foo", description: "export something", keywords: [], category: "test", action: vi.fn() },
+      { id: "b", label: "Bar", description: "import something", keywords: [], category: "test", action: vi.fn() },
     ];
     render(<CommandPalette commands={cmds} isOpen={true} onClose={vi.fn()} />);
     const input = screen.getByRole("textbox");
@@ -142,8 +143,8 @@ describe("CommandPalette", () => {
 
   it("filters by keywords", async () => {
     const cmds: Command[] = [
-      { id: "a", label: "One", keywords: ["alpha", "beta"], action: vi.fn() },
-      { id: "b", label: "Two", keywords: ["gamma", "delta"], action: vi.fn() },
+      { id: "a", label: "One", keywords: ["alpha", "beta"], category: "test", action: vi.fn() },
+      { id: "b", label: "Two", keywords: ["gamma", "delta"], category: "test", action: vi.fn() },
     ];
     render(<CommandPalette commands={cmds} isOpen={true} onClose={vi.fn()} />);
     const input = screen.getByRole("textbox");
@@ -154,9 +155,9 @@ describe("CommandPalette", () => {
 
   it("sorts by relevance: label starts with > label includes > desc includes > keyword", async () => {
     const cmds: Command[] = [
-      { id: "c", label: "Theme", description: "switch theme", keywords: ["dark", "light"], action: vi.fn() },
-      { id: "a", label: "Dark Theme", keywords: [], action: vi.fn() },
-      { id: "b", label: "Apply Theme", description: "theme preset", keywords: [], action: vi.fn() },
+      { id: "c", label: "Theme", description: "switch theme", keywords: ["dark", "light"], category: "test", action: vi.fn() },
+      { id: "a", label: "Dark Theme", keywords: [], category: "test", action: vi.fn() },
+      { id: "b", label: "Apply Theme", description: "theme preset", keywords: [], category: "test", action: vi.fn() },
     ];
     render(<CommandPalette commands={cmds} isOpen={true} onClose={vi.fn()} />);
     const input = screen.getByRole("textbox");
@@ -169,8 +170,8 @@ describe("CommandPalette", () => {
 
   it("hides disabled commands", () => {
     const cmds: Command[] = [
-      { id: "a", label: "Enabled", keywords: [], action: vi.fn() },
-      { id: "b", label: "Disabled", keywords: [], action: vi.fn(), disabled: true },
+      { id: "a", label: "Enabled", keywords: [], category: "test", action: vi.fn() },
+      { id: "b", label: "Disabled", keywords: [], category: "test", action: vi.fn(), disabled: true },
     ];
     render(<CommandPalette commands={cmds} isOpen={true} onClose={vi.fn()} />);
     expect(screen.getByText("Enabled")).toBeInTheDocument();
@@ -186,8 +187,8 @@ describe("CommandPalette", () => {
 
   it("shows command count in footer", () => {
     const cmds: Command[] = [
-      { id: "a", label: "One", keywords: [], action: vi.fn() },
-      { id: "b", label: "Two", keywords: [], action: vi.fn() },
+      { id: "a", label: "One", keywords: [], category: "test", action: vi.fn() },
+      { id: "b", label: "Two", keywords: [], category: "test", action: vi.fn() },
     ];
     render(<CommandPalette commands={cmds} isOpen={true} onClose={vi.fn()} />);
     expect(screen.getByText("commandPalette.commandsAvailable")).toBeInTheDocument();
@@ -206,5 +207,42 @@ describe("CommandPalette", () => {
       <CommandPalette commands={makeCommands()} isOpen={true} onClose={vi.fn()} />
     );
     expect(screen.getByRole("textbox")).toHaveValue("");
+  });
+
+  it("renders category group headers", () => {
+    const cmds: Command[] = [
+      { id: "a", label: "Export PNG", category: "export", keywords: [], action: vi.fn() },
+      { id: "b", label: "Undo", category: "edit", keywords: [], action: vi.fn() },
+    ];
+    render(<CommandPalette commands={cmds} isOpen={true} onClose={vi.fn()} />);
+    expect(screen.getByText("commandPalette.category.export")).toBeInTheDocument();
+    expect(screen.getByText("commandPalette.category.edit")).toBeInTheDocument();
+  });
+
+  it("groups commands under their category headers", () => {
+    const cmds: Command[] = [
+      { id: "a", label: "Undo", category: "edit", keywords: [], action: vi.fn() },
+      { id: "b", label: "Export PNG", category: "export", keywords: [], action: vi.fn() },
+    ];
+    render(<CommandPalette commands={cmds} isOpen={true} onClose={vi.fn()} />);
+    const exportHeader = screen.getByText("commandPalette.category.export");
+    const exportItem = screen.getByText("Export PNG");
+    expect(exportHeader.compareDocumentPosition(exportItem) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("highlights the matched substring in the label", async () => {
+    const cmds: Command[] = [
+      { id: "a", label: "Export PNG", category: "export", keywords: [], action: vi.fn() },
+    ];
+    render(<CommandPalette commands={cmds} isOpen={true} onClose={vi.fn()} />);
+    const input = screen.getByRole("textbox");
+    await userEvent.type(input, "png");
+    const mark = document.querySelector("mark.command-palette-match");
+    expect(mark).toHaveTextContent("PNG");
+  });
+
+  it("renders the keyboard hint in the footer", () => {
+    render(<CommandPalette commands={makeCommands()} isOpen={true} onClose={vi.fn()} />);
+    expect(screen.getByText("commandPalette.navHint")).toBeInTheDocument();
   });
 });

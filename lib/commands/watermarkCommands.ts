@@ -12,6 +12,7 @@ export function createWatermarkCommands(
   return [
     {
       id: "watermark-toggle",
+      category: "watermark",
       label: scene.watermarkEnabled ? t("commandPalette.disableWatermark") : t("commandPalette.enableWatermark"),
       description: scene.watermarkEnabled ? t("commandPalette.disableWatermarkDesc") : t("commandPalette.enableWatermarkDesc"),
       keywords: ["watermark", "brand", "logo", "mocksy"],
@@ -19,6 +20,7 @@ export function createWatermarkCommands(
     },
     {
       id: "watermark-edit",
+      category: "watermark",
       label: t("commandPalette.editWatermarkText"),
       description: t("commandPalette.watermarkTextDesc", { text: scene.watermarkText }),
       keywords: ["watermark", "text", "edit", "change"],

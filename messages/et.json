@@ -474,7 +474,22 @@
     "themeSystemDesc": "Jälgi süsteemi valikuid",
     "switchProject": "Lülitu projekti: {name}",
     "current": "(jooksev)",
-    "updated": "Uuendatud {date}"
+    "updated": "Uuendatud {date}",
+    "navHint": "↑↓ Navigate · ⏎ Select · Esc Close",
+    "category": {
+      "file": "File",
+      "edit": "Edit",
+      "frame": "Frame",
+      "style": "Style",
+      "background": "Background",
+      "aspect": "Aspect Ratio",
+      "layer": "Layer",
+      "annotation": "Annotation",
+      "watermark": "Watermark",
+      "export": "Export",
+      "project": "Project",
+      "theme": "Theme"
+    }
   },
   "errors": {
     "title": "Midagi läks valesti",

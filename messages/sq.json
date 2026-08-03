@@ -474,7 +474,22 @@
     "themeSystemDesc": "Ndiqni zgjedhjet e sistemit",
     "switchProject": "Kalo te projekti: {name}",
     "current": "(aktual)",
-    "updated": "Përditësuar {date}"
+    "updated": "Përditësuar {date}",
+    "navHint": "↑↓ Navigate · ⏎ Select · Esc Close",
+    "category": {
+      "file": "File",
+      "edit": "Edit",
+      "frame": "Frame",
+      "style": "Style",
+      "background": "Background",
+      "aspect": "Aspect Ratio",
+      "layer": "Layer",
+      "annotation": "Annotation",
+      "watermark": "Watermark",
+      "export": "Export",
+      "project": "Project",
+      "theme": "Theme"
+    }
   },
   "errors": {
     "title": "Diçka shkoi gabim",

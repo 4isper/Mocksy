@@ -474,7 +474,22 @@
     "themeSystemDesc": "Seguir as preferências do sistema",
     "switchProject": "Alternar para projeto: {name}",
     "current": "(atual)",
-    "updated": "Atualizado {date}"
+    "updated": "Atualizado {date}",
+    "navHint": "↑↓ Navigate · ⏎ Select · Esc Close",
+    "category": {
+      "file": "File",
+      "edit": "Edit",
+      "frame": "Frame",
+      "style": "Style",
+      "background": "Background",
+      "aspect": "Aspect Ratio",
+      "layer": "Layer",
+      "annotation": "Annotation",
+      "watermark": "Watermark",
+      "export": "Export",
+      "project": "Project",
+      "theme": "Theme"
+    }
   },
   "errors": {
     "title": "Algo deu errado",

@@ -474,7 +474,22 @@
     "themeSystemDesc": "Tuân theo tùy chọn hệ thống",
     "switchProject": "Chuyển sang dự án: {name}",
     "current": "(hiện tại)",
-    "updated": "Đã cập nhật {date}"
+    "updated": "Đã cập nhật {date}",
+    "navHint": "↑↓ Navigate · ⏎ Select · Esc Close",
+    "category": {
+      "file": "File",
+      "edit": "Edit",
+      "frame": "Frame",
+      "style": "Style",
+      "background": "Background",
+      "aspect": "Aspect Ratio",
+      "layer": "Layer",
+      "annotation": "Annotation",
+      "watermark": "Watermark",
+      "export": "Export",
+      "project": "Project",
+      "theme": "Theme"
+    }
   },
   "errors": {
     "title": "Có gì đó sai rồi",

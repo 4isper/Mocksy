@@ -3,20 +3,51 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
-import { matchQuery, scoreMatch } from "@/lib/search/matchCommand";
+import { highlightMatch, matchQuery, scoreMatch } from "@/lib/search/matchCommand";
 import type { Command } from "@/lib/types/editor";
 
 export type { Command };
 
-export function CommandPalette({ 
-  commands, 
-  isOpen, 
-  onClose, 
-  onSearchChange 
-}: { 
-  commands: Command[]; 
-  isOpen: boolean; 
-  onClose: () => void; 
+const CATEGORY_ORDER = [
+  "file",
+  "edit",
+  "frame",
+  "style",
+  "background",
+  "aspect",
+  "layer",
+  "annotation",
+  "watermark",
+  "export",
+  "project",
+  "theme"
+] as const;
+
+function HighlightedLabel({ text, query }: { text: string; query: string }) {
+  return (
+    <>
+      {highlightMatch(text, query).map((seg, i) =>
+        seg.matched ? (
+          <mark key={i} className="command-palette-match">
+            {seg.text}
+          </mark>
+        ) : (
+          <span key={i}>{seg.text}</span>
+        )
+      )}
+    </>
+  );
+}
+
+export function CommandPalette({
+  commands,
+  isOpen,
+  onClose,
+  onSearchChange
+}: {
+  commands: Command[];
+  isOpen: boolean;
+  onClose: () => void;
   onSearchChange?: (query: string) => void;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -31,6 +62,25 @@ export function CommandPalette({
       .filter(c => !c.disabled && matchQuery(c, searchQuery))
       .sort((a, b) => scoreMatch(b, searchQuery) - scoreMatch(a, searchQuery));
   }, [commands, searchQuery]);
+
+  const groups = useMemo(() => {
+    const map = new Map<string, { cmd: Command; index: number }[]>();
+    filteredCommands.forEach((cmd, index) => {
+      const list = map.get(cmd.category) ?? [];
+      list.push({ cmd, index });
+      map.set(cmd.category, list);
+    });
+    const ordered: { category: string; items: { cmd: Command; index: number }[] }[] = CATEGORY_ORDER.filter(cat => map.has(cat)).map(cat => ({
+      category: cat,
+      items: map.get(cat)!
+    }));
+    for (const [category, items] of map) {
+      if (!(CATEGORY_ORDER as readonly string[]).includes(category)) {
+        ordered.push({ category, items });
+      }
+    }
+    return ordered;
+  }, [filteredCommands]);
 
   const prevOpenRef = useRef(isOpen);
   useEffect(() => {
@@ -111,38 +161,54 @@ export function CommandPalette({
           <kbd className="command-palette-kbd">⎋</kbd>
         </div>
         <div className="command-palette-list" ref={listRef} role="listbox">
-          {filteredCommands.length === 0 ? (
+          {groups.length === 0 ? (
             <div className="command-palette-empty" role="option" aria-selected={false}>
               {t("commandPalette.noResults")}
             </div>
           ) : (
-            filteredCommands.map((cmd, idx) => (
-              <button
-                key={cmd.id}
-                type="button"
-                className={`command-palette-item ${idx === selectedIndex ? "selected" : ""}`}
-                data-index={idx}
-                onClick={() => {
-                  cmd.action();
-                  onClose();
-                }}
-                onMouseEnter={() => setSelectedIndex(idx)}
-                role="option"
-                aria-selected={idx === selectedIndex}
+            groups.map(group => (
+              <div
+                key={group.category}
+                className="command-palette-group"
+                role="group"
+                aria-label={t(`commandPalette.category.${group.category}`)}
               >
-                <span className="command-palette-item-label">{cmd.label}</span>
-                {cmd.description && (
-                  <span className="command-palette-item-desc">{cmd.description}</span>
-                )}
-                {cmd.shortcut && (
-                  <kbd className="command-palette-item-shortcut">{cmd.shortcut}</kbd>
-                )}
-              </button>
+                <div className="command-palette-group-label">
+                  {t(`commandPalette.category.${group.category}`)}
+                </div>
+                {group.items.map(({ cmd, index }) => (
+                  <button
+                    key={cmd.id}
+                    type="button"
+                    className={`command-palette-item ${index === selectedIndex ? "selected" : ""}`}
+                    data-index={index}
+                    onClick={() => {
+                      cmd.action();
+                      onClose();
+                    }}
+                    onMouseEnter={() => setSelectedIndex(index)}
+                    role="option"
+                    aria-label={cmd.label}
+                    aria-selected={index === selectedIndex}
+                  >
+                    <span className="command-palette-item-label">
+                      <HighlightedLabel text={cmd.label} query={searchQuery} />
+                    </span>
+                    {cmd.description && (
+                      <span className="command-palette-item-desc">{cmd.description}</span>
+                    )}
+                    {cmd.shortcut && (
+                      <kbd className="command-palette-item-shortcut">{cmd.shortcut}</kbd>
+                    )}
+                  </button>
+                ))}
+              </div>
             ))
           )}
         </div>
         <div className="command-palette-footer">
-          {t("commandPalette.commandsAvailable", { count: filteredCommands.length })}
+          <span>{t("commandPalette.commandsAvailable", { count: filteredCommands.length })}</span>
+          <span className="command-palette-footer-hint">{t("commandPalette.navHint")}</span>
         </div>
       </div>
     </div>

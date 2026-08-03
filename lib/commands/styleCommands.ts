@@ -7,6 +7,7 @@ export function createStyleCommands(
 ): Command[] {
   return sceneStylePresets.map(preset => ({
     id: `preset-${preset.id}`,
+    category: "style",
     label: t("commandPalette.styleLabel", { name: t(`preset.${preset.id}`) }),
     description: `${preset.frame} • ${preset.stylePreset} • ${preset.backgroundMode}`,
     keywords: ["preset", "style", "theme", "template", t(`preset.${preset.id}`).toLowerCase()],

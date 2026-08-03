@@ -11,6 +11,7 @@ export function createProjectCommands(
   const { switchProject } = callbacks;
   return projects.map(project => ({
     id: `project-switch-${project.id}`,
+    category: "project",
     label: t("commandPalette.switchProject", { name: project.name }),
     description: project.id === activeProjectId ? t("commandPalette.current") : t("commandPalette.updated", { date: new Date(project.updatedAt).toLocaleDateString() }),
     keywords: ["project", "switch", "open", project.name.toLowerCase()],

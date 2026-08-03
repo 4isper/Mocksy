@@ -1843,14 +1843,33 @@ select {
  }
 
  .command-palette-item-label {
-   flex: 1;
-   min-width: 0;
-   overflow: hidden;
-   text-overflow: ellipsis;
-   white-space: nowrap;
- }
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
- .command-palette-item-desc {
+  .command-palette-match {
+    background: transparent;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .command-palette-group + .command-palette-group {
+    margin-top: 2px;
+  }
+
+  .command-palette-group-label {
+    padding: 8px 10px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .command-palette-item-desc {
    font-size: 11px;
    color: var(--text-dim);
    flex: none;
@@ -1862,12 +1881,23 @@ select {
    flex: none;
  }
 
- .command-palette-footer {
-   padding: 8px 14px;
-   border-top: 1px solid var(--panel-border);
-   font-size: 11px;
-   color: var(--text-dim);
- }
+  .command-palette-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    border-top: 1px solid var(--panel-border);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .command-palette-footer-hint {
+    margin-left: auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.85;
+  }
 
  /* ---- Scrollbar ---- */
  .control-panel::-webkit-scrollbar,

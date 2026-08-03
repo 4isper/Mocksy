@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matchQuery, scoreMatch } from "@/lib/search/matchCommand";
+import { highlightMatch, matchQuery, scoreMatch } from "@/lib/search/matchCommand";
 import type { Command } from "@/lib/types/editor";
 
 const command: Command = {
@@ -7,6 +7,7 @@ const command: Command = {
   label: "Export PNG",
   description: "Download a PNG image",
   keywords: ["png", "image", "download", "picture"],
+  category: "export",
   action: () => {}
 };
 
@@ -59,8 +60,38 @@ describe("scoreMatch", () => {
   });
 
   it("falls back through description and keywords when the label misses", () => {
-    const bare: Command = { id: "x", label: "Foo Bar", keywords: [], action: () => {} };
+    const bare: Command = { id: "x", label: "Foo Bar", category: "file", keywords: [], action: () => {} };
     expect(scoreMatch(bare, "description text")).toBe(0);
     expect(scoreMatch({ ...command, description: undefined }, "png")).toBe(50);
+  });
+});
+
+describe("highlightMatch", () => {
+  it("returns a single unmatched segment on an empty query", () => {
+    expect(highlightMatch("Export PNG", "")).toEqual([{ text: "Export PNG", matched: false }]);
+  });
+
+  it("highlights the matched substring", () => {
+    expect(highlightMatch("Export PNG", "png")).toEqual([
+      { text: "Export ", matched: false },
+      { text: "PNG", matched: true },
+    ]);
+  });
+
+  it("highlights multiple occurrences case-insensitively", () => {
+    expect(highlightMatch("abc abc", "ab")).toEqual([
+      { text: "ab", matched: true },
+      { text: "c ", matched: false },
+      { text: "ab", matched: true },
+      { text: "c", matched: false },
+    ]);
+  });
+
+  it("returns an unmatched segment when there is no match", () => {
+    expect(highlightMatch("Export PNG", "video")).toEqual([{ text: "Export PNG", matched: false }]);
+  });
+
+  it("returns an empty array for empty text", () => {
+    expect(highlightMatch("", "x")).toEqual([]);
   });
 });

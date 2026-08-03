@@ -19,6 +19,7 @@ export function createLayerCommands(
   return [
     {
       id: "layer-add",
+      category: "layer",
       label: t("commandPalette.addLayer"),
       description: t("commandPalette.addLayerDesc"),
       keywords: ["layer", "add", "new", "media", "image", "video"],
@@ -39,6 +40,7 @@ export function createLayerCommands(
     },
     {
       id: "layer-duplicate",
+      category: "layer",
       label: t("commandPalette.duplicateLayer"),
       description: t("commandPalette.duplicateLayerDesc"),
       shortcut: "⌘D",
@@ -50,6 +52,7 @@ export function createLayerCommands(
     },
     {
       id: "layer-remove",
+      category: "layer",
       label: t("commandPalette.removeLayer"),
       description: t("commandPalette.removeLayerDesc"),
       keywords: ["layer", "remove", "delete", "trash"],
@@ -60,6 +63,7 @@ export function createLayerCommands(
     },
     {
       id: "layer-toggle-hidden",
+      category: "layer",
       label: t("commandPalette.toggleLayerVisibility"),
       description: t("commandPalette.toggleLayerVisibilityDesc"),
       keywords: ["layer", "hide", "show", "visibility", "eye"],
@@ -70,6 +74,7 @@ export function createLayerCommands(
     },
     ...layers.map(layer => ({
       id: `layer-select-${layer.id}`,
+      category: "layer",
       label: t("commandPalette.selectLayer", { name: layer.mediaName || t("commandPalette.layerNumber", { n: layers.indexOf(layer) + 1 }) }),
       description: layer.hidden ? t("commandPalette.hidden") : t("commandPalette.clickToSelect"),
       keywords: ["layer", "select", "switch", layer.mediaName || ""],

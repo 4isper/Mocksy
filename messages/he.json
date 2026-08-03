@@ -474,7 +474,22 @@
     "themeSystemDesc": "עקוב אחר העדפות מערכת",
     "switchProject": "עבור לפרויקט: {name}",
     "current": "(נוכחי)",
-    "updated": "עודכן {date}"
+    "updated": "עודכן {date}",
+    "navHint": "↑↓ Navigate · ⏎ Select · Esc Close",
+    "category": {
+      "file": "File",
+      "edit": "Edit",
+      "frame": "Frame",
+      "style": "Style",
+      "background": "Background",
+      "aspect": "Aspect Ratio",
+      "layer": "Layer",
+      "annotation": "Annotation",
+      "watermark": "Watermark",
+      "export": "Export",
+      "project": "Project",
+      "theme": "Theme"
+    }
   },
   "errors": {
     "title": "משהו השתבש",

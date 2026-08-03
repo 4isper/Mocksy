@@ -474,7 +474,22 @@
     "switchProject": "Perjungti į projektą: {name}",
     "current": "(dabar)",
     "updated": "Atnaujinta {date}",
-    "exportScale2xDesc": "Eksportas aukštai raiška (numatytasis)"
+    "exportScale2xDesc": "Eksportas aukštai raiška (numatytasis)",
+    "navHint": "↑↓ Navigate · ⏎ Select · Esc Close",
+    "category": {
+      "file": "File",
+      "edit": "Edit",
+      "frame": "Frame",
+      "style": "Style",
+      "background": "Background",
+      "aspect": "Aspect Ratio",
+      "layer": "Layer",
+      "annotation": "Annotation",
+      "watermark": "Watermark",
+      "export": "Export",
+      "project": "Project",
+      "theme": "Theme"
+    }
   },
   "errors": {
     "title": "Kažkas nepavyko",

@@ -474,7 +474,22 @@
     "themeSystemDesc": "Dilyn dewisiadau'r system",
     "switchProject": "Newid i'r prosiect: {name}",
     "current": "(presennol)",
-    "updated": "Diweddarwyd {date}"
+    "updated": "Diweddarwyd {date}",
+    "navHint": "↑↓ Navigate · ⏎ Select · Esc Close",
+    "category": {
+      "file": "File",
+      "edit": "Edit",
+      "frame": "Frame",
+      "style": "Style",
+      "background": "Background",
+      "aspect": "Aspect Ratio",
+      "layer": "Layer",
+      "annotation": "Annotation",
+      "watermark": "Watermark",
+      "export": "Export",
+      "project": "Project",
+      "theme": "Theme"
+    }
   },
   "errors": {
     "title": "Rhywbeth wedi mynd o'i le",

@@ -10,6 +10,7 @@ export function createExportScaleCommands(
   return [
     {
       id: "export-scale-1x",
+      category: "export",
       label: t("commandPalette.exportScale1x"),
       description: t("commandPalette.exportScale1xDesc"),
       keywords: ["export", "scale", "resolution", "1x"],
@@ -17,6 +18,7 @@ export function createExportScaleCommands(
     },
     {
       id: "export-scale-2x",
+      category: "export",
       label: t("commandPalette.exportScale2x"),
       description: t("commandPalette.exportScale2xDesc"),
       keywords: ["export", "scale", "resolution", "2x", "retina"],
@@ -24,6 +26,7 @@ export function createExportScaleCommands(
     },
     {
       id: "export-scale-4x",
+      category: "export",
       label: t("commandPalette.exportScale4x"),
       description: t("commandPalette.exportScale4xDesc"),
       keywords: ["export", "scale", "resolution", "4x", "print"],

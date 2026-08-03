@@ -12,6 +12,7 @@ export function createBackgroundCommands(
   const { setBackgroundSolid, setBackgroundGradient, setBackgroundTransparent } = callbacks;
   return backgroundPresets.map(bg => ({
     id: `bg-${bg.id}`,
+    category: "background",
     label: t("commandPalette.backgroundLabel", { name: t(`preset.${bg.id}`) }),
     description: bg.kind === "gradient" ? `${bg.gradientFrom} → ${bg.gradientTo}` : bg.backgroundColor,
     keywords: ["background", "bg", "color", "gradient", "solid", t(`preset.${bg.id}`).toLowerCase()],

@@ -10,6 +10,7 @@ export function createThemeCommands(
   return [
     {
       id: "theme-light",
+      category: "theme",
       label: t("commandPalette.themeLight"),
       description: t("commandPalette.themeLightDesc"),
       keywords: ["theme", "light", "day", "bright"],
@@ -17,6 +18,7 @@ export function createThemeCommands(
     },
     {
       id: "theme-dark",
+      category: "theme",
       label: t("commandPalette.themeDark"),
       description: t("commandPalette.themeDarkDesc"),
       keywords: ["theme", "dark", "night", "dim"],
@@ -24,6 +26,7 @@ export function createThemeCommands(
     },
     {
       id: "theme-system",
+      category: "theme",
       label: t("commandPalette.themeSystem"),
       description: t("commandPalette.themeSystemDesc"),
       keywords: ["theme", "system", "auto", "preference"],

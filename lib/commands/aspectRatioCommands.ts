@@ -10,6 +10,7 @@ export function createAspectRatioCommands(
   const { setAspectRatio } = callbacks;
   return ASPECT_RATIOS.map(ratio => ({
     id: `ratio-${ratio.replace(/\s/g, "-")}`,
+    category: "aspect",
     label: t("commandPalette.aspectRatioLabel", { ratio }),
     description: t("commandPalette.aspectRatioDesc", { ratio }),
     keywords: ["ratio", "aspect", "canvas", "size", ratio],

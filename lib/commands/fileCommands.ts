@@ -21,6 +21,7 @@ export function createFileCommands(
   return [
     {
       id: "new-project",
+      category: "file",
       label: t("commandPalette.newProject"),
       description: t("commandPalette.newProjectDesc"),
       shortcut: "⌘N",
@@ -32,6 +33,7 @@ export function createFileCommands(
     },
     {
       id: "save-project",
+      category: "file",
       label: t("commandPalette.saveProject"),
       description: t("commandPalette.saveProjectDesc"),
       shortcut: "⌘S",
@@ -40,6 +42,7 @@ export function createFileCommands(
     },
     {
       id: "export-png",
+      category: "export",
       label: t("commandPalette.exportPng"),
       description: t("commandPalette.exportPngDesc"),
       shortcut: "⌘E",
@@ -48,6 +51,7 @@ export function createFileCommands(
     },
     {
       id: "export-mp4",
+      category: "export",
       label: t("commandPalette.exportMp4"),
       description: t("commandPalette.exportMp4Desc"),
       shortcut: "⇧⌘E",
@@ -56,6 +60,7 @@ export function createFileCommands(
     },
     {
       id: "export-webm",
+      category: "export",
       label: t("commandPalette.exportWebm"),
       description: t("commandPalette.exportWebmDesc"),
       shortcut: "⇧⌘W",
@@ -64,6 +69,7 @@ export function createFileCommands(
     },
     {
       id: "export-webp",
+      category: "export",
       label: t("commandPalette.exportWebp"),
       description: t("commandPalette.exportWebpDesc"),
       shortcut: "⇧⌘P",
@@ -72,6 +78,7 @@ export function createFileCommands(
     },
     {
       id: "export-webp-anim",
+      category: "export",
       label: t("commandPalette.exportWebpAnim"),
       description: t("commandPalette.exportWebpAnimDesc"),
       shortcut: "⌘⇧A",
@@ -80,6 +87,7 @@ export function createFileCommands(
     },
     {
       id: "export-svg",
+      category: "export",
       label: t("commandPalette.exportSvg"),
       description: t("commandPalette.exportSvgDesc"),
       shortcut: "⌘⇧S",
@@ -88,6 +96,7 @@ export function createFileCommands(
     },
     {
       id: "export-html",
+      category: "export",
       label: t("commandPalette.exportHtml"),
       description: t("commandPalette.exportHtmlDesc"),
       shortcut: "⌘⇧H",
@@ -96,6 +105,7 @@ export function createFileCommands(
     },
     {
       id: "export-gif",
+      category: "export",
       label: t("commandPalette.exportGif"),
       description: t("commandPalette.exportGifDesc"),
       shortcut: "⇧⌘G",
@@ -104,6 +114,7 @@ export function createFileCommands(
     },
     {
       id: "copy-png",
+      category: "export",
       label: t("commandPalette.copyPng"),
       description: t("commandPalette.copyPngDesc"),
       shortcut: "⇧⌘C",
@@ -112,6 +123,7 @@ export function createFileCommands(
     },
     {
       id: "copy-share-url",
+      category: "export",
       label: t("commandPalette.copyShareUrl"),
       description: t("commandPalette.copyShareUrlDesc"),
       keywords: ["copy", "share", "url", "link"],

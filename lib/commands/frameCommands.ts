@@ -12,6 +12,7 @@ export function createFrameCommands(
     const spec = FRAME_SPECS[frame];
     return {
       id: `frame-${frame}`,
+      category: "frame",
       label: t("commandPalette.frameLabel", { name: frame.charAt(0).toUpperCase() + frame.slice(1) }),
       description: spec.isOverlay ? t("commandPalette.frameOverlayDesc") : t("commandPalette.frameCssDesc"),
       keywords: ["frame", "device", "mockup", frame],

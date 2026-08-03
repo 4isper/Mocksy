@@ -474,7 +474,22 @@
     "themeSystemDesc": "सिस्टमच्या तरतुदींचा पालन करा",
     "switchProject": "प्रकल्मात बदला: {name}",
     "current": "(सध्याचा)",
-    "updated": "अ‍ॅपडेट केले {date}"
+    "updated": "अ‍ॅपडेट केले {date}",
+    "navHint": "↑↓ Navigate · ⏎ Select · Esc Close",
+    "category": {
+      "file": "File",
+      "edit": "Edit",
+      "frame": "Frame",
+      "style": "Style",
+      "background": "Background",
+      "aspect": "Aspect Ratio",
+      "layer": "Layer",
+      "annotation": "Annotation",
+      "watermark": "Watermark",
+      "export": "Export",
+      "project": "Project",
+      "theme": "Theme"
+    }
   },
   "errors": {
     "title": "काही चूक झाली",

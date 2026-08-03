@@ -474,7 +474,22 @@
     "themeSystemDesc": "సిస్టమ్ అభిరుచులను అనుసరించండి",
     "switchProject": "ప్రాజెక్ట్‌కి మార్చండి: {name}",
     "current": "(ప్రస్తుతం)",
-    "updated": "నవీకరించబడింది {date}"
+    "updated": "నవీకరించబడింది {date}",
+    "navHint": "↑↓ Navigate · ⏎ Select · Esc Close",
+    "category": {
+      "file": "File",
+      "edit": "Edit",
+      "frame": "Frame",
+      "style": "Style",
+      "background": "Background",
+      "aspect": "Aspect Ratio",
+      "layer": "Layer",
+      "annotation": "Annotation",
+      "watermark": "Watermark",
+      "export": "Export",
+      "project": "Project",
+      "theme": "Theme"
+    }
   },
   "errors": {
     "title": "ఏదో తప్పు జరిగింది",

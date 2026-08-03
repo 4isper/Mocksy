@@ -474,7 +474,22 @@
     "themeSystemDesc": "அமைப்பு விருப்பங்களைப் பின்பற்று",
     "switchProject": "திட்டத்திற்கு மாற்று: {name}",
     "current": "(தற்போது)",
-    "updated": "புதுப்பிக்கப்பட்டது {date}"
+    "updated": "புதுப்பிக்கப்பட்டது {date}",
+    "navHint": "↑↓ Navigate · ⏎ Select · Esc Close",
+    "category": {
+      "file": "File",
+      "edit": "Edit",
+      "frame": "Frame",
+      "style": "Style",
+      "background": "Background",
+      "aspect": "Aspect Ratio",
+      "layer": "Layer",
+      "annotation": "Annotation",
+      "watermark": "Watermark",
+      "export": "Export",
+      "project": "Project",
+      "theme": "Theme"
+    }
   },
   "errors": {
     "title": "எதோ தவறு நடந்தது",

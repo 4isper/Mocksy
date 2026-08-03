@@ -474,7 +474,22 @@
     "themeSystemDesc": "システム設定に従う",
     "switchProject": "プロジェクトに切り替え: {name}",
     "current": "(現在)",
-    "updated": "更新日 {date}"
+    "updated": "更新日 {date}",
+    "navHint": "↑↓ Navigate · ⏎ Select · Esc Close",
+    "category": {
+      "file": "File",
+      "edit": "Edit",
+      "frame": "Frame",
+      "style": "Style",
+      "background": "Background",
+      "aspect": "Aspect Ratio",
+      "layer": "Layer",
+      "annotation": "Annotation",
+      "watermark": "Watermark",
+      "export": "Export",
+      "project": "Project",
+      "theme": "Theme"
+    }
   },
   "errors": {
     "title": "エラーが発生しました",

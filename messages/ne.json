@@ -474,7 +474,22 @@
     "themeSystemDesc": "प्रणालीका प्राथमिकताहरू अनुसरण गर्नुहोस्",
     "switchProject": "परियोजनामा परिवर्तन गर्नुहोस्: {name}",
     "current": "(हाल)",
-    "updated": "अद्यावधिक गरियो {date}"
+    "updated": "अद्यावधिक गरियो {date}",
+    "navHint": "↑↓ Navigate · ⏎ Select · Esc Close",
+    "category": {
+      "file": "File",
+      "edit": "Edit",
+      "frame": "Frame",
+      "style": "Style",
+      "background": "Background",
+      "aspect": "Aspect Ratio",
+      "layer": "Layer",
+      "annotation": "Annotation",
+      "watermark": "Watermark",
+      "export": "Export",
+      "project": "Project",
+      "theme": "Theme"
+    }
   },
   "errors": {
     "title": "केही त्रुटि भयो",
