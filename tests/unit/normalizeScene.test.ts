@@ -225,6 +225,13 @@ describe("normalizeScene", () => {
     expect(s.patternId).toBe("dots");
   });
 
+  it("accepts the plus, cross and triangle pattern ids", () => {
+    for (const id of ["plus", "cross", "triangle"]) {
+      const s = normalizeScene({ backgroundMode: "pattern", patternId: id });
+      expect(s.patternId).toBe(id);
+    }
+  });
+
   it("rejects unknown pattern ids and gradient types", () => {
     const s = normalizeScene({ backgroundMode: "pattern", patternId: "waves", gradientType: "cone" });
     expect(s.patternId).toBe(initialScene.patternId);

@@ -48,6 +48,18 @@ function buildPatternBackground(patternId: import("@/lib/types/editor").PatternI
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23n)" opacity="0.15"/></svg>`;
       return `url('data:image/svg+xml,${encodeURIComponent(svg)}')`;
     }
+    case "plus": {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><path d="M9 4h2v5h5v2h-5v5h-2v-5h-5v-2h5z" fill="rgba(255,255,255,0.12)"/></svg>`;
+      return `url('data:image/svg+xml,${encodeURIComponent(svg)}')`;
+    }
+    case "cross": {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><path d="M6 6l8 8M14 6l-8 8" stroke="rgba(255,255,255,0.12)" stroke-width="2" stroke-linecap="round"/></svg>`;
+      return `url('data:image/svg+xml,${encodeURIComponent(svg)}')`;
+    }
+    case "triangle": {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><path d="M5 0L10 20H0zM15 20L10 0h10z" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/></svg>`;
+      return `url('data:image/svg+xml,${encodeURIComponent(svg)}')`;
+    }
     default:
       return "transparent";
   }
@@ -70,7 +82,8 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
             : "transparent";
 
   const backgroundSize =
-    scene.backgroundMode === "pattern" && scene.patternId === "dots"
+    scene.backgroundMode === "pattern" &&
+    (scene.patternId === "dots" || scene.patternId === "plus" || scene.patternId === "cross" || scene.patternId === "triangle")
       ? "20px 20px"
       : scene.backgroundMode === "pattern"
         ? "cover"

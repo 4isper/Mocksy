@@ -128,6 +128,66 @@ function fillPatternBackground(ctx: CanvasRenderingContext2D, scene: EditorScene
       ctx.putImageData(imageData, 0, 0);
       break;
     }
+    case "plus": {
+      ctx.fillStyle = "#18181b";
+      ctx.fillRect(0, 0, width, height);
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.lineWidth = 2;
+      for (let x = 0; x < width; x += 20) {
+        for (let y = 0; y < height; y += 20) {
+          ctx.beginPath();
+          ctx.moveTo(x + 10, y + 6);
+          ctx.lineTo(x + 10, y + 14);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x + 6, y + 10);
+          ctx.lineTo(x + 14, y + 10);
+          ctx.stroke();
+        }
+      }
+      break;
+    }
+    case "cross": {
+      ctx.fillStyle = "#18181b";
+      ctx.fillRect(0, 0, width, height);
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      for (let x = 0; x < width; x += 20) {
+        for (let y = 0; y < height; y += 20) {
+          ctx.beginPath();
+          ctx.moveTo(x + 7, y + 7);
+          ctx.lineTo(x + 13, y + 13);
+          ctx.moveTo(x + 13, y + 7);
+          ctx.lineTo(x + 7, y + 13);
+          ctx.stroke();
+        }
+      }
+      break;
+    }
+    case "triangle": {
+      ctx.fillStyle = "#18181b";
+      ctx.fillRect(0, 0, width, height);
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.lineWidth = 1.5;
+      for (let x = 0; x < width; x += 20) {
+        for (let y = 0; y < height; y += 20) {
+          ctx.beginPath();
+          ctx.moveTo(x + 5, y);
+          ctx.lineTo(x + 10, y + 20);
+          ctx.lineTo(x, y + 20);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x + 15, y + 20);
+          ctx.lineTo(x + 10, y);
+          ctx.lineTo(x + 20, y);
+          ctx.closePath();
+          ctx.stroke();
+        }
+      }
+      break;
+    }
     default:
       ctx.fillStyle = "#18181b";
       ctx.fillRect(0, 0, width, height);

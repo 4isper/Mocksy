@@ -33,7 +33,10 @@ export const backgroundPresets: BackgroundPreset[] = [
   { id: "dots", kind: "pattern", swatch: "#18181b", patternId: "dots" },
   { id: "grid", kind: "pattern", swatch: "#18181b", patternId: "grid" },
   { id: "diagonal", kind: "pattern", swatch: "#18181b", patternId: "diagonal" },
-  { id: "noise", kind: "pattern", swatch: "#18181b", patternId: "noise" }
+  { id: "noise", kind: "pattern", swatch: "#18181b", patternId: "noise" },
+  { id: "plus", kind: "pattern", swatch: "#18181b", patternId: "plus" },
+  { id: "cross", kind: "pattern", swatch: "#18181b", patternId: "cross" },
+  { id: "triangle", kind: "pattern", swatch: "#18181b", patternId: "triangle" }
 ];
 
 /** Named appearance presets. Each carries the scene's frame, frame style,

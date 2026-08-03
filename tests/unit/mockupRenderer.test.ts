@@ -212,6 +212,18 @@ describe("buildSceneCss", () => {
     expect(container.background).toContain("feTurbulence");
   });
 
+  it("renders plus, cross and triangle patterns as tiled SVG data URLs", () => {
+    const plus = buildSceneCss(base({ backgroundMode: "pattern", patternId: "plus" }));
+    expect(plus.container.background).toContain("data:image/svg+xml");
+    expect(plus.backgroundSize).toBe("20px 20px");
+    const cross = buildSceneCss(base({ backgroundMode: "pattern", patternId: "cross" }));
+    expect(decodeURIComponent(String(cross.container.background))).toContain('stroke-width="2"');
+    expect(cross.backgroundSize).toBe("20px 20px");
+    const triangle = buildSceneCss(base({ backgroundMode: "pattern", patternId: "triangle" }));
+    expect(decodeURIComponent(String(triangle.container.background))).toContain("M5 0L10 20");
+    expect(triangle.backgroundSize).toBe("20px 20px");
+  });
+
   it("falls back to transparent for an unknown pattern id", () => {
     const { container } = buildSceneCss(base({ backgroundMode: "pattern", patternId: "bogus" as never }));
     expect(container.background).toBe("transparent");

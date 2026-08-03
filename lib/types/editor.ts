@@ -2,7 +2,7 @@ export type BackgroundMode = "transparent" | "solid" | "gradient" | "image" | "p
 
 export type GradientType = "linear" | "radial";
 
-export type PatternId = "dots" | "grid" | "diagonal" | "noise";
+export type PatternId = "dots" | "grid" | "diagonal" | "noise" | "plus" | "cross" | "triangle";
 
 export type AnnotationType = "text" | "arrow" | "rect" | "circle";
 

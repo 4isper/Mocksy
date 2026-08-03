@@ -4,7 +4,7 @@ import { renderMockupToCanvas } from "@/lib/render/renderMockup";
 import { getFrameSpec, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
 import { initialScene } from "@/lib/state/editorStore";
 import { layoutFrameGrid } from "@/lib/state/editorHelpers";
-import type { EditorScene, MediaLayer } from "@/lib/types/editor";
+import type { EditorScene, MediaLayer, PatternId } from "@/lib/types/editor";
 
 function layer(overrides: Partial<MediaLayer> = {}): MediaLayer {
   return { ...initialScene.layers[0]!, id: overrides.id ?? "layer-test", ...overrides };
@@ -376,6 +376,44 @@ describe("renderMockupToCanvas background modes", () => {
       null, undefined, undefined, 400, 300, 2
     );
     expect(strokeCalls).toBeGreaterThan(0);
+  });
+
+  it("renders plus, cross and triangle pattern backgrounds via strokes", () => {
+    const patternIds: PatternId[] = ["plus", "cross", "triangle"];
+    for (const patternId of patternIds) {
+      let strokeCalls = 0;
+      const ctx = {
+        clearRect: () => {},
+        fillRect: () => {},
+        save: () => {},
+        restore: () => {},
+        beginPath: () => {},
+        moveTo: () => {},
+        lineTo: () => {},
+        quadraticCurveTo: () => {},
+        closePath: () => {},
+        clip: () => {},
+        fill: () => {},
+        stroke: () => { strokeCalls++; },
+        createLinearGradient: () => ({ addColorStop: () => {} }),
+        drawImage: () => {},
+        set fillStyle(_v: unknown) {},
+        set strokeStyle(_v: unknown) {},
+        set lineWidth(_v: unknown) {},
+        set lineCap(_v: unknown) {},
+        set shadowColor(_v: unknown) {},
+        set shadowBlur(_v: unknown) {},
+        set shadowOffsetX(_v: unknown) {},
+        set shadowOffsetY(_v: unknown) {}
+      };
+      const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+      renderMockupToCanvas(
+        canvas,
+        { ...initialScene, backgroundMode: "pattern", patternId, layers: [] },
+        null, undefined, undefined, 400, 300, 2
+      );
+      expect(strokeCalls, `pattern "${patternId}" should draw strokes`).toBeGreaterThan(0);
+    }
   });
 });
 

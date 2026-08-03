@@ -236,6 +236,19 @@ describe("BackgroundControls", () => {
     expect(screen.getByTitle("preset.noise")).toBeInTheDocument();
   });
 
+  it("renders and applies the plus, cross and triangle pattern presets", async () => {
+    render(<BackgroundControls {...baseProps} backgroundMode="pattern" patternId="plus" />);
+    // The swatches embed an SVG data URI which happy-dom's CSSOM drops; assert
+    // their presence and click behaviour instead of the style.
+    for (const id of ["plus", "cross", "triangle"]) {
+      expect(screen.getByTitle(`preset.${id}`)).toBeInTheDocument();
+    }
+    await userEvent.click(screen.getByTitle("preset.cross"));
+    expect(setters.setBackgroundPattern).toHaveBeenCalledWith("cross");
+    await userEvent.click(screen.getByTitle("preset.triangle"));
+    expect(setters.setBackgroundPattern).toHaveBeenCalledWith("triangle");
+  });
+
   it("uploads a background image and applies it", async () => {
     mockLoad.mockResolvedValue({ url: "blob:bg", mediaType: "image", mediaName: "bg.png" });
     render(<BackgroundControls {...baseProps} />);

@@ -533,6 +533,9 @@
     "aurora": "Aurora",
     "candy": "Candy",
     "fire": "Fire",
-    "ice": "Ice"
+    "ice": "Ice",
+    "plus": "Plus",
+    "cross": "Cross",
+    "triangle": "Triangle"
   }
 }
