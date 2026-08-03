@@ -3,6 +3,9 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 60_000,
+  // Retry flaky browser tests on CI (video/GIF exports are timing-sensitive);
+  // keep local runs single-shot for fast iteration.
+  retries: process.env.CI ? 2 : 0,
   expect: { timeout: 15_000 },
   use: {
     baseURL: process.env.BASE_URL ?? "http://localhost:3000"

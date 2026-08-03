@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
 
+// Video/GIF exports run MediaRecorder plus the 32MB FFmpeg WASM encoder inside
+// the browser tab; on slow/shared CI runners they need generous headroom.
+const VIDEO_EXPORT_TIMEOUT = 180_000;
+const VIDEO_EXPORT_EVENT_TIMEOUT = 170_000;
+
 // Frame/Style/Animation/Aspect are now segmented button groups, not <select>.
 // Pick the option by its visible label inside the matching group.
 async function selectFrame(page: import("@playwright/test").Page, label: string) {
@@ -655,6 +660,7 @@ test("rejects unsupported file types with an inline error", async ({ page }) => 
 });
 
 test("exporting an image scene triggers an MP4 download", async ({ page }) => {
+  test.setTimeout(VIDEO_EXPORT_TIMEOUT);
   await page.goto("/");
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
     name: "sample.png",
@@ -681,6 +687,7 @@ test("exporting an image scene triggers an MP4 download", async ({ page }) => {
 });
 
 test("exporting an overlay phone frame (16 Pro) produces an MP4", async ({ page }) => {
+  test.setTimeout(VIDEO_EXPORT_TIMEOUT);
   await page.goto("/");
   await page.locator('.segmented[aria-label="Frame"] button', { hasText: "16 Pro" }).first().click();
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
@@ -761,6 +768,7 @@ test("copy PNG button writes the mockup image to the clipboard", async ({ page, 
 });
 
 test("exporting an MP4 via keyboard shortcut triggers a download", async ({ page }) => {
+  test.setTimeout(VIDEO_EXPORT_TIMEOUT);
   await page.goto("/");
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
     name: "sample.png",
@@ -772,7 +780,7 @@ test("exporting an MP4 via keyboard shortcut triggers a download", async ({ page
   });
   await expect(previewMedia(page)).toBeVisible();
 
-  const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
+  const downloadPromise = page.waitForEvent("download", { timeout: VIDEO_EXPORT_EVENT_TIMEOUT });
   await page.keyboard.press("Control+Shift+e");
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/\.mp4$/);
@@ -790,8 +798,8 @@ test("exporting a GIF via keyboard shortcut triggers a download", async ({ page 
   });
   await expect(previewMedia(page)).toBeVisible();
 
-  test.setTimeout(120_000);
-  const downloadPromise = page.waitForEvent("download", { timeout: 100_000 });
+  test.setTimeout(VIDEO_EXPORT_TIMEOUT);
+  const downloadPromise = page.waitForEvent("download", { timeout: VIDEO_EXPORT_EVENT_TIMEOUT });
   await page.keyboard.press("Control+Shift+g");
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/\.gif$/);
@@ -1047,13 +1055,14 @@ test("exporting an image scene produces a self-contained HTML document", async (
 });
 
 test("exporting a video scene triggers a WebM download", async ({ page }) => {
+  test.setTimeout(VIDEO_EXPORT_TIMEOUT);
   await page.goto("/");
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles("public/sample-video.mp4");
   await expect(page.locator("#preview-canvas video")).toBeVisible();
 
   await openExportDialog(page);
   await chooseExportFormat(page, "WebM");
-  const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
+  const downloadPromise = page.waitForEvent("download", { timeout: VIDEO_EXPORT_EVENT_TIMEOUT });
   await page.getByRole("button", { name: "Export WebM" }).click();
   const { name, buffer } = await downloadBuffer(downloadPromise);
   expect(name).toMatch(/\.webm$/);
@@ -1298,6 +1307,7 @@ test("frame instances have keyboard-accessible role and tabindex", async ({ page
 });
 
 test("GIF export of an image scene downloads a non-empty file", async ({ page }) => {
+  test.setTimeout(VIDEO_EXPORT_TIMEOUT);
   await page.goto("/");
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
     name: "sample.png",
@@ -1311,7 +1321,7 @@ test("GIF export of an image scene downloads a non-empty file", async ({ page })
 
   await openExportDialog(page);
   await chooseExportFormat(page, "GIF");
-  const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
+  const downloadPromise = page.waitForEvent("download", { timeout: VIDEO_EXPORT_EVENT_TIMEOUT });
   await page.getByRole("button", { name: "Export GIF" }).click();
   const { name, buffer } = await downloadBuffer(downloadPromise);
   expect(name).toMatch(/\.gif$/);
@@ -1319,13 +1329,14 @@ test("GIF export of an image scene downloads a non-empty file", async ({ page })
 });
 
 test("MP4 export of a video scene produces a non-empty file", async ({ page }) => {
+  test.setTimeout(VIDEO_EXPORT_TIMEOUT);
   await page.goto("/");
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles("public/sample-video.mp4");
   await expect(page.locator("#preview-canvas video")).toBeVisible();
 
   await openExportDialog(page);
   await chooseExportFormat(page, "MP4");
-  const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
+  const downloadPromise = page.waitForEvent("download", { timeout: VIDEO_EXPORT_EVENT_TIMEOUT });
   await page.getByRole("button", { name: "Export MP4" }).click();
   const { name, buffer } = await downloadBuffer(downloadPromise);
   expect(name).toMatch(/\.mp4$/);
@@ -1455,13 +1466,14 @@ test("exporting with a gradient background produces a non-empty PNG", async ({ p
 });
 
 test("exporting a video scene as MP4 produces a non-empty file with video content", async ({ page }) => {
+  test.setTimeout(VIDEO_EXPORT_TIMEOUT);
   await page.goto("/");
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles("public/sample-video.mp4");
   await expect(page.locator("#preview-canvas video")).toBeVisible();
 
   await openExportDialog(page);
   await chooseExportFormat(page, "MP4");
-  const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
+  const downloadPromise = page.waitForEvent("download", { timeout: VIDEO_EXPORT_EVENT_TIMEOUT });
   await page.getByRole("button", { name: "Export MP4" }).click();
   const { name, buffer } = await downloadBuffer(downloadPromise);
   expect(name).toMatch(/\.mp4$/);

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { useEditorExport } from "@/lib/hooks/useEditorExport";
+import { warmUpFfmpeg } from "@/lib/export/exportVideo";
 import { useEditorShortcuts } from "@/lib/hooks/useEditorShortcuts";
 import { ControlPanel } from "@/components/editor/ControlPanel";
 import { ExportDialog } from "@/components/editor/ExportDialog";
@@ -108,6 +109,26 @@ export function EditorShell() {
     const restored = useProjectsStore.getState().hydrate();
     setScene(restored, false);
   }, [setScene]);
+
+  useEffect(() => {
+    // Preload the FFmpeg encoder in the background so the first video/GIF
+    // export doesn't block on the 32MB WASM download + worker boot. Gated on
+    // the first user interaction: keeps the initial page load light (and the
+    // Lighthouse byte-weight audit clean) for visitors who never export video.
+    const arm = () => {
+      if ("requestIdleCallback" in window) {
+        window.requestIdleCallback(() => warmUpFfmpeg(), { timeout: 5000 });
+      } else {
+        setTimeout(warmUpFfmpeg, 1000);
+      }
+    };
+    window.addEventListener("pointerdown", arm, { once: true });
+    window.addEventListener("keydown", arm, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", arm);
+      window.removeEventListener("keydown", arm);
+    };
+  }, []);
 
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevSceneRef = useRef(scene);

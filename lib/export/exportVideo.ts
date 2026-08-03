@@ -16,9 +16,11 @@ import {
   QUALITY,
   captureWebm,
   captureWebmWithRetry,
+  warmUpFfmpeg,
 } from "@/lib/export/exportVideoCore";
 
 export { terminateFfmpeg };
+export { warmUpFfmpeg };
 export { sanitizeFilename };
 export { activeLayerOf };
 export { exportBaseName };

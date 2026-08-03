@@ -18,7 +18,8 @@ const mockExportVideo = vi.hoisted(() => ({
   exportVideo: vi.fn(),
   exportWebm: vi.fn(),
   exportWebpAnim: vi.fn(),
-  exportGif: vi.fn()
+  exportGif: vi.fn(),
+  warmUpFfmpeg: vi.fn()
 }));
 
 vi.mock("@/lib/export/exportImage", () => mockExportImage);
