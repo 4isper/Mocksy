@@ -23,6 +23,17 @@ describe("normalizeScene", () => {
     expect(s.borderRadius).toBe(initialScene.borderRadius);
   });
 
+  it("clamps tilt into ±25° and rejects NaN", () => {
+    const s = normalizeScene({ tiltX: 99, tiltY: -99 });
+    expect(s.tiltX).toBe(25);
+    expect(s.tiltY).toBe(-25);
+    const nan = normalizeScene({ tiltX: Number.NaN, tiltY: Number.NaN });
+    expect(nan.tiltX).toBe(initialScene.tiltX);
+    expect(nan.tiltY).toBe(initialScene.tiltY);
+    expect(normalizeScene({}).tiltX).toBe(0);
+    expect(normalizeScene({}).tiltY).toBe(0);
+  });
+
   it("clamps media offset into [-1, 1] and falls back for NaN", () => {
     const s = normalizeScene({ layers: [{ mediaOffsetX: 5, mediaOffsetY: Number.NaN }] });
     expect(s.layers[0]!.mediaOffsetX).toBe(1);

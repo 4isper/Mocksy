@@ -11,6 +11,8 @@ export const initialScene: EditorScene = {
   stylePreset: "default",
   shadowOpacity: 0.4,
   borderRadius: 20,
+  tiltX: 0,
+  tiltY: 0,
   backgroundMode: "gradient",
   backgroundColor: "#111827",
   gradientFrom: "#1d4ed8",

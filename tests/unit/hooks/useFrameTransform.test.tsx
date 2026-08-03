@@ -48,6 +48,21 @@ describe("useFrameTransform", () => {
     expect(node.current.style.transform).toBe("scale(3) translate(0px, 0px)");
   });
 
+  it("prepends the tilt prefix to the static transform", () => {
+    const node = { current: document.createElement("div") };
+    const layer = { ...baseLayer, animationPreset: "none" as const, zoom: 2 };
+    renderHook(() => useFrameTransform(node, layer, 3000, "perspective(1200px) rotateX(10deg) rotateY(15deg) "));
+    expect(node.current.style.transform).toBe("perspective(1200px) rotateX(10deg) rotateY(15deg) scale(2) translate(0px, 0px)");
+  });
+
+  it("prepends the tilt prefix to animated keyframes", () => {
+    const node = { current: document.createElement("div") };
+    const layer = { ...baseLayer, animationPreset: "zoomIn" as const, zoom: 1 };
+    renderHook(() => useFrameTransform(node, layer, 3000, "perspective(1200px) rotateY(15deg) "));
+    rafCallbacks[0]!(performance.now());
+    expect(node.current.style.transform).toBe("perspective(1200px) rotateY(15deg) scale(1) translate(0px, 0px)");
+  });
+
   it("runs the rAF loop and interpolates keyframes for zoomIn", () => {
     const node = { current: document.createElement("div") };
     const layer = { ...baseLayer, animationPreset: "zoomIn" as const, zoom: 1 };

@@ -27,6 +27,8 @@ export type LayersSlice = Pick<
   | "setMediaFit"
   | "setShadowOpacity"
   | "setBorderRadius"
+  | "setTiltX"
+  | "setTiltY"
   | "setVideoMuted"
   | "setVideoLoop"
   | "setVideoAutoplay"
@@ -146,6 +148,8 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
     setMediaFit: (mediaFit) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaFit }, s.activeLayerId) }, "mediaFit")),
     setShadowOpacity: (shadowOpacity) => set((s) => pushHistory(s, { ...s.scene, shadowOpacity }, "shadow")),
     setBorderRadius: (borderRadius) => set((s) => pushHistory(s, { ...s.scene, borderRadius }, "radius")),
+    setTiltX: (tiltX) => set((s) => pushHistory(s, { ...s.scene, tiltX }, "tilt")),
+    setTiltY: (tiltY) => set((s) => pushHistory(s, { ...s.scene, tiltY }, "tilt")),
     setVideoMuted: (videoMuted) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoMuted }, s.activeLayerId) })),
     setVideoLoop: (videoLoop) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoLoop }, s.activeLayerId) })),
     setVideoAutoplay: (videoAutoplay) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoAutoplay }, s.activeLayerId) })),

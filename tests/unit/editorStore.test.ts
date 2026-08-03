@@ -848,6 +848,20 @@ describe("scene-wide settings", () => {
     expect(store().scene.shadowOpacity).toBe(0.8);
   });
 
+  it("setTiltX and setTiltY update the scene and push history", () => {
+    reset();
+    store().setTiltX(12);
+    expect(store().scene.tiltX).toBe(12);
+    expect(store().scene.tiltY).toBe(0);
+    store().setTiltY(-8);
+    expect(store().scene.tiltY).toBe(-8);
+    expect(store().scene.tiltX).toBe(12);
+    // rapid slider updates coalesce into a single undo entry
+    expect(store().past.length).toBe(1);
+    expect(store().past[0]!.tiltX).toBe(0);
+    expect(store().past[0]!.tiltY).toBe(0);
+  });
+
   it("setVideoMuted toggles the muted flag", () => {
     reset();
     expect(store().scene.layers[0]!.videoMuted).toBe(true);

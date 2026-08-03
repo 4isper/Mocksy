@@ -10,6 +10,7 @@ import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { Check } from "lucide-react";
 import { useFrameTransform } from "@/lib/hooks/useFrameTransform";
+import { tiltCss } from "@/lib/render/tilt";
 import { useScenePalette } from "@/lib/hooks/useScenePalette";
 import { AnnotationItem } from "@/components/editor/AnnotationItem";
 import { FrameInstanceGrid } from "@/components/editor/FrameInstanceGrid";
@@ -60,7 +61,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
    const frameRef = useRef<HTMLDivElement>(null);
    const videoRef = useRef<HTMLVideoElement | null>(null);
    const canvasRef = useRef<HTMLDivElement>(null);
-   useFrameTransform(frameRef, activeLayer, scene.animationDurationMs);
+   const tiltPrefix = useMemo(() => tiltCss(scene), [scene.tiltX, scene.tiltY]); // eslint-disable-line react-hooks/exhaustive-deps
+   useFrameTransform(frameRef, activeLayer, scene.animationDurationMs, tiltPrefix);
 
   // Mirror the Timeline scrubber (driven by VideoOptions) onto the actual
   // <video>. The onTimeUpdate handler also writes videoCurrentTime back to the

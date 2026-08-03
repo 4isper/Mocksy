@@ -15,9 +15,15 @@ import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
  * + media together), matching the export where the frame box is multiplied by
  * the zoom. `durationMs` is the length of one animation loop.
  * When the user prefers reduced motion, the animation loop is skipped and a
- * static frame is shown instead.
+ * static frame is shown instead. `tiltPrefix` (from `tiltCss`) is prepended so
+ * the 3D tilt and the zoom/pan compose into a single transform.
  */
-export function useFrameTransform(node: React.RefObject<HTMLDivElement | null>, layer: MediaLayer | undefined, durationMs = 3000) {
+export function useFrameTransform(
+  node: React.RefObject<HTMLDivElement | null>,
+  layer: MediaLayer | undefined,
+  durationMs = 3000,
+  tiltPrefix = ""
+) {
   const layerRef = useRef(layer);
   useEffect(() => {
     layerRef.current = layer;
@@ -29,7 +35,7 @@ export function useFrameTransform(node: React.RefObject<HTMLDivElement | null>, 
     const el = node.current;
     if (!el) return;
     const apply = (zoom: number, x: number, y: number) => {
-      el.style.setProperty("transform", `scale(${zoom}) translate(${x * PAN_OFFSET_SCALE}px, ${y * PAN_OFFSET_SCALE}px)`);
+      el.style.setProperty("transform", `${tiltPrefix}scale(${zoom}) translate(${x * PAN_OFFSET_SCALE}px, ${y * PAN_OFFSET_SCALE}px)`);
     };
     if (!animates) {
       const base = sampleVideoTransform(layerRef.current ?? ({} as MediaLayer), 0);
@@ -49,5 +55,5 @@ export function useFrameTransform(node: React.RefObject<HTMLDivElement | null>, 
     return () => cancelAnimationFrame(raf);
     // Re-seed when the preset, zoom, or pan changes so the static branch
     // re-applies, and the rAF loop picks up fresh values.
-  }, [node, animates, durationMs, layer?.animationPreset, layer?.zoom, layer?.mediaOffsetX, layer?.mediaOffsetY]);
+  }, [node, animates, durationMs, tiltPrefix, layer?.animationPreset, layer?.zoom, layer?.mediaOffsetX, layer?.mediaOffsetY]);
 }

@@ -4,6 +4,7 @@ import type { EditorScene } from "@/lib/types/editor";
 import { computeFrameBox, computeFrameInstances, type FrameBox } from "@/lib/render/frameGeometry";
 import { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
 import { frameViewBox, getFrameSpec, DEFAULT_VIEWBOX } from "@/lib/render/frames";
+import { tiltMatrixSvg } from "@/lib/render/tilt";
 import { resolveExportTransform, waitForImage } from "@/lib/export/exportImage";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { buildEmbeddedFontCss, collectFontStacks } from "@/lib/export/fontEmbed";
@@ -104,18 +105,21 @@ function mediaScale(fit: "cover" | "contain", innerW: number, innerH: number, mw
   return fit === "contain" ? Math.min(innerW / mw, innerH / mh) : Math.max(innerW / mw, innerH / mh);
 }
 
-function groupClipMarkup(group: SvgFrameGroup, index: number): string {
+function groupClipRect(group: SvgFrameGroup): string {
   const { box } = group;
   const isCircular = group.isCircular;
   const rounded = isCircular
     ? `rx="${num(Math.min(box.innerW, box.innerH) / 2)}"`
     : `rx="${num(Math.min(box.innerRadius, Math.min(box.innerW, box.innerH) / 2))}"`;
-  return `<clipPath id="clip-${index}"><rect x="${num(box.innerX)}" y="${num(box.innerY)}" width="${num(box.innerW)}" height="${num(box.innerH)}" ${rounded}/></clipPath>`;
+  return `<rect x="${num(box.innerX)}" y="${num(box.innerY)}" width="${num(box.innerW)}" height="${num(box.innerH)}" ${rounded}/>`;
+}
+
+function groupClipMarkup(group: SvgFrameGroup, index: number): string {
+  return `<clipPath id="clip-${index}">${groupClipRect(group)}</clipPath>`;
 }
 
 function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: number): string {
   const { box } = group;
-  const isCircular = group.isCircular;
 
   const mediaFit = group.mediaFit ?? "cover";
   const scale = mediaScale(mediaFit, box.innerW, box.innerH, group.mediaWidth || box.innerW, group.mediaHeight || box.innerH);
@@ -131,6 +135,19 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
       ? `<image href="${group.mediaHref}" x="${num(dx)}" y="${num(dy)}" width="${num(dw)}" height="${num(dh)}"/>`
       : `<rect x="${num(box.innerX)}" y="${num(box.innerY)}" width="${num(box.innerW)}" height="${num(box.innerH)}" fill="${RENDER.emptyMediaFill}"/>`;
 
+  // SVG has no perspective, so a tilted scene uses the affine best-fit matrix.
+  // The clip moves inside the transformed group so its coordinates stay in
+  // the group's (rotated) user space instead of the root one.
+  const tilt = tiltMatrixSvg(scene, box);
+  if (tilt) {
+    return `<g transform="${tilt}"><clipPath id="clip-t${index}">${groupClipRect(group)}</clipPath><g clip-path="url(#clip-t${index})">${media}</g>${frameGroupInner(scene, group)}</g>`;
+  }
+  return `<g clip-path="url(#clip-${index})">${media}</g>${frameGroupInner(scene, group)}`;
+}
+
+function frameGroupInner(scene: EditorScene, group: SvgFrameGroup): string {
+  const { box } = group;
+  const isCircular = group.isCircular;
   let frame = "";
   if (group.isOverlay) {
     if (group.overlayInner) {
@@ -150,8 +167,7 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
       frame += `<rect x="${num(box.x)}" y="${num(box.y)}" width="${num(box.width)}" height="${num(box.height)}" rx="${radius}" fill="none" stroke="${strokeStyle}" stroke-width="${strokeWidth}"/>`;
     }
   }
-
-  return `<g clip-path="url(#clip-${index})">${media}</g>${frame}`;
+  return frame;
 }
 
 function annotationsMarkup(scene: EditorScene, width: number, height: number): string {

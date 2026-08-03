@@ -197,6 +197,8 @@
     "watermarkSize": "Размер водяного знака ({val}px)",
     "watermarkText": "Текст водяного знака",
     "zoom": "Масштаб",
+    "tiltX": "Наклон по X",
+    "tiltY": "Наклон по Y",
     "noLayers": "Нет слоёв.",
     "noAnnotations": "Нет аннотаций."
   },

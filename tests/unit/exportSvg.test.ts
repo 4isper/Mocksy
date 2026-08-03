@@ -135,6 +135,37 @@ describe("buildSvgMarkup", () => {
     expect(markup).toContain('<image href="data:image/png;base64,AAAA" x="200" y="250" width="400" height="100"/>');
   });
 
+  it("wraps a tilted frame group in an affine matrix with an inline clip", () => {
+    const scene = sceneWith({ frame: "none", backgroundMode: "transparent", tiltX: 15, tiltY: 10 });
+    const box = boxFor(scene);
+    const markup = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      zoom: 1,
+      groups: [{ box, mediaHref: MEDIA, mediaWidth: 400, mediaHeight: 300, isOverlay: false, overlayInner: null }]
+    });
+    expect(markup).toMatch(/<g transform="matrix\(/);
+    expect(markup).toContain('clip-path="url(#clip-t0)"');
+    expect(markup).toContain('<clipPath id="clip-t0">');
+    // the root-space clip stays unused when tilted
+    expect(markup).not.toContain('clip-path="url(#clip-0)"');
+  });
+
+  it("keeps the plain clip when the scene is not tilted", () => {
+    const scene = sceneWith({ frame: "none", backgroundMode: "transparent" });
+    const box = boxFor(scene);
+    const markup = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      zoom: 1,
+      groups: [{ box, mediaHref: MEDIA, mediaWidth: 400, mediaHeight: 300, isOverlay: false, overlayInner: null }]
+    });
+    expect(markup).toContain('clip-path="url(#clip-0)"');
+    expect(markup).not.toContain("matrix(");
+  });
+
   it("renders an empty media screen when no media is provided", () => {
     const scene = sceneWith({ frame: "none", backgroundMode: "transparent" });
     const box = boxFor(scene);

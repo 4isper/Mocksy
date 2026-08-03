@@ -55,6 +55,13 @@ describe("buildAnimationCss", () => {
     expect(css).toContain("animation: mockup-anim 5s linear infinite;");
   });
 
+  it("prepends the tilt prefix to keyframes and the reduced-motion static frame", () => {
+    const css = buildAnimationCss(layerWith({ animationPreset: "zoomIn", zoom: 1 }), 3, "perspective(1200px) rotateX(10deg) rotateY(15deg) ");
+    expect(css).toContain("0% { transform: perspective(1200px) rotateX(10deg) rotateY(15deg) scale(1) translate(0px, 0px); }");
+    expect(css).toContain("100% { transform: perspective(1200px) rotateX(10deg) rotateY(15deg) scale(1.12) translate(0px, 0px); }");
+    expect(css).toContain("transform: perspective(1200px) rotateX(10deg) rotateY(15deg) scale(1) translate(0px, 0px);");
+  });
+
   it("pins a static frame under prefers-reduced-motion", () => {
     const css = buildAnimationCss(layerWith({ animationPreset: "zoomIn", zoom: 1 }));
     expect(css).toContain("@media (prefers-reduced-motion: reduce)");
@@ -88,6 +95,12 @@ describe("buildHtmlSnippet", () => {
     expect(html).toContain("border-radius: 38px;");
     expect(html).toContain("object-fit: cover;");
     expect(html).toContain("transform: scale(1) translate(0px, 0px);");
+  });
+
+  it("prepends the tilt transform to the static frame", () => {
+    const scene = sceneWith({ tiltX: 15, tiltY: 10 });
+    const html = buildHtmlSnippet(scene, { mediaHref: MEDIA, mediaType: "image", backgroundHref: null, overlayHref: null });
+    expect(html).toContain("transform: perspective(1200px) rotateX(10deg) rotateY(15deg) scale(1) translate(0px, 0px);");
   });
 
   it("embeds the background image and blur", () => {

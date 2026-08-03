@@ -131,7 +131,7 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 | State | Zustand |
 | Styling | Tailwind CSS v4 |
 | Video | @ffmpeg/ffmpeg (client-side WebM→MP4 / GIF / WebP) |
-| Unit tests | Vitest (1,121 tests, 66 files) |
+| Unit tests | Vitest (1,146 tests, 67 files) |
 | E2E tests | Playwright (82 tests: 73 editor, 9 visual regression) |
 | Language | TypeScript (strict) |
 
@@ -192,7 +192,7 @@ tests/
 
 ```bash
 npm run typecheck       # TypeScript strict check
-npm run test            # Vitest (1,121 tests, 66 files)
+npm run test            # Vitest (1,146 tests, 67 files)
 npm run test:coverage   # Unit tests with coverage report
 npm run test:e2e        # Playwright (requires browser install)
 npm run test:vrt        # Visual regression tests

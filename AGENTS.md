@@ -67,6 +67,7 @@ Free browser-based mockup editor (Next.js 16 + React 19 + TypeScript). All media
 - **Live preview**: `lib/render/mockupRenderer.ts` → CSS.
 - **Canvas export**: `lib/render/renderMockup.ts` → 2D canvas.
 - **Video export**: `lib/render/videoComposer.ts` → keyframes → `MediaRecorder` + `@ffmpeg/ffmpeg` for WebM→MP4.
+- **3D tilt** (`scene.tiltX`/`tiltY`, ±25°): one shared projection in `lib/render/tilt.ts` keeps every renderer in sync — CSS preview/HTML use `perspective(1200px) rotateX(tiltY) rotateY(tiltX)` (`tiltCss`), canvas exports warp the flat composite through `projectTiltedRect` + `drawTiltedQuad`, and SVG (no perspective) uses the affine `tiltMatrixSvg`. When adding a renderer, reuse `tilt.ts` — never reimplement the projection.
 
 ## Export
 
@@ -103,7 +104,7 @@ tests/e2e/        Playwright (editor.spec.ts, visual.spec.ts)
 
 ## Testing
 
-- `npm run test` — Vitest (1,121 tests, 66 files)
+- `npm run test` — Vitest (1,146 tests, 67 files)
 - `npm run test:e2e` — Playwright (73 tests in editor.spec.ts, 9 in visual.spec.ts; requires browser install, needs dev server)
 - `npm run test:vrt` — Visual regression tests via Playwright
 - `npm run test:vrt:update` — Update visual regression baselines

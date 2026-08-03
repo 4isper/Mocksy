@@ -9,6 +9,7 @@ import { isVideoLayer } from "@/lib/render/mediaKind";
 import type { SceneCss } from "@/lib/render/mockupRenderer";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { snapToGrid } from "@/lib/render/grid";
+import { tiltCss } from "@/lib/render/tilt";
 
 interface FrameInstanceGridProps {
   scene: EditorScene;
@@ -198,7 +199,7 @@ export function FrameInstanceGrid({
         const zoom = layer?.zoom ?? 1;
         const offsetX = layer?.mediaOffsetX ?? 0;
         const offsetY = layer?.mediaOffsetY ?? 0;
-        const zoomStyle = { transform: "scale(" + zoom + ") translate(" + (offsetX * 2) + "px, " + (offsetY * 2) + "px)", transformOrigin: "center" };
+        const zoomStyle = { transform: tiltCss(scene) + "scale(" + zoom + ") translate(" + (offsetX * 2) + "px, " + (offsetY * 2) + "px)", transformOrigin: "center" };
         const isSelected = activeFrameInstanceId === inst.id;
         return (
           <div

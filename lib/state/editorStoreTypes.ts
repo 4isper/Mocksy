@@ -95,6 +95,8 @@ export interface EditorStoreState {
   setMediaFit: (fit: "cover" | "contain") => void;
   setShadowOpacity: (shadowOpacity: number) => void;
   setBorderRadius: (radius: number) => void;
+  setTiltX: (tiltX: number) => void;
+  setTiltY: (tiltY: number) => void;
   setBackgroundSolid: (color: string) => void;
   setBackgroundGradient: (from: string, to: string, angle?: number, gradientVia?: string, gradientType?: "linear" | "radial") => void;
   setBackgroundTransparent: () => void;

@@ -6,6 +6,7 @@ import { RENDER, drawAnnotations, drawFrameAndMedia, drawWatermark } from "@/lib
 import { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
 import type { FrameBox, RenderTransform } from "@/lib/render/frameGeometry";
 import { computeFrameBox, computeFrameInstances } from "@/lib/render/frameGeometry";
+import { TILT_PERSPECTIVE, drawTiltedQuad, hasTilt, projectTiltedRect } from "@/lib/render/tilt";
 
 export { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
 export type { FrameBox, RenderTransform } from "@/lib/render/frameGeometry";
@@ -194,6 +195,39 @@ function fillPatternBackground(ctx: CanvasRenderingContext2D, scene: EditorScene
   }
 }
 
+/** Renders one frame with the 3D tilt: draws the flat frame composite (device
+ *  + media + shadow) into an offscreen canvas padded so the drop shadow fits,
+ *  then warps it into the projected quad. Only used when the scene is tilted. */
+function drawTiltedFrame(
+  ctx: CanvasRenderingContext2D,
+  scene: EditorScene,
+  spec: ReturnType<typeof getFrameSpec>,
+  layer: MediaLayer | undefined,
+  box: FrameBox,
+  dpiScale: number,
+  zoom: number,
+  media: CanvasImageSource | null,
+  overlay: CanvasImageSource | null
+) {
+  const padX = RENDER.shadowBlur * dpiScale * zoom + 4;
+  const padY = (RENDER.shadowBlur + RENDER.shadowOffsetY) * dpiScale * zoom + 4;
+  const w = Math.ceil(box.width + padX * 2);
+  const h = Math.ceil(box.height + padY * 2);
+  const off = document.createElement("canvas");
+  off.width = w;
+  off.height = h;
+  const octx = off.getContext("2d");
+  if (!octx) return;
+  drawFrameAndMedia(octx, scene, spec, layer, { ...box, x: box.x - padX, y: box.y - padY }, dpiScale, zoom, media, overlay);
+  const quad = projectTiltedRect(
+    { x: box.x - padX, y: box.y - padY, width: w, height: h },
+    scene.tiltX,
+    scene.tiltY,
+    TILT_PERSPECTIVE * dpiScale
+  );
+  drawTiltedQuad(ctx, off, quad);
+}
+
 export function renderMockupToCanvas(
   canvas: HTMLCanvasElement,
   scene: EditorScene,
@@ -263,7 +297,11 @@ export function renderMockupToCanvas(
       const frameMedia = layer?.id ? (layerMedias?.get(layer.id) ?? null) : media;
       const overlay = layer?.id && instSpec.isOverlay ? (frameOverlays?.get(layer.id) ?? null) : null;
 
-      drawFrameAndMedia(ctx, scene, instSpec, layer, box, dpiScale, instZoom, frameMedia, overlay);
+      if (hasTilt(scene)) {
+        drawTiltedFrame(ctx, scene, instSpec, layer, box, dpiScale, instZoom, frameMedia, overlay);
+      } else {
+        drawFrameAndMedia(ctx, scene, instSpec, layer, box, dpiScale, instZoom, frameMedia, overlay);
+      }
     }
     drawWatermark(ctx, scene, width, height, dpiScale);
     if (scene.annotations.length > 0) drawAnnotations(ctx, scene.annotations, width, height, dpiScale);
@@ -302,7 +340,11 @@ export function renderMockupToCanvas(
   const activeLayerForRender2 = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
    const actualZoom = Math.max(RENDER.minZoom, transform?.zoom ?? activeLayerForRender2?.zoom ?? 1);
 
-  drawFrameAndMedia(ctx, scene, spec, activeLayerForRender2, box, dpiScale, actualZoom, media, frameOverlay ?? null);
+  if (hasTilt(scene)) {
+    drawTiltedFrame(ctx, scene, spec, activeLayerForRender2, box, dpiScale, actualZoom, media, frameOverlay ?? null);
+  } else {
+    drawFrameAndMedia(ctx, scene, spec, activeLayerForRender2, box, dpiScale, actualZoom, media, frameOverlay ?? null);
+  }
 
   if (scene.watermarkEnabled && scene.watermarkText) {
     drawWatermark(ctx, scene, width, height, dpiScale);

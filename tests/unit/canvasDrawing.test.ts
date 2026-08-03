@@ -79,6 +79,8 @@ function scene(overrides: Partial<EditorScene> = {}): EditorScene {
     aspectRatio: "16 / 9",
     stylePreset: "default",
     borderRadius: 12,
+    tiltX: 0,
+    tiltY: 0,
     shadowOpacity: 0.3,
     watermarkEnabled: false,
     watermarkText: "",

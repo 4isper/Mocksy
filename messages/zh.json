@@ -195,7 +195,9 @@
     "bgModePattern": "Pattern",
     "bgModeSolid": "Solid",
     "bgModeTransparent": "Transparent",
-    "bgPresets": "Presets"
+    "bgPresets": "Presets",
+    "tiltX": "Tilt X",
+    "tiltY": "Tilt Y"
   },
   "frame": {
     "none": "无",

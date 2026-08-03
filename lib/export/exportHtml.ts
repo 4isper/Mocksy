@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
+import { tiltCss } from "@/lib/render/tilt";
 import { buildVideoTimeline, sampleVideoTransform } from "@/lib/render/videoComposer";
 import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
@@ -47,14 +48,14 @@ function transformFor(zoom: number, x: number, y: number): string {
 }
 
 /** @keyframes + animation rule for the active layer's animation preset. */
-export function buildAnimationCss(layer: MediaLayer | undefined, durationSec = 3): string {
+export function buildAnimationCss(layer: MediaLayer | undefined, durationSec = 3, tiltPrefix = ""): string {
   if (!layer || layer.animationPreset === "none") return "";
   const timeline = buildVideoTimeline(layer);
   const keyframes = timeline
-    .map((k) => `${num(k.at * 100)}% { transform: ${transformFor(k.zoom, k.x, k.y)}; }`)
+    .map((k) => `${num(k.at * 100)}% { transform: ${tiltPrefix}${transformFor(k.zoom, k.x, k.y)}; }`)
     .join("\n");
   const { zoom: staticZoom, x: staticX, y: staticY } = sampleVideoTransform(layer, 0);
-  const staticTransform = transformFor(staticZoom, staticX, staticY);
+  const staticTransform = `${tiltPrefix}${transformFor(staticZoom, staticX, staticY)}`;
   return `@keyframes mockup-anim {\n${keyframes}\n}\n.frame {\n  animation: mockup-anim ${durationSec}s linear infinite;\n  transform-origin: center;\n}\n@media (prefers-reduced-motion: reduce) {\n  .frame {\n    animation: none;\n    transform: ${staticTransform};\n  }\n}\n`;
 }
 
@@ -112,6 +113,7 @@ export interface HtmlSnippetOptions {
  */
 export function buildHtmlSnippet(scene: EditorScene, opts: HtmlSnippetOptions, activeLayerId: string | null = scene.activeLayerId): string {
   const css = buildSceneCss(scene, activeLayerId);
+  const tiltPrefix = tiltCss(scene);
   const [arW, arH] = scene.aspectRatio.split("/").map((n) => Number(n.trim()));
   const ar = `${arW ?? 16}/${arH ?? 9}`;
   const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
@@ -120,7 +122,7 @@ export function buildHtmlSnippet(scene: EditorScene, opts: HtmlSnippetOptions, a
   let frameCss = serializeCssProperties(css.frame);
   frameCss += "\nz-index: 1;";
   if (activeLayer && activeLayer.animationPreset === "none") {
-    frameCss += `\ntransform: ${transformFor(activeLayer.zoom, 0, 0)};`;
+    frameCss += `\ntransform: ${tiltPrefix}${transformFor(activeLayer.zoom, 0, 0)};`;
   }
   const mediaCss = serializeCssProperties(css.mediaStyle);
   const backgroundCss = css.backgroundImage
@@ -140,7 +142,7 @@ export function buildHtmlSnippet(scene: EditorScene, opts: HtmlSnippetOptions, a
     ? `<span class="wm" style="${scene.watermarkPosition.includes("left") ? "left" : "right"}:16px;${scene.watermarkPosition.includes("top") ? "top" : "bottom"}:16px;font-size:${num(scene.watermarkSize)}px">${escapeHtml(scene.watermarkText)}</span>`
     : "";
 
-  const animationCss = buildAnimationCss(activeLayer, scene.animationDurationMs / 1000);
+  const animationCss = buildAnimationCss(activeLayer, scene.animationDurationMs / 1000, tiltPrefix);
 
   return `<!doctype html>
 <html lang="en">

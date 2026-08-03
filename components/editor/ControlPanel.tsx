@@ -44,6 +44,8 @@ export function ControlPanel() {
     setMediaFit,
     setShadowOpacity,
     setBorderRadius,
+    setTiltX,
+    setTiltY,
     setAnimationDuration,
     setBackgroundSolid,
     setBackgroundGradient,
@@ -81,6 +83,8 @@ export function ControlPanel() {
       setMediaFit: s.setMediaFit,
       setShadowOpacity: s.setShadowOpacity,
       setBorderRadius: s.setBorderRadius,
+      setTiltX: s.setTiltX,
+      setTiltY: s.setTiltY,
       setAnimationDuration: s.setAnimationDuration,
       setBackgroundSolid: s.setBackgroundSolid,
       setBackgroundGradient: s.setBackgroundGradient,
@@ -326,6 +330,20 @@ export function ControlPanel() {
             <div className="range-wrap">
               <input type="range" min={0} max={48} step={1} value={scene.borderRadius} aria-label={t("editor.cornerRadius")} aria-valuetext={`${scene.borderRadius}px`} onChange={(e) => setBorderRadius(Number(e.target.value))} />
               <span className="range-val">{scene.borderRadius}px</span>
+            </div>
+          </label>
+          <label className="field">
+            <span>{t("editor.tiltX")}</span>
+            <div className="range-wrap">
+              <input type="range" min={-25} max={25} step={1} value={scene.tiltX} aria-label={t("editor.tiltX")} aria-valuetext={`${scene.tiltX}°`} onChange={(e) => setTiltX(Number(e.target.value))} />
+              <span className="range-val">{scene.tiltX}°</span>
+            </div>
+          </label>
+          <label className="field">
+            <span>{t("editor.tiltY")}</span>
+            <div className="range-wrap">
+              <input type="range" min={-25} max={25} step={1} value={scene.tiltY} aria-label={t("editor.tiltY")} aria-valuetext={`${scene.tiltY}°`} onChange={(e) => setTiltY(Number(e.target.value))} />
+              <span className="range-val">{scene.tiltY}°</span>
             </div>
           </label>
           </div>

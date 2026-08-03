@@ -107,6 +107,10 @@ export interface EditorScene {
   stylePreset: StylePreset;
   shadowOpacity: number;
   borderRadius: number;
+  /** 3D tilt of the mockup around the vertical axis (left/right), degrees in [-25, 25]. */
+  tiltX: number;
+  /** 3D tilt of the mockup around the horizontal axis (up/down), degrees in [-25, 25]. */
+  tiltY: number;
   backgroundMode: BackgroundMode;
   backgroundColor: string;
   gradientFrom: string;

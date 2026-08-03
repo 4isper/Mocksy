@@ -197,6 +197,8 @@
     "watermarkSize": "Watermark size ({val}px)",
     "watermarkText": "Watermark text",
     "zoom": "Zoom",
+    "tiltX": "Tilt X",
+    "tiltY": "Tilt Y",
     "noLayers": "No layers yet.",
     "noAnnotations": "No annotations yet."
   },

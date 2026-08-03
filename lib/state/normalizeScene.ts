@@ -142,6 +142,8 @@ export function normalizeScene(raw: unknown): EditorScene {
     stylePreset: pick(r.stylePreset, STYLE_PRESETS, initialScene.stylePreset),
     shadowOpacity: num(r.shadowOpacity, initialScene.shadowOpacity, 0, 1),
     borderRadius: num(r.borderRadius, initialScene.borderRadius, 0, 200),
+    tiltX: num(r.tiltX, initialScene.tiltX, -25, 25),
+    tiltY: num(r.tiltY, initialScene.tiltY, -25, 25),
     backgroundMode: pick(r.backgroundMode, BACKGROUND_MODES, initialScene.backgroundMode),
     backgroundColor: str(r.backgroundColor, initialScene.backgroundColor) ?? initialScene.backgroundColor,
     gradientFrom: str(r.gradientFrom, initialScene.gradientFrom) ?? initialScene.gradientFrom,
