@@ -12,8 +12,7 @@ const nextConfig: NextConfig = {
         config.externals = [config.externals || {}];
       }
       config.externals.push({
-        "@ffmpeg/ffmpeg": "@ffmpeg/ffmpeg",
-        "@ffmpeg/util": "@ffmpeg/util"
+        "@ffmpeg/ffmpeg": "@ffmpeg/ffmpeg"
       });
     }
     return config;
