@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
 import { locales } from "@/i18n/locales";
+import { localeCoverage } from "@/i18n/generated";
 
 export function LocaleSwitcher() {
   const t = useTranslations("nav");
@@ -25,11 +26,16 @@ export function LocaleSwitcher() {
         onChange={(e) => switchLocale(e.target.value)}
         aria-label={t("language")}
       >
-        {locales.map((locale) => (
-          <option key={locale} value={locale}>
-            {t(locale)}
-          </option>
-        ))}
+        {locales.map((locale) => {
+          const coverage = localeCoverage[locale];
+          const isPartial = coverage !== undefined && coverage < 100;
+          return (
+            <option key={locale} value={locale}>
+              {t(locale)}
+              {isPartial ? ` (${t("partial")})` : ""}
+            </option>
+          );
+        })}
       </select>
     </div>
   );

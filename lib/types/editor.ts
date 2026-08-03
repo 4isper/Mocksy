@@ -152,6 +152,9 @@ export interface EditorScene {
   watermarkEnabled: boolean;
   watermarkPosition: WatermarkPosition;
   watermarkSize: number;
+  /** data: URL of an uploaded logo watermark, or null. When set, renderers
+   *  draw the image instead of the text watermark (height = watermarkSize). */
+  watermarkImageUrl: string | null;
   aspectRatio: string;
   /** Length of one animation loop (preview, video, HTML), in ms. */
   animationDurationMs: number;

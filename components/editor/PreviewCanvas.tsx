@@ -320,20 +320,37 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           />
         ))}
         {scene.watermarkEnabled && (
-          <span
-            className="preview-watermark"
-            style={{
-              ...(scene.watermarkPosition === "bottom-left" || scene.watermarkPosition === "top-left"
-                ? { left: 16 }
-                : { right: 16 }),
-              ...(scene.watermarkPosition === "top-left" || scene.watermarkPosition === "top-right"
-                ? { top: 16 }
-                : { bottom: 16 }),
-              fontSize: scene.watermarkSize
-            }}
-          >
-            {scene.watermarkText}
-          </span>
+          scene.watermarkImageUrl ? (
+            <img
+              className="preview-watermark preview-watermark-logo"
+              src={scene.watermarkImageUrl}
+              alt=""
+              style={{
+                ...(scene.watermarkPosition === "bottom-left" || scene.watermarkPosition === "top-left"
+                  ? { left: 16 }
+                  : { right: 16 }),
+                ...(scene.watermarkPosition === "top-left" || scene.watermarkPosition === "top-right"
+                  ? { top: 16 }
+                  : { bottom: 16 }),
+                height: scene.watermarkSize
+              }}
+            />
+          ) : (
+            <span
+              className="preview-watermark"
+              style={{
+                ...(scene.watermarkPosition === "bottom-left" || scene.watermarkPosition === "top-left"
+                  ? { left: 16 }
+                  : { right: 16 }),
+                ...(scene.watermarkPosition === "top-left" || scene.watermarkPosition === "top-right"
+                  ? { top: 16 }
+                  : { bottom: 16 }),
+                fontSize: scene.watermarkSize
+              }}
+            >
+              {scene.watermarkText}
+            </span>
+          )
         )}
         <label className="preview-chip" style={{ top: 8 }}>
           <span>{t("editor.uploadMedia")}</span>

@@ -253,6 +253,28 @@ describe("buildSvgMarkup", () => {
     const markup = buildSvgMarkup(scene, { width: 800, height: 600, backgroundHref: null, groups: [] });
     expect(markup).not.toContain(">Mocksy</text>");
   });
+
+  it("embeds the logo watermark image instead of text", () => {
+    const scene = sceneWith({
+      backgroundMode: "transparent",
+      watermarkEnabled: true,
+      watermarkText: "Mocksy",
+      watermarkImageUrl: "data:image/png;base64,AAAA",
+      watermarkSize: 20
+    });
+    const markup = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      groups: [],
+      watermarkHref: "data:image/png;base64,AAAA",
+      watermarkWidth: 200,
+      watermarkHeight: 100
+    });
+    // height 20, width 40, anchored bottom-right with 16px inset.
+    expect(markup).toContain(`<image href="data:image/png;base64,AAAA" x="744" y="564" width="40" height="20"`);
+    expect(markup).not.toContain(">Mocksy</text>");
+  });
 });
 
 describe("mediaToDataUrl", () => {

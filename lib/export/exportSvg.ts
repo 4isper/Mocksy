@@ -55,6 +55,11 @@ export interface SvgExportOptions {
   /** Intrinsic background image size (for cover placement). */
   backgroundWidth?: number;
   backgroundHeight?: number;
+  /** data: URL of the uploaded logo watermark, or null. */
+  watermarkHref?: string | null;
+  /** Intrinsic logo watermark size (for aspect-ratio-preserving placement). */
+  watermarkWidth?: number;
+  watermarkHeight?: number;
   /** Current frame zoom, used to scale the drop shadow with the mockup. */
   zoom?: number;
   groups: SvgFrameGroup[];
@@ -211,11 +216,27 @@ function annotationsMarkup(scene: EditorScene, width: number, height: number): s
   return out;
 }
 
-function watermarkMarkup(scene: EditorScene, width: number, height: number): string {
-  if (!scene.watermarkEnabled || !scene.watermarkText) return "";
+function watermarkMarkup(scene: EditorScene, opts: SvgExportOptions): string {
+  if (!scene.watermarkEnabled) return "";
+  const { width, height } = opts;
   const inset = RENDER.watermarkInset;
   const onLeft = scene.watermarkPosition === "bottom-left" || scene.watermarkPosition === "top-left";
   const onTop = scene.watermarkPosition === "top-right" || scene.watermarkPosition === "top-left";
+
+  if (scene.watermarkImageUrl && opts.watermarkHref) {
+    const iw = opts.watermarkWidth ?? 1;
+    const ih = opts.watermarkHeight ?? 1;
+    const aspect = iw / ih;
+    let drawW = scene.watermarkSize * aspect;
+    const maxW = width * 0.4;
+    if (drawW > maxW) drawW = maxW;
+    const drawH = drawW / aspect;
+    const x = onLeft ? inset : width - inset - drawW;
+    const y = onTop ? inset : height - inset - drawH;
+    return `<image href="${opts.watermarkHref}" x="${num(x)}" y="${num(y)}" width="${num(drawW)}" height="${num(drawH)}" filter="url(#anno-shadow)"/>`;
+  }
+
+  if (!scene.watermarkText) return "";
   const textX = onLeft ? inset : width - inset;
   const textY = onTop ? inset + scene.watermarkSize : height - inset;
   const baseline = onTop ? ' dominant-baseline="hanging"' : "";
@@ -248,7 +269,7 @@ export function buildSvgMarkup(scene: EditorScene, opts: SvgExportOptions): stri
     backgroundMarkup(scene, opts),
     ...groups.map((g, i) => frameGroupMarkup(scene, g, i)),
     annotationsMarkup(scene, width, height),
-    watermarkMarkup(scene, width, height),
+    watermarkMarkup(scene, opts),
     `</svg>`
   ].join("");
 }
@@ -346,6 +367,11 @@ export async function exportSvg(
       background = await mediaToDataUrl(scene.backgroundImageUrl);
     }
 
+    let watermark: { href: string; width: number; height: number } | null = null;
+    if (scene.watermarkEnabled && scene.watermarkImageUrl) {
+      watermark = await mediaToDataUrl(scene.watermarkImageUrl);
+    }
+
     const isMultiFrame = scene.frameInstances.length > 0;
     const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
     const transform = resolveExportTransform(scene, activeLayerId);
@@ -430,6 +456,9 @@ export async function exportSvg(
       backgroundHref: background?.href ?? null,
       backgroundWidth: background?.width,
       backgroundHeight: background?.height,
+      watermarkHref: watermark?.href ?? null,
+      watermarkWidth: watermark?.width,
+      watermarkHeight: watermark?.height,
       zoom: transform.zoom,
       groups,
       fontCss: await buildEmbeddedFontCss(collectFontStacks(scene))

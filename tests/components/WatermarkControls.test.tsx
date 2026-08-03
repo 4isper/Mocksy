@@ -14,10 +14,12 @@ describe("WatermarkControls", () => {
     watermarkText: "Mocksy",
     watermarkPosition: "bottom-right" as const,
     watermarkSize: 16,
+    watermarkImageUrl: null,
     toggleWatermark: vi.fn(),
     setWatermarkText: vi.fn(),
     setWatermarkPosition: vi.fn(),
     setWatermarkSize: vi.fn(),
+    setWatermarkImage: vi.fn(),
   };
 
   it("renders watermark toggle", () => {
@@ -60,5 +62,19 @@ describe("WatermarkControls", () => {
     const input = screen.getByDisplayValue("Mocksy") as HTMLInputElement;
     fireEvent.change(input, { target: { value: "New Text" } });
     expect(setWatermarkText).toHaveBeenCalledWith("New Text");
+  });
+
+  it("shows an upload trigger when no logo is set", () => {
+    render(<WatermarkControls {...props} />);
+    expect(screen.getByText("editor.watermarkLogoUpload")).toBeInTheDocument();
+    expect(screen.queryByText("editor.watermarkLogoRemove")).not.toBeInTheDocument();
+  });
+
+  it("shows the logo preview and remove button when a logo is set", () => {
+    render(<WatermarkControls {...props} watermarkImageUrl="data:image/png;base64,LOGO" />);
+    expect(screen.getByAltText("editor.watermarkLogoPreview")).toBeInTheDocument();
+    expect(screen.getByText("editor.watermarkLogoReplace")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("editor.watermarkLogoRemove"));
+    expect(props.setWatermarkImage).toHaveBeenCalledWith(null);
   });
 });

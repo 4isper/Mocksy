@@ -103,6 +103,16 @@ describe("buildEmbeddedFontCss", () => {
     expect(await buildEmbeddedFontCss(["Arial, Helvetica, sans-serif"])).toBe("");
   });
 
+  it("embeds the Cyrillic-friendly bundled fonts", async () => {
+    stubFetch();
+    for (const stack of ["Montserrat, sans-serif", "Lora, Georgia, serif", "Caveat, cursive"]) {
+      const css = await buildEmbeddedFontCss([stack]);
+      expect(css.split("@font-face").filter(Boolean)).toHaveLength(4);
+      const family = stack.split(",")[0]!.trim();
+      expect(css).toContain(`font-family: "${family}"`);
+    }
+  });
+
   it("fails gracefully when fonts cannot be fetched", async () => {
     stubFetch(false);
     expect(await buildEmbeddedFontCss(["Inter, system-ui, sans-serif"])).toBe("");

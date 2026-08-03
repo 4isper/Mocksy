@@ -37,6 +37,36 @@ export const EMBEDDED_FONTS: EmbeddedFontSpec[] = [
       cyrillic: "/fonts/roboto-cyrillic.woff2",
       "cyrillic-ext": "/fonts/roboto-cyrillic-ext.woff2"
     }
+  },
+  {
+    family: "Montserrat",
+    weight: "400 700",
+    subsets: {
+      latin: "/fonts/montserrat-latin.woff2",
+      "latin-ext": "/fonts/montserrat-latin-ext.woff2",
+      cyrillic: "/fonts/montserrat-cyrillic.woff2",
+      "cyrillic-ext": "/fonts/montserrat-cyrillic-ext.woff2"
+    }
+  },
+  {
+    family: "Lora",
+    weight: "400 700",
+    subsets: {
+      latin: "/fonts/lora-latin.woff2",
+      "latin-ext": "/fonts/lora-latin-ext.woff2",
+      cyrillic: "/fonts/lora-cyrillic.woff2",
+      "cyrillic-ext": "/fonts/lora-cyrillic-ext.woff2"
+    }
+  },
+  {
+    family: "Caveat",
+    weight: "400 700",
+    subsets: {
+      latin: "/fonts/caveat-latin.woff2",
+      "latin-ext": "/fonts/caveat-latin-ext.woff2",
+      cyrillic: "/fonts/caveat-cyrillic.woff2",
+      "cyrillic-ext": "/fonts/caveat-cyrillic-ext.woff2"
+    }
   }
 ];
 

@@ -66,7 +66,8 @@
     "ka": "ქართული",
     "az": "Azərbaycan dili",
     "kk": "Қазақ тілі",
-    "ne": "नेपाली"
+    "ne": "नेपाली",
+    "partial": "partial"
   },
   "editor": {
     "addArrow": "+ ਤੀਰ",
@@ -203,7 +204,12 @@
     "mediaByUrlButton": "Add",
     "customFrameUpload": "Upload your own SVG device skin",
     "customFrameUse": "Use your uploaded frame",
-    "customFrameRemove": "Remove custom frame"
+    "customFrameRemove": "Remove custom frame",
+    "watermarkLogo": "Logo watermark",
+    "watermarkLogoUpload": "Upload logo",
+    "watermarkLogoReplace": "Replace logo",
+    "watermarkLogoRemove": "Remove",
+    "watermarkLogoPreview": "Logo preview"
   },
   "frame": {
     "none": "ਕੋਈ ਨਹੀਂ",

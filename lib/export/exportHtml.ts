@@ -101,6 +101,8 @@ export interface HtmlSnippetOptions {
   backgroundHref: string | null;
   /** data: URL of the overlay device skin (SVG), or null. */
   overlayHref: string | null;
+  /** data: URL of the uploaded logo watermark, or null. */
+  watermarkHref?: string | null;
   /** Embedded @font-face CSS (data: URLs) so text renders with the right font. */
   fontCss?: string;
 }
@@ -138,8 +140,12 @@ export function buildHtmlSnippet(scene: EditorScene, opts: HtmlSnippetOptions, a
 
   const overlay = opts.overlayHref ? `<img class="overlay" src="${opts.overlayHref}" alt=""/>` : "";
   const bg = css.backgroundImage ? `<div class="bg"></div>` : "";
-  const watermark = scene.watermarkEnabled && scene.watermarkText
-    ? `<span class="wm" style="${scene.watermarkPosition.includes("left") ? "left" : "right"}:16px;${scene.watermarkPosition.includes("top") ? "top" : "bottom"}:16px;font-size:${num(scene.watermarkSize)}px">${escapeHtml(scene.watermarkText)}</span>`
+  const watermark = scene.watermarkEnabled
+    ? scene.watermarkImageUrl && opts.watermarkHref
+      ? `<img class="wm wm-logo" src="${opts.watermarkHref}" alt="" style="${scene.watermarkPosition.includes("left") ? "left" : "right"}:16px;${scene.watermarkPosition.includes("top") ? "top" : "bottom"}:16px;height:${num(scene.watermarkSize)}px"/>`
+      : scene.watermarkText
+        ? `<span class="wm" style="${scene.watermarkPosition.includes("left") ? "left" : "right"}:16px;${scene.watermarkPosition.includes("top") ? "top" : "bottom"}:16px;font-size:${num(scene.watermarkSize)}px">${escapeHtml(scene.watermarkText)}</span>`
+        : ""
     : "";
 
   const animationCss = buildAnimationCss(activeLayer, scene.animationDurationMs / 1000, tiltPrefix);
@@ -204,6 +210,10 @@ ${backgroundCss}
   font-weight: 500;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   pointer-events: none;
+}
+.wm-logo {
+  width: auto;
+  max-width: 45%;
 }
 ${animationCss}
 </style>
@@ -306,11 +316,15 @@ export async function exportHtml(
     if (scene.backgroundMode === "image" && scene.backgroundImageUrl) {
       backgroundHref = await toEmbeddableDataUrl(scene.backgroundImageUrl);
     }
+    let watermarkHref: string | null = null;
+    if (scene.watermarkEnabled && scene.watermarkImageUrl) {
+      watermarkHref = await toEmbeddableDataUrl(scene.watermarkImageUrl);
+    }
     const spec = getFrameSpec(scene.frame, scene.customFrame);
     const overlayHref = spec.isOverlay && spec.asset ? await svgAssetToDataUrl(spec.asset) : null;
 
     const fontCss = await buildEmbeddedFontCss(collectFontStacks(scene));
-    const html = buildHtmlSnippet(scene, { mediaHref, mediaType, backgroundHref, overlayHref, fontCss }, activeLayerId);
+    const html = buildHtmlSnippet(scene, { mediaHref, mediaType, backgroundHref, overlayHref, watermarkHref, fontCss }, activeLayerId);
     downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), `${filename}.html`);
   } catch (err) {
     onError?.(err instanceof Error ? err.message : "HTML export failed.");

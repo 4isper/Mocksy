@@ -123,24 +123,46 @@ export function drawWatermark(
   scene: EditorScene,
   width: number,
   height: number,
-  dpiScale: number
+  dpiScale: number,
+  watermarkImage?: CanvasImageSource | null
 ) {
-  if (!scene.watermarkEnabled || !scene.watermarkText) return;
+  if (!scene.watermarkEnabled) return;
+  const hasImage = scene.watermarkImageUrl != null;
+  if (!hasImage && !scene.watermarkText) return;
   const watermarkSize = scene.watermarkSize * dpiScale;
   const inset = RENDER.watermarkInset * dpiScale;
   const onLeft = scene.watermarkPosition === "bottom-left" || scene.watermarkPosition === "top-left";
   const onTop = scene.watermarkPosition === "top-right" || scene.watermarkPosition === "top-left";
-  const textX = onLeft ? inset : width - inset;
-  const textY = onTop ? inset + watermarkSize : height - inset;
+
   ctx.save();
-  ctx.fillStyle = "rgba(255,255,255,0.85)";
-  ctx.font = `500 ${watermarkSize}px Inter, system-ui, sans-serif`;
-  ctx.textAlign = onLeft ? "left" : "right";
-  ctx.textBaseline = onTop ? "top" : "alphabetic";
   ctx.shadowColor = "rgba(0,0,0,0.6)";
   ctx.shadowBlur = RENDER.annoShadowBlur * dpiScale;
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = RENDER.annoShadowOffsetY * dpiScale;
+
+  if (hasImage && watermarkImage) {
+    const m = watermarkImage as { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number };
+    const iw = m.naturalWidth || m.width || 1;
+    const ih = m.naturalHeight || m.height || 1;
+    const aspect = iw / ih;
+    let drawW = watermarkSize * aspect;
+    // Wide logos must not dominate the corner: cap at 40% of the canvas width.
+    const maxW = width * 0.4;
+    if (drawW > maxW) drawW = maxW;
+    const drawH = drawW / aspect;
+    const imgX = onLeft ? inset : width - inset - drawW;
+    const imgY = onTop ? inset : height - inset - drawH;
+    ctx.drawImage(watermarkImage, imgX, imgY, drawW, drawH);
+    ctx.restore();
+    return;
+  }
+
+  const textX = onLeft ? inset : width - inset;
+  const textY = onTop ? inset + watermarkSize : height - inset;
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.font = `500 ${watermarkSize}px Inter, system-ui, sans-serif`;
+  ctx.textAlign = onLeft ? "left" : "right";
+  ctx.textBaseline = onTop ? "top" : "alphabetic";
   ctx.fillText(scene.watermarkText, textX, textY);
   ctx.restore();
 }

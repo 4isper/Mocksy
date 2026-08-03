@@ -114,6 +114,7 @@ export interface EditorStoreState {
   setWatermarkText: (text: string) => void;
   setWatermarkPosition: (position: WatermarkPosition) => void;
   setWatermarkSize: (size: number) => void;
+  setWatermarkImage: (url: string | null) => void;
   setAspectRatio: (aspectRatio: string) => void;
   addAnnotation: (type: AnnotationType) => void;
   updateAnnotation: (id: string, patch: Partial<Annotation>) => void;

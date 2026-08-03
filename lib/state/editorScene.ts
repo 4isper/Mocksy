@@ -31,6 +31,7 @@ export const initialScene: EditorScene = {
   watermarkEnabled: false,
   watermarkPosition: "bottom-right",
   watermarkSize: 13,
+  watermarkImageUrl: null,
   aspectRatio: ASPECT_RATIOS[0] ?? "16 / 9",
   animationDurationMs: 3000
 };

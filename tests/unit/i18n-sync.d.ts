@@ -5,6 +5,8 @@ declare module "@/scripts/i18n-sync.mjs" {
   export function syncMessagesDir(
     dir?: string
   ): { changed: { file: string; addedKeys: string[] }[]; fileCount: number };
+  export function computeCoverage(dir?: string): Record<string, number>;
+  export function renderCoverageModule(coverage: Record<string, number>): string;
   export function runCliSync(
     dir?: string,
     checkMode?: boolean

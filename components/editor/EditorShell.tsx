@@ -17,6 +17,7 @@ import { useCommands } from "@/lib/hooks/useCommands";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { useProjectsStore } from "@/lib/state/projectsStore";
+import { initHistoryPersistence, restoreHistory } from "@/lib/state/historyStorage";
 import { useThemeStore } from "@/lib/state/themeStore";
 
 const AUTOSAVE_DELAY = 500;
@@ -110,6 +111,11 @@ export function EditorShell() {
     // (also keeps StrictMode's double-mount from recording a duplicate entry).
     const restored = useProjectsStore.getState().hydrate();
     setScene(restored, false);
+    // Bring back the undo/redo stacks saved by the last session (also not an
+    // edit — it only fills `past`/`future`), then start watching for changes
+    // so every subsequent edit persists across reloads.
+    restoreHistory();
+    return initHistoryPersistence();
   }, [setScene]);
 
   useEffect(() => {

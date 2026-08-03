@@ -80,6 +80,11 @@ describe("normalizeScene", () => {
     expect(s.backgroundImageUrl).toBe(initialScene.backgroundImageUrl);
   });
 
+  it("keeps a valid watermark logo url and ignores non-strings", () => {
+    expect(normalizeScene({ watermarkImageUrl: "data:image/png;base64,LOGO" }).watermarkImageUrl).toBe("data:image/png;base64,LOGO");
+    expect(normalizeScene({ watermarkImageUrl: 42 }).watermarkImageUrl).toBe(initialScene.watermarkImageUrl);
+  });
+
   it("falls back to the default blur for a non-numeric value", () => {
     const s = normalizeScene({ backgroundMode: "image", backgroundBlur: "not-a-number" });
     expect(s.backgroundBlur).toBe(initialScene.backgroundBlur);

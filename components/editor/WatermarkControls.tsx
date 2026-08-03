@@ -1,6 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { loadMediaFromFile } from "@/lib/media/loadFile";
+import type { ChangeEvent } from "react";
 import type { WatermarkPosition } from "@/lib/types/editor";
 
 interface WatermarkControlsProps {
@@ -8,10 +10,12 @@ interface WatermarkControlsProps {
   watermarkText: string;
   watermarkPosition: WatermarkPosition;
   watermarkSize: number;
+  watermarkImageUrl: string | null;
   toggleWatermark: (checked: boolean) => void;
   setWatermarkText: (text: string) => void;
   setWatermarkPosition: (pos: WatermarkPosition) => void;
   setWatermarkSize: (size: number) => void;
+  setWatermarkImage: (url: string | null) => void;
 }
 
 export function WatermarkControls({
@@ -19,12 +23,27 @@ export function WatermarkControls({
   watermarkText,
   watermarkPosition,
   watermarkSize,
+  watermarkImageUrl,
   toggleWatermark,
   setWatermarkText,
   setWatermarkPosition,
-  setWatermarkSize
+  setWatermarkSize,
+  setWatermarkImage
 }: WatermarkControlsProps) {
   const t = useTranslations();
+
+  const handleLogoFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const { url } = await loadMediaFromFile(file);
+      setWatermarkImage(url);
+    } catch {
+      // Logos are images only; ignore unsupported files silently.
+    } finally {
+      event.target.value = "";
+    }
+  };
 
   return (
     <div className="field-group">
@@ -36,6 +55,28 @@ export function WatermarkControls({
         />
         <span className="track" aria-hidden="true" />
         <span>{t("editor.watermark")}</span>
+      </label>
+      <label className="field">
+        <span>{t("editor.watermarkLogo")}</span>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {watermarkImageUrl ? (
+            <img
+              src={watermarkImageUrl}
+              alt={t("editor.watermarkLogoPreview")}
+              className="watermark-logo-thumb"
+              height={32}
+            />
+          ) : null}
+          <label className="file-trigger" style={{ flex: 1 }}>
+            {watermarkImageUrl ? t("editor.watermarkLogoReplace") : t("editor.watermarkLogoUpload")}
+            <input type="file" accept="image/*" onChange={handleLogoFile} />
+          </label>
+          {watermarkImageUrl ? (
+            <button type="button" className="btn btn-sm" onClick={() => setWatermarkImage(null)}>
+              {t("editor.watermarkLogoRemove")}
+            </button>
+          ) : null}
+        </div>
       </label>
       <label className="field">
         <span>{t("editor.watermarkText")}</span>

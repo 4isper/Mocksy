@@ -60,7 +60,8 @@ export function renderMockupToCanvas(
   backgroundImage?: CanvasImageSource | null,
   layerMedias?: Map<string, CanvasImageSource | null>,
   frameOverlays?: Map<string, CanvasImageSource | null>,
-  activeLayerId: string | null = scene.activeLayerId
+  activeLayerId: string | null = scene.activeLayerId,
+  watermarkImage?: CanvasImageSource | null
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -94,7 +95,7 @@ export function renderMockupToCanvas(
         drawFrameAndMedia(ctx, scene, instSpec, layer, box, dpiScale, instZoom, frameMedia, overlay);
       }
     }
-    drawWatermark(ctx, scene, width, height, dpiScale);
+    drawWatermark(ctx, scene, width, height, dpiScale, watermarkImage);
     if (scene.annotations.length > 0) drawAnnotations(ctx, scene.annotations, width, height, dpiScale);
     return;
   }
@@ -111,8 +112,8 @@ export function renderMockupToCanvas(
     drawFrameAndMedia(ctx, scene, spec, activeLayerForRender2, box, dpiScale, actualZoom, media, frameOverlay ?? null);
   }
 
-  if (scene.watermarkEnabled && scene.watermarkText) {
-    drawWatermark(ctx, scene, width, height, dpiScale);
+  if (scene.watermarkEnabled && (scene.watermarkText || scene.watermarkImageUrl)) {
+    drawWatermark(ctx, scene, width, height, dpiScale, watermarkImage);
   }
 
   if (scene.annotations.length > 0) {

@@ -91,11 +91,14 @@ export function AnnotationsPanel() {
                 onChange={(e) => updateAnnotation(selected.id, { fontFamily: e.target.value })}
               >
                 <option value="Inter, system-ui, sans-serif">Inter</option>
+                <option value="Montserrat, sans-serif">Montserrat</option>
+                <option value="Roboto, sans-serif">Roboto</option>
+                <option value="Lora, Georgia, serif">Lora</option>
+                <option value="Caveat, cursive">Caveat</option>
                 <option value="system-ui">System UI</option>
                 <option value="Arial, Helvetica, sans-serif">Arial</option>
                 <option value="Georgia, serif">Georgia</option>
                 <option value="'Courier New', monospace">Courier New</option>
-                <option value="Roboto, sans-serif">Roboto</option>
                 <option value="'Times New Roman', serif">Times New Roman</option>
                 <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
               </select>

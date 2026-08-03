@@ -86,6 +86,7 @@ function scene(overrides: Partial<EditorScene> = {}): EditorScene {
     watermarkText: "",
     watermarkSize: 13,
     watermarkPosition: "bottom-right",
+    watermarkImageUrl: null,
     layers: [mediaLayer()],
     activeLayerId: "layer-test",
     annotations: [],

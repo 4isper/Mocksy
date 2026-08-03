@@ -15,6 +15,7 @@ export type AppearanceSlice = Pick<
   | "setWatermarkText"
   | "setWatermarkPosition"
   | "setWatermarkSize"
+  | "setWatermarkImage"
   | "setAspectRatio"
   | "addAnnotation"
   | "updateAnnotation"
@@ -49,6 +50,7 @@ export function createAppearanceSlice(set: EditorStoreSetter): AppearanceSlice {
     setWatermarkText: (watermarkText) => set((s) => pushHistory(s, { ...s.scene, watermarkText })),
     setWatermarkPosition: (watermarkPosition) => set((s) => pushHistory(s, { ...s.scene, watermarkPosition })),
     setWatermarkSize: (watermarkSize) => set((s) => pushHistory(s, { ...s.scene, watermarkSize: Math.max(8, Math.min(64, Math.round(watermarkSize))) }, "watermarkSize")),
+    setWatermarkImage: (watermarkImageUrl) => set((s) => pushHistory(s, { ...s.scene, watermarkImageUrl })),
     setAspectRatio: (aspectRatio) => set((s) => pushHistory(s, { ...s.scene, aspectRatio })),
     addAnnotation: (type) =>
       set((s) => {

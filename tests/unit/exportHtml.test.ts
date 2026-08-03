@@ -129,6 +129,24 @@ describe("buildHtmlSnippet", () => {
     expect(html).toContain('<span class="wm" style="right:16px;bottom:16px;font-size:13px">Mocksy</span>');
   });
 
+  it("embeds the logo watermark image instead of text", () => {
+    const scene = sceneWith({
+      watermarkEnabled: true,
+      watermarkText: "Mocksy",
+      watermarkImageUrl: "data:image/png;base64,LOGO",
+      watermarkSize: 20
+    });
+    const html = buildHtmlSnippet(scene, {
+      mediaHref: null,
+      mediaType: null,
+      backgroundHref: null,
+      overlayHref: null,
+      watermarkHref: "data:image/png;base64,LOGO"
+    });
+    expect(html).toContain('<img class="wm wm-logo" src="data:image/png;base64,LOGO" alt="" style="right:16px;bottom:16px;height:20px"/>');
+    expect(html).not.toContain('>Mocksy</span>');
+  });
+
   it("applies typography styles to text annotations", () => {
     const scene = sceneWith({
       annotations: [

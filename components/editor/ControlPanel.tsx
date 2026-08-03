@@ -65,6 +65,7 @@ export function ControlPanel() {
     setWatermarkText,
     setWatermarkPosition,
     setWatermarkSize,
+    setWatermarkImage,
     setAspectRatio,
     activeLayerId
   } = useEditorStore(
@@ -105,6 +106,7 @@ export function ControlPanel() {
       setWatermarkText: s.setWatermarkText,
       setWatermarkPosition: s.setWatermarkPosition,
       setWatermarkSize: s.setWatermarkSize,
+      setWatermarkImage: s.setWatermarkImage,
       setAspectRatio: s.setAspectRatio
     }))
   );
@@ -437,10 +439,12 @@ export function ControlPanel() {
           watermarkText={scene.watermarkText}
           watermarkPosition={scene.watermarkPosition}
           watermarkSize={scene.watermarkSize}
+          watermarkImageUrl={scene.watermarkImageUrl}
           toggleWatermark={toggleWatermark}
           setWatermarkText={setWatermarkText}
           setWatermarkPosition={setWatermarkPosition}
           setWatermarkSize={setWatermarkSize}
+          setWatermarkImage={setWatermarkImage}
         />
       </Section>
     </div>

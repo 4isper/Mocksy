@@ -41,6 +41,15 @@ export async function recordCanvasToWebm(
     }
   }
 
+  let watermarkImage: CanvasImageSource | null = null;
+  if (scene.watermarkEnabled && scene.watermarkImageUrl) {
+    try {
+      watermarkImage = await loadImage(scene.watermarkImageUrl);
+    } catch {
+      watermarkImage = null;
+    }
+  }
+
   // Match the PNG export: size the frame from its on-screen box so overlay
   // skins (iphone15/16pro) keep their native aspect ratio instead of being
   // stretched to the default 10/16 fallback in computeFrameBox.
@@ -74,7 +83,7 @@ export async function recordCanvasToWebm(
   // never been painted, which MediaRecorder would otherwise turn into an empty
   // blob (the "Recording produced no frames." guard below).
   try {
-    renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, { zoom: 1, offsetX: 0, offsetY: 0 }, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId);
+    renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, { zoom: 1, offsetX: 0, offsetY: 0 }, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId, watermarkImage);
   } catch {
     // The per-tick render runs again right after; a warm-up failure alone
     // must not abort the export.
@@ -165,7 +174,7 @@ export async function recordCanvasToWebm(
         const stopAt = typeof end === "number" && isFinite(end) && end > 0 ? end : Infinity;
         if (media.currentTime >= stopAt || elapsed >= duration) {
           media.pause();
-          renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId);
+          renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId, watermarkImage);
           recorder.stop();
           cancelAnimationFrame(raf);
           onProgress?.(100);
@@ -178,7 +187,7 @@ export async function recordCanvasToWebm(
         return;
       }
 
-      renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId);
+      renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId, watermarkImage);
       raf = requestAnimationFrame(tick);
     };
 

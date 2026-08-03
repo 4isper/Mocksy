@@ -1,6 +1,13 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi, beforeEach, type Mock } from "vitest";
 
-const CACHE = "mocksy-sw-v1";
+const swSource = readFileSync(new URL("../../public/sw.js", import.meta.url), "utf8");
+const cacheMatch = swSource.match(/const CACHE = "(mocksy-sw-[^"]+)"/);
+const cacheName = cacheMatch?.[1];
+if (!cacheName) {
+  throw new Error("public/sw.js does not contain a versioned CACHE constant");
+}
+const CACHE = cacheName;
 const PRECACHE_URLS = ["/", "/manifest.json", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 /** Builds a service-worker global scope backed by an in-memory cache store so

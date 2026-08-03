@@ -150,6 +150,15 @@ export async function renderSceneToImageBlob(
       }
     }
 
+    let watermarkImage: HTMLImageElement | null = null;
+    if (scene.watermarkEnabled && scene.watermarkImageUrl) {
+      try {
+        watermarkImage = await loadImage(scene.watermarkImageUrl);
+      } catch {
+        watermarkImage = null;
+      }
+    }
+
     const transform = resolveExportTransform(scene, activeLayerId);
 
     // For multi-frame mode, load media for each frame's layer
@@ -205,7 +214,8 @@ export async function renderSceneToImageBlob(
       backgroundImage,
       layerMedias,
       frameOverlays,
-      activeLayerId
+      activeLayerId,
+      watermarkImage
     );
 
     const imageBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), mimeType));

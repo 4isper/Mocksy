@@ -22,7 +22,7 @@ describe("PwaRegister", () => {
 
     render(<PwaRegister />);
     await new Promise((r) => setTimeout(r, 0));
-    expect(register).toHaveBeenCalledWith("/sw.js");
+    expect(register).toHaveBeenCalledWith("/sw.js", { updateViaCache: "none" });
   });
 
   it("does not throw when service worker is unavailable", () => {
