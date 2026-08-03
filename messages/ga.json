@@ -188,7 +188,14 @@
     "gradientRadial": "Radial",
     "resizeFrame": "Resize frame",
     "noLayers": "No layers yet.",
-    "noAnnotations": "No annotations yet."
+    "noAnnotations": "No annotations yet.",
+    "bgFromMedia": "From media",
+    "bgModeGradient": "Gradient",
+    "bgModeImage": "Image",
+    "bgModePattern": "Pattern",
+    "bgModeSolid": "Solid",
+    "bgModeTransparent": "Transparent",
+    "bgPresets": "Presets"
   },
   "frame": {
     "none": "Aon cheann",
@@ -517,6 +524,15 @@
     "soft-glass": "Soft Glass",
     "bold-gradient": "Bold Gradient",
     "minimal": "Minimal",
-    "warm": "Warm"
+    "warm": "Warm",
+    "emerald": "Emerald",
+    "indigo": "Indigo",
+    "amber": "Amber",
+    "ivory": "Ivory",
+    "ocean": "Ocean",
+    "aurora": "Aurora",
+    "candy": "Candy",
+    "fire": "Fire",
+    "ice": "Ice"
   }
 }

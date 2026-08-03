@@ -333,25 +333,26 @@ export function ControlPanel() {
 
       <Section id="background" title={t("editor.background")} icon={sectionIcons.background}>
         <BackgroundControls
-        scenePalette={scenePalette}
-        backgroundMode={scene.backgroundMode}
-        backgroundColor={scene.backgroundColor}
-        gradientFrom={scene.gradientFrom}
-        gradientTo={scene.gradientTo}
-        gradientVia={scene.gradientVia}
-        gradientType={scene.gradientType}
-        gradientAngle={scene.gradientAngle}
-        patternId={scene.patternId}
-        backgroundBlur={scene.backgroundBlur}
-        setBackgroundSolid={setBackgroundSolid}
-        setBackgroundGradient={setBackgroundGradient}
-        setBackgroundTransparent={setBackgroundTransparent}
-        setBackgroundImage={setBackgroundImage}
-        setBackgroundPattern={setBackgroundPattern}
-        setGradientType={setGradientType}
-        setGradientVia={setGradientVia}
-        setBackgroundBlur={setBackgroundBlur}
-      />
+          scenePalette={scenePalette}
+          backgroundMode={scene.backgroundMode}
+          backgroundColor={scene.backgroundColor}
+          gradientFrom={scene.gradientFrom}
+          gradientTo={scene.gradientTo}
+          gradientVia={scene.gradientVia}
+          gradientType={scene.gradientType}
+          gradientAngle={scene.gradientAngle}
+          patternId={scene.patternId}
+          backgroundBlur={scene.backgroundBlur}
+          backgroundImageUrl={scene.backgroundImageUrl}
+          setBackgroundSolid={setBackgroundSolid}
+          setBackgroundGradient={setBackgroundGradient}
+          setBackgroundTransparent={setBackgroundTransparent}
+          setBackgroundImage={setBackgroundImage}
+          setBackgroundPattern={setBackgroundPattern}
+          setGradientType={setGradientType}
+          setGradientVia={setGradientVia}
+          setBackgroundBlur={setBackgroundBlur}
+        />
       </Section>
 
       <Section id="watermark" title={t("editor.watermark")} icon={sectionIcons.watermark}>

@@ -6,14 +6,14 @@ function Segmented<T extends string>({
   options,
   onChange
 }: {
-  label: string;
+  label?: string;
   value: T;
   options: { value: T; label: string }[];
   onChange: (v: T) => void;
 }) {
   return (
-    <label className="field">
-      <span>{label}</span>
+    <div className="field">
+      {label ? <span>{label}</span> : null}
       <div className="segmented" role="group" aria-label={label}>
         {options.map((opt) => (
           <button
@@ -27,7 +27,7 @@ function Segmented<T extends string>({
           </button>
         ))}
       </div>
-    </label>
+    </div>
   );
 }
 

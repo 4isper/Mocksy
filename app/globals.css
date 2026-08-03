@@ -733,6 +733,55 @@ select {
   outline-offset: 2px;
 }
 
+/* ---- Background mode tabs & preset swatch grid ---- */
+.bg-preset-group {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bg-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+
+.bg-swatches .swatch-btn {
+  appearance: none;
+  aspect-ratio: 1;
+  width: 100%;
+  border-radius: 9px;
+  border: 1px solid var(--panel-border);
+  cursor: pointer;
+  background-position: center;
+  transition: transform 0.1s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bg-swatches .swatch-btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--panel-border-strong);
+}
+
+.bg-swatches .swatch-btn[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.bg-swatches .swatch-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---- From-media background helpers ---- */
+.bg-media-group {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding-top: 2px;
+  border-top: 1px solid var(--panel-border);
+}
+
 /* ---- Toggle switch ---- */
 .toggle {
   display: inline-flex;

@@ -47,6 +47,7 @@ describe("BackgroundControls", () => {
     gradientAngle: 45,
     patternId: null,
     backgroundBlur: 0,
+    backgroundImageUrl: null,
     ...setters,
   };
 
@@ -101,16 +102,68 @@ describe("BackgroundControls", () => {
     expect(screen.getByTitle("preset.zinc")).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("applies transparent, solid, gradient and pattern presets", async () => {
-    render(<BackgroundControls {...baseProps} backgroundMode="gradient" gradientFrom="#1d4ed8" gradientTo="#7c3aed" />);
-    await userEvent.click(screen.getByTitle("preset.transparent"));
+  it("switches background mode via the mode tabs", async () => {
+    render(<BackgroundControls {...baseProps} backgroundMode="gradient" />);
+    await userEvent.click(screen.getByRole("button", { name: "editor.bgModeSolid" }));
+    expect(setters.setBackgroundSolid).toHaveBeenCalledWith("#ffffff");
+    await userEvent.click(screen.getByRole("button", { name: "editor.bgModePattern" }));
+    expect(setters.setBackgroundPattern).toHaveBeenCalledWith("dots");
+    await userEvent.click(screen.getByRole("button", { name: "editor.bgModeTransparent" }));
     expect(setters.setBackgroundTransparent).toHaveBeenCalledTimes(1);
+  });
+
+  it("clicking the already-active tab does not push a change", async () => {
+    render(<BackgroundControls {...baseProps} backgroundMode="solid" />);
+    await userEvent.click(screen.getByRole("button", { name: "editor.bgModeSolid" }));
+    expect(setters.setBackgroundSolid).not.toHaveBeenCalled();
+  });
+
+  it("image tab switches to image mode only when an image is uploaded", async () => {
+    render(<BackgroundControls {...baseProps} backgroundMode="solid" backgroundImageUrl="data:image/png;base64,abc" />);
+    await userEvent.click(screen.getByRole("button", { name: "editor.bgModeImage" }));
+    expect(setters.setBackgroundImage).toHaveBeenCalledWith("data:image/png;base64,abc");
+  });
+
+  it("image tab without an uploaded image is a no-op", async () => {
+    render(<BackgroundControls {...baseProps} backgroundMode="solid" />);
+    await userEvent.click(screen.getByRole("button", { name: "editor.bgModeImage" }));
+    expect(setters.setBackgroundImage).not.toHaveBeenCalled();
+  });
+
+  it("shows only the preset swatches matching the active mode", () => {
+    render(<BackgroundControls {...baseProps} backgroundMode="solid" />);
+    expect(screen.getByTitle("preset.zinc")).toBeInTheDocument();
+    expect(screen.queryByTitle("preset.mint")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("preset.dots")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("preset.transparent")).not.toBeInTheDocument();
+  });
+
+  it("renders the expanded solid preset set", () => {
+    render(<BackgroundControls {...baseProps} backgroundMode="solid" />);
+    for (const id of ["zinc", "slate", "rose", "emerald", "indigo", "amber", "ivory"]) {
+      expect(screen.getByTitle(`preset.${id}`)).toBeInTheDocument();
+    }
+  });
+
+  it("renders the expanded gradient preset set", () => {
+    render(<BackgroundControls {...baseProps} backgroundMode="gradient" />);
+    for (const id of ["blue-violet", "sunset", "mint", "ocean", "aurora", "candy", "fire", "ice"]) {
+      expect(screen.getByTitle(`preset.${id}`)).toBeInTheDocument();
+    }
+  });
+
+  it("applies solid, gradient and pattern presets in their mode", async () => {
+    render(<BackgroundControls {...baseProps} backgroundMode="solid" />);
     await userEvent.click(screen.getByTitle("preset.zinc"));
     expect(setters.setBackgroundSolid).toHaveBeenCalledWith("#09090b");
+
+    cleanup();
+    render(<BackgroundControls {...baseProps} backgroundMode="gradient" gradientFrom="#1d4ed8" gradientTo="#7c3aed" />);
     await userEvent.click(screen.getByTitle("preset.mint"));
     expect(setters.setBackgroundGradient).toHaveBeenCalledWith("#059669", "#0ea5e9", 45);
-    await userEvent.click(screen.getByTitle("preset.dots"));
-    expect(setters.setBackgroundPattern).toHaveBeenCalledWith("dots");
+
+    cleanup();
+    render(<BackgroundControls {...baseProps} backgroundMode="pattern" patternId="dots" />);
     await userEvent.click(screen.getByTitle("preset.noise"));
     expect(setters.setBackgroundPattern).toHaveBeenCalledWith("noise");
   });

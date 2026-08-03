@@ -559,12 +559,18 @@ test("keyboard undo reverts the last change", async ({ page }) => {
 
 test("background swatches apply a preset", async ({ page }) => {
   await page.goto("/");
+
+  // Solid tab → solid preset swatch
+  await page.getByRole("button", { name: "Solid", exact: true }).click();
   await page.getByRole("button", { name: "Zinc", exact: true }).click();
   await expect(page.getByRole("button", { name: "Zinc", exact: true })).toHaveAttribute("aria-pressed", "true");
 
+  // Gradient tab → gradient preset swatch
+  await page.getByRole("button", { name: "Gradient", exact: true }).click();
   await page.getByRole("button", { name: "Blue → Violet", exact: true }).click();
   await expect(page.getByRole("button", { name: "Blue → Violet", exact: true })).toHaveAttribute("aria-pressed", "true");
 
+  // Transparent mode via its tab
   await page.getByRole("button", { name: "Transparent", exact: true }).click();
   await expect(page.getByRole("button", { name: "Transparent", exact: true })).toHaveAttribute("aria-pressed", "true");
 });

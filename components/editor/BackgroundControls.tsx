@@ -1,11 +1,12 @@
 "use client";
 
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, CSSProperties } from "react";
 import { useTranslations } from "next-intl";
+import { Segmented } from "@/components/editor/Segmented";
 import { loadMediaFromFile } from "@/lib/media/loadFile";
 import { pickBestSolid, pickGradientPair } from "@/lib/media/palette";
 import { backgroundPresets } from "@/lib/presets/presets";
-import type { PatternId } from "@/lib/types/editor";
+import type { BackgroundMode, PatternId } from "@/lib/types/editor";
 
 function buildPatternSwatchStyle(patternId: PatternId): string {
   switch (patternId) {
@@ -24,17 +25,30 @@ function buildPatternSwatchStyle(patternId: PatternId): string {
   }
 }
 
+const MODE_ORDER: BackgroundMode[] = ["solid", "gradient", "pattern", "image", "transparent"];
+
+const COLOR_INPUT_STYLE: CSSProperties = {
+  width: 32,
+  height: 28,
+  padding: 0,
+  border: "1px solid var(--panel-border)",
+  borderRadius: 6,
+  cursor: "pointer",
+  background: "none"
+};
+
 interface BackgroundControlsProps {
   scenePalette: string[] | null;
-  backgroundMode: string;
+  backgroundMode: BackgroundMode;
   backgroundColor: string;
   gradientFrom: string;
   gradientTo: string;
   gradientVia: string | null;
   gradientType: "linear" | "radial";
   gradientAngle: number;
-  patternId: string | null;
+  patternId: PatternId | null;
   backgroundBlur: number;
+  backgroundImageUrl: string | null;
   setBackgroundSolid: (color: string) => void;
   setBackgroundGradient: (from: string, to: string, angle?: number, gradientVia?: string, gradientType?: "linear" | "radial") => void;
   setBackgroundTransparent: () => void;
@@ -56,6 +70,7 @@ export function BackgroundControls({
   gradientAngle,
   patternId,
   backgroundBlur,
+  backgroundImageUrl,
   setBackgroundSolid,
   setBackgroundGradient,
   setBackgroundTransparent,
@@ -66,6 +81,8 @@ export function BackgroundControls({
   setBackgroundBlur
 }: BackgroundControlsProps) {
   const t = useTranslations();
+
+  const hasPalette = scenePalette != null && scenePalette.length > 0;
 
   const handleBgFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -81,47 +98,176 @@ export function BackgroundControls({
     }
   };
 
+  const modeLabels: Record<BackgroundMode, string> = {
+    solid: t("editor.bgModeSolid"),
+    gradient: t("editor.bgModeGradient"),
+    pattern: t("editor.bgModePattern"),
+    image: t("editor.bgModeImage"),
+    transparent: t("editor.bgModeTransparent")
+  };
+
+  const handleModeChange = (mode: BackgroundMode) => {
+    if (mode === backgroundMode) return;
+    switch (mode) {
+      case "solid":
+        setBackgroundSolid(backgroundColor);
+        break;
+      case "gradient":
+        setBackgroundGradient(gradientFrom, gradientTo, gradientAngle, gradientVia ?? undefined, gradientType);
+        break;
+      case "pattern":
+        setBackgroundPattern(patternId ?? "dots");
+        break;
+      case "image":
+        // Without an uploaded image there is nothing to switch to; the upload
+        // trigger below stays available in every mode.
+        if (backgroundImageUrl) setBackgroundImage(backgroundImageUrl);
+        break;
+      case "transparent":
+        setBackgroundTransparent();
+        break;
+    }
+  };
+
+  const showPresetGrid =
+    backgroundMode === "solid" || backgroundMode === "gradient" || backgroundMode === "pattern";
+
   return (
     <div className="field-group">
-      <span style={{ color: "var(--text-dim)", fontSize: 12, fontWeight: 500 }}>{t("editor.background")}</span>
-      <div style={{ display: "flex", gap: 6 }}>
-        <button
-          type="button"
-          className="auto-bg-btn"
-          disabled={!scenePalette || scenePalette.length < 1}
-          title={
-            scenePalette && scenePalette.length >= 1
-              ? t("editor.autoBgTooltip")
-              : t("editor.autoBgDisabled")
-          }
-          onClick={() => {
-            if (!scenePalette || scenePalette.length < 1) return;
-            const [from, to] = pickGradientPair(scenePalette);
-            const angles = [0, 45, 90, 135, 180];
-            const angle = angles[Math.floor(Math.random() * angles.length)]!;
-            setBackgroundGradient(from, to, angle);
-          }}
-        >
-          {t("editor.autoBackground")}
-        </button>
-        <button
-          type="button"
-          className="auto-bg-btn"
-          disabled={!scenePalette || scenePalette.length < 1}
-          title={t("editor.autoSolidTooltip")}
-          onClick={() => {
-            if (!scenePalette || scenePalette.length < 1) return;
-            setBackgroundSolid(pickBestSolid(scenePalette));
-          }}
-        >
-          {t("editor.autoSolid")}
-        </button>
-      </div>
-      {scenePalette && scenePalette.length > 0 ? (
+      <Segmented value={backgroundMode} options={MODE_ORDER.map((m) => ({ value: m, label: modeLabels[m] }))} onChange={handleModeChange} />
+
+      {showPresetGrid ? (
+        <div className="bg-preset-group">
+          <span className="field-label">{t("editor.bgPresets")}</span>
+          <div className="bg-swatches">
+            {backgroundPresets
+              .filter((preset) => preset.kind === backgroundMode)
+              .map((preset) => {
+                const active =
+                  (preset.kind === "solid" && backgroundColor === preset.backgroundColor) ||
+                  (preset.kind === "gradient" &&
+                    gradientFrom === preset.gradientFrom &&
+                    gradientTo === preset.gradientTo) ||
+                  (preset.kind === "pattern" && patternId === preset.patternId);
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    className="swatch-btn"
+                    title={t(`preset.${preset.id}`)}
+                    aria-pressed={active}
+                    onClick={() => {
+                      if (preset.kind === "solid" && preset.backgroundColor) setBackgroundSolid(preset.backgroundColor);
+                      else if (preset.kind === "gradient" && preset.gradientFrom && preset.gradientTo)
+                        setBackgroundGradient(preset.gradientFrom, preset.gradientTo, gradientAngle);
+                      else if (preset.kind === "pattern" && preset.patternId) setBackgroundPattern(preset.patternId);
+                    }}
+                    style={{
+                      background:
+                        preset.kind === "gradient"
+                          ? `linear-gradient(135deg, ${preset.gradientFrom}, ${preset.gradientTo})`
+                          : preset.kind === "pattern"
+                            ? buildPatternSwatchStyle(preset.patternId!)
+                            : preset.swatch,
+                      border: active ? "2px solid var(--accent)" : undefined
+                    }}
+                  />
+                );
+              })}
+          </div>
+        </div>
+      ) : null}
+
+      {backgroundMode === "solid" ? (
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+          <span>{t("editor.customColor")}</span>
+          <input type="color" value={backgroundColor} onChange={(e) => setBackgroundSolid(e.target.value)} style={COLOR_INPUT_STYLE} />
+        </label>
+      ) : null}
+
+      {backgroundMode === "gradient" ? (
         <>
-          <span style={{ color: "var(--text-dim)", fontSize: 11 }}>{t("editor.mediaPalette")}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+              <input type="radio" name="grad-type" checked={gradientType === "linear"} onChange={() => setGradientType("linear")} />
+              {t("editor.gradientLinear")}
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+              <input type="radio" name="grad-type" checked={gradientType === "radial"} onChange={() => setGradientType("radial")} />
+              {t("editor.gradientRadial")}
+            </label>
+          </div>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+            <span>{t("editor.gradientFrom")}</span>
+            <input type="color" value={gradientFrom} onChange={(e) => setBackgroundGradient(e.target.value, gradientTo, gradientAngle, gradientVia ?? undefined, gradientType)} style={COLOR_INPUT_STYLE} />
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+            <span>{t("editor.gradientMiddle")}</span>
+            <input type="color" value={gradientVia ?? "#ffffff"} onChange={(e) => setGradientVia(e.target.value)} style={COLOR_INPUT_STYLE} />
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+            <span>{t("editor.gradientTo")}</span>
+            <input type="color" value={gradientTo} onChange={(e) => setBackgroundGradient(gradientFrom, e.target.value, gradientAngle, gradientVia ?? undefined, gradientType)} style={COLOR_INPUT_STYLE} />
+          </label>
+          <label className="field">
+            <span>{t("editor.gradientAngle", { val: gradientAngle })}</span>
+            <div className="range-wrap">
+              <input type="range" min={0} max={360} step={1} value={gradientAngle} aria-label={t("editor.gradientAngle", { val: gradientAngle })} aria-valuetext={`${gradientAngle}°`} onChange={(e) => setBackgroundGradient(gradientFrom, gradientTo, Number(e.target.value), gradientVia ?? undefined, gradientType)} />
+              <span className="range-val">{gradientAngle}°</span>
+            </div>
+          </label>
+        </>
+      ) : null}
+
+      {backgroundMode === "image" ? (
+        <>
+          <label className="field">
+            <span>{t("editor.bgBlurLabel", { val: backgroundBlur })}</span>
+            <div className="range-wrap">
+              <input type="range" min={0} max={40} step={1} value={backgroundBlur} aria-label={t("editor.bgBlurLabel", { val: backgroundBlur })} aria-valuetext={`${backgroundBlur}px`} onChange={(e) => setBackgroundBlur(Number(e.target.value))} />
+              <span className="range-val">{backgroundBlur}px</span>
+            </div>
+          </label>
+          <button type="button" className="btn btn-sm" onClick={() => setBackgroundTransparent()}>
+            {t("editor.removeBgImage")}
+          </button>
+        </>
+      ) : null}
+
+      <div className="bg-media-group">
+        <span className="field-label">{t("editor.bgFromMedia")}</span>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button
+            type="button"
+            className="auto-bg-btn"
+            disabled={!hasPalette}
+            title={hasPalette ? t("editor.autoBgTooltip") : t("editor.autoBgDisabled")}
+            onClick={() => {
+              if (!hasPalette) return;
+              const [from, to] = pickGradientPair(scenePalette!);
+              const angles = [0, 45, 90, 135, 180];
+              const angle = angles[Math.floor(Math.random() * angles.length)]!;
+              setBackgroundGradient(from, to, angle);
+            }}
+          >
+            {t("editor.autoBackground")}
+          </button>
+          <button
+            type="button"
+            className="auto-bg-btn"
+            disabled={!hasPalette}
+            title={t("editor.autoSolidTooltip")}
+            onClick={() => {
+              if (!hasPalette) return;
+              setBackgroundSolid(pickBestSolid(scenePalette!));
+            }}
+          >
+            {t("editor.autoSolid")}
+          </button>
+        </div>
+        {hasPalette ? (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {scenePalette.map((color) => (
+            {scenePalette!.map((color) => (
               <button
                 key={color}
                 type="button"
@@ -141,111 +287,13 @@ export function BackgroundControls({
               />
             ))}
           </div>
-        </>
-      ) : null}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-        {backgroundPresets.map((preset) => {
-          const active =
-            (preset.kind === "transparent" && backgroundMode === "transparent") ||
-            (preset.kind === "solid" && backgroundMode === "solid" && backgroundColor === preset.backgroundColor) ||
-            (preset.kind === "gradient" &&
-              backgroundMode === "gradient" &&
-              gradientFrom === preset.gradientFrom &&
-              gradientTo === preset.gradientTo) ||
-            (preset.kind === "pattern" && backgroundMode === "pattern" && patternId === preset.patternId);
-          return (
-            <button
-              key={preset.id}
-              type="button"
-              title={t(`preset.${preset.id}`)}
-              aria-pressed={active}
-              onClick={() => {
-                if (preset.kind === "transparent") setBackgroundTransparent();
-                else if (preset.kind === "solid" && preset.backgroundColor) setBackgroundSolid(preset.backgroundColor);
-                else if (preset.kind === "gradient" && preset.gradientFrom && preset.gradientTo)
-                  setBackgroundGradient(preset.gradientFrom, preset.gradientTo, gradientAngle);
-                else if (preset.kind === "pattern" && preset.patternId) setBackgroundPattern(preset.patternId);
-              }}
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 8,
-                cursor: "pointer",
-                border: active ? "2px solid var(--accent)" : "1px solid var(--panel-border)",
-                background:
-                  preset.swatch === "transparent"
-                    ? "repeating-conic-gradient(#3f3f46 0% 25%, #18181b 0% 50%) 50% / 12px 12px"
-                    : preset.kind === "gradient"
-                      ? `linear-gradient(135deg, ${preset.gradientFrom}, ${preset.gradientTo})`
-                      : preset.kind === "pattern"
-                        ? buildPatternSwatchStyle(preset.patternId!)
-                        : preset.swatch
-              }}
-            />
-          );
-        })}
+        ) : null}
       </div>
-      {backgroundMode === "solid" ? (
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-          <span>{t("editor.customColor")}</span>
-          <input type="color" value={backgroundColor} onChange={(e) => setBackgroundSolid(e.target.value)}
-            style={{ width: 32, height: 28, padding: 0, border: "1px solid var(--panel-border)", borderRadius: 6, cursor: "pointer", background: "none" }} />
-        </label>
-      ) : null}
-      {backgroundMode === "gradient" ? (
-        <>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
-              <input type="radio" name="grad-type" checked={gradientType === "linear"} onChange={() => setGradientType("linear")} />
-              {t("editor.gradientLinear")}
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
-              <input type="radio" name="grad-type" checked={gradientType === "radial"} onChange={() => setGradientType("radial")} />
-              {t("editor.gradientRadial")}
-            </label>
-          </div>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-            <span>{t("editor.gradientFrom")}</span>
-            <input type="color" value={gradientFrom} onChange={(e) => setBackgroundGradient(e.target.value, gradientTo, gradientAngle, gradientVia ?? undefined, gradientType)}
-              style={{ width: 32, height: 28, padding: 0, border: "1px solid var(--panel-border)", borderRadius: 6, cursor: "pointer", background: "none" }} />
-          </label>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-            <span>{t("editor.gradientMiddle")}</span>
-            <input type="color" value={gradientVia ?? "#ffffff"} onChange={(e) => setGradientVia(e.target.value)}
-              style={{ width: 32, height: 28, padding: 0, border: "1px solid var(--panel-border)", borderRadius: 6, cursor: "pointer", background: "none" }} />
-          </label>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-            <span>{t("editor.gradientTo")}</span>
-            <input type="color" value={gradientTo} onChange={(e) => setBackgroundGradient(gradientFrom, e.target.value, gradientAngle, gradientVia ?? undefined, gradientType)}
-              style={{ width: 32, height: 28, padding: 0, border: "1px solid var(--panel-border)", borderRadius: 6, cursor: "pointer", background: "none" }} />
-          </label>
-          <label className="field">
-            <span>{t("editor.gradientAngle", { val: gradientAngle })}</span>
-            <div className="range-wrap">
-              <input type="range" min={0} max={360} step={1} value={gradientAngle} aria-label={t("editor.gradientAngle", { val: gradientAngle })} aria-valuetext={`${gradientAngle}°`} onChange={(e) => setBackgroundGradient(gradientFrom, gradientTo, Number(e.target.value), gradientVia ?? undefined, gradientType)} />
-              <span className="range-val">{gradientAngle}°</span>
-            </div>
-          </label>
-        </>
-      ) : null}
+
       <label className="file-trigger">
         {t("editor.uploadBgImage")}
         <input type="file" accept="image/*" onChange={handleBgFile} />
       </label>
-      {backgroundMode === "image" ? (
-        <>
-          <label className="field">
-            <span>{t("editor.bgBlurLabel", { val: backgroundBlur })}</span>
-            <div className="range-wrap">
-              <input type="range" min={0} max={40} step={1} value={backgroundBlur} aria-label={t("editor.bgBlurLabel", { val: backgroundBlur })} aria-valuetext={`${backgroundBlur}px`} onChange={(e) => setBackgroundBlur(Number(e.target.value))} />
-              <span className="range-val">{backgroundBlur}px</span>
-            </div>
-          </label>
-          <button type="button" className="btn btn-sm" onClick={() => setBackgroundTransparent()}>
-            {t("editor.removeBgImage")}
-          </button>
-        </>
-      ) : null}
     </div>
   );
 }
