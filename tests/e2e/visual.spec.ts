@@ -23,10 +23,7 @@ test("default scene renders consistently", async ({ page }) => {
 
 test("iphone16pro overlay renders consistently", async ({ page }) => {
   await page.goto("/");
-  await page
-    .locator('.segmented[aria-label="Frame"] button', { hasText: "16 Pro" })
-    .first()
-    .click();
+  await page.getByRole("radio", { name: "16 Pro", exact: true }).click();
   await waitForStable(page);
   await expect(page).toHaveScreenshot("iphone16pro-overlay.png", {
     maxDiffPixels: 80,

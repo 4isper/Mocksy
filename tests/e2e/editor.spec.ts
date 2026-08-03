@@ -5,20 +5,14 @@ import { expect, test } from "@playwright/test";
 const VIDEO_EXPORT_TIMEOUT = 180_000;
 const VIDEO_EXPORT_EVENT_TIMEOUT = 170_000;
 
-// Frame/Style/Animation/Aspect are now segmented button groups, not <select>.
-// Pick the option by its visible label inside the matching group.
+// Frame/Style/Animation/Aspect are now segmented button groups or the visual
+// frame picker, not <select>. Pick the frame by its accessible name.
 async function selectFrame(page: import("@playwright/test").Page, label: string) {
-  await page
-    .locator('.segmented[aria-label="Frame"] button', { hasText: label })
-    .first()
-    .click();
+  await page.getByRole("radio", { name: label, exact: true }).click();
 }
 
 async function frameIsActive(page: import("@playwright/test").Page, label: string) {
-  return page
-    .locator('.segmented[aria-label="Frame"] button', { hasText: label })
-    .first()
-    .getAttribute("aria-pressed");
+  return page.getByRole("radio", { name: label, exact: true }).getAttribute("aria-checked");
 }
 
 // Opens the unified export dialog from the toolbar. Use an exact match so we
@@ -695,7 +689,7 @@ test("exporting an image scene triggers an MP4 download", async ({ page }) => {
 test("exporting an overlay phone frame (16 Pro) produces an MP4", async ({ page }) => {
   test.setTimeout(VIDEO_EXPORT_TIMEOUT);
   await page.goto("/");
-  await page.locator('.segmented[aria-label="Frame"] button', { hasText: "16 Pro" }).first().click();
+  await page.getByRole("radio", { name: "16 Pro", exact: true }).click();
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
     name: "sample.png",
     mimeType: "image/png",
