@@ -82,7 +82,7 @@ Scene serialized as base64 JSON; demo media stripped to keep URLs short. 16KB UR
 
 ```
 app/              Next.js router ([locale]/layout, page, error boundary)
-components/editor/ 26 React components (EditorShell, ControlPanel, PreviewCanvas, ...)
+components/editor/ 28 React components (EditorShell, ControlPanel, PreviewCanvas, ...)
 i18n/             Locale request config + canonical locale list (locales.ts)
 lib/state/        Zustand stores, normalization, id generators, share URL, projects
 lib/render/       Frame specs, CSS/canvas geometry, video timeline, canvas drawing
@@ -103,8 +103,8 @@ tests/e2e/        Playwright (editor.spec.ts, visual.spec.ts)
 
 ## Testing
 
-- `npm run test` — Vitest (912 tests, 60 files)
-- `npm run test:e2e` — Playwright (76 tests in editor.spec.ts, 9 in visual.spec.ts; requires browser install, needs dev server)
+- `npm run test` — Vitest (1,114 tests, 65 files)
+- `npm run test:e2e` — Playwright (73 tests in editor.spec.ts, 9 in visual.spec.ts; requires browser install, needs dev server)
 - `npm run test:vrt` — Visual regression tests via Playwright
 - `npm run test:vrt:update` — Update visual regression baselines
 - `npm run test:lhci` — Lighthouse CI (requires built app + server)

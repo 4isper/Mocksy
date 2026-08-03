@@ -25,7 +25,10 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 
 - Multi-panel layout: controls, canvas preview, layers, annotations, templates, projects
 - Undo/redo (`⌘Z` / `⇧⌘Z`) with keyboard shortcuts; rapid slider drags coalesce into one step
-- Command palette (`⌘K`) for keyboard-driven access to every action
+- Command palette (`⌘K`) with actions grouped by category and match highlighting
+- Visual frame picker with device thumbnails
+- Collapsible control sections with tooltips
+- Toast notifications, empty states and skeleton loading
 - Light/dark/system theme toggle in the toolbar
 - Error boundary with recovery (your saved scene stays safe)
 - Save / unsaved status indicator with 500ms autosave debounce
@@ -42,11 +45,14 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 | `iphone16pro` | Overlay | SVG skin, native portrait ratio |
 | `pixel8pro` | Overlay | SVG skin, native portrait ratio |
 | `galaxy24` | Overlay | SVG skin, native portrait ratio |
+| `iphoneSE` | Overlay | SVG skin, native portrait ratio |
 | `ipad` | Overlay | iPad Pro skin, native portrait ratio |
+| `galaxyTab` | Overlay | SVG skin, native portrait ratio |
 | `desktop` | CSS | Wide landscape monitor |
 | `tablet` | CSS | Tablet proportions |
 | `macbook` | Overlay | MacBook Pro skin, landscape |
 | `imac` | Overlay | iMac skin with stand |
+| `notebook` | Overlay | Notebook skin, landscape |
 | `watch` | CSS | Circular face |
 
 - Style presets: default, glass (light/dark), outline — with configurable shadow opacity and corner radius
@@ -77,7 +83,9 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 
 ### Background
 
+- Mode tabs: solid, gradient, pattern, and image
 - Solid colors, gradient presets, transparent mode
+- Pattern presets: dots, grid, diagonal, noise, plus, cross, triangle
 - Background image upload with blur control
 - Auto from media — generates a gradient from the loaded media's dominant colors
 
@@ -117,13 +125,13 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | Next.js 15 |
+| Framework | Next.js 16 |
 | UI | React 19 |
 | State | Zustand |
 | Styling | Tailwind CSS v4 |
 | Video | @ffmpeg/ffmpeg (client-side WebM→MP4 / GIF / WebP) |
-| Unit tests | Vitest (550 tests, 36 files) |
-| E2E tests | Playwright |
+| Unit tests | Vitest (1,114 tests, 65 files) |
+| E2E tests | Playwright (82 tests: 73 editor, 9 visual regression) |
 | Language | TypeScript (strict) |
 
 ---
@@ -132,7 +140,7 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 
 ```
 app/                    Next.js router (layout, page, error boundary)
-components/editor/      16 React components
+components/editor/      28 React components
   EditorShell            Main orchestrator with keyboard shortcuts
   ControlPanel           Frame, style, media, background, watermark controls
   PreviewCanvas          Canvas renderer with drag/pan/pinch/annotations
@@ -145,21 +153,35 @@ components/editor/      16 React components
   ShortcutsDialog        Keyboard shortcuts cheat sheet
   VideoOptions           Video playback + trim + quality
   VideoTrimControl       Dual-range trim slider
+  FramePicker            Visual frame picker
+  FrameInstanceGrid      Multi-frame grid layout
+  FrameInstanceList      Frame instance layer list
+  SingleFrameView        Single-frame canvas view
+  BackgroundControls     Background mode tabs + presets
+  WatermarkControls      Watermark toggle/text/position/size
+  AnnotationItem         Annotation list item with editor
   RightPanel             Tabbed panel (templates / layers / annotations / projects)
   ErrorBoundary          Crash recovery with retry
   ThemeProvider          Light/dark/system theme
   LocaleSwitcher         EN / RU toggle
+  PwaRegister            Service worker registration
+  SkipLink               Skip-to-content accessibility link
+  Toast                  Toast notifications
+  Section / Segmented    Collapsible section and segmented control primitives
 lib/
-  state/                 Zustand stores + normalization + share URL
-  render/                Frame specs, CSS geometry, video timeline
+  state/                 Zustand stores (scene, layers, projects, theme) + normalization + share URL
+  render/                Frame specs, CSS geometry, canvas drawing, video timeline
   export/                PNG/WebP, SVG/HTML, MP4/WebM/GIF/WebP, canvas rendering
+  commands/              Command-palette command factories per feature area
   media/                 File loading, demo image, palette extraction
   presets/               Background swatches, scene style presets
+  hooks/                 Client hooks (commands, shortcuts, frame transform, palette)
+  search/                Frame search utilities
   types/                 TypeScript interfaces
 public/devices/          SVG device skins for overlay frames
 tests/
   unit/                  Pure function and store tests
-  components/            Component tests (16 components)
+  components/            Component tests (Testing Library)
   e2e/                   Playwright end-to-end tests
 ```
 
@@ -169,9 +191,12 @@ tests/
 
 ```bash
 npm run typecheck       # TypeScript strict check
-npm run test            # Vitest (501 tests, 34 files)
+npm run test            # Vitest (1,114 tests, 65 files)
 npm run test:coverage   # Unit tests with coverage report
 npm run test:e2e        # Playwright (requires browser install)
+npm run test:vrt        # Visual regression tests
+npm run i18n:sync       # Backfill English fallback into all locales
+npm run audit           # Dependency + license audit check
 npm run lint            # ESLint (Next.js core-web-vitals)
 ```
 
