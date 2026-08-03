@@ -46,6 +46,7 @@ function makeFileCallbacks() {
     onExportWebp: vi.fn(),
     onExportSvg: vi.fn(),
     onExportHtml: vi.fn(),
+    onExportPdf: vi.fn(),
     onExportMp4: vi.fn(),
     onExportWebm: vi.fn(),
     onExportGif: vi.fn(),
@@ -108,8 +109,8 @@ describe("createFileCommands", () => {
     const cmds = createFileCommands(t, cb);
     expect(cmds.map((c) => c.id)).toEqual([
       "new-project", "save-project", "export-png", "export-mp4", "export-webm",
-      "export-webp", "export-webp-anim", "export-svg", "export-html", "export-gif",
-      "copy-png", "copy-share-url"
+      "export-webp", "export-webp-anim", "export-svg", "export-html", "export-pdf",
+      "export-gif", "copy-png", "copy-share-url"
     ]);
     cmds.find((c) => c.id === "save-project")!.action();
     cmds.find((c) => c.id === "export-png")!.action();
@@ -119,6 +120,7 @@ describe("createFileCommands", () => {
     cmds.find((c) => c.id === "export-webp-anim")!.action();
     cmds.find((c) => c.id === "export-svg")!.action();
     cmds.find((c) => c.id === "export-html")!.action();
+    cmds.find((c) => c.id === "export-pdf")!.action();
     cmds.find((c) => c.id === "export-gif")!.action();
     cmds.find((c) => c.id === "copy-png")!.action();
     cmds.find((c) => c.id === "copy-share-url")!.action();
@@ -130,6 +132,7 @@ describe("createFileCommands", () => {
     expect(cb.onExportWebpAnim).toHaveBeenCalledTimes(1);
     expect(cb.onExportSvg).toHaveBeenCalledTimes(1);
     expect(cb.onExportHtml).toHaveBeenCalledTimes(1);
+    expect(cb.onExportPdf).toHaveBeenCalledTimes(1);
     expect(cb.onExportGif).toHaveBeenCalledTimes(1);
     expect(cb.onCopyPng).toHaveBeenCalledTimes(1);
     expect(cb.onCopyShareUrl).toHaveBeenCalledTimes(1);
@@ -392,7 +395,7 @@ describe("createCommands", () => {
       a.setExportScale, 2,
       "p1", [makeProject("p1", "One")], a.switchProject,
       "dark", a.setThemeMode,
-      a.onExportPng, a.onExportWebp, a.onExportSvg, a.onExportHtml,
+      a.onExportPng, a.onExportWebp, a.onExportSvg, a.onExportHtml, a.onExportPdf,
       a.onExportMp4, a.onExportWebm, a.onExportGif, a.onExportWebpAnim,
       a.onCopyPng, a.onCopyShareUrl, a.onSave
     );

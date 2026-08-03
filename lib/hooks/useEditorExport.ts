@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { exportImage, copyPngToClipboard, exportWebp } from "@/lib/export/exportImage";
+import { exportPdf } from "@/lib/export/exportPdf";
 import type { ExportFormat } from "@/components/editor/ExportDialog";
 import { sceneToShareUrl, ShareUrlTooLarge } from "@/lib/state/shareState";
 import type { EditorScene, ExportSize } from "@/lib/types/editor";
@@ -20,6 +21,7 @@ export interface EditorExportApi {
   handleExportWebp: () => void;
   handleExportSvg: () => void;
   handleExportHtml: () => void;
+  handleExportPdf: () => void;
   handleExportMp4: () => void;
   handleExportWebm: () => void;
   handleExportWebpAnim: () => void;
@@ -109,6 +111,11 @@ export function useEditorExport(
     }
   }, [scene, t, activeLayerId]);
 
+  const handleExportPdf = useCallback(() => {
+    setExportError(null);
+    exportPdf(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId);
+  }, [scene, exportScale, customExportSize, activeLayerId]);
+
   const handleExportMp4 = useCallback(async () => {
     setExportError(null);
     try {
@@ -173,6 +180,9 @@ export function useEditorExport(
         case "html":
           void handleExportHtml();
           break;
+        case "pdf":
+          handleExportPdf();
+          break;
         case "mp4":
           void handleExportMp4();
           break;
@@ -193,6 +203,7 @@ export function useEditorExport(
       handleExportWebp,
       handleExportSvg,
       handleExportHtml,
+      handleExportPdf,
       handleExportMp4,
       handleExportWebm,
       handleExportGif,
@@ -228,6 +239,7 @@ export function useEditorExport(
     handleExportWebp,
     handleExportSvg,
     handleExportHtml,
+    handleExportPdf,
     handleExportMp4,
     handleExportWebm,
     handleExportWebpAnim,

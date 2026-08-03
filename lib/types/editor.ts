@@ -40,7 +40,7 @@ export interface Annotation {
   /** Border-radius of background box, in px (default 0). */
   bgRadius?: number;
 }
-export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "pixel8pro" | "galaxy24" | "iphoneSE" | "ipad" | "galaxyTab" | "desktop" | "tablet" | "macbook" | "imac" | "notebook" | "watch";
+export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "pixel8pro" | "galaxy24" | "iphoneSE" | "ipad" | "galaxyTab" | "desktop" | "tablet" | "macbook" | "imac" | "notebook" | "watch" | "custom";
 export type StylePreset = "default" | "glassLight" | "glassDark" | "outline";
 export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax" | "panLeft" | "panRight" | "breathe";
 export type MediaType = "none" | "image" | "video";
@@ -68,6 +68,22 @@ export interface FrameInstance {
   scale: number;
   /** Optional layer to render inside this frame; if omitted, uses active layer. */
   layerId: string | null;
+}
+
+/** A user-uploaded SVG device skin. Rendered as an overlay frame whose
+ *  transparent screen area is expressed as a cutout in viewBox units. */
+export interface CustomFrame {
+  /** Stable id for this custom frame. */
+  id: string;
+  /** data: URL of the uploaded SVG skin. */
+  asset: string;
+  /** Display name (source filename). */
+  name: string;
+  /** The SVG's viewBox size, used to map cutout coordinates to frame
+   *  percentages at any rendered size. */
+  viewBox: { w: number; h: number };
+  /** Transparent screen cutout in viewBox units. */
+  cutout: { x: number; y: number; w: number; h: number; rx: number };
 }
 
 /** A single media item stacked inside the mockup frame. Each layer owns its
@@ -104,6 +120,8 @@ export interface EditorScene {
   frame: MockupFrame;
   /** Multiple device frames in a grid. When present, overrides scene.frame (single-frame mode). */
   frameInstances: FrameInstance[];
+  /** User-uploaded SVG device skin used when frame === "custom". */
+  customFrame: CustomFrame | null;
   stylePreset: StylePreset;
   shadowOpacity: number;
   borderRadius: number;

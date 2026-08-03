@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import type { EditorScene, FrameInstance, MockupFrame } from "@/lib/types/editor";
 import { FRAME_ORDER } from "@/lib/render/frames";
 
-const frames: MockupFrame[] = FRAME_ORDER;
+const frames: Exclude<MockupFrame, "custom">[] = FRAME_ORDER;
 
 interface FrameInstanceListProps {
   scene: EditorScene;
@@ -27,7 +27,7 @@ export function FrameInstanceList({
 }: FrameInstanceListProps) {
   const t = useTranslations();
 
-  const frameLabels: Record<MockupFrame, string> = {
+  const frameLabels: Record<Exclude<MockupFrame, "custom">, string> = {
     none: t("frame.none"),
     iphone: t("frame.iphone"),
     iphone15: t("frame.iphone15"),

@@ -8,6 +8,7 @@ export const initialScene: EditorScene = {
   activeLayerId: null,
   frame: "iphone",
   frameInstances: [],
+  customFrame: null,
   stylePreset: "default",
   shadowOpacity: 0.4,
   borderRadius: 20,

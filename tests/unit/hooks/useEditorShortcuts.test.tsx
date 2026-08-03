@@ -26,6 +26,7 @@ function makeActions() {
     onExportWebpAnim: vi.fn(),
     onExportSvg: vi.fn(),
     onExportHtml: vi.fn(),
+    onExportPdf: vi.fn(),
     onCopyPng: vi.fn(),
     onOpenShortcuts: vi.fn(),
     onOpenCommandPalette: vi.fn(),
@@ -111,6 +112,13 @@ describe("useEditorShortcuts", () => {
     render(<Harness actions={actions} />);
     fireEvent.keyDown(window, { key: "p", metaKey: true, shiftKey: true });
     expect(actions.onExportWebp).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls onExportPdf on ⌘⇧F", () => {
+    const actions = makeActions();
+    render(<Harness actions={actions} />);
+    fireEvent.keyDown(window, { key: "f", metaKey: true, shiftKey: true });
+    expect(actions.onExportPdf).toHaveBeenCalledTimes(1);
   });
 
   it("calls onExportWebpAnim on ⌘⇧A", () => {

@@ -11,6 +11,7 @@ export function useCommands(
   onExportWebp: () => void,
   onExportSvg: () => void,
   onExportHtml: () => void,
+  onExportPdf: () => void,
   onExportMp4: () => void,
   onExportWebm: () => void,
   onExportGif: () => void,
@@ -64,11 +65,11 @@ export function useCommands(
     toggleWatermark, setExportScale, exportScale,
     activeProjectId, projects, switchProject,
     themeMode, setThemeMode,
-    onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim,
+    onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim,
     onCopyPng, onCopyShareUrl, onSave
   ), [
     t, scene, activeLayerId, pastLength, futureLength, activeProjectId, projects, themeMode, exportScale,
-    onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim,
+    onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim,
     onCopyPng, onCopyShareUrl, onSave,
     undo, redo, resetScene,
     setFrame, setStylePreset, setAnimationPreset,

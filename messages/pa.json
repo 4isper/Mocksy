@@ -197,7 +197,13 @@
     "bgModeTransparent": "Transparent",
     "bgPresets": "Presets",
     "tiltX": "Tilt X",
-    "tiltY": "Tilt Y"
+    "tiltY": "Tilt Y",
+    "mediaByUrl": "Add from URL",
+    "mediaByUrlPlaceholder": "Image or video URL (https://…)",
+    "mediaByUrlButton": "Add",
+    "customFrameUpload": "Upload your own SVG device skin",
+    "customFrameUse": "Use your uploaded frame",
+    "customFrameRemove": "Remove custom frame"
   },
   "frame": {
     "none": "ਕੋਈ ਨਹੀਂ",
@@ -214,7 +220,8 @@
     "notebook": "ਲੈਪਟਾਪ",
     "desktop": "ਡੈਸਕਟਾਪ",
     "tablet": "ਟੈਬਲੈਟ",
-    "watch": "ਘੜੀਆ"
+    "watch": "ਘੜੀਆ",
+    "custom": "Custom"
   },
   "style": {
     "default": "ਡਿਫਾਲਟ",
@@ -324,7 +331,8 @@
     "exportingWebpAnim": "Exporting WebP…",
     "htmlFailed": "HTML export failed.",
     "shareLinkFailed": "Could not create share link",
-    "svgFailed": "SVG export failed."
+    "svgFailed": "SVG export failed.",
+    "pdf": "PDF"
   },
   "shortcuts": {
     "title": "ਕੀਬੋਰਡ ਸ਼ਾਰਟਕੱਟਸ",
@@ -359,7 +367,8 @@
     "exportWebp": "Export WebP",
     "exportWebpAnim": "Export animated WebP",
     "exportSvg": "Export SVG",
-    "exportHtml": "Export HTML"
+    "exportHtml": "Export HTML",
+    "exportPdf": "Export PDF"
   },
   "projects": {
     "title": "ਪ੍ਰੋਜੈਕਟ",
@@ -498,7 +507,9 @@
       "export": "Export",
       "project": "Project",
       "theme": "Theme"
-    }
+    },
+    "exportPdf": "Export PDF",
+    "exportPdfDesc": "Export current scene as PDF document"
   },
   "errors": {
     "title": "ਕੁਝ ਗ਼ਲਤੀ ਹੋ ਗਈ",

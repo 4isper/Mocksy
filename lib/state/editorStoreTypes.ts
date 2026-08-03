@@ -81,6 +81,11 @@ export interface EditorStoreState {
   reorderLayers: (orderedIds: string[], coalesce?: boolean) => void;
   updateActiveLayer: (patch: Partial<MediaLayer>) => void;
   setFrame: (frame: MockupFrame) => void;
+  /** Stores a user-uploaded SVG skin and selects it as the active frame; passing
+   *  null removes it (and falls back to the default frame when "custom" is
+   *  active). The skin travels inside `scene` so it persists/round-trips with
+   *  the rest of the scene. */
+  setCustomFrame: (customFrame: import("@/lib/types/editor").CustomFrame | null) => void;
   setFrameInstances: (instances: FrameInstance[]) => void;
   updateFrameInstance: (id: string, patch: Partial<FrameInstance>, coalesce?: boolean) => void;
   removeFrameInstance: (id: string) => void;

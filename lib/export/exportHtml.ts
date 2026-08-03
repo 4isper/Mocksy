@@ -306,7 +306,7 @@ export async function exportHtml(
     if (scene.backgroundMode === "image" && scene.backgroundImageUrl) {
       backgroundHref = await toEmbeddableDataUrl(scene.backgroundImageUrl);
     }
-    const spec = getFrameSpec(scene.frame);
+    const spec = getFrameSpec(scene.frame, scene.customFrame);
     const overlayHref = spec.isOverlay && spec.asset ? await svgAssetToDataUrl(spec.asset) : null;
 
     const fontCss = await buildEmbeddedFontCss(collectFontStacks(scene));

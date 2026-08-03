@@ -13,6 +13,7 @@ export interface EditorShortcutActions {
   onExportWebpAnim: () => void;
   onExportSvg: () => void;
   onExportHtml: () => void;
+  onExportPdf: () => void;
   onCopyPng: () => void;
   onOpenShortcuts: () => void;
   onOpenCommandPalette: () => void;
@@ -26,7 +27,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
 
 /**
  * Global editor keyboard shortcuts: ⌘K command palette, ⌘Z/⌘⇧Z/⌘Y undo/redo,
- * ⌘N new project, ⌘S save, ⌘E/⌘⇧E/⇧⌘G/⇧⌘W/⇧⌘P/⌘⇧A/⌘⇧S/⌘⇧H exports,
+ * ⌘N new project, ⌘S save, ⌘E/⌘⇧E/⇧⌘G/⇧⌘W/⇧⌘P/⌘⇧A/⌘⇧S/⌘⇧H/⌘⇧F exports,
  * ⌘⇧C clipboard copy, ⌘D duplicate layer, ⌘↑/⌘↓/⌘[/⌘] layer order, plain
  * arrow keys nudge frames, "?" cheat sheet, "R" reset. Actions are read
  * through a ref so the window listener is bound once and never needs
@@ -106,6 +107,12 @@ export function useEditorShortcuts(actions: EditorShortcutActions): void {
       if (modifier && event.shiftKey && event.key.toLowerCase() === "h") {
         event.preventDefault();
         a.onExportHtml();
+        return;
+      }
+      // ⌘⇧F exports PDF (F as in File/PDF; ⌘⇧P is taken by WebP).
+      if (modifier && event.shiftKey && event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        a.onExportPdf();
         return;
       }
       if (modifier && !event.shiftKey && event.key.toLowerCase() === "e") {

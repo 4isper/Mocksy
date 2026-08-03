@@ -90,6 +90,7 @@ function scene(overrides: Partial<EditorScene> = {}): EditorScene {
     activeLayerId: "layer-test",
     annotations: [],
     frameInstances: [],
+    customFrame: null,
     backgroundMode: "solid",
     backgroundColor: "#09090b",
     backgroundImageUrl: null,

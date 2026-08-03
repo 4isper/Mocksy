@@ -1,10 +1,11 @@
 import { activeLayer, buildAutoLayout, layoutFrameGrid, makeDemoLayer, nextLayerId, pushHistory } from "@/lib/state/editorHelpers";
-import type { EditorScene, FrameInstance, MockupFrame } from "@/lib/types/editor";
+import type { CustomFrame, EditorScene, FrameInstance, MockupFrame } from "@/lib/types/editor";
 import type { EditorStoreSetter, EditorStoreState } from "../editorStoreTypes";
 
 export type FramesSlice = Pick<
   EditorStoreState,
   | "setFrame"
+  | "setCustomFrame"
   | "setFrameInstances"
   | "updateFrameInstance"
   | "removeFrameInstance"
@@ -59,6 +60,21 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
           nextScene.frameInstances = nextScene.frameInstances.map((inst) => ({ ...inst, frame }));
         }
         return pushHistory(s, nextScene);
+      }),
+    // Uploading a custom frame selects it immediately; clearing it falls back
+    // to the default frame so the scene never sits on a dangling "custom" value.
+    setCustomFrame: (customFrame: CustomFrame | null) =>
+      set((s) => {
+        const frame = customFrame
+          ? "custom" as MockupFrame
+          : (s.scene.frame === "custom" ? "iphone" as MockupFrame : s.scene.frame);
+        const nextScene = { ...s.scene, customFrame, frame };
+        if (nextScene.frameInstances.length > 0 && customFrame) {
+          nextScene.frameInstances = nextScene.frameInstances.map((inst) =>
+            inst.frame === "custom" ? { ...inst, frame } : inst
+          );
+        }
+        return pushHistory(s, nextScene, "customFrame");
       }),
     setFrameInstances: (instances: FrameInstance[]) => set((s) => pushHistory(s, { ...s.scene, frameInstances: instances })),
     removeFrameInstance: (id) =>

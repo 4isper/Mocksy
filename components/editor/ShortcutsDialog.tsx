@@ -32,6 +32,7 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
         { keys: ["⇧", "⌘", "A"], label: t("shortcuts.exportWebpAnim") },
         { keys: ["⇧", "⌘", "S"], label: t("shortcuts.exportSvg") },
         { keys: ["⇧", "⌘", "H"], label: t("shortcuts.exportHtml") },
+        { keys: ["⇧", "⌘", "F"], label: t("shortcuts.exportPdf") },
         { keys: ["⇧", "⌘", "G"], label: t("shortcuts.exportGif") }
       ]
     },

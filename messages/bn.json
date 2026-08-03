@@ -197,7 +197,13 @@
     "bgModeTransparent": "Transparent",
     "bgPresets": "Presets",
     "tiltX": "Tilt X",
-    "tiltY": "Tilt Y"
+    "tiltY": "Tilt Y",
+    "mediaByUrl": "Add from URL",
+    "mediaByUrlPlaceholder": "Image or video URL (https://…)",
+    "mediaByUrlButton": "Add",
+    "customFrameUpload": "Upload your own SVG device skin",
+    "customFrameUse": "Use your uploaded frame",
+    "customFrameRemove": "Remove custom frame"
   },
   "frame": {
     "none": "কোনোটি নয়",
@@ -214,7 +220,8 @@
     "notebook": "নোটবুক",
     "desktop": "ডেস্কটপ",
     "tablet": "ট্যাবলেট",
-    "watch": "ঘড়ি"
+    "watch": "ঘড়ি",
+    "custom": "Custom"
   },
   "style": {
     "default": "ডিফল্ট",
@@ -324,7 +331,8 @@
     "exportingWebpAnim": "Exporting WebP…",
     "htmlFailed": "HTML export failed.",
     "shareLinkFailed": "Could not create share link",
-    "svgFailed": "SVG export failed."
+    "svgFailed": "SVG export failed.",
+    "pdf": "PDF"
   },
   "shortcuts": {
     "title": "কীবোর্ড শর্টকাট",
@@ -359,7 +367,8 @@
     "exportWebp": "Export WebP",
     "exportWebpAnim": "Export animated WebP",
     "exportSvg": "Export SVG",
-    "exportHtml": "Export HTML"
+    "exportHtml": "Export HTML",
+    "exportPdf": "Export PDF"
   },
   "projects": {
     "title": "প্রকল্প",
@@ -498,7 +507,9 @@
       "export": "Export",
       "project": "Project",
       "theme": "Theme"
-    }
+    },
+    "exportPdf": "Export PDF",
+    "exportPdfDesc": "Export current scene as PDF document"
   },
   "errors": {
     "title": "কিছু ভুল হয়েছে",

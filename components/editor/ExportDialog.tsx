@@ -5,11 +5,12 @@ import { useTranslations } from "next-intl";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import type { ExportSize } from "@/lib/types/editor";
 
-export type ExportFormat = "png" | "webp" | "svg" | "html" | "mp4" | "webm" | "gif" | "webpAnim";
+export type ExportFormat = "png" | "webp" | "svg" | "html" | "mp4" | "webm" | "gif" | "webpAnim" | "pdf";
 
 /** Raster formats honor the 1×/2×/4× scale control (and custom size); vector
  *  formats don't. */
 const RASTER_FORMATS: ExportFormat[] = ["png", "webp", "mp4", "webm", "gif", "webpAnim"];
+const VECTOR_FORMATS: ExportFormat[] = ["svg", "html", "pdf"];
 
 /** Fallback size offered when the user first enables the custom-size option. */
 const DEFAULT_CUSTOM_SIZE: ExportSize = { width: 1280, height: 720 };
@@ -40,7 +41,8 @@ export function ExportDialog({
     { value: "png", label: t("export.png") },
     { value: "webp", label: t("export.webp") },
     { value: "svg", label: t("export.svg") },
-    { value: "html", label: t("export.html") }
+    { value: "html", label: t("export.html") },
+    { value: "pdf", label: t("export.pdf") }
   ];
   const VIDEO_FORMATS: { value: ExportFormat; label: string }[] = [
     { value: "mp4", label: t("export.mp4") },

@@ -72,6 +72,62 @@ export async function loadMediaFromFile(file: File): Promise<LoadedMedia> {
   };
 }
 
+export class UnsupportedMediaUrlError extends Error {
+  constructor(url: string) {
+    super(`"${url}" is not a supported image or video.`);
+    this.name = "UnsupportedMediaUrlError";
+  }
+}
+
+/** True when the URL is a fetchable http(s) resource. */
+export function isHttpMediaUrl(inputUrl: string): boolean {
+  try {
+    const url = new URL(inputUrl);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function mediaNameFromUrl(inputUrl: string): string {
+  try {
+    const name = new URL(inputUrl).pathname.split("/").filter(Boolean).pop();
+    if (name && name.includes(".")) return decodeURIComponent(name);
+  } catch {
+    // fall through
+  }
+  return inputUrl;
+}
+
+/** Fetches a remote http(s) image/video and re-encodes it as a self-contained
+ *  data: URL so the rest of the pipeline (canvas export, localStorage
+ *  persistence, share URLs) keeps operating on same-origin-safe data URLs.
+ *  Throws `UnsupportedMediaUrlError` when the link isn't http(s), the request
+ *  fails, or the response isn't an image/video. */
+export async function loadMediaFromUrl(inputUrl: string): Promise<LoadedMedia> {
+  const trimmed = inputUrl.trim();
+  if (!isHttpMediaUrl(trimmed)) throw new UnsupportedMediaUrlError(trimmed);
+  let response: Response;
+  try {
+    response = await fetch(trimmed, { mode: "cors" });
+  } catch {
+    throw new UnsupportedMediaUrlError(trimmed);
+  }
+  if (!response.ok) throw new UnsupportedMediaUrlError(trimmed);
+  const blob = await response.blob();
+  if (!blob.type.startsWith("image/") && !blob.type.startsWith("video/")) {
+    throw new UnsupportedMediaUrlError(trimmed);
+  }
+  const mediaName = mediaNameFromUrl(trimmed);
+  const file = new File([blob], mediaName, { type: blob.type });
+  const encoded = await compressImageIfNeeded(file);
+  return {
+    url: await blobToDataUrl(encoded),
+    mediaType: detectMediaType(file),
+    mediaName
+  };
+}
+
 /** Raster image mimes that get downscaled on upload. SVG stays vector, GIF
  *  may be animated, so both are skipped. */
 const RASTER_IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp", "image/avif", "image/bmp"];

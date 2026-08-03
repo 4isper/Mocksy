@@ -8,6 +8,7 @@ export function createFileCommands(
     onExportWebp: () => void;
     onExportSvg: () => void;
     onExportHtml: () => void;
+    onExportPdf: () => void;
     onExportMp4: () => void;
     onExportWebm: () => void;
     onExportGif: () => void;
@@ -17,7 +18,7 @@ export function createFileCommands(
     onSave: () => void;
   }
 ): Command[] {
-  const { onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onCopyPng, onCopyShareUrl, onSave } = callbacks;
+  const { onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onCopyPng, onCopyShareUrl, onSave } = callbacks;
   return [
     {
       id: "new-project",
@@ -102,6 +103,15 @@ export function createFileCommands(
       shortcut: "⌘⇧H",
       keywords: ["export", "html", "snippet", "embed", "web"],
       action: onExportHtml,
+    },
+    {
+      id: "export-pdf",
+      category: "export",
+      label: t("commandPalette.exportPdf"),
+      description: t("commandPalette.exportPdfDesc"),
+      shortcut: "⌘⇧F",
+      keywords: ["export", "pdf", "document", "print", "save"],
+      action: onExportPdf,
     },
     {
       id: "export-gif",

@@ -7,7 +7,8 @@ import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/lib/state/editorStore";
 import type { AnimationPreset, StylePreset } from "@/lib/types/editor";
 import { ANIMATION_PRESETS, ASPECT_RATIOS } from "@/lib/render/frames";
-import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
+import { loadMediaFromFile, loadMediaFromUrl, UnsupportedMediaError, UnsupportedMediaUrlError } from "@/lib/media/loadFile";
+import { loadCustomFrameFromFile, UnsupportedFrameError } from "@/lib/media/customFrame";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { VideoOptions } from "@/components/editor/VideoOptions";
 import { Segmented } from "@/components/editor/Segmented";
@@ -24,12 +25,16 @@ const aspectRatios = ASPECT_RATIOS;
 export function ControlPanel() {
   const t = useTranslations();
   const [mediaError, setMediaError] = useState<string | null>(null);
+  const [mediaUrlInput, setMediaUrlInput] = useState("");
+  const [mediaUrlBusy, setMediaUrlBusy] = useState(false);
   const [expandedFrameId, setExpandedFrameId] = useState<string | null>(null);
+  const [frameError, setFrameError] = useState<string | null>(null);
   const {
     scene,
     scenePalette,
     setMedia,
     setFrame,
+    setCustomFrame,
     setFrameInstances,
     removeFrameInstance,
     updateFrameInstance,
@@ -69,6 +74,7 @@ export function ControlPanel() {
       activeLayerId: s.activeLayerId,
       setMedia: s.setMedia,
       setFrame: s.setFrame,
+      setCustomFrame: s.setCustomFrame,
       setFrameInstances: s.setFrameInstances,
       removeFrameInstance: s.removeFrameInstance,
       updateFrameInstance: s.updateFrameInstance,
@@ -137,6 +143,24 @@ export function ControlPanel() {
     }
   };
 
+  const handleUrlSubmit = async () => {
+    const value = mediaUrlInput.trim();
+    if (!value || mediaUrlBusy) return;
+    setMediaUrlBusy(true);
+    setMediaError(null);
+    try {
+      const { url, mediaType, mediaName } = await loadMediaFromUrl(value);
+      setScenePalette(null);
+      setMedia(url, mediaType, mediaName);
+      setMediaUrlInput("");
+    } catch (err) {
+      if (err instanceof UnsupportedMediaUrlError) setMediaError(err.message);
+      else setMediaError(t("editor.uploadError"));
+    } finally {
+      setMediaUrlBusy(false);
+    }
+  };
+
   const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
 
   const sectionIcons = {
@@ -179,6 +203,26 @@ export function ControlPanel() {
               </button>
             ) : null}
           </div>
+          <div className="field">
+            <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.mediaByUrl")}</span>
+            <div style={{ display: "flex", gap: 6 }}>
+              <input
+                type="url"
+                value={mediaUrlInput}
+                placeholder={t("editor.mediaByUrlPlaceholder")}
+                aria-label={t("editor.mediaByUrl")}
+                disabled={mediaUrlBusy}
+                onChange={(e) => setMediaUrlInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void handleUrlSubmit();
+                }}
+                style={{ flex: 1, minWidth: 0 }}
+              />
+              <button type="button" className="btn btn-sm" disabled={mediaUrlBusy} onClick={() => void handleUrlSubmit()}>
+                {t("editor.mediaByUrlButton")}
+              </button>
+            </div>
+          </div>
           {mediaError ? (
             <span role="alert" style={{ color: "var(--danger)", fontSize: 13 }}>
               {mediaError}
@@ -190,7 +234,21 @@ export function ControlPanel() {
 
       <Section id="frame" title={t("editor.frame")} icon={sectionIcons.frame}>
         <div className="field-group">
-          <FramePicker value={scene.frame} onChange={setFrame} />
+          <FramePicker
+            value={scene.frame}
+            onChange={setFrame}
+            customFrame={scene.customFrame}
+            onUploadCustom={async (file) => {
+              try {
+                setFrameError(null);
+                setCustomFrame(await loadCustomFrameFromFile(file));
+              } catch (err) {
+                setFrameError(err instanceof UnsupportedFrameError ? err.message : String(err));
+              }
+            }}
+            onRemoveCustom={() => setCustomFrame(null)}
+          />
+          {frameError ? <span className="field-error">{frameError}</span> : null}
           <div className="field" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.frameGrid")}</span>
             <div style={{ display: "flex", gap: 4, alignItems: "center", width: "100%" }}>

@@ -1,4 +1,4 @@
-import type { AnimationPreset, MockupFrame } from "@/lib/types/editor";
+import type { AnimationPreset, CustomFrame, MockupFrame } from "@/lib/types/editor";
 
 /** Native SVG viewBox size shared by the iPhone overlay skins. The screen
  *  cutout (FrameSpec.cutout) is expressed in these units, so insets and
@@ -36,7 +36,10 @@ export function frameViewBox(spec: FrameSpec): { w: number; h: number } {
   return spec.viewBox ?? DEFAULT_VIEWBOX;
 }
 
-export const FRAME_SPECS: Record<MockupFrame, FrameSpec> = {
+/** Static frame specs for every built-in frame. The dynamic "custom" frame is
+ *  resolved at render time from the uploaded skin via `customFrameSpec`, so it
+ *  has no entry here. */
+export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
   none: { asset: null, padding: 0, screenRadius: 20, isOverlay: false, aspectRatio: null, cutout: null },
   iphone: { asset: null, padding: 18, screenRadius: 36, isOverlay: false, aspectRatio: "390 / 844", cutout: null },
   iphone15: {
@@ -140,11 +143,36 @@ export const FRAME_SPECS: Record<MockupFrame, FrameSpec> = {
   watch: { asset: null, padding: 18, screenRadius: 999, isOverlay: false, aspectRatio: "1 / 1", cutout: null }
 };
 
-export function getFrameSpec(frame: MockupFrame): FrameSpec {
-  return FRAME_SPECS[frame] ?? FRAME_SPECS.none;
+export function getFrameSpec(frame: MockupFrame, customFrame?: CustomFrame | null): FrameSpec {
+  if (frame === "custom" && customFrame) return customFrameSpec(customFrame);
+  return FRAME_SPECS[frame as Exclude<MockupFrame, "custom">] ?? FRAME_SPECS.none;
 }
 
-export const FRAME_ORDER: MockupFrame[] = [
+/** Builds a FrameSpec from a user-uploaded SVG skin. The media fills the whole
+ *  viewBox behind the overlay; the SVG's transparent screen area is what shows
+ *  it through, so the cutout defaults to the full viewBox (rx 0) and the SVG
+ *  body does the shaping. */
+export function customFrameSpec(customFrame: CustomFrame): FrameSpec {
+  const vb = customFrame.viewBox;
+  return {
+    asset: customFrame.asset,
+    padding: 0,
+    screenRadius: 0,
+    isOverlay: true,
+    aspectRatio: `${vb.w} / ${vb.h}`,
+    cutout: customFrame.cutout,
+    viewBox: vb
+  };
+}
+
+/** Every valid frame value, including the dynamic "custom" upload. Used by
+ *  scene normalization so a share URL / stored scene can restore frame "custom"
+ *  when its customFrame payload survives. */
+export const ALL_FRAMES: MockupFrame[] = [...Object.keys(FRAME_SPECS) as MockupFrame[], "custom"];
+
+/** Built-in frames shown in the picker (the dynamic "custom" upload is added
+ *  separately by the FramePicker). */
+export const FRAME_ORDER: Exclude<MockupFrame, "custom">[] = [
   "none",
   "iphone",
   "iphone15",

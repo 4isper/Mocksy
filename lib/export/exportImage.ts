@@ -114,7 +114,7 @@ export async function renderSceneToImageBlob(
       return null;
     }
 
-    const spec = getFrameSpec(scene.frame);
+    const spec = getFrameSpec(scene.frame, scene.customFrame);
     let overlay: HTMLImageElement | null = null;
     if (spec.isOverlay && spec.asset) {
       try {
@@ -178,7 +178,7 @@ export async function renderSceneToImageBlob(
           }
         }
         // Load overlay for this frame instance if it uses an overlay frame
-        const instSpec = getFrameSpec(inst.frame);
+        const instSpec = getFrameSpec(inst.frame, scene.customFrame);
         if (instSpec.isOverlay && instSpec.asset) {
           try {
             const ov = await loadImage(instSpec.asset);

@@ -197,7 +197,13 @@
     "bgModeTransparent": "Transparent",
     "bgPresets": "Presets",
     "tiltX": "Tilt X",
-    "tiltY": "Tilt Y"
+    "tiltY": "Tilt Y",
+    "mediaByUrl": "Add from URL",
+    "mediaByUrlPlaceholder": "Image or video URL (https://…)",
+    "mediaByUrlButton": "Add",
+    "customFrameUpload": "Upload your own SVG device skin",
+    "customFrameUse": "Use your uploaded frame",
+    "customFrameRemove": "Remove custom frame"
   },
   "frame": {
     "none": "Brez",
@@ -214,7 +220,8 @@
     "notebook": "Prenosnik",
     "desktop": "Namizje",
     "tablet": "Tablica",
-    "watch": "Ura"
+    "watch": "Ura",
+    "custom": "Custom"
   },
   "style": {
     "default": "Privzeto",
@@ -324,7 +331,8 @@
     "exportingWebpAnim": "Exporting WebP…",
     "htmlFailed": "HTML export failed.",
     "shareLinkFailed": "Could not create share link",
-    "svgFailed": "SVG export failed."
+    "svgFailed": "SVG export failed.",
+    "pdf": "PDF"
   },
   "shortcuts": {
     "title": "Bližnjice tipkovnice",
@@ -359,7 +367,8 @@
     "exportWebp": "Export WebP",
     "exportWebpAnim": "Export animated WebP",
     "exportSvg": "Export SVG",
-    "exportHtml": "Export HTML"
+    "exportHtml": "Export HTML",
+    "exportPdf": "Export PDF"
   },
   "projects": {
     "title": "Projekti",
@@ -498,7 +507,9 @@
       "export": "Export",
       "project": "Project",
       "theme": "Theme"
-    }
+    },
+    "exportPdf": "Export PDF",
+    "exportPdfDesc": "Export current scene as PDF document"
   },
   "errors": {
     "title": "Nekaj je šlo narobe",

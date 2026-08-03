@@ -2,6 +2,7 @@ import type {
   Annotation,
   AnnotationType,
   BackgroundMode,
+  CustomFrame,
   EditorScene,
   FrameInstance,
   GradientType,
@@ -11,11 +12,11 @@ import type {
   PatternId,
   StylePreset
 } from "@/lib/types/editor";
-import { FRAME_SPECS, ANIMATION_PRESETS } from "@/lib/render/frames";
+import { ALL_FRAMES, ANIMATION_PRESETS } from "@/lib/render/frames";
 import { initialScene } from "@/lib/state/editorStore";
 import { nextAnnotationId, nextFrameInstanceId, nextLayerId } from "@/lib/state/ids";
 
-const FRAMES = Object.keys(FRAME_SPECS) as MockupFrame[];
+const FRAMES = ALL_FRAMES;
 const STYLE_PRESETS: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
 const BACKGROUND_MODES: BackgroundMode[] = ["transparent", "solid", "gradient", "image", "pattern"];
 const GRADIENT_TYPES: GradientType[] = ["linear", "radial"];
@@ -92,6 +93,32 @@ function normalizeLayer(raw: unknown, fallback: MediaLayer): MediaLayer {
   };
 }
 
+/** Normalizes one raw custom frame payload into a valid CustomFrame, or null
+ *  when the payload is missing or unusable (no data: asset / invalid viewBox). */
+function normalizeCustomFrame(raw: unknown): CustomFrame | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const asset = str(r.asset, null);
+  const vb = (r.viewBox ?? {}) as Record<string, unknown>;
+  const vbW = num(vb.w, 0, 1, 100000);
+  const vbH = num(vb.h, 0, 1, 100000);
+  if (!asset || vbW <= 0 || vbH <= 0) return null;
+  const cutout = (r.cutout ?? {}) as Record<string, unknown>;
+  return {
+    id: str(r.id, null) ?? `custom-${Date.now()}`,
+    asset,
+    name: str(r.name, null) ?? "Custom frame",
+    viewBox: { w: vbW, h: vbH },
+    cutout: {
+      x: num(cutout.x, 0, 0, vbW),
+      y: num(cutout.y, 0, 0, vbH),
+      w: num(cutout.w, vbW, 1, vbW),
+      h: num(cutout.h, vbH, 1, vbH),
+      rx: num(cutout.rx, 0, 0, Math.max(vbW, vbH))
+    }
+  };
+}
+
 /** Normalizes one raw frame instance into a valid FrameInstance. */
 function normalizeFrameInstance(raw: unknown, fallback: FrameInstance): FrameInstance {
   if (!raw || typeof raw !== "object") return fallback;
@@ -132,13 +159,21 @@ export function normalizeScene(raw: unknown): EditorScene {
     layerId: null
   };
 
+  // Validate the uploaded frame before trusting a payload that points at it.
+  const customFrame = normalizeCustomFrame(r.customFrame);
+  // frame "custom" only makes sense when the custom frame payload survived.
+  const frame = customFrame === null && r.frame === "custom"
+    ? initialScene.frame
+    : pick(r.frame, FRAMES, initialScene.frame);
+
   return {
     layers,
     activeLayerId: typeof r.activeLayerId === "string" ? r.activeLayerId : layers[0]?.id ?? null,
-    frame: pick(r.frame, FRAMES, initialScene.frame),
+    frame,
     frameInstances: Array.isArray(r.frameInstances) && r.frameInstances.length > 0
       ? r.frameInstances.map((fi) => normalizeFrameInstance(fi, fallbackFrame))
       : [],
+    customFrame,
     stylePreset: pick(r.stylePreset, STYLE_PRESETS, initialScene.stylePreset),
     shadowOpacity: num(r.shadowOpacity, initialScene.shadowOpacity, 0, 1),
     borderRadius: num(r.borderRadius, initialScene.borderRadius, 0, 200),

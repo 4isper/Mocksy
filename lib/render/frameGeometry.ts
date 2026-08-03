@@ -47,7 +47,7 @@ export function computeFrameBox(
   frameY?: number,
   activeLayerId: string | null = scene.activeLayerId
 ): FrameBox {
-  const spec = getFrameSpec(scene.frame);
+  const spec = getFrameSpec(scene.frame, scene.customFrame);
   const dpiScale = pixelRatio;
   const activeLayerForRender = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
    const actualZoom = Math.max(RENDER.minZoom, transform?.zoom ?? activeLayerForRender?.zoom ?? 1);
@@ -92,7 +92,7 @@ export function computeFrameInstances(
    const actualZoom = Math.max(RENDER.minZoom, transform?.zoom ?? activeLayer?.zoom ?? 1);
 
   return instances.map((inst) => {
-    const spec = getFrameSpec(inst.frame);
+    const spec = getFrameSpec(inst.frame, scene.customFrame);
     const instScale = inst.scale ?? 1;
     const ratioSrc = spec.aspectRatio ?? (inst.frame === "none" ? scene.aspectRatio : "1 / 1");
     const [rW, rH] = ratioSrc.split("/").map((n) => Number(n.trim()));

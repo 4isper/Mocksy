@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { compressImageIfNeeded, detectMediaType, isAudioFile, isSupportedMedia, loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
+import { compressImageIfNeeded, detectMediaType, isAudioFile, isHttpMediaUrl, isSupportedMedia, loadMediaFromFile, loadMediaFromUrl, UnsupportedMediaError, UnsupportedMediaUrlError } from "@/lib/media/loadFile";
 
 const file = (name: string, type: string): File =>
   new File([new Uint8Array([1, 2, 3])], name, { type });
@@ -196,6 +196,76 @@ describe("compressImageIfNeeded", () => {
   it("loadMediaFromFile still returns a data: URL when compression is skipped in Node", async () => {
     const result = await loadMediaFromFile(bigPhoto());
     expect(result.url).toMatch(/^data:image\/jpeg;base64,/);
+  });
+});
+
+describe("isHttpMediaUrl", () => {
+  it("accepts http and https links", () => {
+    expect(isHttpMediaUrl("https://example.com/shot.png")).toBe(true);
+    expect(isHttpMediaUrl("http://example.com/clip.mp4")).toBe(true);
+  });
+
+  it("rejects non-http schemes and garbage", () => {
+    expect(isHttpMediaUrl("data:image/png;base64,AAAA")).toBe(false);
+    expect(isHttpMediaUrl("ftp://example.com/shot.png")).toBe(false);
+    expect(isHttpMediaUrl("not a url")).toBe(false);
+  });
+});
+
+describe("loadMediaFromUrl", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function stubFetch(blob: Blob, ok = true) {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok,
+      blob: () => Promise.resolve(blob)
+    } as Response);
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  }
+
+  it("fetches an image and returns a data: URL with metadata", async () => {
+    stubFetch(new Blob([new Uint8Array([1, 2, 3])], { type: "image/png" }));
+    const result = await loadMediaFromUrl("https://example.com/shot.png");
+    expect(result.mediaType).toBe("image");
+    expect(result.mediaName).toBe("shot.png");
+    expect(result.url).toMatch(/^data:image\/png;base64,/);
+  });
+
+  it("detects video by response mime", async () => {
+    stubFetch(new Blob([new Uint8Array([1])], { type: "video/mp4" }));
+    const result = await loadMediaFromUrl("https://example.com/clip.mp4");
+    expect(result.mediaType).toBe("video");
+    expect(result.url).toMatch(/^data:video\/mp4;base64,/);
+  });
+
+  it("rejects non-http URLs before fetching", async () => {
+    const fetchMock = stubFetch(new Blob([new Uint8Array([1])], { type: "image/png" }));
+    await expect(loadMediaFromUrl("file:///tmp/shot.png")).rejects.toThrow(UnsupportedMediaUrlError);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects failed HTTP responses", async () => {
+    stubFetch(new Blob([new Uint8Array([1])], { type: "image/png" }), false);
+    await expect(loadMediaFromUrl("https://example.com/404.png")).rejects.toThrow(UnsupportedMediaUrlError);
+  });
+
+  it("rejects non-image/video responses", async () => {
+    stubFetch(new Blob(["<html>"], { type: "text/html" }));
+    await expect(loadMediaFromUrl("https://example.com/page.html")).rejects.toThrow(UnsupportedMediaUrlError);
+  });
+
+  it("rejects when fetch itself fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    await expect(loadMediaFromUrl("https://example.com/shot.png")).rejects.toThrow(UnsupportedMediaUrlError);
+  });
+
+  it("derives a media name from the URL path, stripping query strings", async () => {
+    stubFetch(new Blob([new Uint8Array([1, 2, 3])], { type: "image/jpeg" }));
+    const result = await loadMediaFromUrl("https://example.com/path/photo.jpeg?token=abc");
+    expect(result.mediaName).toBe("photo.jpeg");
   });
 });
 });

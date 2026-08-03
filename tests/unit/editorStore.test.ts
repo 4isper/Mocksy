@@ -592,6 +592,30 @@ describe("frame control", () => {
     expect(store().scene.frameInstances.every(i => i.frame === "desktop")).toBe(true);
   });
 
+  it("setCustomFrame stores the skin and selects the custom frame", () => {
+    reset();
+    const frame = { id: "c1", asset: "data:image/svg+xml;base64,eA==", name: "skin.svg", viewBox: { w: 400, h: 600 }, cutout: { x: 0, y: 0, w: 400, h: 600, rx: 0 } };
+    store().setCustomFrame(frame);
+    expect(store().scene.customFrame).toEqual(frame);
+    expect(store().scene.frame).toBe("custom");
+  });
+
+  it("setCustomFrame(null) removes the skin and falls back when custom was active", () => {
+    reset();
+    const frame = { id: "c1", asset: "data:image/svg+xml;base64,eA==", name: "skin.svg", viewBox: { w: 400, h: 600 }, cutout: { x: 0, y: 0, w: 400, h: 600, rx: 0 } };
+    store().setCustomFrame(frame);
+    store().setCustomFrame(null);
+    expect(store().scene.customFrame).toBeNull();
+    expect(store().scene.frame).not.toBe("custom");
+  });
+
+  it("setCustomFrame(null) keeps a non-custom frame untouched", () => {
+    reset();
+    store().setFrame("desktop");
+    store().setCustomFrame(null);
+    expect(store().scene.frame).toBe("desktop");
+  });
+
   it("setFrameInstances overwrites the frame instance list and records history", () => {
     reset();
     const instances = [
