@@ -239,15 +239,21 @@ describe("buildSceneCss", () => {
     expect(css.screenChrome).toContain("<svg");
     expect(css.screenChrome).toContain("9:41");
     expect(css.screenChromeStyle.position).toBe("absolute");
-    expect(css.screenChromeStyle.inset).toBe(0);
+    // The chrome must sit on the screen (the frame's content box), not over
+    // the device bezel — matching where the media and canvas exports draw it.
+    expect(css.screenChromeStyle.inset).toBe(18);
     expect(css.screenChromeStyle.pointerEvents).toBe("none");
+    // CSS-only frames have no cutout; the chrome stretches onto the screen
+    // box so positions match the fraction-based canvas export.
+    expect(css.screenChrome).toContain('preserveAspectRatio="none"');
   });
 
-  it("positions the chrome over the cutout for overlay frames", () => {
+  it("emits the screen chrome over the cutout for overlay frames", () => {
     const css = buildSceneCss(base({ frame: "iphone15", screen: { ...initialScene.screen, enabled: true } }));
     expect(css.screenChromeStyle.left).toContain("%");
     expect(css.screenChromeStyle.top).toContain("%");
     expect(css.screenChromeStyle.width).toContain("%");
     expect(css.screenChromeStyle.height).toContain("%");
+    expect(css.screenChrome).toContain('preserveAspectRatio="xMidYMid meet"');
   });
 });

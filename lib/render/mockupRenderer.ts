@@ -228,8 +228,14 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
     : (ratioW ?? 1) / (ratioH ?? 1);
   const chromeW = 390;
   const chromeH = chromeW / screenAspect;
+  // Overlay skins define their screen via a cutout, so a viewBox matching the
+  // cutout aspect fills the box exactly. For CSS-only frames the screen is the
+  // frame's content box, whose aspect differs from the device outline (uniform
+  // bezel padding); the canvas export draws the chrome with fractions of that
+  // box, so stretch the fixed viewBox onto it ("none") to mirror it precisely.
+  const chromePar = spec.isOverlay && spec.cutout ? "xMidYMid meet" : "none";
   const screenChrome = scene.screen.enabled
-    ? screenChromeSvg(scene.screen, chromeW, chromeH, `screen-chrome-${String(scene.frame).replace(/[^a-z0-9]/gi, "")}`)
+    ? screenChromeSvg(scene.screen, chromeW, chromeH, `screen-chrome-${String(scene.frame).replace(/[^a-z0-9]/gi, "")}`, chromePar)
     : null;
   const screenChromeStyle: CSSProperties = spec.isOverlay && spec.cutout
     ? {
@@ -244,7 +250,12 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
       }
     : {
         position: "absolute",
-        inset: 0,
+        // CSS-only frames (iphone/desktop/tablet/watch) draw the bezel via
+        // padding, so the screen area is the content box — inset by that
+        // padding — exactly where the media sits and where the canvas export
+        // places the chrome (innerX/innerY). inset: 0 would stretch the
+        // chrome over the bezel and drift from every export.
+        inset: framePadding,
         borderRadius: spec.screenRadius,
         overflow: "hidden",
         pointerEvents: "none"

@@ -148,9 +148,12 @@ export function screenChromeElements(chrome: ScreenChrome, w: number, h: number,
 }
 
 /** Full standalone SVG document for the chrome, sized to a w×h viewBox. Used by
- *  the CSS preview and the HTML export. */
-export function screenChromeSvg(chrome: ScreenChrome, w: number, h: number, uid = "sc"): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n(w)} ${n(h)}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">${screenChromeElements(chrome, w, h, uid)}</svg>`;
+ *  the CSS preview and the HTML export. `par` defaults to "meet" (overlay
+ *  frames, whose cutout defines a screen aspect matching the box); pass "none"
+ *  when the target box has a different aspect (CSS-only frames) so the chrome
+ *  stretches onto the screen the same way the canvas export draws it. */
+export function screenChromeSvg(chrome: ScreenChrome, w: number, h: number, uid = "sc", par = "xMidYMid meet"): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n(w)} ${n(h)}" width="100%" height="100%" preserveAspectRatio="${par}">${screenChromeElements(chrome, w, h, uid)}</svg>`;
 }
 
 /** Paints the chrome into the rectangle (x, y, w, h) on a 2D canvas. Mirrors
