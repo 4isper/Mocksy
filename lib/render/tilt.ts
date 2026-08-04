@@ -46,8 +46,8 @@ export function hasTilt(scene: Pick<EditorScene, "tiltX" | "tiltY">): boolean {
  * then rotateY (tiltX) first, rotateX (tiltY) second, then perspective.
  */
 export function tiltCss(scene: Pick<EditorScene, "tiltX" | "tiltY">): string {
-  if (!hasTilt(scene)) return "";
-  return `perspective(${TILT_PERSPECTIVE}px) rotateX(${scene.tiltY}deg) rotateY(${scene.tiltX}deg) `;
+   if (!hasTilt(scene)) return "";
+   return `perspective(${TILT_PERSPECTIVE}px) rotateY(${scene.tiltX}deg) rotateX(${scene.tiltY}deg) `;
 }
 
 export function projectPoint(dx: number, dy: number, tiltX: number, tiltY: number, perspective: number): Point {
@@ -55,7 +55,7 @@ export function projectPoint(dx: number, dy: number, tiltX: number, tiltY: numbe
   const rotX = (tiltY * Math.PI) / 180;
   // rotateY (around vertical axis) first, then rotateX (around horizontal axis).
   const x1 = dx * Math.cos(rotY);
-  const z1 = dx * Math.sin(rotY);
+  const z1 = -dx * Math.sin(rotY);  // sign fixed to match CSS rotateY(θ): z' = -x·sinθ + z·cosθ
   const y2 = dy * Math.cos(rotX) - z1 * Math.sin(rotX);
   const z2 = dy * Math.sin(rotX) + z1 * Math.cos(rotX);
   const scale = perspective / (perspective - z2);
@@ -125,12 +125,22 @@ export function drawTiltedQuad(
   const sw = source.width;
   const sh = source.height;
   if (sw === 0 || sh === 0) return;
+
+  // Anti-aliasing on each tile's clip edge leaves a hairline gap between
+  // adjacent tiles ("puzzle" seams), worse at steeper tilts. Expanding each
+  // tile's source and destination slightly beyond its exact cell so neighbors
+  // overlap by a small margin hides the seam without visibly distorting the
+  // image (the overlap is sub-pixel in source space).
+  const EPS_U = 0.5 / subdivisions;
+  const EPS_V = 0.5 / subdivisions;
+
   for (let v = 0; v < subdivisions; v++) {
-    const v0 = v / subdivisions;
-    const v1 = (v + 1) / subdivisions;
+    const v0 = Math.max(0, v / subdivisions - EPS_V);
+    const v1 = Math.min(1, (v + 1) / subdivisions + EPS_V);
     for (let u = 0; u < subdivisions; u++) {
-      const u0 = u / subdivisions;
-      const u1 = (u + 1) / subdivisions;
+      const u0 = Math.max(0, u / subdivisions - EPS_U);
+      const u1 = Math.min(1, (u + 1) / subdivisions + EPS_U);
+
       const p00 = quadAt(quad, u0, v0);
       const p10 = quadAt(quad, u1, v0);
       const p01 = quadAt(quad, u0, v1);
@@ -139,6 +149,7 @@ export function drawTiltedQuad(
       const sy = v0 * sh;
       const subW = (u1 - u0) * sw;
       const subH = (v1 - v0) * sh;
+
       ctx.save();
       ctx.beginPath();
       ctx.moveTo(p00.x, p00.y);

@@ -16,7 +16,7 @@ function scene(overrides: { layer?: Partial<MediaLayer> } & Partial<EditorScene>
 
 describe("computeFrameBox", () => {
   it("returns a box with positive dimensions for a standard frame", () => {
-    const box = computeFrameBox(scene({ frame: "iphone15" }), 1200, 1200, 2);
+    const box = computeFrameBox(scene({ frame: "iphone15" }), 1200, 1200, 2, 600, 600);
     expect(box.width).toBeGreaterThan(0);
     expect(box.height).toBeGreaterThan(0);
     expect(box.x).toBeGreaterThanOrEqual(0);
@@ -82,9 +82,9 @@ describe("computeFrameBox", () => {
     expect(box.outerRadius).toBeGreaterThan(0);
   });
 
-  it("derives frameH from frameW with 10/16 ratio when height is omitted", () => {
+  it("derives frameH from frameW with the frame's aspect ratio when height is omitted", () => {
     const box = computeFrameBox(scene({ frame: "none" }), 2000, 2000, 2, 1000);
-    expect(box.height).toBeCloseTo(box.width * (10 / 16), 5);
+    expect(box.height).toBeCloseTo(box.width * (9 / 16), 5);
   });
 
   it("centers the frame when no explicit position is given", () => {

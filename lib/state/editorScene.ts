@@ -63,7 +63,7 @@ export function buildFreshScene(
   count = 2,
   direction: "horizontal" | "vertical" = "horizontal"
 ): EditorScene {
-  const instances = layoutFrameGrid(frame, count, direction);
+  const instances = layoutFrameGrid(frame, count, direction, initialScene.aspectRatio, null);
   const layers = Array.from({ length: count }, () => ({
     ...makeDemoLayer(),
     id: nextLayerId()

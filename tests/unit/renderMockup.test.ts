@@ -78,9 +78,9 @@ describe("computeFrameBox geometry", () => {
     expect(insetRatio(zoomed)).toBeCloseTo(insetRatio(base), 5);
   });
 
-  it("derives frameH from frameW with a 16:10 ratio when height is omitted", () => {
+  it("derives frameH from frameW with the scene's aspect ratio when height is omitted", () => {
     const box = computeFrameBox(scene({ frame: "none" }), 2000, 2000, 2, 1000);
-    expect(box.height).toBeCloseTo(box.width * (10 / 16), 5);
+    expect(box.height).toBeCloseTo(box.width * (9 / 16), 5);
   });
 
   it("clips the watch frame to a full circle", () => {
@@ -1007,12 +1007,23 @@ describe("layoutFrameGrid", () => {
   it("creates a horizontal grid of frame instances", () => {
     const instances = layoutFrameGrid("iphone", 3, "horizontal");
     expect(instances.length).toBe(3);
-    // Frames centered with 2% gaps: scale = (1 - 2*0.02) / 3 = 0.32, pitch = 0.34
+    // Frames centered with 2% gaps: width fit = (1 - 2*0.02) / 3 = 0.32,
+    // pitch = 0.34. The iphone is taller than the 16:9 canvas at that scale,
+    // so the height cap applies: scale = min(0.32, 1/(1.778*844/390)) = 0.26.
     expect(instances[0]!.x).toBeCloseTo(0.16, 5);
     expect(instances[1]!.x).toBeCloseTo(0.5, 5);
     expect(instances[2]!.x).toBeCloseTo(0.84, 5);
     expect(instances[0]!.y).toBe(0.5); // All centered vertically
-    expect(instances[0]!.scale).toBeCloseTo(0.32, 5);
+    expect(instances[0]!.scale).toBeCloseTo(0.26, 3);
+  });
+
+  it("caps the grid scale so portrait frames fit the canvas height", () => {
+    const instances = layoutFrameGrid("iphone", 2, "horizontal", "16 / 9");
+    // Instance height = scale * canvasW * instAr; the cap makes it exactly the
+    // canvas height (756 * 9/16) so nothing gets clipped by the canvas edge.
+    const canvasH = 756 * (9 / 16);
+    const h = instances[0]!.scale * 756 * (844 / 390);
+    expect(h).toBeLessThanOrEqual(canvasH + 0.001);
   });
 
   it("creates a vertical grid of frame instances", () => {

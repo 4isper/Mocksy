@@ -1,5 +1,6 @@
-import type { FrameInstance, LayoutPreset, MockupFrame } from "@/lib/types/editor";
+import type { CustomFrame, FrameInstance, LayoutPreset, MockupFrame } from "@/lib/types/editor";
 import { nextFrameInstanceId } from "@/lib/state/ids";
+import { frameInstAr } from "@/lib/render/frames";
 
 export { nextFrameInstanceId };
 
@@ -13,18 +14,29 @@ export const LAYOUT_PRESETS: LayoutPreset[] = ["grid", "fan", "cascade", "masonr
 export function layoutFrameGrid(
   frame: MockupFrame,
   count: number,
-  direction: "horizontal" | "vertical"
+  direction: "horizontal" | "vertical",
+  aspectRatio = "16 / 9",
+  customFrame: CustomFrame | null = null
 ): FrameInstance[] {
   if (count < 1) return [];
   const gap = 0.02;
   const s = (1 - gap * (count - 1)) / count;
+  const instAr = frameInstAr(frame, customFrame, aspectRatio);
+  const [w, h] = aspectRatio.split(" / ").map(Number);
+  const sceneRatio = (w ?? 16) / (h ?? 9);
+  // The width fit (s) alone makes portrait frames taller than the canvas and
+  // they get clipped by the preview/export canvas edge. Cap the scale so the
+  // instance height (scale * canvasW * instAr) never exceeds the canvas
+  // height. Null-aspect frames ("none") follow the scene and always fit.
+  const heightCap = instAr ? 1 / (sceneRatio * instAr) : 1;
+  const scale = Math.min(s, heightCap);
   const pitch = s + gap;
   return Array.from({ length: count }, (_, i) => ({
     id: nextFrameInstanceId(),
     frame,
     x: direction === "horizontal" ? i * pitch + s / 2 : 0.5,
     y: direction === "vertical" ? i * pitch + s / 2 : 0.5,
-    scale: s,
+    scale,
     layerId: null
   }));
 }
@@ -38,43 +50,49 @@ export function buildAutoLayout(
   frame: MockupFrame,
   count: number,
   layout: LayoutPreset,
-  aspectRatio: string
+  aspectRatio: string,
+  customFrame: CustomFrame | null = null
 ): FrameInstance[] {
   if (count < 1) return [];
   const gap = 0.02;
+  const instAr = frameInstAr(frame, customFrame, aspectRatio);
+  const [w, h] = aspectRatio.split(" / ").map(Number);
+  const sceneRatio = (w ?? 16) / (h ?? 9);
 
   switch (layout) {
     case "grid":
-      return buildGrid(frame, count, aspectRatio, gap);
+      return buildGrid(frame, count, gap, instAr, sceneRatio);
     case "fan":
-      return buildFan(frame, count, gap);
+      return buildFan(frame, count, gap, instAr, sceneRatio);
     case "cascade":
-      return buildCascade(frame, count, gap);
+      return buildCascade(frame, count, gap, instAr, sceneRatio);
     case "masonry":
-      return buildMasonry(frame, count, aspectRatio, gap);
+      return buildMasonry(frame, count, gap, instAr, sceneRatio);
     case "stack":
-      return buildStack(frame, count, gap);
+      return buildStack(frame, count, gap, instAr, sceneRatio);
     default:
-      return buildGrid(frame, count, aspectRatio, gap);
+      return buildGrid(frame, count, gap, instAr, sceneRatio);
   }
 }
 
 function buildGrid(
   frame: MockupFrame,
   count: number,
-  aspectRatio: string,
-  gap: number
+  gap: number,
+  instAr: number | null,
+  sceneRatio: number
 ): FrameInstance[] {
   if (count <= 0) return [];
   // Try to keep cells close to square. Compute cols so cell ratio ~ 1.
   // cellW/cellH ~ sceneAR, use cols = ceil(sqrt(count * sceneAR))
-  const [w, h] = aspectRatio.split(" / ").map(Number);
-  const sceneRatio = (w ?? 16) / (h ?? 9);
   const cols = Math.max(1, Math.min(count, Math.round(Math.sqrt(count * sceneRatio))));
   const rows = Math.ceil(count / cols);
   const cellW = (1 - gap * (cols - 1)) / cols;
   const cellH = (1 - gap * (rows - 1)) / rows;
-  const scale = Math.min(cellW, cellH * sceneRatio);
+  // Instance height = scale * sceneRatio * instAr (canvas fractions); the
+  // cell-height cap keeps every instance inside its cell. Null-aspect frames
+  // ("none") follow the scene and only need to fit the cell height.
+  const scale = Math.min(cellW, instAr ? cellH / (sceneRatio * instAr) : cellH);
 
   return Array.from({ length: count }, (_, i) => {
     const c = i % cols;
@@ -93,21 +111,31 @@ function buildGrid(
 function buildFan(
   frame: MockupFrame,
   count: number,
-  gap: number
+  gap: number,
+  instAr: number | null,
+  sceneRatio: number
 ): FrameInstance[] {
   // Arc from -30deg to +30deg, centered at bottom center of canvas.
   // Each frame is placed on the arc and rotated so the screens face outward.
   const radius = 0.45; // Distance from pivot to frame center
   const startAngle = -0.45; // radians (~ -25deg)
   const endAngle = 0.45;
-  const scale = Math.min(0.28, (endAngle - startAngle) / (count * 0.12));
+  // Pivot at bottom center (0.5, 0.9)
+  const pivotX = 0.5;
+  const pivotY = 0.88;
+  // The arc keeps every center below y ≈ 0.637, so the tightest margin is the
+  // bottom. Cap the scale so tall portrait frames stay inside the canvas.
+  const verticalMargin = 1 - (pivotY - Math.cos(startAngle) * radius * 0.6);
+  const scale = Math.min(
+    0.28,
+    (endAngle - startAngle) / (count * 0.12),
+    instAr ? (2 * verticalMargin) / (sceneRatio * instAr) : 1
+  );
 
   return Array.from({ length: count }, (_, i) => {
     const t = count > 1 ? i / (count - 1) : 0.5;
     const angle = startAngle + t * (endAngle - startAngle);
     // Pivot at bottom center (0.5, 0.9)
-    const pivotX = 0.5;
-    const pivotY = 0.88;
     const x = pivotX + Math.sin(angle) * radius;
     const y = pivotY - Math.cos(angle) * radius * 0.6; // flattened arc
     return {
@@ -124,19 +152,27 @@ function buildFan(
 function buildCascade(
   frame: MockupFrame,
   count: number,
-  gap: number
+  gap: number,
+  instAr: number | null,
+  sceneRatio: number
 ): FrameInstance[] {
   // Diagonal cascade: each frame offset by (dx, dy) from previous.
-  // Start top-left, cascade to bottom-right.
-  const scale = Math.min(0.35, 1 / (count * 0.35 + 0.5));
-  const dx = (1 - scale - gap) / Math.max(1, count - 1);
-  const dy = (1 - scale - gap) / Math.max(1, count - 1);
+  // Start top-left, cascade to bottom-right. Half-extents (canvas fractions):
+  // halfW = scale/2, halfH = scale*sceneRatio*instAr/2; the steps share the
+  // remaining extent, so everything stays inside with a gap margin. For
+  // portrait frames the scale is driven by the height: halfH ≤ (1-2*gap)/2.
+  const halfCap = instAr ? (1 - 2 * gap) / (2 * sceneRatio * instAr) : 1;
+  const scale = Math.min(0.35, 1 / (count * 0.35 + 0.5), halfCap);
+  const halfW = scale / 2;
+  const halfH = instAr ? (scale * sceneRatio * instAr) / 2 : scale / 2;
+  const dx = (1 - 2 * gap - halfW * 2) / Math.max(1, count - 1);
+  const dy = (1 - 2 * gap - halfH * 2) / Math.max(1, count - 1);
 
   return Array.from({ length: count }, (_, i) => ({
     id: nextFrameInstanceId(),
     frame,
-    x: gap + scale / 2 + i * dx,
-    y: gap + scale / 2 + i * dy,
+    x: gap + halfW + i * dx,
+    y: gap + halfH + i * dy,
     scale,
     layerId: null
   }));
@@ -145,17 +181,18 @@ function buildCascade(
 function buildMasonry(
   frame: MockupFrame,
   count: number,
-  aspectRatio: string,
-  gap: number
+  gap: number,
+  instAr: number | null,
+  sceneRatio: number
 ): FrameInstance[] {
   // Two-column masonry with alternating tall/short cells.
-  const [w, h] = aspectRatio.split(" / ").map(Number);
-  const sceneRatio = (w ?? 16) / (h ?? 9);
   const cols = 2;
   const rows = Math.ceil(count / cols);
   const cellW = (1 - gap) / cols;
   const cellH = (1 - gap * (rows - 1)) / rows;
-  const baseScale = Math.min(cellW, cellH * sceneRatio);
+  // Instance height = scale * sceneRatio * instAr (canvas fractions); cap so
+  // the tall column fits its cell height (null-aspect frames follow the scene).
+  const baseScale = Math.min(cellW, instAr ? cellH / (sceneRatio * instAr) : cellH);
 
   return Array.from({ length: count }, (_, i) => {
     const c = i % cols;
@@ -167,7 +204,7 @@ function buildMasonry(
       id: nextFrameInstanceId(),
       frame,
       x: c * (cellW + gap) + cellW / 2,
-      y: r * (cellH + gap * 1.5) + cellH / 2,
+      y: r * (cellH + gap) + cellH / 2,
       scale: Math.max(0.08, s),
       layerId: null
     };
@@ -177,12 +214,19 @@ function buildMasonry(
 function buildStack(
   frame: MockupFrame,
   count: number,
-  _gap: number
+  gap: number,
+  instAr: number | null,
+  sceneRatio: number
 ): FrameInstance[] {
   // Stack with visible offset so each frame is partially visible behind the next.
-  const scale = Math.min(0.38, 1.1 / count);
-  const maxOffset = 0.06;
-  const offset = Math.min(maxOffset, (1 - scale * 1.5) / Math.max(1, count - 1));
+  // The first row sits at y = 0.35, so the scale is capped so half the frame
+  // height fits above it; the offset then spreads the rows below.
+  const topRoom = 0.35;
+  const halfCap = instAr ? (2 * topRoom) / (sceneRatio * instAr) : 1;
+  const scale = Math.min(0.38, 1.1 / count, halfCap);
+  const halfH = instAr ? (scale * sceneRatio * instAr) / 2 : scale / 2;
+  const rows = Math.ceil(count / 2);
+  const offset = Math.min(0.06, (1 - gap - halfH - topRoom) / Math.max(1, rows - 1));
   // Snake pattern: right, down-left, right, down-right
   return Array.from({ length: count }, (_, i) => {
     const row = Math.floor(i / 2);

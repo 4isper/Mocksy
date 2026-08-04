@@ -35,7 +35,7 @@ describe("tiltCss", () => {
   });
 
   it("builds perspective + rotateY + rotateX in the canvas order", () => {
-    expect(tiltCss(scene(10, 15))).toBe(`perspective(${TILT_PERSPECTIVE}px) rotateX(15deg) rotateY(10deg) `);
+    expect(tiltCss(scene(10, 15))).toBe(`perspective(${TILT_PERSPECTIVE}px) rotateY(10deg) rotateX(15deg) `);
   });
 });
 

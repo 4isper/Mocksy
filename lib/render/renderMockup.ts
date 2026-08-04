@@ -35,7 +35,24 @@ function drawTiltedFrame(
   off.height = h;
   const octx = off.getContext("2d");
   if (!octx) return;
-  drawFrameAndMedia(octx, scene, spec, layer, { ...box, x: box.x - padX, y: box.y - padY }, dpiScale, zoom, media, overlay);
+
+  // box.x/y (and innerX/innerY) are absolute coordinates on the full export
+  // canvas. The offscreen buffer is a small canvas local to just this frame,
+  // so every coordinate needs to be re-based to that local origin — not just
+  // x/y, but innerX/innerY too, or they'll still point at the old absolute
+  // position and draw off-buffer for any frame instance not near (0,0).
+  const dx = box.x - padX;
+  const dy = box.y - padY;
+  const localBox: FrameBox = {
+    ...box,
+    x: box.x - dx,       // === padX
+    y: box.y - dy,       // === padY
+    innerX: box.innerX - dx,
+    innerY: box.innerY - dy
+  };
+
+  drawFrameAndMedia(octx, scene, spec, layer, localBox, dpiScale, zoom, media, overlay);
+
   const quad = projectTiltedRect(
     { x: box.x - padX, y: box.y - padY, width: w, height: h },
     scene.tiltX,
@@ -84,7 +101,8 @@ export function renderMockupToCanvas(
 
       const layer = scene.layers.find((l) => l.id === inst.layerId) ?? activeLayerForRender;
       const instSpec = getFrameSpec(inst.frame, scene.customFrame);
-      const instZoom = transform?.zoom ?? layer?.zoom ?? 1;
+      const isActiveInstance = !!layer && layer.id === activeLayerId;
+      const instZoom = isActiveInstance ? (transform?.zoom ?? layer?.zoom ?? 1) : (layer?.zoom ?? 1);
 
       const frameMedia = layer?.id ? (layerMedias?.get(layer.id) ?? null) : media;
       const overlay = layer?.id && instSpec.isOverlay ? (frameOverlays?.get(layer.id) ?? null) : null;

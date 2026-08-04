@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildAutoLayout } from "@/lib/state/editorHelpers";
+import { buildAutoLayout, LAYOUT_PRESETS } from "@/lib/state/editorHelpers";
 
 describe("buildAutoLayout", () => {
   it("grid layout places frames in rows and columns", () => {
@@ -51,6 +51,28 @@ describe("buildAutoLayout", () => {
   it("returns empty array for count < 1", () => {
     expect(buildAutoLayout("iphone", 0, "grid", "16 / 9")).toEqual([]);
     expect(buildAutoLayout("iphone", -1, "grid", "16 / 9")).toEqual([]);
+  });
+
+  it("keeps portrait frames inside the canvas for every preset", () => {
+    // Same instance math the renderer uses (computeFrameInstances).
+    const canvasW = 756;
+    const canvasH = 756 * (9 / 16);
+    const instAr = 844 / 390;
+    for (const layout of LAYOUT_PRESETS) {
+      for (const count of [1, 2, 4]) {
+        const instances = buildAutoLayout("iphone", count, layout, "16 / 9");
+        for (const inst of instances) {
+          const w = inst.scale * canvasW;
+          const h = w * instAr;
+          const x = inst.x * canvasW - w / 2;
+          const y = inst.y * canvasH - h / 2;
+          expect(x, `${layout}×${count} left`).toBeGreaterThanOrEqual(-0.01);
+          expect(x + w, `${layout}×${count} right`).toBeLessThanOrEqual(canvasW + 0.01);
+          expect(y, `${layout}×${count} top`).toBeGreaterThanOrEqual(-0.01);
+          expect(y + h, `${layout}×${count} bottom`).toBeLessThanOrEqual(canvasH + 0.01);
+        }
+      }
+    }
   });
 
   it("grid handles single frame gracefully", () => {

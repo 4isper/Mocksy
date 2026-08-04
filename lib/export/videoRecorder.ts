@@ -52,7 +52,7 @@ export async function recordCanvasToWebm(
 
   // Match the PNG export: size the frame from its on-screen box so overlay
   // skins (iphone15/16pro) keep their native aspect ratio instead of being
-  // stretched to the default 10/16 fallback in computeFrameBox.
+  // distorted by an incorrect fallback.
   // MP4 (mpeg4) can't carry an alpha channel, so a transparent scene is
   // composited onto black for the video export (PNG keeps real transparency).
   const backgroundFill = scene.backgroundMode === "transparent" ? "#000000" : undefined;

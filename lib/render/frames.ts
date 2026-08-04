@@ -148,6 +148,20 @@ export function getFrameSpec(frame: MockupFrame, customFrame?: CustomFrame | nul
   return FRAME_SPECS[frame as Exclude<MockupFrame, "custom">] ?? FRAME_SPECS.none;
 }
 
+/** Height/width ratio (h/w) a frame instance adopts, or null when the frame
+ *  follows the scene ("none"). Mirrors computeFrameInstances so auto-layouts
+ *  can cap their scale to the exact box the renderer will produce. */
+export function frameInstAr(
+  frame: MockupFrame,
+  customFrame?: CustomFrame | null,
+  sceneAspectRatio = "16 / 9"
+): number | null {
+  const spec = getFrameSpec(frame, customFrame);
+  const ratioSrc = spec.aspectRatio ?? (frame === "none" ? sceneAspectRatio : "1 / 1");
+  const [rW, rH] = ratioSrc.split("/").map((n) => Number(n.trim()));
+  return rW && rH ? rH / rW : null;
+}
+
 /** Builds a FrameSpec from a user-uploaded SVG skin. The media fills the whole
  *  viewBox behind the overlay; the SVG's transparent screen area is what shows
  *  it through, so the cutout defaults to the full viewBox (rx 0) and the SVG

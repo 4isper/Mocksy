@@ -28,10 +28,10 @@ export interface RenderTransform {
  */
 export const PAN_OFFSET_SCALE = 2;
 
-function panOffset(transform: RenderTransform | undefined, dpiScale: number): { panX: number; panY: number } {
+function panOffset(transform: RenderTransform | undefined, dpiScale: number, zoom: number): { panX: number; panY: number } {
   return {
-    panX: (transform?.offsetX ?? 0) * PAN_OFFSET_SCALE * dpiScale,
-    panY: (transform?.offsetY ?? 0) * PAN_OFFSET_SCALE * dpiScale
+    panX: (transform?.offsetX ?? 0) * PAN_OFFSET_SCALE * dpiScale * zoom,
+    panY: (transform?.offsetY ?? 0) * PAN_OFFSET_SCALE * dpiScale * zoom
   };
 }
 
@@ -47,14 +47,17 @@ export function computeFrameBox(
   frameY?: number,
   activeLayerId: string | null = scene.activeLayerId
 ): FrameBox {
-  const spec = getFrameSpec(scene.frame, scene.customFrame);
-  const dpiScale = pixelRatio;
-  const activeLayerForRender = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
-   const actualZoom = Math.max(RENDER.minZoom, transform?.zoom ?? activeLayerForRender?.zoom ?? 1);
-   const defaultFrameW = Math.min(RENDER.defaultFrameWidth, (canvasWidth / dpiScale) * RENDER.defaultFrameFill) * dpiScale;
-  const frameW = (typeof frameWidth === "number" && frameWidth > 0 ? frameWidth : defaultFrameW) * actualZoom;
-  const frameH = (typeof frameHeight === "number" && frameHeight > 0 ? frameHeight : frameW * (10 / 16)) * actualZoom;
-  const { panX, panY } = panOffset(transform, dpiScale);
+   const spec = getFrameSpec(scene.frame, scene.customFrame);
+   const dpiScale = pixelRatio;
+   const activeLayerForRender = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
+    const actualZoom = Math.max(RENDER.minZoom, transform?.zoom ?? activeLayerForRender?.zoom ?? 1);
+    const defaultFrameW = Math.min(RENDER.defaultFrameWidth, (canvasWidth / dpiScale) * RENDER.defaultFrameFill) * dpiScale;
+   const ratioSrc = spec.aspectRatio ?? (scene.frame === "none" ? scene.aspectRatio : "1 / 1");
+   const [ratioW, ratioH] = ratioSrc.split("/").map((n) => Number(n.trim()));
+   const frameAr = (ratioH ?? 1) / (ratioW ?? 1);
+   const frameW = (typeof frameWidth === "number" && frameWidth > 0 ? frameWidth : defaultFrameW) * actualZoom;
+   const frameH = typeof frameHeight === "number" && frameHeight > 0 ? frameHeight * actualZoom : frameW * frameAr;
+  const { panX, panY } = panOffset(transform, dpiScale, actualZoom);
   const x = (typeof frameX === "number" ? frameX : (canvasWidth - frameW) / 2) + panX;
   const y = (typeof frameY === "number" ? frameY : (canvasHeight - frameH) / 2) + panY;
   const cutout = spec.cutout;
@@ -88,27 +91,39 @@ export function computeFrameInstances(
   const instances = scene.frameInstances.length > 0 ? scene.frameInstances : [];
   if (instances.length === 0) return [];
   const dpiScale = pixelRatio;
-  const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
-   const actualZoom = Math.max(RENDER.minZoom, transform?.zoom ?? activeLayer?.zoom ?? 1);
 
   return instances.map((inst) => {
+    const layer = scene.layers.find((l) => l.id === inst.layerId);
+    // Only the frame instance whose layer is the currently active one should
+    // reflect the live transform (mid-animation zoom/pan sampled for export).
+    // Every other instance keeps its own static layer.zoom and no pan offset —
+    // matching how the preview builds each instance's css independently via
+    // frameInstanceCssMap, instead of applying one global transform to all.
+    const isActiveInstance = !!layer && layer.id === activeLayerId;
+    const instZoom = Math.max(
+      RENDER.minZoom,
+      isActiveInstance ? (transform?.zoom ?? layer?.zoom ?? 1) : (layer?.zoom ?? 1)
+    );
+
     const spec = getFrameSpec(inst.frame, scene.customFrame);
     const instScale = inst.scale ?? 1;
     const ratioSrc = spec.aspectRatio ?? (inst.frame === "none" ? scene.aspectRatio : "1 / 1");
     const [rW, rH] = ratioSrc.split("/").map((n) => Number(n.trim()));
     const instAr = (rH ?? 1) / (rW ?? 1);
 
-    const w = instScale * canvasWidth * actualZoom;
+    const w = instScale * canvasWidth * instZoom;
     const h = w * instAr;
-    const { panX, panY } = panOffset(transform, dpiScale);
+    const { panX, panY } = isActiveInstance
+      ? panOffset(transform, dpiScale, instZoom)
+      : { panX: 0, panY: 0 };
     const x = inst.x * canvasWidth - w / 2 + panX;
     const y = inst.y * canvasHeight - h / 2 + panY;
 
     const cutout = spec.cutout;
     const vb = frameViewBox(spec);
-    const padX = cutout ? (cutout.x / vb.w) * w : spec.padding * dpiScale * actualZoom;
-    const padY = cutout ? (cutout.y / vb.h) * h : spec.padding * dpiScale * actualZoom;
-    const outerRadius = spec.isOverlay ? 0 : (inst.frame === "watch" ? Math.min(w, h) / 2 : scene.borderRadius + spec.padding) * dpiScale * actualZoom;
+    const padX = cutout ? (cutout.x / vb.w) * w : spec.padding * dpiScale * instZoom;
+    const padY = cutout ? (cutout.y / vb.h) * h : spec.padding * dpiScale * instZoom;
+    const outerRadius = spec.isOverlay ? 0 : (inst.frame === "watch" ? Math.min(w, h) / 2 : scene.borderRadius + spec.padding) * dpiScale * instZoom;
 
     return {
       x,
@@ -122,7 +137,7 @@ export function computeFrameInstances(
       innerH: cutout ? (cutout.h / vb.h) * h : h - padY * 2,
       innerRadius: cutout
         ? Math.max(0, (cutout.rx / cutout.w) * (w - padX * 2), (cutout.rx / cutout.h) * (h - padY * 2))
-        : spec.screenRadius * dpiScale * actualZoom
+        : spec.screenRadius * dpiScale * instZoom
     };
   });
 }

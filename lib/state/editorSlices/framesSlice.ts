@@ -99,13 +99,13 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
       }),
     layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") =>
       set((s) => {
-        const instances = layoutFrameGrid(frame, count, direction);
+        const instances = layoutFrameGrid(frame, count, direction, s.scene.aspectRatio, s.scene.customFrame);
         const { layers, frameInstances, activeLayerId } = materializeLayout(instances, s.scene, s.activeLayerId);
         return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId };
       }),
     applyFrameLayout: (frame: MockupFrame, count: number, layout: import("@/lib/types/editor").LayoutPreset) =>
       set((s) => {
-        const instances = buildAutoLayout(frame, count, layout, s.scene.aspectRatio);
+        const instances = buildAutoLayout(frame, count, layout, s.scene.aspectRatio, s.scene.customFrame);
         const { layers, frameInstances, activeLayerId } = materializeLayout(instances, s.scene, s.activeLayerId);
         return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId };
       }),
