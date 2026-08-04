@@ -194,4 +194,4 @@ export const ANIMATION_PRESETS: AnimationPreset[] = ["none", "zoomIn", "zoomOut"
 
 /** Aspect ratios selectable for the scene canvas. Kept here so the ControlPanel
  *  select and any preset/normalization code share a single source of truth. */
-export const ASPECT_RATIOS = ["16 / 9", "4 / 3", "3 / 2", "1 / 1", "9 / 16"];
+export const ASPECT_RATIOS = ["16 / 9", "4 / 3", "3 / 2", "1 / 1", "4 / 5", "2 / 3", "9 / 16"];

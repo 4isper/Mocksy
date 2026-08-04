@@ -186,6 +186,18 @@
     "shareTitle": "Копировать share URL",
     "shortcutsTitle": "Сочетания клавиш (?)",
     "showLayer": "Показать слой",
+    "social": {
+      "facebookPost": "Пост в Facebook",
+      "instagramPortrait": "Instagram, портрет",
+      "instagramPost": "Пост в Instagram",
+      "instagramStory": "История Instagram",
+      "linkedinPost": "Пост в LinkedIn",
+      "pinterest": "Pinterest",
+      "xPost": "Пост в X",
+      "youtubeThumbnail": "Миниатюра YouTube"
+    },
+    "socialPresets": "Пресеты соцсетей",
+    "socialTooltip": "Канвас {ratio} и размер экспорта {width}×{height}",
     "style": "Стиль",
     "systemTheme": "Системная тема",
     "tagline": "Бесплатный редактор mockup'ов — без подписок",

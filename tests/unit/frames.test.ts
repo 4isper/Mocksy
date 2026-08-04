@@ -111,7 +111,7 @@ describe("ANIMATION_PRESETS", () => {
 
 describe("ASPECT_RATIOS", () => {
   it("lists all standard aspect ratios", () => {
-    expect(ASPECT_RATIOS).toEqual(["16 / 9", "4 / 3", "3 / 2", "1 / 1", "9 / 16"]);
+    expect(ASPECT_RATIOS).toEqual(["16 / 9", "4 / 3", "3 / 2", "1 / 1", "4 / 5", "2 / 3", "9 / 16"]);
   });
 
   it("includes 16/9 as the first entry (default)", () => {

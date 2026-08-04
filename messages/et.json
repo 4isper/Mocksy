@@ -216,7 +216,19 @@
     "filterGrayscale": "Grayscale ({val}%)",
     "filterSaturate": "Saturation ({val}%)",
     "filters": "Filters",
-    "resetFilters": "Reset filters"
+    "resetFilters": "Reset filters",
+    "social": {
+      "facebookPost": "Facebook Post",
+      "instagramPortrait": "Instagram Portrait",
+      "instagramPost": "Instagram Post",
+      "instagramStory": "Instagram Story",
+      "linkedinPost": "LinkedIn Post",
+      "pinterest": "Pinterest",
+      "xPost": "X Post",
+      "youtubeThumbnail": "YouTube Thumbnail"
+    },
+    "socialPresets": "Social presets",
+    "socialTooltip": "Set {ratio} canvas and {width}×{height} export size"
   },
   "frame": {
     "none": "Mitte ükski",

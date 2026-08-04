@@ -186,6 +186,18 @@
     "shareTitle": "Copy Share URL",
     "shortcutsTitle": "Keyboard shortcuts (?)",
     "showLayer": "Show layer",
+    "social": {
+      "facebookPost": "Facebook Post",
+      "instagramPortrait": "Instagram Portrait",
+      "instagramPost": "Instagram Post",
+      "instagramStory": "Instagram Story",
+      "linkedinPost": "LinkedIn Post",
+      "pinterest": "Pinterest",
+      "xPost": "X Post",
+      "youtubeThumbnail": "YouTube Thumbnail"
+    },
+    "socialPresets": "Social presets",
+    "socialTooltip": "Set {ratio} canvas and {width}×{height} export size",
     "style": "Style",
     "systemTheme": "System theme",
     "tagline": "Free mockup editor — no subscriptions",

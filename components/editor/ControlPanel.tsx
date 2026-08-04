@@ -7,6 +7,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/lib/state/editorStore";
 import type { AnimationPreset, StylePreset } from "@/lib/types/editor";
 import { ANIMATION_PRESETS, ASPECT_RATIOS } from "@/lib/render/frames";
+import { SOCIAL_PRESETS } from "@/lib/presets/socialPresets";
 import { loadMediaFromFile, loadMediaFromUrl, UnsupportedMediaError, UnsupportedMediaUrlError } from "@/lib/media/loadFile";
 import { loadCustomFrameFromFile, UnsupportedFrameError } from "@/lib/media/customFrame";
 import { isVideoLayer } from "@/lib/render/mediaKind";
@@ -101,6 +102,7 @@ export function ControlPanel() {
     setGradientVia,
     setBackgroundBlur,
     setScenePalette,
+    setCustomExportSize,
     toggleWatermark,
     setWatermarkText,
     setWatermarkPosition,
@@ -147,6 +149,7 @@ export function ControlPanel() {
       setGradientVia: s.setGradientVia,
       setBackgroundBlur: s.setBackgroundBlur,
       setScenePalette: s.setScenePalette,
+      setCustomExportSize: s.setCustomExportSize,
       toggleWatermark: s.toggleWatermark,
       setWatermarkText: s.setWatermarkText,
       setWatermarkPosition: s.setWatermarkPosition,
@@ -362,6 +365,25 @@ export function ControlPanel() {
             options={aspectRatios.map((r) => ({ value: r, label: r }))}
             onChange={setAspectRatio}
           />
+          <div className="field" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.socialPresets")}</span>
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", width: "100%" }}>
+              {SOCIAL_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  className="btn btn-sm"
+                  title={t("editor.socialTooltip", { ratio: preset.aspectRatio, width: preset.width, height: preset.height })}
+                  onClick={() => {
+                    setAspectRatio(preset.aspectRatio);
+                    setCustomExportSize({ width: preset.width, height: preset.height });
+                  }}
+                >
+                  {t(`editor.social.${preset.id}`)}
+                </button>
+              ))}
+            </div>
+          </div>
           <Segmented
             label={t("editor.style")}
             value={scene.stylePreset}

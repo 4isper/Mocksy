@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applySceneStylePreset, backgroundPresets, sceneStylePresets } from "@/lib/presets/presets";
+import { SOCIAL_PRESETS, parseAspectRatio } from "@/lib/presets/socialPresets";
 import { initialScene } from "@/lib/state/editorStore";
 
 describe("backgroundPresets", () => {
@@ -71,5 +72,37 @@ describe("sceneStylePresets", () => {
     expect(next.layers).toEqual(scene.layers);
     expect(next.frame).toBe(preset.frame);
     expect(next.watermarkEnabled).toBe(preset.watermarkEnabled);
+  });
+});
+
+describe("SOCIAL_PRESETS", () => {
+  it("has unique ids", () => {
+    const ids = SOCIAL_PRESETS.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("covers portrait, square and landscape formats", () => {
+    const ratios = SOCIAL_PRESETS.map((p) => parseAspectRatio(p.aspectRatio)!.w / parseAspectRatio(p.aspectRatio)!.h);
+    expect(ratios).toContain(1);
+    expect(ratios.some((r) => r < 1)).toBe(true);
+    expect(ratios.some((r) => r > 1)).toBe(true);
+  });
+
+  it("every preset carries positive export dimensions matching its aspect ratio", () => {
+    for (const preset of SOCIAL_PRESETS) {
+      const parsed = parseAspectRatio(preset.aspectRatio);
+      expect(parsed).not.toBeNull();
+      const { w, h } = parsed!;
+      expect(preset.width).toBeGreaterThan(0);
+      expect(preset.height).toBeGreaterThan(0);
+      expect(Math.abs(preset.width / preset.height - w / h)).toBeLessThan(0.01);
+    }
+  });
+
+  it("parseAspectRatio handles malformed input", () => {
+    expect(parseAspectRatio("16 / 9")).toEqual({ w: 16, h: 9 });
+    expect(parseAspectRatio("garbage")).toBeNull();
+    expect(parseAspectRatio("1 / 0")).toBeNull();
+    expect(parseAspectRatio("1")).toBeNull();
   });
 });
