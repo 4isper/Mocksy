@@ -4,12 +4,14 @@ function Segmented<T extends string>({
   label,
   value,
   options,
-  onChange
+  onChange,
+  disabled = false
 }: {
   label?: string;
   value: T;
   options: { value: T; label: string }[];
   onChange: (v: T) => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="field">
@@ -21,6 +23,7 @@ function Segmented<T extends string>({
             type="button"
             aria-pressed={value === opt.value}
             className={value === opt.value ? "is-active" : undefined}
+            disabled={disabled}
             onClick={() => onChange(opt.value)}
           >
             {opt.label}

@@ -43,6 +43,8 @@ export interface Annotation {
 export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "pixel8pro" | "galaxy24" | "iphoneSE" | "ipad" | "galaxyTab" | "desktop" | "tablet" | "macbook" | "imac" | "notebook" | "watch" | "custom";
 export type StylePreset = "default" | "glassLight" | "glassDark" | "outline";
 export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax" | "panLeft" | "panRight" | "breathe";
+/** Easing curve applied between animation keyframes. */
+export type AnimationEasing = "linear" | "easeInOut" | "easeOut" | "bounce" | "spring";
 export type MediaType = "none" | "image" | "video";
 export type VideoQuality = "low" | "medium" | "high";
 export type WatermarkPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
@@ -114,6 +116,8 @@ export interface MediaLayer {
   /** Grayscale amount in percent, 0–100 (0 = full color). */
   grayscale?: number;
   animationPreset: AnimationPreset;
+  /** Easing curve between animation keyframes (default "easeInOut"). */
+  animationEasing?: AnimationEasing;
   videoMuted: boolean;
   videoLoop: boolean;
   videoAutoplay: boolean;

@@ -1,4 +1,4 @@
-import type { MediaLayer } from "@/lib/types/editor";
+import type { AnimationEasing, MediaLayer } from "@/lib/types/editor";
 
 export interface VideoKeyframe {
   at: number;
@@ -70,10 +70,42 @@ export function easeInOutQuad(t: number): number {
   return t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
 }
 
+function easeOutQuad(t: number): number {
+  return 1 - (1 - t) * (1 - t);
+}
+
+function easeOutBack(t: number): number {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2;
+}
+
+function easeOutBounce(t: number): number {
+  const n1 = 7.5625;
+  const d1 = 2.75;
+  if (t < 1 / d1) return n1 * t * t;
+  if (t < 2 / d1) return n1 * (t - 1.5 / d1) * (t - 1.5 / d1) + 0.75;
+  if (t < 2.5 / d1) return n1 * (t - 2.25 / d1) * (t - 2.25 / d1) + 0.9375;
+  return n1 * (t - 2.625 / d1) * (t - 2.625 / d1) + 0.984375;
+}
+
+/** Easing curves used between animation keyframes, keyed by `AnimationEasing`. */
+export const EASING_FUNCTIONS: Record<AnimationEasing, (t: number) => number> = {
+  linear: (t) => t,
+  easeInOut: easeInOutQuad,
+  easeOut: easeOutQuad,
+  bounce: easeOutBounce,
+  spring: easeOutBack
+};
+
+export function easingFunction(name: AnimationEasing | undefined, t: number): number {
+  return (name ? EASING_FUNCTIONS[name] : easeInOutQuad)(t);
+}
+
 /**
  * Interpolates a layer's animation transform at a normalized progress (0..1).
  * For a single keyframe it returns that keyframe; otherwise it lerps between
- * the surrounding keyframes with ease-in-out easing.
+ * the surrounding keyframes using the layer's easing curve.
  */
 export function sampleVideoTransform(layer: MediaLayer, progress: number): SampledTransform {
   const timeline = buildVideoTimeline(layer);
@@ -100,7 +132,7 @@ export function sampleVideoTransform(layer: MediaLayer, progress: number): Sampl
   }
   const span = upper.at - lower.at;
   const rawT = span > 0 ? (p - lower.at) / span : 0;
-  const t = easeInOutQuad(rawT);
+  const t = easingFunction(layer.animationEasing, rawT);
   const lerp = (a: number, b: number) => a + (b - a) * t;
   return {
     zoom: lerp(lower.zoom, upper.zoom),

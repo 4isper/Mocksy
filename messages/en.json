@@ -80,6 +80,7 @@
     "addText": "+ Text",
     "animation": "Animation",
     "animationDuration": "Animation duration ({val}s)",
+    "easing": "Easing",
     "annotations": "Annotations",
     "aspectRatio": "Aspect ratio",
     "autoBackground": "Auto from media",
@@ -264,7 +265,12 @@
     "parallax": "Parallax",
     "panLeft": "Pan left",
     "panRight": "Pan right",
-    "breathe": "Breathe"
+    "breathe": "Breathe",
+    "easingLinear": "Linear",
+    "easingEaseInOut": "Ease in-out",
+    "easingEaseOut": "Ease out",
+    "easingBounce": "Bounce",
+    "easingSpring": "Spring"
   },
   "annotation": {
     "text": "Text",

@@ -4,7 +4,7 @@ import type { CSSProperties } from "react";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
 import { tiltCss } from "@/lib/render/tilt";
-import { buildVideoTimeline, sampleVideoTransform } from "@/lib/render/videoComposer";
+import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { renderSceneToImageBlob } from "@/lib/export/exportImage";
@@ -50,10 +50,12 @@ function transformFor(zoom: number, x: number, y: number): string {
 /** @keyframes + animation rule for the active layer's animation preset. */
 export function buildAnimationCss(layer: MediaLayer | undefined, durationSec = 3, tiltPrefix = ""): string {
   if (!layer || layer.animationPreset === "none") return "";
-  const timeline = buildVideoTimeline(layer);
-  const keyframes = timeline
-    .map((k) => `${num(k.at * 100)}% { transform: ${tiltPrefix}${transformFor(k.zoom, k.x, k.y)}; }`)
-    .join("\n");
+  const SAMPLES = 24;
+  const keyframes = Array.from({ length: SAMPLES + 1 }, (_, i) => {
+    const p = i / SAMPLES;
+    const { zoom, x, y } = sampleVideoTransform(layer, p);
+    return `${num(p * 100)}% { transform: ${tiltPrefix}${transformFor(zoom, x, y)}; }`;
+  }).join("\n");
   const { zoom: staticZoom, x: staticX, y: staticY } = sampleVideoTransform(layer, 0);
   const staticTransform = `${tiltPrefix}${transformFor(staticZoom, staticX, staticY)}`;
   return `@keyframes mockup-anim {\n${keyframes}\n}\n.frame {\n  animation: mockup-anim ${durationSec}s linear infinite;\n  transform-origin: center;\n}\n@media (prefers-reduced-motion: reduce) {\n  .frame {\n    animation: none;\n    transform: ${staticTransform};\n  }\n}\n`;

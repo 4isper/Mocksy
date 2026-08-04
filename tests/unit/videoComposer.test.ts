@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildVideoTimeline, sampleVideoTransform, easeInOutQuad } from "@/lib/render/videoComposer";
+import { buildVideoTimeline, sampleVideoTransform, easeInOutQuad, easingFunction, EASING_FUNCTIONS } from "@/lib/render/videoComposer";
 import type { MediaLayer } from "@/lib/types/editor";
 
 const layer: MediaLayer = {
@@ -110,6 +110,35 @@ describe("sampleVideoTransform", () => {
     expect(quarter.zoom).toBeCloseTo(1.045, 3);
   });
 
+  it("defaults to easeInOut when no easing is set", () => {
+    const quarter = sampleVideoTransform({ ...layer, animationPreset: "parallax" }, 0.25);
+    const explicit = sampleVideoTransform({ ...layer, animationPreset: "parallax", animationEasing: "easeInOut" }, 0.25);
+    expect(quarter).toEqual(explicit);
+  });
+
+  it("interpolates linearly with the linear easing (midpoint halfway through the range)", () => {
+    const linearLayer = { ...layer, animationEasing: "linear" as const };
+    expect(sampleVideoTransform(linearLayer, 0.25).zoom).toBeCloseTo(1.03, 3);
+    expect(sampleVideoTransform(linearLayer, 0.5).zoom).toBeCloseTo(1.06, 3);
+    expect(sampleVideoTransform(linearLayer, 0.75).zoom).toBeCloseTo(1.09, 3);
+  });
+
+  it("overshoots past the endpoint with the spring easing", () => {
+    const springLayer = { ...layer, animationEasing: "spring" as const };
+    const mid = sampleVideoTransform(springLayer, 0.5);
+    expect(mid.zoom).toBeGreaterThan(1.12);
+    expect(sampleVideoTransform(springLayer, 0).zoom).toBe(1);
+    expect(sampleVideoTransform(springLayer, 1).zoom).toBe(1.12);
+  });
+
+  it("bounces below the endpoint then settles with the bounce easing", () => {
+    const bounceLayer = { ...layer, animationEasing: "bounce" as const };
+    const mid = sampleVideoTransform(bounceLayer, 0.5);
+    expect(mid.zoom).toBeGreaterThan(1.06);
+    expect(mid.zoom).toBeLessThan(1.12);
+    expect(sampleVideoTransform(bounceLayer, 1).zoom).toBe(1.12);
+  });
+
   it("sweeps parallax offsets from negative to positive and back", () => {
     const start = sampleVideoTransform({ ...layer, animationPreset: "parallax" }, 0);
     const mid = sampleVideoTransform({ ...layer, animationPreset: "parallax" }, 0.5);
@@ -146,5 +175,39 @@ describe("easeInOutQuad", () => {
 
   it("eases out faster than linear above 0.5", () => {
     expect(easeInOutQuad(0.75)).toBeGreaterThan(0.75);
+  });
+});
+
+describe("easingFunction", () => {
+  it("covers every AnimationEasing with an endpoint-consistent curve", () => {
+    for (const [name, fn] of Object.entries(EASING_FUNCTIONS)) {
+      expect(fn(0), `${name} at 0`).toBeCloseTo(0, 3);
+      expect(fn(1), `${name} at 1`).toBeCloseTo(1, 3);
+    }
+  });
+
+  it("is monotonic within [0,1] for the non-overshooting curves", () => {
+    for (const name of ["linear", "easeInOut", "easeOut"] as const) {
+      let prev = -Infinity;
+      for (let i = 0; i <= 100; i++) {
+        const value = easingFunction(name, i / 100);
+        expect(value, `${name} at ${i / 100}`).toBeGreaterThanOrEqual(prev);
+        prev = value;
+      }
+    }
+  });
+
+  it("spring overshoots above 1 in the middle and settles at 1", () => {
+    expect(easingFunction("spring", 0.5)).toBeGreaterThan(1);
+    expect(easingFunction("spring", 1)).toBeCloseTo(1, 3);
+  });
+
+  it("is identity for linear", () => {
+    expect(easingFunction("linear", 0.25)).toBe(0.25);
+    expect(easingFunction("linear", 0.7)).toBe(0.7);
+  });
+
+  it("falls back to easeInOut for an unknown/undefined name", () => {
+    expect(easingFunction(undefined, 0.25)).toBe(easeInOutQuad(0.25));
   });
 });

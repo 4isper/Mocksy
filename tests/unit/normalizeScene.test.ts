@@ -184,6 +184,13 @@ describe("normalizeScene", () => {
     expect(normalizeScene({}).animationDurationMs).toBe(initialScene.animationDurationMs);
   });
 
+  it("keeps valid animation easing and falls back for invalid ones", () => {
+    expect(normalizeScene({ layers: [{ animationEasing: "bounce" }] }).layers[0]!.animationEasing).toBe("bounce");
+    expect(normalizeScene({ layers: [{ animationEasing: "spring" }] }).layers[0]!.animationEasing).toBe("spring");
+    expect(normalizeScene({ layers: [{ animationEasing: "bogus" }] }).layers[0]!.animationEasing).toBe("easeInOut");
+    expect(normalizeScene({ layers: [{}] }).layers[0]!.animationEasing).toBe("easeInOut");
+  });
+
   it("normalizes text annotation typography with defaults for missing values", () => {
     const s = normalizeScene({
       annotations: [{ id: "a1", type: "text", x: 0.1, y: 0.1, w: 0.2, h: 0.1, text: "Hi", color: "#fff", fontSize: 24, strokeWidth: 0 }]

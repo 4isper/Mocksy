@@ -20,6 +20,7 @@ export type LayersSlice = Pick<
   | "updateActiveLayer"
   | "setStylePreset"
   | "setAnimationPreset"
+  | "setAnimationEasing"
   | "setAnimationDuration"
   | "setZoom"
   | "setMediaOffsetX"
@@ -146,6 +147,7 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
       }),
     setStylePreset: (stylePreset) => set((s) => pushHistory(s, { ...s.scene, stylePreset })),
     setAnimationPreset: (animationPreset) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationPreset }, s.activeLayerId) }, "animation")),
+    setAnimationEasing: (animationEasing) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationEasing }, s.activeLayerId) }, "animation")),
     setAnimationDuration: (animationDurationMs) => set((s) => pushHistory(s, { ...s.scene, animationDurationMs: Math.max(500, Math.min(20000, Math.round(animationDurationMs))) }, "animationDuration")),
     setZoom: (zoom) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { zoom }, s.activeLayerId) }, "zoom")),
     setMediaOffsetX: (mediaOffsetX) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetX }, s.activeLayerId) }, "mediaOffset")),

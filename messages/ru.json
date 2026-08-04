@@ -80,6 +80,7 @@
     "addText": "+ Текст",
     "animation": "Анимация",
     "animationDuration": "Длительность анимации ({val}с)",
+    "easing": "Сглаживание",
     "annotations": "Аннотации",
     "aspectRatio": "Соотношение сторон",
     "autoBackground": "Авто по медиа",
@@ -264,7 +265,12 @@
     "parallax": "Параллакс",
     "panLeft": "Влево",
     "panRight": "Вправо",
-    "breathe": "Дыхание"
+    "breathe": "Дыхание",
+    "easingLinear": "Линейно",
+    "easingEaseInOut": "Плавно",
+    "easingEaseOut": "С ускорением",
+    "easingBounce": "Отскок",
+    "easingSpring": "Пружина"
   },
   "annotation": {
     "text": "Текст",

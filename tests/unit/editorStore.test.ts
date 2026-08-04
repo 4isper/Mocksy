@@ -785,6 +785,15 @@ describe("scene-wide settings", () => {
     expect(store().past.length).toBe(1);
   });
 
+  it("setAnimationEasing updates the active layer easing and coalesces", () => {
+    reset();
+    store().setAnimationPreset("zoomIn");
+    store().setAnimationEasing("bounce");
+    expect(store().scene.layers[0]!.animationEasing).toBe("bounce");
+    store().setAnimationEasing("spring");
+    expect(store().past.length).toBe(1);
+  });
+
   it("setAnimationDuration updates the loop length and clamps into range", () => {
     reset();
     store().setAnimationDuration(5000);

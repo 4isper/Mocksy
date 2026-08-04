@@ -68,6 +68,21 @@ describe("buildAnimationCss", () => {
     expect(css).toContain("  .frame {\n    animation: none;\n    transform: scale(1) translate(0px, 0px);");
   });
 
+  it("bakes the easing into the sampled keyframes (spring overshoots past the endpoint)", () => {
+    const css = buildAnimationCss(layerWith({ animationPreset: "zoomIn", zoom: 1, animationEasing: "spring" }));
+    expect(css).toContain("@keyframes mockup-anim");
+    expect(css).toContain("0% { transform: scale(1) translate(0px, 0px); }");
+    expect(css).toContain("100% { transform: scale(1.12) translate(0px, 0px); }");
+    const zooms = [...css.matchAll(/scale\(([0-9.]+)\)/g)].map((m) => Number(m[1]));
+    expect(Math.max(...zooms)).toBeGreaterThan(1.12);
+  });
+
+  it("samples linear easing keyframes proportionally (midpoint at half the range)", () => {
+    const css = buildAnimationCss(layerWith({ animationPreset: "zoomIn", zoom: 1, animationEasing: "linear" }));
+    const zooms = [...css.matchAll(/scale\(([0-9.]+)\)/g)].map((m) => Number(m[1]));
+    expect(zooms).toContain(1.06);
+  });
+
   it("returns empty CSS for a static or missing layer", () => {
     expect(buildAnimationCss(layerWith({ animationPreset: "none" }))).toBe("");
     expect(buildAnimationCss(undefined)).toBe("");

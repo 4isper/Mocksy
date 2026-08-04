@@ -52,6 +52,7 @@ export function makeDemoLayer(): MediaLayer {
     blur: 0,
     grayscale: 0,
     animationPreset: "none",
+    animationEasing: "easeInOut",
     videoMuted: true,
     videoLoop: true,
     videoAutoplay: true,

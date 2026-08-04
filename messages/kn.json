@@ -228,7 +228,8 @@
       "youtubeThumbnail": "YouTube Thumbnail"
     },
     "socialPresets": "Social presets",
-    "socialTooltip": "Set {ratio} canvas and {width}×{height} export size"
+    "socialTooltip": "Set {ratio} canvas and {width}×{height} export size",
+    "easing": "Easing"
   },
   "frame": {
     "none": "ಯಾವುದೂ ಇಲ್ಲ",
@@ -261,7 +262,12 @@
     "parallax": "ಪ್ಯಾರಾಲ್ಯಾಕ್ಸ್",
     "panLeft": "Pan left",
     "panRight": "Pan right",
-    "breathe": "Breathe"
+    "breathe": "Breathe",
+    "easingLinear": "Linear",
+    "easingEaseInOut": "Ease in-out",
+    "easingEaseOut": "Ease out",
+    "easingBounce": "Bounce",
+    "easingSpring": "Spring"
   },
   "annotation": {
     "text": "ಪಠ್ಯ",

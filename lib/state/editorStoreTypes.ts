@@ -2,6 +2,7 @@ import type { StoreApi } from "zustand";
 import type {
   Annotation,
   AnnotationType,
+  AnimationEasing,
   AnimationPreset,
   EditorScene,
   ExportSize,
@@ -93,6 +94,7 @@ export interface EditorStoreState {
   applyFrameLayout: (frame: MockupFrame, count: number, layout: import("@/lib/types/editor").LayoutPreset) => void;
   setStylePreset: (stylePreset: StylePreset) => void;
   setAnimationPreset: (animationPreset: AnimationPreset) => void;
+  setAnimationEasing: (animationEasing: AnimationEasing) => void;
   setAnimationDuration: (durationMs: number) => void;
   setZoom: (zoom: number) => void;
   setMediaOffsetX: (offset: number) => void;

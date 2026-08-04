@@ -1,6 +1,7 @@
 import type {
   Annotation,
   AnnotationType,
+  AnimationEasing,
   BackgroundMode,
   CustomFrame,
   EditorScene,
@@ -25,6 +26,7 @@ const PATTERN_IDS: PatternId[] = ["dots", "grid", "diagonal", "noise", "plus", "
 const MEDIA_TYPES: MediaType[] = ["none", "image", "video"];
 const MEDIA_FITS = ["cover", "contain"] as const;
 const ANIMATIONS = ANIMATION_PRESETS;
+const ANIMATION_EASINGS: AnimationEasing[] = ["linear", "easeInOut", "easeOut", "bounce", "spring"];
 const ANNOTATION_TYPES: AnnotationType[] = ["text", "arrow", "rect", "circle"];
 
 function pick<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
@@ -88,6 +90,7 @@ function normalizeLayer(raw: unknown, fallback: MediaLayer): MediaLayer {
     blur: num(r.blur, fallback.blur ?? LAYER_FILTER_DEFAULTS.blur, 0, 20),
     grayscale: num(r.grayscale, fallback.grayscale ?? LAYER_FILTER_DEFAULTS.grayscale, 0, 100),
     animationPreset: pick(r.animationPreset, ANIMATIONS, fallback.animationPreset),
+    animationEasing: pick(r.animationEasing, ANIMATION_EASINGS, fallback.animationEasing ?? "easeInOut"),
     videoMuted: r.videoMuted !== false,
     videoLoop: r.videoLoop !== false,
     videoAutoplay: r.videoAutoplay !== false,

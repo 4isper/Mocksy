@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/lib/state/editorStore";
-import type { AnimationPreset, StylePreset } from "@/lib/types/editor";
+import type { AnimationEasing, AnimationPreset, StylePreset } from "@/lib/types/editor";
 import { ANIMATION_PRESETS, ASPECT_RATIOS } from "@/lib/render/frames";
 import { SOCIAL_PRESETS } from "@/lib/presets/socialPresets";
 import { loadMediaFromFile, loadMediaFromUrl, UnsupportedMediaError, UnsupportedMediaUrlError } from "@/lib/media/loadFile";
@@ -21,6 +21,7 @@ import { FramePicker } from "@/components/editor/FramePicker";
 
 const styles: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
 const animations = ANIMATION_PRESETS;
+const easings: AnimationEasing[] = ["linear", "easeInOut", "easeOut", "bounce", "spring"];
 const aspectRatios = ASPECT_RATIOS;
 
 function FilterSlider({
@@ -79,6 +80,7 @@ export function ControlPanel() {
     applyFrameLayout,
     setStylePreset,
     setAnimationPreset,
+    setAnimationEasing,
     setZoom,
     setMediaOffsetX,
     setMediaOffsetY,
@@ -126,6 +128,7 @@ export function ControlPanel() {
       applyFrameLayout: s.applyFrameLayout,
       setStylePreset: s.setStylePreset,
       setAnimationPreset: s.setAnimationPreset,
+      setAnimationEasing: s.setAnimationEasing,
       setZoom: s.setZoom,
       setMediaOffsetX: s.setMediaOffsetX,
       setMediaOffsetY: s.setMediaOffsetY,
@@ -173,6 +176,13 @@ export function ControlPanel() {
     panLeft: t("animation.panLeft"),
     panRight: t("animation.panRight"),
     breathe: t("animation.breathe")
+  };
+  const easingLabels: Record<AnimationEasing, string> = {
+    linear: t("animation.easingLinear"),
+    easeInOut: t("animation.easingEaseInOut"),
+    easeOut: t("animation.easingEaseOut"),
+    bounce: t("animation.easingBounce"),
+    spring: t("animation.easingSpring")
   };
 
   const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -395,6 +405,13 @@ export function ControlPanel() {
             value={activeLayer?.animationPreset ?? "none"}
             options={animations.map((a) => ({ value: a, label: animLabels[a] }))}
             onChange={setAnimationPreset}
+          />
+          <Segmented
+            label={t("editor.easing")}
+            value={activeLayer?.animationEasing ?? "easeInOut"}
+            options={easings.map((e) => ({ value: e, label: easingLabels[e] }))}
+            onChange={setAnimationEasing}
+            disabled={activeLayer?.animationPreset === "none"}
           />
           <label className="field">
             <span>{t("editor.animationDuration", { val: scene.animationDurationMs / 1000 })}</span>
