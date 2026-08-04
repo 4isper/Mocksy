@@ -106,6 +106,13 @@ export function SingleFrameView({
           <input type="file" accept="image/*,video/*" onChange={handleCanvasFile} key={canvasFileInputKey} style={{ display: "none" }} />
         </label>
       ) : null}
+      {sceneCss.screenChrome ? (
+        <div
+          aria-hidden
+          style={sceneCss.screenChromeStyle}
+          dangerouslySetInnerHTML={{ __html: sceneCss.screenChrome }}
+        />
+      ) : null}
       {sceneCss.frameOverlay && (
         <img
           src={sceneCss.frameOverlay}

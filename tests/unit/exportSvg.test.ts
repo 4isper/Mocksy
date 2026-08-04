@@ -135,6 +135,36 @@ describe("buildSvgMarkup", () => {
     expect(markup).toContain('<image href="data:image/png;base64,AAAA" x="200" y="250" width="400" height="100"/>');
   });
 
+  it("embeds the screen chrome inside the screen clip when enabled", () => {
+    const scene = sceneWith({ frame: "none", backgroundMode: "transparent", screen: { ...initialScene.screen, enabled: true } });
+    const box = boxFor(scene);
+    const markup = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      zoom: 1,
+      groups: [{ box, mediaHref: null, mediaWidth: 0, mediaHeight: 0, isOverlay: false, overlayInner: null }]
+    });
+    // chrome is wrapped in a translate group at the screen origin, inside the clip
+    expect(markup).toContain('<g clip-path="url(#clip-0)">');
+    expect(markup).toContain(`<g transform="translate(${box.innerX} ${box.innerY})">`);
+    expect(markup).toContain("9:41");
+    expect(markup).toContain(`id="sc-0-top"`);
+  });
+
+  it("omits the screen chrome when disabled", () => {
+    const scene = sceneWith({ frame: "none", backgroundMode: "transparent" });
+    const box = boxFor(scene);
+    const markup = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      zoom: 1,
+      groups: [{ box, mediaHref: MEDIA, mediaWidth: 400, mediaHeight: 100, isOverlay: false, overlayInner: null }]
+    });
+    expect(markup).not.toContain("9:41");
+  });
+
   it("wraps a tilted frame group in an affine matrix with an inline clip", () => {
     const scene = sceneWith({ frame: "none", backgroundMode: "transparent", tiltX: 15, tiltY: 10 });
     const box = boxFor(scene);

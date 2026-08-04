@@ -141,6 +141,9 @@ export function buildHtmlSnippet(scene: EditorScene, opts: HtmlSnippetOptions, a
         : "";
 
   const overlay = opts.overlayHref ? `<img class="overlay" src="${opts.overlayHref}" alt=""/>` : "";
+  const chrome = css.screenChrome
+    ? `<div class="chrome" style="${serializeCssProperties(css.screenChromeStyle)}">${css.screenChrome}</div>`
+    : "";
   const bg = css.backgroundImage ? `<div class="bg"></div>` : "";
   const watermark = scene.watermarkEnabled
     ? scene.watermarkImageUrl && opts.watermarkHref
@@ -225,6 +228,7 @@ ${animationCss}
   ${bg}
   <div class="frame">
     ${media}
+    ${chrome}
     ${overlay}
   </div>
   ${annotationsHtml(scene, arW ?? 16, arH ?? 9)}

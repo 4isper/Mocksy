@@ -2,6 +2,7 @@ import type { Annotation, EditorScene, MediaLayer } from "@/lib/types/editor";
 import type { FrameBox } from "./frameGeometry";
 import { getFrameSpec } from "@/lib/render/frames";
 import { buildLayerFilterCss } from "@/lib/render/layerFilters";
+import { drawScreenChrome } from "@/lib/render/screenChrome";
 
 export const RENDER = {
   defaultFrameWidth: 900,
@@ -224,6 +225,16 @@ export function drawFrameAndMedia(
     ctx.fillRect(innerX, innerY, innerW, innerH);
   }
   ctx.restore();
+
+  // On-screen decoration (status bar, lock clock, home dock) sits on top of
+  // the media but under the device bezel, clipped to the rounded screen.
+  if (scene.screen.enabled) {
+    ctx.save();
+    roundedRectPath(ctx, innerX, innerY, innerW, innerH, innerRadius);
+    ctx.clip();
+    drawScreenChrome(ctx, scene.screen, innerX, innerY, innerW, innerH);
+    ctx.restore();
+  }
 
   if (overlay) {
     ctx.save();

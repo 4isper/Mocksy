@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { RENDER, roundedRectPath, drawAnnotations, drawWatermark, drawFrameAndMedia } from "@/lib/render/canvasDrawing";
 import type { Annotation, EditorScene, MediaLayer } from "@/lib/types/editor";
+import type { FrameBox } from "@/lib/render/frameGeometry";
+import { getFrameSpec } from "@/lib/render/frames";
+import { DEFAULT_SCREEN_CHROME } from "@/lib/state/editorScene";
 
 function mockCtx(): CanvasRenderingContext2D {
   const state: Record<string, unknown> = {};
@@ -16,6 +19,7 @@ function mockCtx(): CanvasRenderingContext2D {
     quadraticCurveTo: vi.fn(),
     closePath: vi.fn(),
     arc: vi.fn(),
+    arcTo: vi.fn(),
     ellipse: vi.fn(),
     fill: vi.fn(),
     stroke: vi.fn(),
@@ -23,7 +27,9 @@ function mockCtx(): CanvasRenderingContext2D {
     drawImage: vi.fn(),
     fillText: vi.fn(),
     strokeRect: vi.fn(),
+    translate: vi.fn(),
     measureText: (text: string) => ({ width: text.length * 10 }),
+    createLinearGradient: () => ({ addColorStop: vi.fn() }),
     set fillStyle(v: unknown) { fillStyles.push(String(v)); state.fillStyle = v; },
     get fillStyle() { return state.fillStyle; },
     /** Every fillStyle write, in order, so tests can assert intermediate paints. */
@@ -105,6 +111,7 @@ function scene(overrides: Partial<EditorScene> = {}): EditorScene {
     backgroundAudioUrl: null,
     backgroundAudioName: null,
     animationDurationMs: 3000,
+    screen: { enabled: false, style: "lock", theme: "dark", showStatusBar: true, showClock: true, showDate: true, showDock: true, showHomeIndicator: true, time: "9:41", date: "Tuesday, August 4" },
     ...overrides
   };
 }
@@ -351,5 +358,33 @@ describe("drawWatermark", () => {
     drawWatermark(ctx, { ...scene(), watermarkEnabled: true, watermarkText: "Brand", watermarkPosition: "bottom-right", watermarkSize: 13 } as any, 800, 600, 2);
     expect(ctx.shadowColor).toBe("rgba(0,0,0,0.6)");
     expect(ctx.shadowBlur).toBe(6);
+  });
+});
+
+describe("drawFrameAndMedia screen chrome", () => {
+  const box: FrameBox = { x: 0, y: 0, width: 400, height: 800, outerRadius: 20, innerX: 10, innerY: 10, innerW: 380, innerH: 780, innerRadius: 16 };
+
+  it("draws no chrome text when the screen decoration is disabled", () => {
+    const ctx = mockCtx();
+    drawFrameAndMedia(ctx, scene({ screen: { ...DEFAULT_SCREEN_CHROME, enabled: false } }), getFrameSpec("iphone"), mediaLayer(), box, 1, 1, null, null);
+    expect(ctx.fillText).not.toHaveBeenCalled();
+  });
+
+  it("paints the status bar time when the screen decoration is enabled", () => {
+    const ctx = mockCtx();
+    drawFrameAndMedia(
+      ctx,
+      scene({ screen: { ...DEFAULT_SCREEN_CHROME, enabled: true } }),
+      getFrameSpec("iphone"),
+      mediaLayer(),
+      box,
+      1,
+      1,
+      null,
+      null
+    );
+    expect(ctx.fillText).toHaveBeenCalledWith("9:41", expect.any(Number), expect.any(Number));
+    expect(ctx.translate).toHaveBeenCalledWith(box.innerX, box.innerY);
+    expect(ctx.clip).toHaveBeenCalled();
   });
 });

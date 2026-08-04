@@ -45,6 +45,34 @@ export type StylePreset = "default" | "glassLight" | "glassDark" | "outline";
 export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax" | "panLeft" | "panRight" | "breathe";
 /** Easing curve applied between animation keyframes. */
 export type AnimationEasing = "linear" | "easeInOut" | "easeOut" | "bounce" | "spring";
+/** Screen decoration style rendered over the media (lock screen, home screen). */
+export type ScreenChromeStyle = "lock" | "home" | "statusBar";
+/** Accent theme of the screen decoration (text, status bar, dock). */
+export type ScreenChromeTheme = "dark" | "light";
+
+/** On-screen UI decoration drawn above the media: status bar, lock-screen
+ *  clock/date, home dock, home indicator. All flags live in one object so the
+ *  renderers (CSS preview, canvas, SVG, HTML) share a single source of truth. */
+export interface ScreenChrome {
+  /** Master switch; when false no decoration is drawn. */
+  enabled: boolean;
+  style: ScreenChromeStyle;
+  theme: ScreenChromeTheme;
+  /** Top status bar (time + signal/wifi/battery glyphs). */
+  showStatusBar: boolean;
+  /** Large centered clock (lock style). */
+  showClock: boolean;
+  /** Date line under the clock (lock style). */
+  showDate: boolean;
+  /** Home dock with app icons (home style). */
+  showDock: boolean;
+  /** Home indicator pill at the bottom of the screen. */
+  showHomeIndicator: boolean;
+  /** Clock text, e.g. "9:41". */
+  time: string;
+  /** Date text under the clock, e.g. "Tuesday, August 4". */
+  date: string;
+}
 export type MediaType = "none" | "image" | "video";
 export type VideoQuality = "low" | "medium" | "high";
 export type WatermarkPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
@@ -173,6 +201,8 @@ export interface EditorScene {
   aspectRatio: string;
   /** Length of one animation loop (preview, video, HTML), in ms. */
   animationDurationMs: number;
+  /** Screen decoration (status bar, lock/home chrome) drawn over the media. */
+  screen: ScreenChrome;
   /** Non-media overlays (text, arrows, rectangles) drawn above the mockup. */
   annotations: Annotation[];
 }

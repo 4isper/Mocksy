@@ -243,6 +243,13 @@ export function FrameInstanceGrid({
                 ...zoomStyle
               }}
             >
+              {instCss.screenChrome ? (
+                <div
+                  aria-hidden
+                  style={instCss.screenChromeStyle}
+                  dangerouslySetInnerHTML={{ __html: instCss.screenChrome }}
+                />
+              ) : null}
               {instCss.frameOverlay ? (
                 <img src={instCss.frameOverlay} alt="" aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
               ) : null}

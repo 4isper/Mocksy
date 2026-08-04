@@ -122,6 +122,8 @@ export interface EditorStoreState {
   setWatermarkPosition: (position: WatermarkPosition) => void;
   setWatermarkSize: (size: number) => void;
   setWatermarkImage: (url: string | null) => void;
+  /** Patches the on-screen decoration (status bar / lock / home chrome). */
+  setScreenChrome: (patch: Partial<import("@/lib/types/editor").ScreenChrome>) => void;
   setAspectRatio: (aspectRatio: string) => void;
   addAnnotation: (type: AnnotationType) => void;
   updateAnnotation: (id: string, patch: Partial<Annotation>) => void;

@@ -11,6 +11,9 @@ import type {
   MediaType,
   MockupFrame,
   PatternId,
+  ScreenChrome,
+  ScreenChromeStyle,
+  ScreenChromeTheme,
   StylePreset
 } from "@/lib/types/editor";
 import { ALL_FRAMES, ANIMATION_PRESETS } from "@/lib/render/frames";
@@ -28,6 +31,26 @@ const MEDIA_FITS = ["cover", "contain"] as const;
 const ANIMATIONS = ANIMATION_PRESETS;
 const ANIMATION_EASINGS: AnimationEasing[] = ["linear", "easeInOut", "easeOut", "bounce", "spring"];
 const ANNOTATION_TYPES: AnnotationType[] = ["text", "arrow", "rect", "circle"];
+const SCREEN_CHROME_STYLES: ScreenChromeStyle[] = ["lock", "home", "statusBar"];
+const SCREEN_CHROME_THEMES: ScreenChromeTheme[] = ["dark", "light"];
+
+/** Normalizes the on-screen decoration, falling back to defaults per flag. */
+export function normalizeScreenChrome(raw: unknown, fallback: ScreenChrome = initialScene.screen): ScreenChrome {
+  if (!raw || typeof raw !== "object") return fallback;
+  const r = raw as Record<string, unknown>;
+  return {
+    enabled: r.enabled === true,
+    style: pick(r.style, SCREEN_CHROME_STYLES, fallback.style),
+    theme: pick(r.theme, SCREEN_CHROME_THEMES, fallback.theme),
+    showStatusBar: r.showStatusBar !== false,
+    showClock: r.showClock !== false,
+    showDate: r.showDate !== false,
+    showDock: r.showDock !== false,
+    showHomeIndicator: r.showHomeIndicator !== false,
+    time: str(r.time, fallback.time) ?? fallback.time,
+    date: str(r.date, fallback.date) ?? fallback.date
+  };
+}
 
 function pick<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
   return allowed.includes(value as T) ? (value as T) : fallback;
@@ -209,6 +232,7 @@ export function normalizeScene(raw: unknown): EditorScene {
     watermarkSize: num(r.watermarkSize, initialScene.watermarkSize, 8, 64),
     watermarkImageUrl: str(r.watermarkImageUrl, initialScene.watermarkImageUrl),
     animationDurationMs: num(r.animationDurationMs, initialScene.animationDurationMs, 500, 20000),
+    screen: normalizeScreenChrome(r.screen, initialScene.screen),
     annotations: Array.isArray(r.annotations)
       ? r.annotations.map((a) =>
           normalizeAnnotation(a, {

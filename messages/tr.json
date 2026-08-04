@@ -229,7 +229,22 @@
     },
     "socialPresets": "Social presets",
     "socialTooltip": "Set {ratio} canvas and {width}×{height} export size",
-    "easing": "Easing"
+    "easing": "Easing",
+    "screen": "Screen",
+    "screenStyle": "Style",
+    "screenStyleLock": "Lock screen",
+    "screenStyleHome": "Home screen",
+    "screenStyleStatusBar": "Status bar",
+    "screenTheme": "Theme",
+    "screenThemeDark": "Dark",
+    "screenThemeLight": "Light",
+    "screenShowStatusBar": "Status bar",
+    "screenShowClock": "Clock",
+    "screenShowDate": "Date",
+    "screenShowDock": "Home dock",
+    "screenShowHomeIndicator": "Home indicator",
+    "screenTime": "Time",
+    "screenDateText": "Date"
   },
   "frame": {
     "none": "Yok",

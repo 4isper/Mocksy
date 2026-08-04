@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { frameViewBox, getFrameSpec } from "@/lib/render/frames";
 import { buildLayerFilterCss } from "@/lib/render/layerFilters";
+import { screenChromeSvg } from "@/lib/render/screenChrome";
 
 export interface SceneCss {
   container: CSSProperties;
@@ -16,6 +17,11 @@ export interface SceneCss {
   mediaStyle: CSSProperties;
   /** Style for the empty-media placeholder when no media is loaded. */
   emptyMediaStyle: CSSProperties;
+  /** Full SVG markup of the on-screen decoration (status bar, lock clock,
+   *  home dock), or null when the screen chrome is disabled. */
+  screenChrome: string | null;
+  /** Positions the chrome exactly over the media's screen area. */
+  screenChromeStyle: CSSProperties;
   /** data: URL of an uploaded background image, or null when not in image mode. */
   backgroundImage: string | null;
   /** Blur radius (px) applied to the background image. */
@@ -214,6 +220,36 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
         background: "rgba(255,255,255,0.03)"
       };
 
+  // On-screen decoration overlays the same area as the media. The chrome is
+  // drawn in a w×h viewBox matching the screen area's aspect ratio, so it
+  // fills the box exactly when the SVG stretches to 100%/100%.
+  const screenAspect = spec.isOverlay && spec.cutout
+    ? spec.cutout.w / spec.cutout.h
+    : (ratioW ?? 1) / (ratioH ?? 1);
+  const chromeW = 390;
+  const chromeH = chromeW / screenAspect;
+  const screenChrome = scene.screen.enabled
+    ? screenChromeSvg(scene.screen, chromeW, chromeH, `screen-chrome-${String(scene.frame).replace(/[^a-z0-9]/gi, "")}`)
+    : null;
+  const screenChromeStyle: CSSProperties = spec.isOverlay && spec.cutout
+    ? {
+        position: "absolute",
+        left: `${(spec.cutout.x / vb.w) * 100}%`,
+        top: `${(spec.cutout.y / vb.h) * 100}%`,
+        width: `${(spec.cutout.w / vb.w) * 100}%`,
+        height: `${(spec.cutout.h / vb.h) * 100}%`,
+        borderRadius: `${(spec.cutout.rx / spec.cutout.w) * 100}% / ${(spec.cutout.rx / spec.cutout.h) * 100}%`,
+        overflow: "hidden",
+        pointerEvents: "none"
+      }
+    : {
+        position: "absolute",
+        inset: 0,
+        borderRadius: spec.screenRadius,
+        overflow: "hidden",
+        pointerEvents: "none"
+      };
+
   const overlayStyle: CSSProperties = {
     // The body-shaped shadow lives on the frame group (frameStyle.filter) so
     // it follows the SVG outline and reacts to the Shadow control.
@@ -234,6 +270,8 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
     screenRadius: spec.screenRadius,
     mediaStyle,
     emptyMediaStyle,
+    screenChrome,
+    screenChromeStyle,
     backgroundImage: scene.backgroundMode === "image" ? scene.backgroundImageUrl : null,
     backgroundBlur: scene.backgroundBlur,
     backgroundSize

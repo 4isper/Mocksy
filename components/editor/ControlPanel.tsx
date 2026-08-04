@@ -16,6 +16,7 @@ import { Segmented } from "@/components/editor/Segmented";
 import { FrameInstanceList } from "@/components/editor/FrameInstanceList";
 import { BackgroundControls } from "@/components/editor/BackgroundControls";
 import { WatermarkControls } from "@/components/editor/WatermarkControls";
+import { ScreenControls } from "@/components/editor/ScreenControls";
 import { Section } from "@/components/editor/Section";
 import { FramePicker } from "@/components/editor/FramePicker";
 
@@ -111,6 +112,7 @@ export function ControlPanel() {
     setWatermarkSize,
     setWatermarkImage,
     setAspectRatio,
+    setScreenChrome,
     activeLayerId
   } = useEditorStore(
     useShallow((s) => ({
@@ -158,7 +160,8 @@ export function ControlPanel() {
       setWatermarkPosition: s.setWatermarkPosition,
       setWatermarkSize: s.setWatermarkSize,
       setWatermarkImage: s.setWatermarkImage,
-      setAspectRatio: s.setAspectRatio
+      setAspectRatio: s.setAspectRatio,
+      setScreenChrome: s.setScreenChrome
     }))
   );
 
@@ -241,6 +244,9 @@ export function ControlPanel() {
     ),
     watermark: (
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 8.5V6a4 4 0 018 0v2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><rect x="1" y="8.5" width="2.6" height="2" rx="0.8" stroke="currentColor" strokeWidth="1" /></svg>
+    ),
+    screen: (
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="2" y="3" width="8" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.2"/><path d="M2 3.5h8M2 5h8" stroke="currentColor" strokeWidth="0.8" opacity="0.45"/></svg>
     )
   };
 
@@ -556,6 +562,10 @@ export function ControlPanel() {
           setWatermarkSize={setWatermarkSize}
           setWatermarkImage={setWatermarkImage}
         />
+      </Section>
+
+      <Section id="screen" title={t("editor.screen")} icon={sectionIcons.screen}>
+        <ScreenControls screen={scene.screen} setScreenChrome={setScreenChrome} />
       </Section>
     </div>
   );

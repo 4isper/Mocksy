@@ -865,6 +865,23 @@ describe("scene-wide settings", () => {
     expect(store().scene.watermarkText).toBe("My Brand");
   });
 
+  it("setScreenChrome patches the screen decoration and pushes history", () => {
+    reset();
+    store().setScreenChrome({ enabled: true, style: "home", theme: "light", showDock: false });
+    expect(store().scene.screen.enabled).toBe(true);
+    expect(store().scene.screen.style).toBe("home");
+    expect(store().scene.screen.theme).toBe("light");
+    expect(store().scene.screen.showDock).toBe(false);
+    // unrelated flags are untouched
+    expect(store().scene.screen.showStatusBar).toBe(true);
+    store().setScreenChrome({ time: "10:30" });
+    expect(store().scene.screen.time).toBe("10:30");
+    expect(store().past.length).toBe(1);
+    store().undo();
+    expect(store().scene.screen.time).toBe(initialScene.screen.time);
+    expect(store().scene.screen.enabled).toBe(false);
+  });
+
   it("setBorderRadius coalesces and clamps", () => {
     reset();
     store().setBorderRadius(30);

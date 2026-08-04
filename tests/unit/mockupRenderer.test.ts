@@ -228,4 +228,26 @@ describe("buildSceneCss", () => {
     const { container } = buildSceneCss(base({ backgroundMode: "pattern", patternId: "bogus" as never }));
     expect(container.background).toBe("transparent");
   });
+
+  it("emits no screen chrome by default", () => {
+    const css = buildSceneCss(base());
+    expect(css.screenChrome).toBeNull();
+  });
+
+  it("emits the screen chrome SVG over the media area when enabled", () => {
+    const css = buildSceneCss(base({ screen: { ...initialScene.screen, enabled: true } }));
+    expect(css.screenChrome).toContain("<svg");
+    expect(css.screenChrome).toContain("9:41");
+    expect(css.screenChromeStyle.position).toBe("absolute");
+    expect(css.screenChromeStyle.inset).toBe(0);
+    expect(css.screenChromeStyle.pointerEvents).toBe("none");
+  });
+
+  it("positions the chrome over the cutout for overlay frames", () => {
+    const css = buildSceneCss(base({ frame: "iphone15", screen: { ...initialScene.screen, enabled: true } }));
+    expect(css.screenChromeStyle.left).toContain("%");
+    expect(css.screenChromeStyle.top).toContain("%");
+    expect(css.screenChromeStyle.width).toContain("%");
+    expect(css.screenChromeStyle.height).toContain("%");
+  });
 });

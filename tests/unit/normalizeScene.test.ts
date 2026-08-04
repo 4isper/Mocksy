@@ -305,4 +305,29 @@ describe("normalizeScene", () => {
     expect(clamped.annotations[0]!.bgPadding).toBe(100);
     expect(clamped.annotations[0]!.bgRadius).toBe(0);
   });
+
+  it("normalizes the screen chrome and falls back for invalid fields", () => {
+    const s = normalizeScene({
+      screen: { enabled: true, style: "home", theme: "light", time: "10:30", date: "Friday, March 1" }
+    });
+    expect(s.screen).toMatchObject({ enabled: true, style: "home", theme: "light", time: "10:30", date: "Friday, March 1" });
+    // flags default to enabled
+    expect(s.screen.showStatusBar).toBe(true);
+    expect(s.screen.showDock).toBe(true);
+    const bad = normalizeScene({ screen: { enabled: "yes", style: "bogus", theme: "sepia", time: 42, date: null } });
+    expect(bad.screen.enabled).toBe(false);
+    expect(bad.screen.style).toBe(initialScene.screen.style);
+    expect(bad.screen.theme).toBe(initialScene.screen.theme);
+    expect(bad.screen.time).toBe(initialScene.screen.time);
+    expect(bad.screen.date).toBe(initialScene.screen.date);
+    // non-object screen falls back entirely
+    expect(normalizeScene({ screen: "nope" }).screen).toEqual(initialScene.screen);
+  });
+
+  it("honors explicit false screen flags", () => {
+    const s = normalizeScene({ screen: { showStatusBar: false, showClock: false, showHomeIndicator: false } });
+    expect(s.screen.showStatusBar).toBe(false);
+    expect(s.screen.showClock).toBe(false);
+    expect(s.screen.showHomeIndicator).toBe(false);
+  });
 });

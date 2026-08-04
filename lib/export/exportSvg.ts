@@ -10,6 +10,7 @@ import { isVideoLayer } from "@/lib/render/mediaKind";
 import { buildEmbeddedFontCss, collectFontStacks } from "@/lib/export/fontEmbed";
 import { downloadBlob } from "@/lib/export/downloadBlob";
 import { RENDER } from "@/lib/render/canvasDrawing";
+import { screenChromeElements } from "@/lib/render/screenChrome";
 
 /** Rounds to 2 decimals so generated SVG stays compact but accurate. */
 function num(n: number): string {
@@ -140,14 +141,22 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
       ? `<image href="${group.mediaHref}" x="${num(dx)}" y="${num(dy)}" width="${num(dw)}" height="${num(dh)}"/>`
       : `<rect x="${num(box.innerX)}" y="${num(box.innerY)}" width="${num(box.innerW)}" height="${num(box.innerH)}" fill="${RENDER.emptyMediaFill}"/>`;
 
+  // On-screen decoration in canvas space: the geometry is expressed in units
+  // of the inner screen box, so just translate to its origin. Placed inside
+  // the clip group so it stays under the device bezel and follows the radius.
+  const chromeMarkup =
+    scene.screen.enabled
+      ? `<g transform="translate(${num(box.innerX)} ${num(box.innerY)})">${screenChromeElements(scene.screen, box.innerW, box.innerH, `sc-${index}`)}</g>`
+      : "";
+
   // SVG has no perspective, so a tilted scene uses the affine best-fit matrix.
   // The clip moves inside the transformed group so its coordinates stay in
   // the group's (rotated) user space instead of the root one.
   const tilt = tiltMatrixSvg(scene, box);
   if (tilt) {
-    return `<g transform="${tilt}"><clipPath id="clip-t${index}">${groupClipRect(group)}</clipPath><g clip-path="url(#clip-t${index})">${media}</g>${frameGroupInner(scene, group)}</g>`;
+    return `<g transform="${tilt}"><clipPath id="clip-t${index}">${groupClipRect(group)}</clipPath><g clip-path="url(#clip-t${index})">${media}${chromeMarkup}</g>${frameGroupInner(scene, group)}</g>`;
   }
-  return `<g clip-path="url(#clip-${index})">${media}</g>${frameGroupInner(scene, group)}`;
+  return `<g clip-path="url(#clip-${index})">${media}${chromeMarkup}</g>${frameGroupInner(scene, group)}`;
 }
 
 function frameGroupInner(scene: EditorScene, group: SvgFrameGroup): string {

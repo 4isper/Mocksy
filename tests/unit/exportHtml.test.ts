@@ -220,6 +220,20 @@ describe("buildHtmlSnippet", () => {
     const html = buildHtmlSnippet(sceneWith(), { mediaHref: MEDIA, mediaType: "image", backgroundHref: null, overlayHref: null });
     expect(html).not.toContain("@font-face");
   });
+
+  it("embeds the screen chrome above the media when enabled", () => {
+    const scene = sceneWith({ screen: { ...initialScene.screen, enabled: true } });
+    const html = buildHtmlSnippet(scene, { mediaHref: MEDIA, mediaType: "image", backgroundHref: null, overlayHref: null });
+    expect(html).toContain('<div class="chrome" style="');
+    expect(html).toContain("9:41");
+    expect(html).toContain("position: absolute;");
+  });
+
+  it("omits the screen chrome when disabled", () => {
+    const html = buildHtmlSnippet(sceneWith(), { mediaHref: MEDIA, mediaType: "image", backgroundHref: null, overlayHref: null });
+    expect(html).not.toContain('class="chrome"');
+    expect(html).not.toContain("9:41");
+  });
 });
 
 describe("buildRasterHtmlSnippet", () => {

@@ -1,7 +1,21 @@
-import type { EditorScene, MockupFrame } from "@/lib/types/editor";
+import type { EditorScene, MockupFrame, ScreenChrome } from "@/lib/types/editor";
 import { ASPECT_RATIOS } from "@/lib/render/frames";
 import { layoutFrameGrid } from "@/lib/state/editorHelpers";
 import { makeDemoLayer, nextLayerId } from "@/lib/state/editorHelpers";
+
+/** Default screen decoration. Exported so normalization can fall back to it. */
+export const DEFAULT_SCREEN_CHROME: ScreenChrome = {
+  enabled: false,
+  style: "lock",
+  theme: "dark",
+  showStatusBar: true,
+  showClock: true,
+  showDate: true,
+  showDock: true,
+  showHomeIndicator: true,
+  time: "9:41",
+  date: "Tuesday, August 4"
+};
 
 export const initialScene: EditorScene = {
   layers: [makeDemoLayer()],
@@ -33,7 +47,8 @@ export const initialScene: EditorScene = {
   watermarkSize: 13,
   watermarkImageUrl: null,
   aspectRatio: ASPECT_RATIOS[0] ?? "16 / 9",
-  animationDurationMs: 3000
+  animationDurationMs: 3000,
+  screen: DEFAULT_SCREEN_CHROME
 };
 // The first layer is the active one by default.
 initialScene.activeLayerId = initialScene.layers[0]?.id ?? null;
