@@ -120,6 +120,16 @@ describe("normalizeScene", () => {
     expect(bad.layers[0]!.mediaFit).toBe(initialScene.layers[0]!.mediaFit);
   });
 
+  it("normalizes layer filters with defaults and clamping", () => {
+    const s = normalizeScene({ layers: [{ brightness: 150, contrast: 80, saturate: 20, blur: 4, grayscale: 50 }] });
+    expect(s.layers[0]).toMatchObject({ brightness: 150, contrast: 80, saturate: 20, blur: 4, grayscale: 50 });
+    const clamped = normalizeScene({ layers: [{ brightness: 999, contrast: -5, saturate: 300, blur: 99, grayscale: 200 }] });
+    expect(clamped.layers[0]).toMatchObject({ brightness: 200, contrast: 0, saturate: 200, blur: 20, grayscale: 100 });
+    const nan = normalizeScene({ layers: [{ brightness: Number.NaN, contrast: Number.NaN, saturate: Number.NaN, blur: Number.NaN, grayscale: Number.NaN }] });
+    expect(nan.layers[0]).toMatchObject({ brightness: 100, contrast: 100, saturate: 100, blur: 0, grayscale: 0 });
+    expect(normalizeScene({}).layers[0]).toMatchObject({ brightness: 100, contrast: 100, saturate: 100, blur: 0, grayscale: 0 });
+  });
+
   it("normalizes frameInstances array for multi-frame scenes", () => {
     const s = normalizeScene({
       frameInstances: [

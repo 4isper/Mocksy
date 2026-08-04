@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { frameViewBox, getFrameSpec } from "@/lib/render/frames";
+import { buildLayerFilterCss } from "@/lib/render/layerFilters";
 
 export interface SceneCss {
   container: CSSProperties;
@@ -177,7 +178,8 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
         objectFit: activeLayerForCss?.mediaFit ?? "cover",
         objectPosition: `${mediaPosX}% ${mediaPosY}%`,
         borderRadius: `${(spec.cutout.rx / spec.cutout.w) * 100}% / ${(spec.cutout.rx / spec.cutout.h) * 100}%`,
-        background: "#0a0a0a"
+        background: "#0a0a0a",
+        filter: buildLayerFilterCss(activeLayerForCss)
       }
     : {
         width: "100%",
@@ -185,7 +187,8 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
         objectFit: activeLayerForCss?.mediaFit ?? "cover",
         objectPosition: `${mediaPosX}% ${mediaPosY}%`,
         borderRadius: spec.screenRadius,
-        background: "#0a0a0a"
+        background: "#0a0a0a",
+        filter: buildLayerFilterCss(activeLayerForCss)
       };
 
   const emptyMediaStyle: CSSProperties = spec.isOverlay && spec.cutout

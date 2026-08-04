@@ -13,6 +13,7 @@ import type {
   StylePreset
 } from "@/lib/types/editor";
 import { ALL_FRAMES, ANIMATION_PRESETS } from "@/lib/render/frames";
+import { LAYER_FILTER_DEFAULTS } from "@/lib/render/layerFilters";
 import { initialScene } from "@/lib/state/editorStore";
 import { nextAnnotationId, nextFrameInstanceId, nextLayerId } from "@/lib/state/ids";
 
@@ -81,6 +82,11 @@ function normalizeLayer(raw: unknown, fallback: MediaLayer): MediaLayer {
     mediaOffsetX: num(r.mediaOffsetX, fallback.mediaOffsetX, -1, 1),
     mediaOffsetY: num(r.mediaOffsetY, fallback.mediaOffsetY, -1, 1),
     mediaFit: pick(r.mediaFit, MEDIA_FITS, fallback.mediaFit),
+    brightness: num(r.brightness, fallback.brightness ?? LAYER_FILTER_DEFAULTS.brightness, 0, 200),
+    contrast: num(r.contrast, fallback.contrast ?? LAYER_FILTER_DEFAULTS.contrast, 0, 200),
+    saturate: num(r.saturate, fallback.saturate ?? LAYER_FILTER_DEFAULTS.saturate, 0, 200),
+    blur: num(r.blur, fallback.blur ?? LAYER_FILTER_DEFAULTS.blur, 0, 20),
+    grayscale: num(r.grayscale, fallback.grayscale ?? LAYER_FILTER_DEFAULTS.grayscale, 0, 100),
     animationPreset: pick(r.animationPreset, ANIMATIONS, fallback.animationPreset),
     videoMuted: r.videoMuted !== false,
     videoLoop: r.videoLoop !== false,

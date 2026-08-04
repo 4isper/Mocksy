@@ -98,6 +98,11 @@ export interface EditorStoreState {
   setMediaOffsetX: (offset: number) => void;
   setMediaOffsetY: (offset: number) => void;
   setMediaFit: (fit: "cover" | "contain") => void;
+  setBrightness: (brightness: number) => void;
+  setContrast: (contrast: number) => void;
+  setSaturate: (saturate: number) => void;
+  setBlur: (blur: number) => void;
+  setGrayscale: (grayscale: number) => void;
   setShadowOpacity: (shadowOpacity: number) => void;
   setBorderRadius: (radius: number) => void;
   setTiltX: (tiltX: number) => void;

@@ -102,6 +102,17 @@ export interface MediaLayer {
   mediaOffsetY: number;
   /** How the media fills the frame: cover (fill/crop) or contain (fit/letterbox). */
   mediaFit: "cover" | "contain";
+  /** Brightness of the media in percent, 0–200 (100 = unchanged). Absent
+   *  means unchanged, matching `buildLayerFilterCss` neutral defaults. */
+  brightness?: number;
+  /** Contrast of the media in percent, 0–200 (100 = unchanged). */
+  contrast?: number;
+  /** Saturation of the media in percent, 0–200 (100 = unchanged). */
+  saturate?: number;
+  /** Gaussian blur applied to the media, in px, 0–20 (0 = sharp). */
+  blur?: number;
+  /** Grayscale amount in percent, 0–100 (0 = full color). */
+  grayscale?: number;
   animationPreset: AnimationPreset;
   videoMuted: boolean;
   videoLoop: boolean;

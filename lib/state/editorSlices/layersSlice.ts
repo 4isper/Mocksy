@@ -25,6 +25,11 @@ export type LayersSlice = Pick<
   | "setMediaOffsetX"
   | "setMediaOffsetY"
   | "setMediaFit"
+  | "setBrightness"
+  | "setContrast"
+  | "setSaturate"
+  | "setBlur"
+  | "setGrayscale"
   | "setShadowOpacity"
   | "setBorderRadius"
   | "setTiltX"
@@ -146,6 +151,11 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
     setMediaOffsetX: (mediaOffsetX) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetX }, s.activeLayerId) }, "mediaOffset")),
     setMediaOffsetY: (mediaOffsetY) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetY }, s.activeLayerId) }, "mediaOffset")),
     setMediaFit: (mediaFit) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaFit }, s.activeLayerId) }, "mediaFit")),
+    setBrightness: (brightness) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { brightness }, s.activeLayerId) }, "layerFilter")),
+    setContrast: (contrast) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { contrast }, s.activeLayerId) }, "layerFilter")),
+    setSaturate: (saturate) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { saturate }, s.activeLayerId) }, "layerFilter")),
+    setBlur: (blur) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { blur }, s.activeLayerId) }, "layerFilter")),
+    setGrayscale: (grayscale) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { grayscale }, s.activeLayerId) }, "layerFilter")),
     setShadowOpacity: (shadowOpacity) => set((s) => pushHistory(s, { ...s.scene, shadowOpacity }, "shadow")),
     setBorderRadius: (borderRadius) => set((s) => pushHistory(s, { ...s.scene, borderRadius }, "radius")),
     setTiltX: (tiltX) => set((s) => pushHistory(s, { ...s.scene, tiltX }, "tilt")),

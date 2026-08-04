@@ -1,6 +1,7 @@
 import type { Annotation, EditorScene, MediaLayer } from "@/lib/types/editor";
 import type { FrameBox } from "./frameGeometry";
 import { getFrameSpec } from "@/lib/render/frames";
+import { buildLayerFilterCss } from "@/lib/render/layerFilters";
 
 export const RENDER = {
   defaultFrameWidth: 900,
@@ -216,6 +217,7 @@ export function drawFrameAndMedia(
     const offsetY = layer?.mediaOffsetY ?? 0;
     const dx = innerX + (innerW - dw) / 2 + offsetX * (innerW - dw) / 2;
     const dy = innerY + (innerH - dh) / 2 + offsetY * (innerH - dh) / 2;
+    ctx.filter = buildLayerFilterCss(layer);
     ctx.drawImage(media, dx, dy, dw, dh);
   } else {
     ctx.fillStyle = RENDER.emptyMediaFill;
