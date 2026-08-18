@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
@@ -32,7 +32,6 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const addLayer = useEditorStore((s) => s.addLayer);
   const setVideoDuration = useEditorStore((s) => s.setVideoDuration);
   const setVideoCurrentTime = useEditorStore((s) => s.setVideoCurrentTime);
-  const videoCurrentTime = useEditorStore((s) => s.videoCurrentTime);
   const isMediaLoading = useEditorStore((s) => s.isMediaLoading);
   const setMediaLoading = useEditorStore((s) => s.setMediaLoading);
   const selectedAnnotationId = useEditorStore((s) => s.selectedAnnotationId);
@@ -64,22 +63,6 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
    const scaleRef = useRef<HTMLDivElement>(null);
    const tiltPrefix = useMemo(() => tiltCss(scene), [scene.tiltX, scene.tiltY]); // eslint-disable-line react-hooks/exhaustive-deps
    useFrameTransform(frameRef, activeLayer, scene.animationDurationMs, tiltPrefix);
-
-  // Mirror the Timeline scrubber (driven by VideoOptions) onto the actual
-  // <video>. The onTimeUpdate handler also writes videoCurrentTime back to the
-  // store, so we only seek when the change is large enough to be a user scrub
-  // rather than playback echo — otherwise we'd fight the playing video.
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (Math.abs(video.currentTime - videoCurrentTime) > 0.1) {
-      try {
-        video.currentTime = videoCurrentTime;
-      } catch {
-        // Seeking before metadata is ready can throw; ignore until it loads.
-      }
-    }
-  }, [videoCurrentTime]);
 
   // Pinch-to-zoom on touch devices: track the two-finger distance and map it
   // to the active layer zoom so mobile users can scale the mockup without a slider.
@@ -306,7 +289,6 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             setVideoDuration={setVideoDuration}
             setVideoCurrentTime={setVideoCurrentTime}
             setMediaLoading={setMediaLoading}
-            videoCurrentTime={videoCurrentTime}
           />
          )}
         <div

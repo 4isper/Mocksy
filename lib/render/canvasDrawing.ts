@@ -1,4 +1,4 @@
-import type { Annotation, EditorScene, MediaLayer } from "@/lib/types/editor";
+import type { Annotation, EditorScene, MediaLayer, StylePreset } from "@/lib/types/editor";
 import type { FrameBox } from "./frameGeometry";
 import { getFrameSpec } from "@/lib/render/frames";
 import { buildLayerFilterCss } from "@/lib/render/layerFilters";
@@ -25,6 +25,27 @@ export const RENDER = {
   arrowHead: 14,
   minZoom: 0.01
 } as const;
+
+export interface ResolvedFrameStyle {
+  fill: string;
+  stroke: boolean;
+  strokeWidth: number;
+  strokeStyle: string;
+}
+
+/**
+ * Maps a style preset to its frame chrome (fill + optional stroke). Shared by
+ * the canvas and SVG renderers so adding a preset stays in one place and the
+ * raster/vector exports can never drift from each other.
+ */
+export function resolveFrameStyle(stylePreset: StylePreset): ResolvedFrameStyle {
+  return {
+    fill: stylePreset === "glassDark" ? RENDER.glassDarkFill : RENDER.glassLightFill,
+    stroke: stylePreset === "outline" || stylePreset.startsWith("glass"),
+    strokeWidth: stylePreset === "outline" ? RENDER.outlineStroke : RENDER.glassStroke,
+    strokeStyle: stylePreset === "glassDark" ? RENDER.glassDarkStroke : RENDER.glassLightStroke
+  };
+}
 
 export function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   const radius = Math.max(0, Math.min(r, Math.min(w, h) / 2));
@@ -197,15 +218,16 @@ export function drawFrameAndMedia(
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = RENDER.shadowOffsetY * dpiScale * zoom;
     roundedRectPath(ctx, x, y, frameW, frameH, outerRadius);
-    ctx.fillStyle = scene.stylePreset === "glassDark" ? RENDER.glassDarkFill : RENDER.glassLightFill;
+    ctx.fillStyle = resolveFrameStyle(scene.stylePreset).fill;
     ctx.fill();
     ctx.restore();
 
-    if (scene.stylePreset === "outline" || scene.stylePreset.startsWith("glass")) {
+    const frameStyle = resolveFrameStyle(scene.stylePreset);
+    if (frameStyle.stroke) {
       ctx.save();
       roundedRectPath(ctx, x, y, frameW, frameH, outerRadius);
-      ctx.lineWidth = (scene.stylePreset === "outline" ? RENDER.outlineStroke : RENDER.glassStroke) * dpiScale * zoom;
-      ctx.strokeStyle = scene.stylePreset === "glassDark" ? RENDER.glassDarkStroke : RENDER.glassLightStroke;
+      ctx.lineWidth = frameStyle.strokeWidth * dpiScale * zoom;
+      ctx.strokeStyle = frameStyle.strokeStyle;
       ctx.stroke();
       ctx.restore();
     }

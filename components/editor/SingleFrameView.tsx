@@ -1,10 +1,11 @@
 "use client";
 
-import type { ChangeEvent } from "react";
+import { useEffect, type ChangeEvent } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import type { SceneCss } from "@/lib/render/mockupRenderer";
 import { useTranslations } from "next-intl";
+import { useEditorStore } from "@/lib/state/editorStore";
 
 interface SingleFrameViewProps {
   scene: EditorScene;
@@ -22,7 +23,6 @@ interface SingleFrameViewProps {
   setVideoDuration: (duration: number, layerId?: string) => void;
   setVideoCurrentTime: (time: number) => void;
   setMediaLoading: (loading: boolean) => void;
-  videoCurrentTime: number;
 }
 
 export function SingleFrameView({
@@ -40,10 +40,26 @@ export function SingleFrameView({
   isMediaLoading,
   setVideoDuration,
   setVideoCurrentTime,
-  setMediaLoading,
-  videoCurrentTime
+  setMediaLoading
 }: SingleFrameViewProps) {
   const t = useTranslations();
+  // Subscribe here (not in PreviewCanvas) so the whole preview tree — all
+  // annotations, the watermark and the frame grid — doesn't re-render on every
+  // video time tick. The seek mirrors the Timeline scrubber onto the <video>:
+  // onTimeUpdate writes the time back to the store, so we only seek when the
+  // delta is large enough to be a user scrub rather than playback echo.
+  const videoCurrentTime = useEditorStore((s) => s.videoCurrentTime);
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (Math.abs(video.currentTime - videoCurrentTime) > 0.1) {
+      try {
+        video.currentTime = videoCurrentTime;
+      } catch {
+        // Seeking before metadata is ready can throw; ignore until it loads.
+      }
+    }
+  }, [videoCurrentTime, videoRef]);
   return (
     <div
       ref={frameRef}

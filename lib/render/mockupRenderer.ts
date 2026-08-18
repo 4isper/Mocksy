@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { frameViewBox, getFrameSpec } from "@/lib/render/frames";
 import { buildLayerFilterCss } from "@/lib/render/layerFilters";
+import { resolveFrameStyle } from "@/lib/render/canvasDrawing";
 import { screenChromeSvg } from "@/lib/render/screenChrome";
 
 export interface SceneCss {
@@ -96,14 +97,10 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
         ? "cover"
         : undefined;
 
-  const frameBorder =
-    scene.stylePreset === "outline"
-      ? "2px solid rgba(255,255,255,0.35)"
-      : scene.stylePreset === "glassLight"
-        ? "1px solid rgba(255,255,255,0.45)"
-        : scene.stylePreset === "glassDark"
-          ? "1px solid rgba(255,255,255,0.15)"
-          : "none";
+  const frameChrome = resolveFrameStyle(scene.stylePreset);
+  const frameBorder = frameChrome.stroke
+    ? `${frameChrome.strokeWidth}px solid ${frameChrome.strokeStyle}`
+    : "none";
 
   // Each device frame keeps its own aspect ratio so changing the scene's
   // aspect ratio only resizes the canvas, never distorts the frame. The
@@ -155,9 +152,7 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
     background:
       spec.isOverlay
         ? "transparent"
-        : scene.stylePreset === "glassDark"
-          ? "rgba(6,6,6,0.25)"
-          : "rgba(255,255,255,0.06)"
+        : frameChrome.fill
   };
 
   // Overlay skins carry their own bezel; keep the frame padding at 0 so the

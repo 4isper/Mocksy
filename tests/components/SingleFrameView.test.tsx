@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 import { SingleFrameView } from "@/components/editor/SingleFrameView";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
-import { initialScene } from "@/lib/state/editorStore";
+import { initialScene, useEditorStore } from "@/lib/state/editorStore";
 
 function makeLayer(overrides: Partial<MediaLayer> = {}): MediaLayer {
   return {
@@ -57,6 +57,7 @@ const props = {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  useEditorStore.setState({ videoCurrentTime: 0 });
 });
 
 describe("SingleFrameView", () => {
@@ -108,6 +109,7 @@ describe("SingleFrameView", () => {
 
 describe("SingleFrameView video handlers", () => {
   function renderVideo(videoCurrentTime = 0) {
+    useEditorStore.setState({ videoCurrentTime });
     const scene: EditorScene = {
       ...initialScene,
       layers: [makeLayer({ id: "v1", mediaUrl: "test.mp4", mediaType: "video" })],
@@ -115,7 +117,6 @@ describe("SingleFrameView video handlers", () => {
     return render(
       <SingleFrameView
         {...props}
-        videoCurrentTime={videoCurrentTime}
         scene={scene}
       />
     );
