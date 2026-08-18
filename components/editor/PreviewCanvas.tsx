@@ -12,6 +12,7 @@ import { Check } from "lucide-react";
 import { useFrameTransform } from "@/lib/hooks/useFrameTransform";
 import { tiltCss } from "@/lib/render/tilt";
 import { useScenePalette } from "@/lib/hooks/useScenePalette";
+import { useAutoDismissError } from "@/lib/hooks/useAutoDismissError";
 import { AnnotationItem } from "@/components/editor/AnnotationItem";
 import { FrameInstanceGrid } from "@/components/editor/FrameInstanceGrid";
 import { SingleFrameView } from "@/components/editor/SingleFrameView";
@@ -26,7 +27,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const sceneCss = useMemo(() => buildSceneCss(scene, activeLayerId), [scene, activeLayerId]);
   const dragDepth = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [dropError, setDropError] = useState<string | null>(null);
+  const [dropError, setDropError] = useAutoDismissError();
   const [canvasFileInputKey, setCanvasFileInputKey] = useState(0);
   const setMedia = useEditorStore((s) => s.setMedia);
   const setVideoDuration = useEditorStore((s) => s.setVideoDuration);

@@ -212,7 +212,27 @@ export function FrameInstanceGrid({
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 selectFrameInstance(inst.id);
+                return;
               }
+              if (!e.key.startsWith("Arrow")) return;
+              e.preventDefault();
+              const step = e.shiftKey ? 0.02 : 0.01;
+              const dirs: Record<string, [number, number, number?]> = {
+                ArrowUp: [0, -step],
+                ArrowDown: [0, step],
+                ArrowLeft: [-step, 0],
+                ArrowRight: [step, 0]
+              };
+              const [dx, dy] = dirs[e.key] ?? [0, 0];
+              if (e.shiftKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+                // Shift+vertical arrows resize (scale) the frame instance.
+                const nextScale = Math.max(0.05, Math.min(1, inst.scale + (e.key === "ArrowUp" ? step : -step)));
+                updateFrameInstance(inst.id, { scale: nextScale });
+                return;
+              }
+              const nextX = Math.max(0, Math.min(1, inst.x + dx));
+              const nextY = Math.max(0, Math.min(1, inst.y + dy));
+              updateFrameInstance(inst.id, { x: nextX, y: nextY });
             }}
             onPointerDown={(e) => handlePointerDown(e, inst.id)}
             onPointerMove={(e) => handlePointerMove(e, inst.id)}

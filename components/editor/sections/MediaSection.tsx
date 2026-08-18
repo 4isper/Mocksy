@@ -7,12 +7,13 @@ import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { loadMediaFromFile, loadMediaFromUrl, UnsupportedMediaError, UnsupportedMediaUrlError } from "@/lib/media/loadFile";
 import { isVideoLayer } from "@/lib/render/mediaKind";
+import { useAutoDismissError } from "@/lib/hooks/useAutoDismissError";
 import { VideoOptions } from "@/components/editor/VideoOptions";
 import { Section } from "@/components/editor/Section";
 
 export function MediaSection() {
   const t = useTranslations();
-  const [mediaError, setMediaError] = useState<string | null>(null);
+  const [mediaError, setMediaError] = useAutoDismissError();
   const [mediaUrlInput, setMediaUrlInput] = useState("");
   const [mediaUrlBusy, setMediaUrlBusy] = useState(false);
   const { scene, activeLayerId, setMedia, setScenePalette } = useEditorStore(

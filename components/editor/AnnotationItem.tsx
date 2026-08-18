@@ -212,8 +212,45 @@ export function AnnotationItem({ annotation, selected, canvasRef, snapDivisions 
     );
   }
 
+  const onBoxKeyDown = (e: React.KeyboardEvent) => {
+    if (editing) return;
+    if (!e.key.startsWith("Arrow")) return;
+    e.preventDefault();
+    onSelect(annotation.id);
+    const step = e.shiftKey ? 0.02 : 0.01;
+    if (e.altKey) {
+      // Alt+arrows grow/shrink the annotation box.
+      let nw = annotation.w;
+      let nh = annotation.h;
+      if (e.key === "ArrowRight") nw += step;
+      if (e.key === "ArrowLeft") nw -= step;
+      if (e.key === "ArrowDown") nh += step;
+      if (e.key === "ArrowUp") nh -= step;
+      onUpdate(annotation.id, { w: nw, h: nh });
+      return;
+    }
+    const dirs: Record<string, [number, number]> = {
+      ArrowUp: [0, -step],
+      ArrowDown: [0, step],
+      ArrowLeft: [-step, 0],
+      ArrowRight: [step, 0]
+    };
+    const [dx, dy] = dirs[e.key] ?? [0, 0];
+    onUpdate(annotation.id, { x: annotation.x + dx, y: annotation.y + dy });
+  };
+
   return (
-    <div style={boxStyle} onPointerDown={onBodyDown} onPointerMove={onBodyMove} onPointerUp={onBodyUp} onPointerCancel={onBodyUp}>
+    <div
+      tabIndex={0}
+      role="group"
+      aria-label={t("editor.annotationAria")}
+      style={boxStyle}
+      onKeyDown={onBoxKeyDown}
+      onPointerDown={onBodyDown}
+      onPointerMove={onBodyMove}
+      onPointerUp={onBodyUp}
+      onPointerCancel={onBodyUp}
+    >
       {content}
       {selected ? (
         <span

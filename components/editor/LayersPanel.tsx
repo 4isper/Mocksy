@@ -3,10 +3,12 @@
 import type { ChangeEvent, DragEvent } from "react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Circle, Eye, EyeOff, Video } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
+import { useAutoDismissError } from "@/lib/hooks/useAutoDismissError";
 import { isVideoLayer } from "@/lib/render/mediaKind";
+import { Circle, Eye, EyeOff, Video } from "lucide-react";
 
 interface DropTarget {
   id: string;
@@ -26,7 +28,7 @@ export function LayersPanel() {
   const setMedia = useEditorStore((s) => s.setMedia);
   const isMediaLoading = useEditorStore((s) => s.isMediaLoading);
   const setMediaLoading = useEditorStore((s) => s.setMediaLoading);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useAutoDismissError();
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];

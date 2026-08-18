@@ -89,8 +89,10 @@ export function useEditorExport(
 
   const handleExportPng = useCallback(() => {
     setExportError(null);
-    exportImage(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId);
-  }, [scene, exportScale, customExportSize, activeLayerId]);
+    void Promise.resolve(exportImage(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId)).then(
+      () => setCopyStatus(t("editor.exported"))
+    );
+  }, [scene, exportScale, customExportSize, activeLayerId, t]);
 
   const handleCopyPng = useCallback(async () => {
     setExportError(null);
@@ -99,8 +101,10 @@ export function useEditorExport(
 
   const handleExportWebp = useCallback(() => {
     setExportError(null);
-    exportWebp(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId);
-  }, [scene, exportScale, customExportSize, activeLayerId]);
+    void Promise.resolve(exportWebp(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId)).then(
+      () => setCopyStatus(t("editor.exported"))
+    );
+  }, [scene, exportScale, customExportSize, activeLayerId, t]);
 
   const handleExportSvg = useCallback(async () => {
     setExportError(null);
@@ -124,8 +128,10 @@ export function useEditorExport(
 
   const handleExportPdf = useCallback(() => {
     setExportError(null);
-    exportPdf(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId);
-  }, [scene, exportScale, customExportSize, activeLayerId]);
+    void Promise.resolve(exportPdf(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId)).then(
+      () => setCopyStatus(t("editor.exported"))
+    );
+  }, [scene, exportScale, customExportSize, activeLayerId, t]);
 
   const handleExportMp4 = useCallback(async () => {
     setExportError(null);

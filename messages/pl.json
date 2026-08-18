@@ -251,7 +251,9 @@
     "bgUploadError": "Could not load that image.",
     "bgNeedImage": "Upload a background image first.",
     "watermarkLogoError": "Could not load that logo image.",
-    "shareLinkCopied": "Share link copied!"
+    "shareLinkCopied": "Share link copied!",
+    "exported": "Exported!",
+    "annotationAria": "Annotation. Arrow keys move, Alt+arrows resize, double-click to edit text."
   },
   "frame": {
     "none": "Żaden",
