@@ -88,6 +88,22 @@ describe("buildSvgMarkup", () => {
     expect(markup).not.toContain("bg-gradient");
   });
 
+  it("renders a radial gradient with a radialGradient definition", () => {
+    const scene = sceneWith({ backgroundMode: "gradient", gradientType: "radial", gradientFrom: "#1d4ed8", gradientTo: "#7c3aed" });
+    const markup = buildSvgMarkup(scene, { width: 800, height: 600, backgroundHref: null, groups: [] });
+    expect(markup).toContain('<radialGradient id="bg-gradient"');
+    expect(markup).toContain('stop-color="#1d4ed8"');
+    expect(markup).toContain('stop-color="#7c3aed"');
+    expect(markup).not.toContain("<linearGradient");
+  });
+
+  it("renders a 3-stop gradient when a via color is set", () => {
+    const scene = sceneWith({ backgroundMode: "gradient", gradientFrom: "#1d4ed8", gradientVia: "#22d3ee", gradientTo: "#7c3aed" });
+    const markup = buildSvgMarkup(scene, { width: 800, height: 600, backgroundHref: null, groups: [] });
+    expect(markup).toContain('stop-color="#22d3ee"');
+    expect(markup).toContain('stop offset="0.5"');
+  });
+
   it("embeds a background image with a blur filter when blur is set", () => {
     const scene = sceneWith({ backgroundMode: "image", backgroundBlur: 10, backgroundImageUrl: BG });
     const markup = buildSvgMarkup(scene, {

@@ -38,6 +38,26 @@ export const useThemeStore = create<ThemeState>()(
       setMode: (mode) => {
         const resolved = resolveTheme(mode);
         applyTheme(resolved);
+        // Switching into "system" must track OS theme changes; switching away
+        // must drop any prior subscription so a manual light/dark choice stays
+        // put. initialize() only registers the listener at load time, so a
+        // runtime switch to "system" would otherwise freeze the resolved theme.
+        const cleanup = (window as Window & { __themeCleanup?: () => void }).__themeCleanup;
+        cleanup?.();
+        if (mode === "system" && typeof window !== "undefined") {
+          const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+          const handler = () => {
+            const { mode: m } = get();
+            if (m === "system") {
+              const r = getSystemTheme();
+              applyTheme(r);
+              set({ resolvedTheme: r });
+            }
+          };
+          mediaQuery.addEventListener("change", handler);
+          (window as Window & { __themeCleanup?: () => void }).__themeCleanup = () =>
+            mediaQuery.removeEventListener("change", handler);
+        }
         set({ mode, resolvedTheme: resolved });
       },
       initialize: () => {

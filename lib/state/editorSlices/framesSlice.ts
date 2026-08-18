@@ -95,7 +95,11 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
         const frameInstances = s.scene.frameInstances.map((fi) =>
           fi.id === id ? { ...fi, ...patch } : fi
         );
-        return pushHistory(s, { ...s.scene, frameInstances }, coalesce ? "frameInstanceDrag" : undefined);
+        // The coalesce key must include the instance id: a constant key would
+        // merge a drag of instance A and a quick drag of instance B (within the
+        // 400ms window) into a single undo step, dropping the intermediate
+        // state. Keying per-instance keeps each frame's drag its own step.
+        return pushHistory(s, { ...s.scene, frameInstances }, coalesce ? `frameInstanceDrag:${id}` : undefined);
       }),
     layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") =>
       set((s) => {

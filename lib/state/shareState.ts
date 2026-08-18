@@ -7,6 +7,11 @@ import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
  *  media is already stripped, but a large uploaded asset still can blow this. */
 const MAX_SHARE_URL_LENGTH = 16000;
 
+/** Marker left in place of the demo data: URL so the reader knows exactly which
+  * layers were the demo and can restore real demo media for them alone — without
+  * resurrecting the demo in layers the user genuinely cleared. */
+const DEMO_MEDIA_PLACEHOLDER = "__mocksy_demo__";
+
 export class ShareUrlTooLarge extends Error {
   constructor() {
     super("Share link is too large");
@@ -24,7 +29,7 @@ export function sceneToShareUrl(scene: EditorScene): string {
         ...scene,
         layers: scene.layers.map((l) =>
           l.mediaUrl === DEMO_MEDIA_URL
-            ? { ...l, mediaUrl: null, mediaType: "none" as const, mediaName: null }
+            ? { ...l, mediaUrl: DEMO_MEDIA_PLACEHOLDER, mediaType: "none" as const, mediaName: null }
             : l
         )
       }
@@ -65,17 +70,30 @@ export function readSceneFromUrl(): EditorScene | null {
   if (!raw) return null;
   const scene = parseShareScene(raw);
   if (!scene) return null;
-  // A share URL omits the demo media to stay short; restore it so the
-  // canvas isn't blank when the link is opened.
-  if (!scene.layers.some((l) => l.mediaUrl)) {
-    return {
-      ...scene,
-      layers: scene.layers.map((l) =>
-        l.mediaUrl == null ? { ...l, mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME } : l
-      )
-    };
-  }
-  return scene;
+  return restoreDemoMedia(scene);
+}
+
+/** Re-injects the demo data: URL into the layers that were the demo. Only
+  * layers carrying `DEMO_MEDIA_PLACEHOLDER` (set when the share URL was built)
+  * are restored, so a layer the user genuinely cleared stays empty. Legacy
+  * links stored the stripped demo as a bare `null`; if the entire scene had no
+  * media at all we still restore the demo for those (the whole scene was demo). */
+function restoreDemoMedia(scene: EditorScene): EditorScene {
+  const allStripped = !scene.layers.some((l) => l.mediaUrl);
+  const hasDemoMarker = scene.layers.some((l) => l.mediaUrl === DEMO_MEDIA_PLACEHOLDER);
+  if (!allStripped && !hasDemoMarker) return scene;
+  return {
+    ...scene,
+    layers: scene.layers.map((l) => {
+      if (l.mediaUrl === DEMO_MEDIA_PLACEHOLDER) {
+        return { ...l, mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME };
+      }
+      if (l.mediaUrl == null && allStripped) {
+        return { ...l, mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME };
+      }
+      return l;
+    })
+  };
 }
 
 /** Removes the `scene` query param from the address bar after it has been

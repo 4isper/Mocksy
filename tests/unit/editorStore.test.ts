@@ -341,6 +341,20 @@ describe("annotations", () => {
     expect(store().scene.annotations[1]!.id).toBe(arrowId);
   });
 
+  it("dragging two different annotations records two separate undo steps", () => {
+    reset();
+    store().addAnnotation("rect");
+    const idA = store().scene.annotations[0]!.id;
+    store().addAnnotation("arrow");
+    const idB = store().scene.annotations[1]!.id;
+    const afterSetup = store().past.length;
+    store().updateAnnotation(idA, { color: "#ff0000" });
+    store().updateAnnotation(idB, { color: "#00ff00" });
+    expect(store().past.length).toBe(afterSetup + 2);
+    expect(store().scene.annotations[0]!.color).toBe("#ff0000");
+    expect(store().scene.annotations[1]!.color).toBe("#00ff00");
+  });
+
   it("removeAnnotation drops the annotation and clears selection", () => {
     reset();
     store().addAnnotation("rect");
@@ -634,6 +648,22 @@ describe("frame control", () => {
     store().updateFrameInstance("fi1", { x: 0.25, scale: 0.8 });
     expect(store().scene.frameInstances[0]!.x).toBe(0.25);
     expect(store().scene.frameInstances[0]!.scale).toBe(0.8);
+  });
+
+   it("dragging two different instances records two separate undo steps", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0.5, scale: 1, layerId: null },
+      { id: "fi2", frame: "iphone" as const, x: 0, y: 0.5, scale: 1, layerId: null }
+    ]);
+    const afterSetup = store().past.length;
+    store().updateFrameInstance("fi1", { x: 0.1 }, true);
+    store().updateFrameInstance("fi2", { x: 0.2 }, true);
+    // Each instance has its own coalesce key, so quick drags of different
+    // frames must not collapse into a single undo step.
+    expect(store().past.length).toBe(afterSetup + 2);
+    expect(store().scene.frameInstances[0]!.x).toBe(0.1);
+    expect(store().scene.frameInstances[1]!.x).toBe(0.2);
   });
 
   it("updateFrameInstance leaves other instances unchanged", () => {

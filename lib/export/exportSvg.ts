@@ -74,6 +74,16 @@ function backgroundMarkup(scene: EditorScene, opts: SvgExportOptions): string {
     case "solid":
       return `<rect width="${width}" height="${height}" fill="${scene.backgroundColor}"/>`;
     case "gradient": {
+      const stops =
+        `<stop offset="0" stop-color="${scene.gradientFrom}"/>` +
+        (scene.gradientVia ? `<stop offset="0.5" stop-color="${scene.gradientVia}"/>` : "") +
+        `<stop offset="1" stop-color="${scene.gradientTo}"/>`;
+      // The canvas preview (renderBackground.fillGradientBackground) honors both
+      // a 3-stop "via" color and radial gradients, so the SVG must too — a
+      // static linear 2-stop here would diverge from PNG/video exports.
+      if (scene.gradientType === "radial") {
+        return `<rect width="${width}" height="${height}" fill="url(#bg-gradient)"/><radialGradient id="bg-gradient" cx="50%" cy="50%" r="50%">${stops}</radialGradient>`;
+      }
       const rad = ((scene.gradientAngle ?? RENDER.gradientAngleDeg) * Math.PI) / 180;
       const dx = Math.sin(rad);
       const dy = -Math.cos(rad);
@@ -84,7 +94,7 @@ function backgroundMarkup(scene: EditorScene, opts: SvgExportOptions): string {
       const y1 = num(cy - (dy * lineLen) / 2);
       const x2 = num(cx + (dx * lineLen) / 2);
       const y2 = num(cy + (dy * lineLen) / 2);
-      return `<rect width="${width}" height="${height}" fill="url(#bg-gradient)"/><linearGradient id="bg-gradient" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"><stop offset="0" stop-color="${scene.gradientFrom}"/><stop offset="1" stop-color="${scene.gradientTo}"/></linearGradient>`;
+      return `<rect width="${width}" height="${height}" fill="url(#bg-gradient)"/><linearGradient id="bg-gradient" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">${stops}</linearGradient>`;
     }
     case "image": {
       if (!opts.backgroundHref) return "";

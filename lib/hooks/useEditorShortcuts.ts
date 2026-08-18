@@ -178,7 +178,6 @@ export function useEditorShortcuts(actions: EditorShortcutActions): void {
       }
       // Arrow keys nudge the selected frame instance on the canvas.
       if (!modifier && !typing && event.key.startsWith("Arrow")) {
-        event.preventDefault();
         const st = useEditorStore.getState();
         let id = st.activeFrameInstanceId;
         if (!id && st.scene.frameInstances.length > 0) {
@@ -186,7 +185,9 @@ export function useEditorShortcuts(actions: EditorShortcutActions): void {
           st.selectFrameInstance(id);
         }
         const inst = st.scene.frameInstances.find((fi) => fi.id === id);
+        // No frame to nudge (single-frame mode) — let the browser scroll.
         if (!inst) return;
+        event.preventDefault();
         const step = event.shiftKey ? 0.05 : 0.01;
         const dirs: Record<string, [number, number]> = {
           ArrowUp: [0, -step],

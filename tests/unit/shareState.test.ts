@@ -142,4 +142,22 @@ describe("shareState", () => {
     expect(restored?.layers.find((l) => l.id === "a")!.mediaUrl).toBe(DEMO_MEDIA_URL);
     expect(restored?.layers.find((l) => l.id === "b")!.mediaUrl).toBe("blob:abc");
   });
+
+  it("does not resurrect demo in a genuinely cleared layer next to real media", () => {
+    const scene: EditorScene = {
+      ...initialScene,
+      layers: [
+        { ...makeDemoLayer(), id: "a", mediaUrl: DEMO_MEDIA_URL, mediaType: "image" },
+        { ...makeDemoLayer(), id: "b", mediaUrl: "blob:abc", mediaType: "image", mediaName: "shot.png" },
+        { ...makeDemoLayer(), id: "c", mediaUrl: null, mediaType: "none" as const, mediaName: null }
+      ],
+      activeLayerId: "a"
+    };
+    const url = sceneToShareUrl(scene);
+    stubLocation(url);
+    const restored = readSceneFromUrl();
+    expect(restored?.layers.find((l) => l.id === "a")!.mediaUrl).toBe(DEMO_MEDIA_URL);
+    expect(restored?.layers.find((l) => l.id === "b")!.mediaUrl).toBe("blob:abc");
+    expect(restored?.layers.find((l) => l.id === "c")!.mediaUrl).toBeNull();
+  });
 });

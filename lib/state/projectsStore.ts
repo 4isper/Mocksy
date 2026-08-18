@@ -191,13 +191,20 @@ export const useProjectsStore = create<ProjectsStoreState>((set, get) => ({
     persist(get());
   },
   deleteProject: (id) => {
-    set((s) => {
-      const nonDeleted = s.projects.filter((p) => p.deletedAt == null);
-      if (nonDeleted.length <= 1) return {};
-      const projects = s.projects.map((p) => (p.id === id ? { ...p, deletedAt: Date.now() } : p));
-      const activeProjectId = s.activeProjectId === id ? (nonDeleted.find((p) => p.id !== id)?.id ?? null) : s.activeProjectId;
-      return { projects, activeProjectId };
-    });
+    const state = get();
+    const nonDeleted = state.projects.filter((p) => p.deletedAt == null);
+    if (nonDeleted.length <= 1) return;
+    const wasActive = state.activeProjectId === id;
+    const projects = state.projects.map((p) => (p.id === id ? { ...p, deletedAt: Date.now() } : p));
+    const nextActiveId = wasActive ? (nonDeleted.find((p) => p.id !== id)?.id ?? null) : state.activeProjectId;
+    set({ projects, activeProjectId: nextActiveId });
+    // When the active project is deleted, load the newly-activated project's
+    // scene into the editor. Otherwise the next autosave (which writes the
+    // editor scene into the active project) would overwrite the switched-to
+    // project with the just-deleted one's scene.
+    if (wasActive && nextActiveId) {
+      activateEditorScene(projects.find((p) => p.id === nextActiveId));
+    }
     persist(get());
   },
   restoreProject: (id) => {

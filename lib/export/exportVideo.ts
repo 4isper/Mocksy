@@ -126,7 +126,7 @@ export async function exportWebpAnim(
   activeLayerId: string | null = scene.activeLayerId
 ) {
   try {
-    const webmBlob = await captureWebm(scene, scale, onStatus, onProgress, customSize, activeLayerId);
+    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no frames.");
       return;
@@ -186,7 +186,7 @@ export async function exportGif(
   activeLayerId: string | null = scene.activeLayerId
 ) {
   try {
-    const webmBlob = await captureWebm(scene, scale, onStatus, onProgress, customSize, activeLayerId);
+    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no frames.");
       return;

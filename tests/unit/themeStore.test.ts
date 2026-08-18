@@ -114,6 +114,20 @@ describe("themeStore", () => {
     expect(docRoot.classList.add).toHaveBeenCalledWith("light");
   });
 
+  it("setMode system registers the media query listener at runtime", () => {
+    useThemeStore.setState({ mode: "dark", resolvedTheme: "dark" });
+    useThemeStore.getState().setMode("system");
+    expect(mediaQuery.addEventListener).toHaveBeenCalledWith("change", expect.any(Function));
+  });
+
+  it("setMode away from system removes any prior media query listener", () => {
+    useThemeStore.setState({ mode: "system", resolvedTheme: "dark" });
+    useThemeStore.getState().setMode("system");
+    expect(mediaQuery.addEventListener).toHaveBeenCalled();
+    useThemeStore.getState().setMode("light");
+    expect(mediaQuery.removeEventListener).toHaveBeenCalled();
+  });
+
   it("initialize resolves system theme and applies it", () => {
     mediaQuery.matches = true;
     useThemeStore.setState({ mode: "system", resolvedTheme: "light" });

@@ -70,7 +70,10 @@ export function createAppearanceSlice(set: EditorStoreSetter): AppearanceSlice {
             ...s.scene,
             annotations: s.scene.annotations.map((a) => (a.id === id ? { ...a, ...patch } : a))
           },
-          "annotation"
+          // Key per-annotation so a quick drag of annotation A followed by a
+          // drag of annotation B does not collapse into one undo step (which
+          // would overwrite A's edit and undo both at once).
+          `annotation:${id}`
         )
       ),
     removeAnnotation: (id) =>

@@ -239,6 +239,13 @@ describe("normalizeScene", () => {
     expect(s.layers[1]!.mediaUrl).toBe("data:image/png;base64,x");
   });
 
+  it("keeps a cleared layer empty instead of resurrecting the demo", () => {
+    const s = normalizeScene({ layers: [{ mediaUrl: null, mediaType: "none" as const, mediaName: null }] });
+    expect(s.layers).toHaveLength(1);
+    expect(s.layers[0]!.mediaUrl).toBeNull();
+    expect(s.layers[0]!.mediaType).toBe("none");
+  });
+
   it("replaces null entries in annotations array with a default annotation", () => {
     const s = normalizeScene({ annotations: [null, { type: "arrow" }] });
     expect(s.annotations).toHaveLength(2);

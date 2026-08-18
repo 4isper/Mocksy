@@ -120,6 +120,23 @@ describe("projectsStore", () => {
     expect(stored.scene.frame).toBe("watch");
   });
 
+  it("deleting the active project does not overwrite the switched-to project on autosave", () => {
+    useProjectsStore.getState().hydrate();
+    const x = useProjectsStore.getState().activeProjectId!; // the legacy/demo project
+    const a = useProjectsStore.getState().createProject("A");
+    // Give X a distinct scene so a clobber from A's scene would be visible.
+    useProjectsStore.getState().switchProject(x);
+    useEditorStore.getState().setFrame("watch");
+    useProjectsStore.getState().updateActiveProjectScene(useEditorStore.getState().scene);
+    // Switch to A (its default scene), then delete the active project A.
+    useProjectsStore.getState().switchProject(a);
+    useProjectsStore.getState().deleteProject(a);
+    // Autosave must write the now-active project's (X's) scene, not A's.
+    useProjectsStore.getState().updateActiveProjectScene(useEditorStore.getState().scene);
+    const storedX = useProjectsStore.getState().projects.find((p) => p.id === x)!;
+    expect(storedX.scene.frame).toBe("watch");
+  });
+
   it("persists the project list to localStorage on every mutation", () => {
     useProjectsStore.getState().hydrate();
     useProjectsStore.getState().createProject("Persisted");
