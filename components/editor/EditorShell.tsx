@@ -19,6 +19,7 @@ import { useEditorStore } from "@/lib/state/editorStore";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { initHistoryPersistence, restoreHistory } from "@/lib/state/historyStorage";
 import { useThemeStore } from "@/lib/state/themeStore";
+import type { EditorScene } from "@/lib/types/editor";
 
 const AUTOSAVE_DELAY = 500;
 
@@ -32,6 +33,8 @@ export function EditorShell() {
   const redo = useEditorStore((s) => s.redo);
   const canUndo = useEditorStore((s) => s.past.length > 0);
   const canRedo = useEditorStore((s) => s.future.length > 0);
+  const undoCount = useEditorStore((s) => s.past.length);
+  const redoCount = useEditorStore((s) => s.future.length);
   const exportScale = useEditorStore((s) => s.exportScale);
   const setExportScale = useEditorStore((s) => s.setExportScale);
   const customExportSize = useEditorStore((s) => s.customExportSize);
@@ -39,12 +42,16 @@ export function EditorShell() {
   const themeMode = useThemeStore((s) => s.mode);
   const setThemeMode = useThemeStore((s) => s.setMode);
   const saveError = useProjectsStore((s) => s.saveError);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState(true);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [resetNotice, setResetNotice] = useState(false);
+  const resetNoticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasOpenModalRef = useRef(false);
+  const savedSceneRef = useRef<EditorScene | null>(null);
+  const bootstrapped = useRef(false);
   useEffect(() => {
     hasOpenModalRef.current = confirmResetOpen || exportOpen || shortcutsOpen || commandPaletteOpen;
   }, [confirmResetOpen, exportOpen, shortcutsOpen, commandPaletteOpen]);
@@ -106,19 +113,6 @@ export function EditorShell() {
   });
 
   useEffect(() => {
-    // Bootstrap from projects (URL share, localStorage, or a fresh demo). The
-    // restored scene is not a user edit, so don't push it onto the undo stack
-    // (also keeps StrictMode's double-mount from recording a duplicate entry).
-    const restored = useProjectsStore.getState().hydrate();
-    setScene(restored, false);
-    // Bring back the undo/redo stacks saved by the last session (also not an
-    // edit — it only fills `past`/`future`), then start watching for changes
-    // so every subsequent edit persists across reloads.
-    restoreHistory();
-    return initHistoryPersistence();
-  }, [setScene]);
-
-  useEffect(() => {
     // Preload the FFmpeg encoder in the background so the first video/GIF
     // export doesn't block on the 32MB WASM download + worker boot. Gated on
     // the first user interaction: keeps the initial page load light (and the
@@ -139,24 +133,46 @@ export function EditorShell() {
   }, []);
 
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const prevSceneRef = useRef(scene);
   useEffect(() => {
-    if (prevSceneRef.current !== scene) {
+    // Only a genuine user edit (a `scene` different from the last persisted
+    // baseline) should flip the indicator to "unsaved". The bootstrap restore
+    // swaps `scene` from the initial demo to the hydrated one; ignore that
+    // transient so we don't flicker a false "unsaved" on every load.
+    if (bootstrapped.current && savedSceneRef.current && savedSceneRef.current !== scene) {
       setSaved(false);
     }
-    prevSceneRef.current = scene;
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     autosaveTimer.current = setTimeout(() => {
       // Persist the current scene into the active project (which writes the
       // whole project list to localStorage). Dead blob: layers are handled by
       // the orphaned-blob subscription, so a refresh simply shows the demo.
       useProjectsStore.getState().updateActiveProjectScene({ ...scene, activeLayerId });
+      savedSceneRef.current = scene;
       setSaved(true);
     }, AUTOSAVE_DELAY);
     return () => {
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     };
   }, [scene, activeLayerId]);
+
+  useEffect(() => {
+    // Bootstrap from projects (URL share, localStorage, or a fresh demo). The
+    // restored scene is not a user edit, so don't push it onto the undo stack
+    // (also keeps StrictMode's double-mount from recording a duplicate entry).
+    const restored = useProjectsStore.getState().hydrate();
+    // The restored scene already matches what's persisted, so treat it as the
+    // saved baseline. `setScene` merges into a fresh object, so sync the ref
+    // to the live scene afterwards — the autosave watcher won't flag it
+    // "unsaved" on load.
+    setScene(restored, false);
+    savedSceneRef.current = useEditorStore.getState().scene;
+    bootstrapped.current = true;
+    // Bring back the undo/redo stacks saved by the last session (also not an
+    // edit — it only fills `past`/`future`), then start watching for changes
+    // so every subsequent edit persists across reloads.
+    restoreHistory();
+    return initHistoryPersistence();
+  }, [setScene]);
 
   const toastStatus = exportApi.copyStatus
     ? { msg: exportApi.copyStatus, type: "success" as const }
@@ -175,9 +191,16 @@ export function EditorShell() {
     }
   }, [toastStatus.msg]);
 
+  useEffect(() => () => {
+    if (resetNoticeTimer.current) clearTimeout(resetNoticeTimer.current);
+  }, []);
+
   const confirmReset = useCallback(() => {
     resetScene();
-    setSaved(false);
+    setSaved(true);
+    setResetNotice(true);
+    if (resetNoticeTimer.current) clearTimeout(resetNoticeTimer.current);
+    resetNoticeTimer.current = setTimeout(() => setResetNotice(false), 6000);
     setConfirmResetOpen(false);
   }, [resetScene]);
 
@@ -207,9 +230,11 @@ export function EditorShell() {
             <div className="toolbar-group">
               <button type="button" className="btn-tb btn-tb-icon" onClick={undo} disabled={!canUndo} title={t("editor.undoTitle")} aria-label={t("editor.undoTitle")}>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 3H2v2M2 5l2.5-2.5A4.5 4.5 0 1111.5 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                {undoCount > 0 ? <span style={{ fontSize: 9, lineHeight: 1, marginLeft: 1, opacity: 0.7 }}>{undoCount}</span> : null}
               </button>
               <button type="button" className="btn-tb btn-tb-icon" onClick={redo} disabled={!canRedo} title={t("editor.redoTitle")} aria-label={t("editor.redoTitle")}>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 3h2v2M12 5l-2.5-2.5A4.5 4.5 0 102.5 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                {redoCount > 0 ? <span style={{ fontSize: 9, lineHeight: 1, marginLeft: 1, opacity: 0.7 }}>{redoCount}</span> : null}
               </button>
             </div>
             <div className="toolbar-group">
@@ -232,6 +257,9 @@ export function EditorShell() {
                   <div style={{ width: `${exportApi.videoExportProgress}%` }} />
                 </div>
                 <span className="pct">{Math.round(exportApi.videoExportProgress)}%</span>
+                <button type="button" className="btn-tb btn-tb-icon" onClick={exportApi.cancelExport} title={t("editor.cancel")} aria-label={t("editor.cancel")}>
+                  <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                </button>
               </div>
             ) : null}
             {exportApi.gifExportStatus ? (
@@ -241,13 +269,33 @@ export function EditorShell() {
                   <div style={{ width: `${exportApi.gifExportProgress}%` }} />
                 </div>
                 <span className="pct">{Math.round(exportApi.gifExportProgress)}%</span>
+                <button type="button" className="btn-tb btn-tb-icon" onClick={exportApi.cancelExport} title={t("editor.cancel")} aria-label={t("editor.cancel")}>
+                  <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                </button>
               </div>
             ) : null}
 {toastStatus.msg ? (
                 <span className="toast-status" role={toastStatus.type === "error" ? "alert" : undefined} style={{ color: toastStatus.type === "error" ? "var(--danger)" : toastStatus.type === "success" ? "var(--success)" : "var(--text-secondary)", fontSize: 12, whiteSpace: "nowrap" }}>
                   {toastStatus.msg}
                 </span>
-              ) : null}
+               ) : null}
+            {resetNotice ? (
+              <span className="toast-status" role="status" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--text-secondary)", fontSize: 12, whiteSpace: "nowrap" }}>
+                {t("editor.resetDone")}
+                <button
+                  type="button"
+                  className="btn-tb btn-tb-icon"
+                  onClick={() => {
+                    undo();
+                    setResetNotice(false);
+                  }}
+                  title={t("editor.undoTitle")}
+                  aria-label={t("editor.undoTitle")}
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 3H2v2M2 5l2.5-2.5A4.5 4.5 0 1111.5 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </button>
+              </span>
+            ) : null}
             <span className="spacer" />
             <div className="toolbar-group">
               <div className="segmented" style={{ gap: 0 }} role="group" aria-label={t("editor.themeLabel")}>
@@ -284,9 +332,6 @@ export function EditorShell() {
               </div>
             </div>
             <div className="toolbar-group">
-              <button type="button" className="btn-tb btn-tb-icon" onClick={saveNow} title={t("editor.saveTitle")} aria-label={t("editor.saveTitle")}>
-                <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M11.5 5.5V12a.5.5 0 01-.5.5H3a.5.5 0 01-.5-.5V2A.5.5 0 013 1.5h4.5l4 4z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M4.5 9.5h5M4.5 11.5h5M4.5 7.5h5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
-              </button>
               <button type="button" className="btn-tb btn-tb-icon" onClick={exportApi.copyShareUrl} title={t("editor.shareTitle")} aria-label={t("editor.shareTitle")}>
                 <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M5.5 8.5l3-3M8 5.5l-1-1A2.5 2.5 0 119.5 3l.5.5M6 8.5l1 1A2.5 2.5 0 114.5 11l-.5-.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
@@ -338,6 +383,7 @@ export function EditorShell() {
         onExport={exportApi.handleExport}
         onCopy={exportApi.handleCopyFromDialog}
         busy={exportApi.isExporting}
+        onCancel={exportApi.cancelExport}
       />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <CommandPalette

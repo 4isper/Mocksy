@@ -68,4 +68,41 @@ describe("RightPanel", () => {
     const annoTab = screen.getByRole("tab", { name: /annotations/i });
     expect(annoTab.querySelector(".tab-badge")).toBeNull();
   });
+
+  it("wires tablist ARIA (controls/labelledby, roving tabindex)", () => {
+    render(<RightPanel />);
+    const layersTab = screen.getByRole("tab", { name: /layers/i });
+    expect(layersTab).toHaveAttribute("aria-controls", "right-panel-content");
+    expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", "right-tab-layers");
+    // Only the active tab is in the tab sequence.
+    expect(layersTab).toHaveAttribute("tabindex", "0");
+    expect(screen.getByRole("tab", { name: /templates/i })).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("navigates tabs with arrow keys and moves focus", async () => {
+    const user = userEvent.setup();
+    render(<RightPanel />);
+    const layersTab = screen.getByRole("tab", { name: /layers/i });
+    const annotationsTab = screen.getByRole("tab", { name: /annotations/i });
+    layersTab.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(annotationsTab).toHaveAttribute("aria-selected", "true");
+    expect(annotationsTab).toHaveFocus();
+    await user.keyboard("{ArrowLeft}");
+    expect(layersTab).toHaveAttribute("aria-selected", "true");
+    expect(layersTab).toHaveFocus();
+  });
+
+  it("jumps to ends with Home/End", async () => {
+    const user = userEvent.setup();
+    render(<RightPanel />);
+    const templatesTab = screen.getByRole("tab", { name: /templates/i });
+    const projectsTab = screen.getByRole("tab", { name: /projects/i });
+    const layersTab = screen.getByRole("tab", { name: /layers/i });
+    layersTab.focus();
+    await user.keyboard("{End}");
+    expect(projectsTab).toHaveAttribute("aria-selected", "true");
+    await user.keyboard("{Home}");
+    expect(templatesTab).toHaveAttribute("aria-selected", "true");
+  });
 });

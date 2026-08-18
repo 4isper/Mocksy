@@ -24,7 +24,8 @@ export function ExportDialog({
   onCustomSizeChange,
   onExport,
   onCopy,
-  busy
+  busy,
+  onCancel
 }: {
   open: boolean;
   onClose: () => void;
@@ -35,6 +36,7 @@ export function ExportDialog({
   onExport: (format: ExportFormat) => void;
   onCopy: () => void;
   busy?: boolean;
+  onCancel?: () => void;
 }) {
   const t = useTranslations();
   const IMAGE_FORMATS: { value: ExportFormat; label: string }[] = [
@@ -188,6 +190,11 @@ export function ExportDialog({
           >
             {t("export.exportAction", { format: formatLabel })}
           </button>
+          {busy && onCancel ? (
+            <button type="button" className="btn" onClick={onCancel}>
+              {t("editor.cancel")}
+            </button>
+          ) : null}
         </div>
       </div>
     </div>

@@ -29,7 +29,6 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const [dropError, setDropError] = useState<string | null>(null);
   const [canvasFileInputKey, setCanvasFileInputKey] = useState(0);
   const setMedia = useEditorStore((s) => s.setMedia);
-  const addLayer = useEditorStore((s) => s.addLayer);
   const setVideoDuration = useEditorStore((s) => s.setVideoDuration);
   const setVideoCurrentTime = useEditorStore((s) => s.setVideoCurrentTime);
   const isMediaLoading = useEditorStore((s) => s.isMediaLoading);
@@ -39,6 +38,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const updateAnnotation = useEditorStore((s) => s.updateAnnotation);
   const activeFrameInstanceId = useEditorStore((s) => s.activeFrameInstanceId);
   const selectFrameInstance = useEditorStore((s) => s.selectFrameInstance);
+  const selectLayer = useEditorStore((s) => s.selectLayer);
   const showGrid = useEditorStore((s) => s.showGrid);
   const gridDivisions = useEditorStore((s) => s.gridDivisions);
   const setShowGrid = useEditorStore((s) => s.setShowGrid);
@@ -152,8 +152,9 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
     try {
       const { url, mediaType, mediaName } = await loadMediaFromFile(file);
       setDropError(null);
-      // Drop adds a new layer on top of the stack.
-      addLayer(url, mediaType, mediaName);
+      // Dropping onto the canvas replaces the active layer's media, matching
+      // the Media panel upload — not a brand-new layer every time.
+      setMedia(url, mediaType, mediaName);
     } catch (err) {
       setDropError(err instanceof UnsupportedMediaError ? err.message : t("editor.uploadError"));
     }
@@ -165,7 +166,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
     try {
       const { url, mediaType, mediaName } = await loadMediaFromFile(file);
       setDropError(null);
-      addLayer(url, mediaType, mediaName);
+      setMedia(url, mediaType, mediaName);
     } catch (err) {
       setDropError(err instanceof UnsupportedMediaError ? err.message : t("editor.uploadError"));
     } finally {
@@ -190,9 +191,11 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         containerType: "size",
         ["--canvas-ar-w" as string]: arW,
         ["--canvas-ar-h" as string]: arH,
-        // Let the component own pinch gestures instead of the browser zooming
-        // the whole page when two fingers land on the preview.
-        touchAction: "none",
+        // Let the component own pinch/pan gestures on the frame itself (the
+        // frame element sets its own `touch-action: none`), but allow vertical
+        // page scrolling when the user drags on the canvas margins on mobile,
+        // so the editor page isn't trapped behind a scroll-blocking panel.
+        touchAction: "pan-y",
         outline: isDragging ? "2px dashed #00d9ff" : "2px dashed transparent"
       }}
       onDragEnter={(e) => {
@@ -289,8 +292,27 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             setVideoDuration={setVideoDuration}
             setVideoCurrentTime={setVideoCurrentTime}
             setMediaLoading={setMediaLoading}
+            selectLayer={selectLayer}
           />
          )}
+        {scene.frameInstances.length > 0 && scene.layers.every((l) => !l.mediaUrl) ? (
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              color: "var(--text-dim)",
+              fontSize: 14,
+              textAlign: "center",
+              pointerEvents: "none",
+              zIndex: 2
+            }}
+          >
+            <span>{t("editor.dropToStart")}</span>
+          </div>
+        ) : null}
         <div
           ref={scaleRef}
           style={{

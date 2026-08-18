@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { exportImage, copyPngToClipboard, exportWebp } from "@/lib/export/exportImage";
 import { exportPdf } from "@/lib/export/exportPdf";
@@ -27,6 +27,7 @@ export interface EditorExportApi {
   handleExportWebpAnim: () => void;
   handleExportGif: () => void;
   handleCopyPng: () => Promise<void>;
+  cancelExport: () => void;
 }
 
 const STATUS_CLEAR_DELAY = 800;
@@ -52,6 +53,15 @@ export function useEditorExport(
   const [gifExportProgress, setGifExportProgress] = useState(0);
   const [exportError, setExportError] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const cancelExport = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setVideoExportStatus(null);
+    setGifExportStatus(null);
+    setExportError(null);
+  }, []);
 
   const clearVideoStatus = useCallback(() => {
     setVideoExportStatus(null);
@@ -118,48 +128,60 @@ export function useEditorExport(
 
   const handleExportMp4 = useCallback(async () => {
     setExportError(null);
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
     try {
       setVideoExportStatus(t("export.exportingVideo"));
       setVideoExportProgress(0);
       const { exportVideo } = await import("@/lib/export/exportVideo");
-      await exportVideo(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError, customExportSize, activeLayerId);
+      await exportVideo(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError, customExportSize, activeLayerId, ctrl.signal);
     } finally {
+      if (abortRef.current === ctrl) abortRef.current = null;
       setTimeout(clearVideoStatus, STATUS_CLEAR_DELAY);
     }
   }, [scene, exportScale, customExportSize, t, clearVideoStatus, activeLayerId]);
 
   const handleExportWebm = useCallback(async () => {
     setExportError(null);
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
     try {
       setVideoExportStatus(t("export.exportingWebm"));
       setVideoExportProgress(0);
       const { exportWebm } = await import("@/lib/export/exportVideo");
-      await exportWebm(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError, customExportSize, activeLayerId);
+      await exportWebm(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError, customExportSize, activeLayerId, ctrl.signal);
     } finally {
+      if (abortRef.current === ctrl) abortRef.current = null;
       setTimeout(clearVideoStatus, STATUS_CLEAR_DELAY);
     }
   }, [scene, exportScale, customExportSize, t, clearVideoStatus, activeLayerId]);
 
   const handleExportWebpAnim = useCallback(async () => {
     setExportError(null);
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
     try {
       setVideoExportStatus(t("export.exportingWebpAnim"));
       setVideoExportProgress(0);
       const { exportWebpAnim } = await import("@/lib/export/exportVideo");
-      await exportWebpAnim(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError, customExportSize, activeLayerId);
+      await exportWebpAnim(scene, exportScale, setVideoExportStatus, setVideoExportProgress, setExportError, customExportSize, activeLayerId, ctrl.signal);
     } finally {
+      if (abortRef.current === ctrl) abortRef.current = null;
       setTimeout(clearVideoStatus, STATUS_CLEAR_DELAY);
     }
   }, [scene, exportScale, customExportSize, t, clearVideoStatus, activeLayerId]);
 
   const handleExportGif = useCallback(async () => {
     setExportError(null);
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
     try {
       setGifExportStatus(t("export.exportingGif"));
       setGifExportProgress(0);
       const { exportGif } = await import("@/lib/export/exportVideo");
-      await exportGif(scene, exportScale, setGifExportStatus, setGifExportProgress, setExportError, customExportSize, activeLayerId);
+      await exportGif(scene, exportScale, setGifExportStatus, setGifExportProgress, setExportError, customExportSize, activeLayerId, ctrl.signal);
     } finally {
+      if (abortRef.current === ctrl) abortRef.current = null;
       setTimeout(clearGifStatus, STATUS_CLEAR_DELAY);
     }
   }, [scene, exportScale, customExportSize, t, clearGifStatus, activeLayerId]);
@@ -244,6 +266,7 @@ export function useEditorExport(
     handleExportWebm,
     handleExportWebpAnim,
     handleExportGif,
-    handleCopyPng
+    handleCopyPng,
+    cancelExport
   };
 }

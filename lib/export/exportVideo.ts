@@ -39,15 +39,18 @@ export async function exportVideo(
   onProgress?: (progress: number) => void,
   onError?: (message: string) => void,
   customSize?: ExportSize | null,
-  activeLayerId: string | null = scene.activeLayerId
+  activeLayerId: string | null = scene.activeLayerId,
+  signal?: AbortSignal
 ) {
   try {
+    signal?.throwIfAborted();
     const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no frames.");
       return;
     }
 
+  signal?.throwIfAborted();
   onStatus?.("Encoding MP4…");
   onProgress?.(0);
   const exportQuality = (scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0])?.videoQuality ?? "medium";
@@ -57,6 +60,7 @@ export async function exportVideo(
   const outputName = "mocksy-export.mp4";
   await ffmpeg.writeFile(inputName, new Uint8Array(await webmBlob.arrayBuffer()));
   onProgress?.(50);
+  signal?.throwIfAborted();
   const code = await ffmpeg.exec([
     "-i", inputName,
     "-c:v", "mpeg4",
@@ -70,6 +74,7 @@ export async function exportVideo(
     throw new Error("Video encoding failed.");
   }
   onProgress?.(90);
+  signal?.throwIfAborted();
   const data = await ffmpeg.readFile(outputName);
   const bytes = typeof data === "string" ? new TextEncoder().encode(data) : new Uint8Array(data);
   if (bytes.length === 0) {
@@ -100,9 +105,11 @@ export async function exportWebm(
   onProgress?: (progress: number) => void,
   onError?: (message: string) => void,
   customSize?: ExportSize | null,
-  activeLayerId: string | null = scene.activeLayerId
+  activeLayerId: string | null = scene.activeLayerId,
+  signal?: AbortSignal
 ) {
   try {
+    signal?.throwIfAborted();
     const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no video frames.");
@@ -123,16 +130,19 @@ export async function exportWebpAnim(
   onProgress?: (progress: number) => void,
   onError?: (message: string) => void,
   customSize?: ExportSize | null,
-  activeLayerId: string | null = scene.activeLayerId
+  activeLayerId: string | null = scene.activeLayerId,
+  signal?: AbortSignal
 ) {
   try {
+    signal?.throwIfAborted();
     const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no frames.");
       return;
     }
 
-    onStatus?.("Encoding WebP…");
+  signal?.throwIfAborted();
+  onStatus?.("Encoding WebP…");
     onProgress?.(0);
     const exportQuality = activeLayerOf(scene, activeLayerId)?.videoQuality ?? "medium";
     const quality = QUALITY[exportQuality] ?? QUALITY.medium;
@@ -183,16 +193,19 @@ export async function exportGif(
   onProgress?: (progress: number) => void,
   onError?: (message: string) => void,
   customSize?: ExportSize | null,
-  activeLayerId: string | null = scene.activeLayerId
+  activeLayerId: string | null = scene.activeLayerId,
+  signal?: AbortSignal
 ) {
   try {
+    signal?.throwIfAborted();
     const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no frames.");
       return;
     }
 
-    onStatus?.("Encoding GIF…");
+  signal?.throwIfAborted();
+  onStatus?.("Encoding GIF…");
     onProgress?.(0);
     const exportQuality = (scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0])?.videoQuality ?? "medium";
     const quality = QUALITY[exportQuality] ?? QUALITY.medium;
@@ -210,6 +223,7 @@ export async function exportGif(
     const width = hasCustomSize
       ? Math.round(Math.min(customSize.width, 480 * quality.scale))
       : Math.round(480 * quality.scale * (typeof scale === "number" && scale > 0 ? scale / 2 : 1));
+    signal?.throwIfAborted();
     const code = await ffmpeg.exec([
       "-i", inputName,
       "-vf", `fps=15,scale=${width}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`,
@@ -220,6 +234,7 @@ export async function exportGif(
       throw new Error("GIF encoding failed.");
     }
     onProgress?.(90);
+    signal?.throwIfAborted();
     const data = await ffmpeg.readFile(outputName);
     const bytes = typeof data === "string" ? new TextEncoder().encode(data) : new Uint8Array(data);
     if (bytes.length === 0) {

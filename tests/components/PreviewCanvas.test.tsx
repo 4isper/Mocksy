@@ -145,7 +145,7 @@ describe("PreviewCanvas", () => {
 describe("PreviewCanvas media upload", () => {
   const file = new File(["fake"], "photo.png", { type: "image/png" });
 
-  it("adds a new layer on drop", async () => {
+  it("replaces the active layer media on drop", async () => {
     mockLoadFile.loadMediaFromFile.mockResolvedValue({
       url: "data:image/png;base64,abc",
       mediaType: "image",
@@ -153,28 +153,43 @@ describe("PreviewCanvas media upload", () => {
     });
     renderScene();
     const before = useEditorStore.getState().scene.layers.length;
+    const activeId = useEditorStore.getState().activeLayerId;
     fireEvent.drop(document.querySelector(".panel")!, { dataTransfer: { files: [file] } });
     await vi.waitFor(() => {
       const scene = useEditorStore.getState().scene;
-      expect(scene.layers.length).toBe(before + 1);
-      expect(scene.layers[scene.layers.length - 1]?.mediaUrl).toBe("data:image/png;base64,abc");
+      // Dropping onto the canvas replaces the active layer's media rather
+      // than stacking a brand-new layer every time.
+      expect(scene.layers.length).toBe(before);
+      const active = scene.layers.find((l) => l.id === activeId);
+      expect(active?.mediaUrl).toBe("data:image/png;base64,abc");
     });
   });
 
-  it("adds a new layer on file input change", async () => {
+  it("replaces the active layer media on file input change", async () => {
     mockLoadFile.loadMediaFromFile.mockResolvedValue({
       url: "data:image/png;base64,xyz",
       mediaType: "image",
       mediaName: "photo.png"
     });
     renderScene();
+    const activeId = useEditorStore.getState().activeLayerId;
     const input = document.querySelector('.preview-chip input[type="file"]') as HTMLInputElement;
     expect(input).not.toBeNull();
     fireEvent.change(input, { target: { files: [file] } });
     await vi.waitFor(() => {
       const scene = useEditorStore.getState().scene;
-      expect(scene.layers[scene.layers.length - 1]?.mediaUrl).toBe("data:image/png;base64,xyz");
+      const active = scene.layers.find((l) => l.id === activeId);
+      expect(active?.mediaUrl).toBe("data:image/png;base64,xyz");
     });
+  });
+
+  it("shows an empty-state hint in multi-frame mode with no media", () => {
+    renderScene({
+      layers: [{ ...initialScene.layers[0]!, id: "x", mediaUrl: null }],
+      frameInstances: [{ id: "i1", frame: "iphone", layerId: "x", x: 0.5, y: 0.5, scale: 0.5 }],
+      annotations: []
+    });
+    expect(screen.getByText("editor.dropToStart")).toBeInTheDocument();
   });
 
   it("shows a drop error for unsupported media", async () => {

@@ -23,6 +23,7 @@ interface SingleFrameViewProps {
   setVideoDuration: (duration: number, layerId?: string) => void;
   setVideoCurrentTime: (time: number) => void;
   setMediaLoading: (loading: boolean) => void;
+  selectLayer: (id: string) => void;
 }
 
 export function SingleFrameView({
@@ -40,7 +41,8 @@ export function SingleFrameView({
   isMediaLoading,
   setVideoDuration,
   setVideoCurrentTime,
-  setMediaLoading
+  setMediaLoading,
+  selectLayer
 }: SingleFrameViewProps) {
   const t = useTranslations();
   // Subscribe here (not in PreviewCanvas) so the whole preview tree — all
@@ -85,6 +87,8 @@ export function SingleFrameView({
                 playsInline
                 controls
                 crossOrigin="anonymous"
+                style={{ ...sceneCss.mediaStyle, objectFit: "contain", backgroundColor: "var(--panel-solid)" }}
+                onPointerDown={() => selectLayer(layer.id)}
                 onLoadedMetadata={(e) => {
                   const duration = e.currentTarget.duration || 0;
                   setVideoDuration(duration, layer.id);
@@ -100,7 +104,6 @@ export function SingleFrameView({
                   setMediaLoading(false);
                   analyzeMedia(ev.currentTarget);
                 }}
-                style={sceneCss.mediaStyle}
               />
             ) : (
               <img
@@ -108,6 +111,7 @@ export function SingleFrameView({
                 src={layer.mediaUrl}
                 alt={t("editor.uploadedMediaAlt")}
                 style={sceneCss.mediaStyle}
+                onPointerDown={() => selectLayer(layer.id)}
                 onLoad={(e) => {
                   setMediaLoading(false);
                   analyzeMedia(e.currentTarget);

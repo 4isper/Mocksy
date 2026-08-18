@@ -52,6 +52,7 @@ export function FrameInstanceGrid({
 }: FrameInstanceGridProps) {
   const t = useTranslations();
   const updateFrameInstance = useEditorStore((s) => s.updateFrameInstance);
+  const selectLayer = useEditorStore((s) => s.selectLayer);
   const dragState = useRef<DragState | null>(null);
   const resizeState = useRef<ResizeState | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -263,12 +264,13 @@ export function FrameInstanceGrid({
                     loop={layer.videoLoop}
                     autoPlay={layer.videoAutoplay}
                     crossOrigin="anonymous"
-                    style={instCss.mediaStyle}
+                    style={{ ...instCss.mediaStyle, objectFit: "contain", backgroundColor: "var(--panel-solid)" }}
+                    onPointerDown={() => selectLayer(layer.id)}
                     onLoadedData={(e) => analyzeMedia(e.currentTarget)}
                     onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration || 0, layer.id)}
                   />
                 ) : (
-                  <img src={layer.mediaUrl} alt={t("editor.uploadedMediaAlt")} style={instCss.mediaStyle} onLoad={(e) => analyzeMedia(e.currentTarget)} />
+                  <img src={layer.mediaUrl} alt={t("editor.uploadedMediaAlt")} style={instCss.mediaStyle} onLoad={(e) => analyzeMedia(e.currentTarget)} onPointerDown={() => selectLayer(layer.id)} />
                 )
               ) : null}
             </div>

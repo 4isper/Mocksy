@@ -73,12 +73,6 @@ describe("EditorShell", () => {
     expect(resetBtn).toBeTruthy();
   });
 
-  it("renders save button", () => {
-    render(<EditorShell />);
-    const saveBtn = screen.getAllByRole("button").find(b => b.title === "editor.saveTitle");
-    expect(saveBtn).toBeTruthy();
-  });
-
   it("renders share button", () => {
     render(<EditorShell />);
     const shareBtn = screen.getAllByRole("button").find(b => b.title === "editor.shareTitle");
@@ -100,8 +94,9 @@ describe("EditorShell", () => {
 
   it("renders saved/unsaved status indicator", () => {
     render(<EditorShell />);
-    // Initially unsaved (saved transitions to true after 500ms autosave debounce)
-    expect(screen.getByText("editor.unsaved")).toBeInTheDocument();
+    // A restored scene matches what's persisted, so it starts as "saved"
+    // rather than flickering a false "unsaved" on every load.
+    expect(screen.getByText("editor.saved")).toBeInTheDocument();
   });
 
   it("enables undo after reset creates history", async () => {

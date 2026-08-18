@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { TemplatesPanel } from "@/components/editor/TemplatesPanel";
@@ -51,6 +51,7 @@ export function RightPanel() {
   const layersCount = useEditorStore((s) => s.scene.layers.length);
   const annotationsCount = useEditorStore((s) => s.scene.annotations.length);
   const [animDir, setAnimDir] = useState<"left" | "right">("right");
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const switchTab = (id: TabId) => {
     const idx = tabs.findIndex((t) => t.id === id);
@@ -59,17 +60,37 @@ export function RightPanel() {
     setActiveTab(id);
   };
 
+  // ARIA tablist keyboard support: arrows move between tabs (roving
+  // tabindex), Home/End jump to the ends, and focus follows selection.
+  const onTabKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const idx = tabs.findIndex((tab) => tab.id === activeTab);
+    let nextIdx = idx;
+    if (e.key === "ArrowRight") nextIdx = (idx + 1) % tabs.length;
+    else if (e.key === "ArrowLeft") nextIdx = (idx - 1 + tabs.length) % tabs.length;
+    else if (e.key === "Home") nextIdx = 0;
+    else if (e.key === "End") nextIdx = tabs.length - 1;
+    else return;
+    e.preventDefault();
+    const next = tabs[nextIdx]!.id;
+    switchTab(next);
+    tabRefs.current[next]?.focus();
+  };
+
   return (
     <div className="right-panel panel" style={{ padding: 0, display: "grid", gridTemplateRows: "auto 1fr", gridTemplateColumns: "minmax(0, 1fr)", overflow: "hidden" }}>
-      <div className="right-panel-tabs" role="tablist">
+      <div className="right-panel-tabs" role="tablist" aria-label={t("editor.panels")} onKeyDown={onTabKeyDown}>
         {tabs.map((tab) => {
           const count = tab.id === "layers" ? layersCount : tab.id === "annotations" ? annotationsCount : null;
           return (
             <button
               key={tab.id}
+              ref={(el) => { tabRefs.current[tab.id] = el; }}
               type="button"
               role="tab"
+              id={`right-tab-${tab.id}`}
               aria-selected={activeTab === tab.id}
+              aria-controls="right-panel-content"
+              tabIndex={activeTab === tab.id ? 0 : -1}
               className={activeTab === tab.id ? "is-active" : ""}
               onClick={() => switchTab(tab.id)}
             >
@@ -82,7 +103,7 @@ export function RightPanel() {
           );
         })}
       </div>
-      <div className="right-panel-content" role="tabpanel" data-dir={animDir} key={activeTab}>
+      <div className="right-panel-content" id="right-panel-content" role="tabpanel" aria-labelledby={`right-tab-${activeTab}`} data-dir={animDir} key={activeTab}>
         {activeTab === "templates" && <TemplatesPanel />}
         {activeTab === "layers" && <LayersPanel />}
         {activeTab === "annotations" && <AnnotationsPanel />}

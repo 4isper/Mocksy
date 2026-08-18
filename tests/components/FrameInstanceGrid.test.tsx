@@ -340,4 +340,21 @@ describe("FrameInstanceGrid layer visibility", () => {
 
     expect(document.querySelector(".frame-instance")).toBeInTheDocument();
   });
+
+  it("selects the layer when video media is pressed", () => {
+    const videoLayer = makeLayer({
+      id: "vl1",
+      mediaUrl: "https://example.com/video.webm",
+      mediaType: "video",
+      hidden: false,
+    });
+    const scene = makeSceneWithInstances({
+      layers: [videoLayer],
+      activeLayerId: "vl1",
+    });
+    renderGrid(scene);
+    const video = document.querySelector("video") as HTMLVideoElement;
+    fireEvent.pointerDown(video);
+    expect(useEditorStore.getState().activeLayerId).toBe("vl1");
+  });
 });

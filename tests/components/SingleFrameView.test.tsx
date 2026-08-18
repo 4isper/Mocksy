@@ -51,6 +51,7 @@ const props = {
   setVideoDuration: vi.fn(),
   setVideoCurrentTime: vi.fn(),
   setMediaLoading: vi.fn(),
+  selectLayer: vi.fn(),
   videoCurrentTime: 0,
 };
 
@@ -167,6 +168,13 @@ describe("SingleFrameView video handlers", () => {
     fireEvent.loadedData(video);
     expect(props.setMediaLoading).toHaveBeenCalledWith(false);
     expect(props.analyzeMedia).toHaveBeenCalledWith(video);
+  });
+
+  it("selects the layer when media is pressed", () => {
+    const { container } = render(<SingleFrameView {...props} scene={{ ...initialScene, layers: [makeLayer()] }} />);
+    const img = container.querySelector("img[src*='test.jpg']") as HTMLImageElement;
+    fireEvent.pointerDown(img);
+    expect(props.selectLayer).toHaveBeenCalledWith("l1");
   });
 
   it("analyzes media when an image has loaded", () => {
