@@ -198,6 +198,8 @@ describe("AnnotationsPanel", () => {
     });
     render(<AnnotationsPanel />);
     await userEvent.click(screen.getByText("annotation.clearAll"));
+    expect(useEditorStore.getState().scene.annotations.length).toBe(2);
+    await userEvent.click(screen.getByText("annotation.clearAllConfirm_confirm"));
     expect(useEditorStore.getState().scene.annotations.length).toBe(0);
   });
 });

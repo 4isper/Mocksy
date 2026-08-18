@@ -77,6 +77,7 @@ export function useEditorExport(
     try {
       const url = sceneToShareUrl({ ...scene, activeLayerId });
       await navigator.clipboard.writeText(url);
+      setCopyStatus(t("editor.shareLinkCopied"));
     } catch (err) {
       if (err instanceof ShareUrlTooLarge) {
         setExportError(t("errors.shareUrlTooLarge"));
@@ -188,7 +189,11 @@ export function useEditorExport(
 
   const handleExport = useCallback(
     (format: ExportFormat) => {
-      onExportDialogClose();
+      // Raster/image exports are synchronous downloads, so close the dialog
+      // immediately. Video exports show live progress with a cancel button,
+      // so keep the dialog open and let the toolbar/timer close it.
+      const isVideo = format === "mp4" || format === "webm" || format === "gif" || format === "webpAnim";
+      if (!isVideo) onExportDialogClose();
       switch (format) {
         case "png":
           handleExportPng();
@@ -198,9 +203,11 @@ export function useEditorExport(
           break;
         case "svg":
           void handleExportSvg();
+          onExportDialogClose();
           break;
         case "html":
           void handleExportHtml();
+          onExportDialogClose();
           break;
         case "pdf":
           handleExportPdf();

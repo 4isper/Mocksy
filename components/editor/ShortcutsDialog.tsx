@@ -48,7 +48,10 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
     },
     {
       title: t("shortcuts.scene"),
-      items: [{ keys: ["R"], label: t("shortcuts.reset") }]
+      items: [
+        { keys: ["R"], label: t("shortcuts.reset") },
+        { keys: ["↑", "↓", "←", "→"], label: t("shortcuts.nudgeFrame") }
+      ]
     }
   ];
 

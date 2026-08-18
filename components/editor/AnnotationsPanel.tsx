@@ -1,7 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { useEditorStore } from "@/lib/state/editorStore";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import type { AnnotationType } from "@/lib/types/editor";
 
 export function AnnotationsPanel() {
@@ -19,6 +21,8 @@ export function AnnotationsPanel() {
   const removeAnnotation = useEditorStore((s) => s.removeAnnotation);
   const selectAnnotation = useEditorStore((s) => s.selectAnnotation);
   const clearAnnotations = useEditorStore((s) => s.clearAnnotations);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const clearTrapRef = useFocusTrap(confirmClear);
 
   const selected = scene.annotations.find((a) => a.id === selectedAnnotationId) ?? null;
 
@@ -251,9 +255,40 @@ export function AnnotationsPanel() {
       ) : null}
 
       {scene.annotations.length > 0 ? (
-        <button type="button" className="btn btn-sm" onClick={clearAnnotations}>
+        <button type="button" className="btn btn-sm" onClick={() => setConfirmClear(true)}>
           {t("annotation.clearAll")}
         </button>
+      ) : null}
+      {confirmClear ? (
+        <div className="modal-backdrop" role="presentation" onClick={() => setConfirmClear(false)}>
+          <div
+            className="modal"
+            ref={clearTrapRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="clear-anno-title"
+            aria-describedby="clear-anno-desc"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="clear-anno-title">{t("annotation.clearAllConfirm_title")}</h3>
+            <p id="clear-anno-desc">{t("annotation.clearAllConfirm_message")}</p>
+            <div className="modal-actions">
+              <button type="button" className="btn" onClick={() => setConfirmClear(false)} autoFocus>
+                {t("annotation.clearAllConfirm_cancel")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  clearAnnotations();
+                  setConfirmClear(false);
+                }}
+              >
+                {t("annotation.clearAllConfirm_confirm")}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
   );

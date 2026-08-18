@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { useProjectsStore } from "@/lib/state/projectsStore";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { exportProjectToFile, importProjectFromFile } from "@/lib/state/projectFile";
 
 export function ProjectsPanel() {
@@ -41,6 +42,8 @@ export function ProjectsPanel() {
   const [draftName, setDraftName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [showTrash, setShowTrash] = useState(false);
+  const [confirmEmptyTrash, setConfirmEmptyTrash] = useState(false);
+  const emptyTrashTrapRef = useFocusTrap(confirmEmptyTrash);
 
   const activeProjects = projects.filter((p) => p.deletedAt == null);
   const trashedProjects = projects.filter((p) => p.deletedAt != null);
@@ -264,10 +267,41 @@ export function ProjectsPanel() {
             type="button"
             className="btn"
             style={{ width: "100%", fontSize: 12, padding: "7px 10px", marginTop: 8, color: "var(--danger)" }}
-            onClick={emptyTrash}
+            onClick={() => setConfirmEmptyTrash(true)}
           >
             {t("projects.emptyTrash")}
           </button>
+        </div>
+      ) : null}
+      {confirmEmptyTrash ? (
+        <div className="modal-backdrop" role="presentation" onClick={() => setConfirmEmptyTrash(false)}>
+          <div
+            className="modal"
+            ref={emptyTrashTrapRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="empty-trash-title"
+            aria-describedby="empty-trash-desc"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="empty-trash-title">{t("projects.emptyTrashConfirm_title")}</h3>
+            <p id="empty-trash-desc">{t("projects.emptyTrashConfirm_message")}</p>
+            <div className="modal-actions">
+              <button type="button" className="btn" onClick={() => setConfirmEmptyTrash(false)} autoFocus>
+                {t("projects.emptyTrashConfirm_cancel")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  emptyTrash();
+                  setConfirmEmptyTrash(false);
+                }}
+              >
+                {t("projects.emptyTrashConfirm_confirm")}
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
       <p style={{ color: "var(--text-dim)", fontSize: 12, margin: 0 }}>

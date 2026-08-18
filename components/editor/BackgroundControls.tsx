@@ -1,6 +1,7 @@
 "use client";
 
 import type { ChangeEvent, CSSProperties } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Segmented } from "@/components/editor/Segmented";
 import { loadMediaFromFile } from "@/lib/media/loadFile";
@@ -95,16 +96,17 @@ export function BackgroundControls({
   const t = useTranslations();
 
   const hasPalette = scenePalette != null && scenePalette.length > 0;
+  const [error, setError] = useState<string | null>(null);
 
   const handleBgFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
       const { url } = await loadMediaFromFile(file);
+      setError(null);
       setBackgroundImage(url);
     } catch {
-      // Background images are images only; ignore unsupported files silently
-      // rather than surfacing the media-error banner here.
+      setError(t("editor.bgUploadError"));
     } finally {
       event.target.value = "";
     }
@@ -131,9 +133,10 @@ export function BackgroundControls({
         setBackgroundPattern(patternId ?? "dots");
         break;
       case "image":
-        // Without an uploaded image there is nothing to switch to; the upload
-        // trigger below stays available in every mode.
+        // Without an uploaded image there is nothing to switch to; surface a
+        // hint instead of silently doing nothing.
         if (backgroundImageUrl) setBackgroundImage(backgroundImageUrl);
+        else setError(t("editor.bgNeedImage"));
         break;
       case "transparent":
         setBackgroundTransparent();
@@ -306,6 +309,11 @@ export function BackgroundControls({
         {t("editor.uploadBgImage")}
         <input type="file" accept="image/*" onChange={handleBgFile} />
       </label>
+      {error ? (
+        <span role="alert" style={{ color: "var(--danger)", fontSize: 13 }}>
+          {error}
+        </span>
+      ) : null}
     </div>
   );
 }

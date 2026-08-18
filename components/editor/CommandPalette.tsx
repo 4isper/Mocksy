@@ -55,7 +55,7 @@ export function CommandPalette({
   const t = useTranslations();
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const trapRef = useFocusTrap(isOpen, false);
+  const trapRef = useFocusTrap(isOpen);
 
   const filteredCommands = useMemo(() => {
     return commands
@@ -157,10 +157,12 @@ export function CommandPalette({
             autoComplete="off"
             spellCheck={false}
             aria-label={t("commandPalette.searchLabel")}
+            aria-controls="command-palette-list"
+            aria-activedescendant={filteredCommands.length > 0 ? `command-option-${selectedIndex}` : undefined}
           />
           <kbd className="command-palette-kbd">⎋</kbd>
         </div>
-        <div className="command-palette-list" ref={listRef} role="listbox">
+        <div className="command-palette-list" ref={listRef} id="command-palette-list" role="listbox">
           {groups.length === 0 ? (
             <div className="command-palette-empty" role="option" aria-selected={false}>
               {t("commandPalette.noResults")}
@@ -179,6 +181,7 @@ export function CommandPalette({
                 {group.items.map(({ cmd, index }) => (
                   <button
                     key={cmd.id}
+                    id={`command-option-${index}`}
                     type="button"
                     className={`command-palette-item ${index === selectedIndex ? "selected" : ""}`}
                     data-index={index}

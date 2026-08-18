@@ -1,8 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { loadMediaFromFile } from "@/lib/media/loadFile";
+import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import type { ChangeEvent } from "react";
+import { useState } from "react";
 import type { WatermarkPosition } from "@/lib/types/editor";
 
 interface WatermarkControlsProps {
@@ -31,15 +32,17 @@ export function WatermarkControls({
   setWatermarkImage
 }: WatermarkControlsProps) {
   const t = useTranslations();
+  const [error, setError] = useState<string | null>(null);
 
   const handleLogoFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
       const { url } = await loadMediaFromFile(file);
+      setError(null);
       setWatermarkImage(url);
-    } catch {
-      // Logos are images only; ignore unsupported files silently.
+    } catch (err) {
+      setError(err instanceof UnsupportedMediaError ? err.message : t("editor.watermarkLogoError"));
     } finally {
       event.target.value = "";
     }
@@ -77,6 +80,11 @@ export function WatermarkControls({
             </button>
           ) : null}
         </div>
+        {error ? (
+          <span role="alert" style={{ color: "var(--danger)", fontSize: 13 }}>
+            {error}
+          </span>
+        ) : null}
       </label>
       <label className="field">
         <span>{t("editor.watermarkText")}</span>

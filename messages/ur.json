@@ -247,7 +247,11 @@
     "screenDateText": "Date",
     "resetDone": "Scene reset",
     "panels": "Editor panels",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "bgUploadError": "Could not load that image.",
+    "bgNeedImage": "Upload a background image first.",
+    "watermarkLogoError": "Could not load that logo image.",
+    "shareLinkCopied": "Share link copied!"
   },
   "frame": {
     "none": "کوئی نہیں",
@@ -313,7 +317,11 @@
     "bgColor": "پس منظر",
     "bgClear": "صاف کریں",
     "bgPadding": "پیڈنگ ({val}px)",
-    "bgRadius": "رداس ({val}px)"
+    "bgRadius": "رداس ({val}px)",
+    "clearAllConfirm_title": "Clear all annotations?",
+    "clearAllConfirm_message": "This removes every annotation from the scene. You can undo afterwards.",
+    "clearAllConfirm_cancel": "Cancel",
+    "clearAllConfirm_confirm": "Clear all"
   },
   "video": {
     "options": "ویڈیو اختیارات",
@@ -417,7 +425,8 @@
     "exportWebpAnim": "Export animated WebP",
     "exportSvg": "Export SVG",
     "exportHtml": "Export HTML",
-    "exportPdf": "Export PDF"
+    "exportPdf": "Export PDF",
+    "nudgeFrame": "Nudge selected frame"
   },
   "projects": {
     "title": "پروجیکٹس",
@@ -447,7 +456,11 @@
     "showTrash": "Trash ({n})",
     "hideTrash": "Hide trash",
     "restoreLabel": "Restore {name}",
-    "emptyTrash": "Empty trash"
+    "emptyTrash": "Empty trash",
+    "emptyTrashConfirm_title": "Empty trash?",
+    "emptyTrashConfirm_message": "This permanently deletes every trashed project. This cannot be undone.",
+    "emptyTrashConfirm_cancel": "Cancel",
+    "emptyTrashConfirm_confirm": "Empty trash"
   },
   "theme": {
     "light": "ہلکا",
