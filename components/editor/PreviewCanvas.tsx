@@ -61,6 +61,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
    const frameRef = useRef<HTMLDivElement>(null);
    const videoRef = useRef<HTMLVideoElement | null>(null);
    const canvasRef = useRef<HTMLDivElement>(null);
+   const scaleRef = useRef<HTMLDivElement>(null);
    const tiltPrefix = useMemo(() => tiltCss(scene), [scene.tiltX, scene.tiltY]); // eslint-disable-line react-hooks/exhaustive-deps
    useFrameTransform(frameRef, activeLayer, scene.animationDurationMs, tiltPrefix);
 
@@ -307,7 +308,26 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             setMediaLoading={setMediaLoading}
             videoCurrentTime={videoCurrentTime}
           />
-        )}
+         )}
+        <div
+          ref={scaleRef}
+          style={{
+            // Overlap the letterboxed frame box exactly (same sizing as
+            // #preview-canvas) so percentage-positioned annotations/watermark
+            // line up with the exported canvas, which also maps them to the
+            // full frame box. A plain `inset:0` overlay would span the whole
+            // container and drift whenever the frame is letterboxed.
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "min(100cqw, calc(100cqh * var(--canvas-ar-w) / var(--canvas-ar-h)))",
+            height: "min(100cqh, calc(100cqw * var(--canvas-ar-h) / var(--canvas-ar-w)))",
+            aspectRatio: scene.aspectRatio,
+            transformOrigin: "top left",
+            pointerEvents: "none"
+          }}
+        >
         {scene.annotations.map((a) => (
           <AnnotationItem
             key={a.id}
@@ -352,6 +372,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             </span>
           )
         )}
+        </div>
         <label className="preview-chip" style={{ top: 8 }}>
           <span>{t("editor.uploadMedia")}</span>
           <input type="file" accept="image/*,video/*" onChange={handleCanvasFile} key={canvasFileInputKey} style={{ display: "none" }} />

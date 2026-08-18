@@ -120,7 +120,11 @@ export function AnnotationItem({ annotation, selected, canvasRef, snapDivisions 
     touchAction: "none",
     outline: selected ? "1px solid var(--accent)" : "1px dashed transparent",
     outlineOffset: 2,
-    zIndex: 2
+    zIndex: 2,
+    pointerEvents: "auto",
+    // Position the inline-block text child (center/right) within the box to
+    // match the exported canvas, which centers/rights text inside the box.
+    textAlign: annotation.textAlign ?? "left"
   };
 
   let content: ReactNode = null;

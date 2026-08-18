@@ -302,10 +302,50 @@ describe("buildSvgMarkup", () => {
       watermarkHeight: 100
     });
     // height 20, width 40, anchored bottom-right with 16px inset.
-    expect(markup).toContain(`<image href="data:image/png;base64,AAAA" x="744" y="564" width="40" height="20"`);
-    expect(markup).not.toContain(">Mocksy</text>");
-  });
-});
+     expect(markup).toContain(`<image href="data:image/png;base64,AAAA" x="744" y="564" width="40" height="20"`);
+     expect(markup).not.toContain(">Mocksy</text>");
+   });
+
+   it("caps wide logos at 45% of the SVG width", () => {
+     const scene = sceneWith({
+       backgroundMode: "transparent",
+       watermarkEnabled: true,
+       watermarkText: "Mocksy",
+       watermarkImageUrl: "data:image/png;base64,AAAA",
+       watermarkSize: 20
+     });
+     const markup = buildSvgMarkup(scene, {
+       width: 800,
+       height: 600,
+       backgroundHref: null,
+       groups: [],
+       watermarkHref: "data:image/png;base64,AAAA",
+       watermarkWidth: 800,
+       watermarkHeight: 40
+     });
+     // aspect = 20, drawW = 20*20 = 400, capped at 45% of 800 = 360
+     expect(markup).toContain(`<image href="data:image/png;base64,AAAA" x="424" y="566" width="360" height="18"`);
+   });
+
+   it("renders text annotations with bold font weight by default", () => {
+     const scene = sceneWith({
+       backgroundMode: "transparent",
+       annotations: [{ id: "a1", type: "text", x: 0.1, y: 0.1, w: 0.3, h: 0, text: "Hi", color: "#fff", strokeWidth: 0, fontSize: 16 }]
+     });
+     const markup = buildSvgMarkup(scene, { width: 800, height: 600, backgroundHref: null, groups: [] });
+     expect(markup).toContain('font-weight="bold"');
+   });
+
+   it("renders a background box behind text annotations when bgColor is set", () => {
+     const scene = sceneWith({
+       backgroundMode: "transparent",
+       annotations: [{ id: "a1", type: "text", x: 0.1, y: 0.1, w: 0.3, h: 0, text: "Hi", color: "#fff", strokeWidth: 0, fontSize: 16, bgColor: "rgba(0,0,0,0.5)", bgPadding: 4, bgRadius: 2 }]
+     });
+     const markup = buildSvgMarkup(scene, { width: 800, height: 600, backgroundHref: null, groups: [] });
+     expect(markup).toContain('<rect');
+     expect(markup).toContain('fill="rgba(0,0,0,0.5)"');
+   });
+ });
 
 describe("mediaToDataUrl", () => {
   it("passes data URLs through unchanged with their intrinsic size", async () => {

@@ -954,14 +954,14 @@ describe("drawWatermark", () => {
     expect(ctx.fillText).not.toHaveBeenCalled();
   });
 
-  it("caps wide logos at 40% of the canvas width", async () => {
-    const { drawWatermark } = await import("@/lib/render/canvasDrawing");
-    const ctx = mockCtx();
-    const logo = { naturalWidth: 400, naturalHeight: 40 } as unknown as HTMLImageElement;
-    drawWatermark(ctx, { watermarkEnabled: true, watermarkImageUrl: "data:image/png;base64,x", watermarkSize: 16 } as any, 200, 200, 1, logo);
-    const [,, , dw] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0]! as [unknown, number, number, number, number];
-    expect(dw).toBe(80); // 40% of 200
-  });
+   it("caps wide logos at 45% of the canvas width", async () => {
+     const { drawWatermark } = await import("@/lib/render/canvasDrawing");
+     const ctx = mockCtx();
+     const logo = { naturalWidth: 400, naturalHeight: 40 } as unknown as HTMLImageElement;
+     drawWatermark(ctx, { watermarkEnabled: true, watermarkImageUrl: "data:image/png;base64,x", watermarkSize: 16 } as any, 200, 200, 1, logo);
+     const [,, , dw] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0]! as [unknown, number, number, number, number];
+     expect(dw).toBe(90); // 45% of 200
+   });
 
   it("draws watermark in multi-frame mode", async () => {
     const { renderMockupToCanvas } = await import("@/lib/render/renderMockup");

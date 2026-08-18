@@ -60,6 +60,14 @@ describe("projectPoint", () => {
     const p = projectPoint(100, 0, 25, 0, TILT_PERSPECTIVE);
     expect(p.x).toBeGreaterThan(0);
   });
+
+  it("applies rotateX then rotateY to match the CSS transform order", () => {
+    // CSS `rotateY(20deg) rotateX(15deg)` applies the rightmost function
+    // (rotateX) first, so the projection must not be a plain rotateY-then-rotateX.
+    const p = projectPoint(100, 100, 20, 15, 1000);
+    expect(p.x).toBeCloseTo(101.815, 2);
+    expect(p.y).toBeCloseTo(95.647, 2);
+  });
 });
 
 describe("projectTiltedRect", () => {
@@ -71,12 +79,13 @@ describe("projectTiltedRect", () => {
   });
 
   it("grows the near (viewer-facing) edge under perspective", () => {
-    // rotateY by +20° swings the right edge toward the viewer, so it projects
+    // rotateY by +20° swings the left edge toward the viewer (matching CSS
+    // rotateY(θ): positive θ brings the -x side forward), so it projects
     // larger than the far edge.
     const q = projectTiltedRect(rect, 20, 0, 1000);
     const leftHeight = q.bl.y - q.tl.y;
     const rightHeight = q.br.y - q.tr.y;
-    expect(rightHeight).toBeGreaterThan(leftHeight);
+    expect(leftHeight).toBeGreaterThan(rightHeight);
   });
 
   it("shrinks the projected width when tilting around Y", () => {

@@ -42,8 +42,8 @@ export function hasTilt(scene: Pick<EditorScene, "tiltX" | "tiltY">): boolean {
 
 /**
  * CSS transform prefix producing the same 3D look as the canvas projection.
- * Order matches the canvas math: translate/scale already baked by the caller,
- * then rotateY (tiltX) first, rotateX (tiltY) second, then perspective.
+ * `projectPoint` mirrors this exact order: CSS post-multiplies the function
+ * list (rightmost `rotateX` applied first to the point, then `rotateY`).
  */
 export function tiltCss(scene: Pick<EditorScene, "tiltX" | "tiltY">): string {
    if (!hasTilt(scene)) return "";
@@ -53,13 +53,18 @@ export function tiltCss(scene: Pick<EditorScene, "tiltX" | "tiltY">): string {
 export function projectPoint(dx: number, dy: number, tiltX: number, tiltY: number, perspective: number): Point {
   const rotY = (tiltX * Math.PI) / 180;
   const rotX = (tiltY * Math.PI) / 180;
-  // rotateY (around vertical axis) first, then rotateX (around horizontal axis).
-  const x1 = dx * Math.cos(rotY);
-  const z1 = -dx * Math.sin(rotY);  // sign fixed to match CSS rotateY(θ): z' = -x·sinθ + z·cosθ
-  const y2 = dy * Math.cos(rotX) - z1 * Math.sin(rotX);
-  const z2 = dy * Math.sin(rotX) + z1 * Math.cos(rotX);
+  // Mirror the CSS transform `perspective() rotateY(tiltX) rotateX(tiltY)`.
+  // CSS post-multiplies the matrix list, so the rightmost function (rotateX)
+  // is applied to the point first, then rotateY — not the other way around.
+  // rotateX (around horizontal axis) first:
+  const xr = dx;
+  const yr = dy * Math.cos(rotX);
+  const zr = dy * Math.sin(rotX);
+  // rotateY (around vertical axis): matches CSS rotateY(θ): z' = -x·sinθ + z·cosθ
+  const x1 = xr * Math.cos(rotY) + zr * Math.sin(rotY);
+  const z2 = -xr * Math.sin(rotY) + zr * Math.cos(rotY);
   const scale = perspective / (perspective - z2);
-  return { x: x1 * scale, y: y2 * scale };
+  return { x: x1 * scale, y: yr * scale };
 }
 
 /**

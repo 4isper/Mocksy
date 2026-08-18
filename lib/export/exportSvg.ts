@@ -193,16 +193,27 @@ function annotationsMarkup(scene: EditorScene, width: number, height: number): s
     const bw = Math.abs(a.w) * width;
     const bh = Math.abs(a.h) * height;
     if (a.type === "text") {
-      const weight = a.fontWeight === "normal" ? "400" : "600";
+      const weight = a.fontWeight === "normal" ? "400" : "bold";
       const style = a.fontStyle === "italic" ? ' font-style="italic"' : "";
       const anchor = a.textAlign === "center" ? "middle" : a.textAlign === "right" ? "end" : "start";
-      const textX = anchor === "start" ? bx : anchor === "end" ? bx + bw : bx + bw / 2;
+       const textX = anchor === "start" ? bx : anchor === "end" ? bx + bw : bx + bw / 2;
        const lineHeight = a.fontSize * RENDER.lineHeightMultiplier;
-      const tspans = a.text
-        .split("\n")
-        .map((line, i) => `<tspan x="${num(textX)}" dy="${i === 0 ? 0 : num(lineHeight)}">${escapeXml(line)}</tspan>`)
-        .join("");
-      out += `<text x="${num(textX)}" y="${num(by)}" font-size="${num(a.fontSize)}" font-weight="${weight}" fill="${a.color}" font-family="${a.fontFamily ?? "Inter, system-ui, sans-serif"}" text-anchor="${anchor}" dominant-baseline="hanging"${style} filter="url(#anno-shadow)">${tspans}</text>`;
+       const tspans = a.text
+         .split("\n")
+         .map((line, i) => `<tspan x="${num(textX)}" dy="${i === 0 ? 0 : num(lineHeight)}">${escapeXml(line)}</tspan>`)
+         .join("");
+        let bg = "";
+        if (a.bgColor && a.text.trim()) {
+          const approxWidth = a.text.split("\n").reduce((max, l) => Math.max(max, l.length * a.fontSize * 0.6), 0);
+          const padding = a.bgPadding ?? 0;
+          const boxX = anchor === "middle" ? textX - approxWidth / 2 - padding : anchor === "end" ? textX - approxWidth - padding : textX - padding;
+          const boxY = by - padding;
+          const boxW = approxWidth + padding * 2;
+          const boxH = a.text.split("\n").length * lineHeight + padding * 2;
+          const radius = a.bgRadius ?? 0;
+          bg = `<rect x="${num(boxX)}" y="${num(boxY)}" width="${num(boxW)}" height="${num(boxH)}" rx="${num(radius)}" fill="${a.bgColor}"/>`;
+        }
+       out += `${bg}<text x="${num(textX)}" y="${num(by)}" font-size="${num(a.fontSize)}" font-weight="${weight}" fill="${a.color}" font-family="${a.fontFamily ?? "Inter, system-ui, sans-serif"}" text-anchor="${anchor}" dominant-baseline="hanging"${style} filter="url(#anno-shadow)">${tspans}</text>`;
     } else if (a.type === "rect") {
       out += `<rect x="${num(bx)}" y="${num(by)}" width="${num(bw)}" height="${num(bh)}" fill="none" stroke="${a.color}" stroke-width="${Math.max(1, a.strokeWidth)}"/>`;
     } else {
@@ -237,7 +248,7 @@ function watermarkMarkup(scene: EditorScene, opts: SvgExportOptions): string {
     const ih = opts.watermarkHeight ?? 1;
     const aspect = iw / ih;
     let drawW = scene.watermarkSize * aspect;
-    const maxW = width * 0.4;
+    const maxW = width * 0.45;
     if (drawW > maxW) drawW = maxW;
     const drawH = drawW / aspect;
     const x = onLeft ? inset : width - inset - drawW;

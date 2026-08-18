@@ -56,7 +56,7 @@ export function drawAnnotations(
     ctx.save();
     if (a.type === "text") {
       const fontSize = a.fontSize * dpiScale;
-      const weight = a.fontWeight === "normal" ? "400" : "600";
+       const weight = a.fontWeight === "normal" ? "400" : "bold";
       const style = a.fontStyle === "italic" ? "italic " : "";
       ctx.font = `${style}${weight} ${fontSize}px ${a.fontFamily ?? "Inter, system-ui, sans-serif"}`;
       ctx.textBaseline = "top";
@@ -71,7 +71,7 @@ export function drawAnnotations(
       if (a.bgColor && textWidth > 0) {
         const radius = (a.bgRadius ?? 0) * dpiScale;
         const boxX = align === "center" ? textX - textWidth / 2 - padding : align === "right" ? textX - textWidth - padding : textX - padding;
-        const boxY = by - padding;
+        const boxY = by;
         const boxW = textWidth + padding * 2;
         const boxH = textHeight + padding * 2;
         ctx.save();
@@ -85,16 +85,24 @@ export function drawAnnotations(
       ctx.shadowBlur = RENDER.annoShadowBlur * dpiScale;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = RENDER.annoShadowOffsetY * dpiScale;
-      lines.forEach((line, i) => ctx.fillText(line, textX, by + i * lineHeight));
+      // With a background, the preview insets the text by `bgPadding`, so the
+      // text starts at `by + padding`; keep the export in step.
+      const textTop = by + (a.bgColor ? padding : 0);
+      lines.forEach((line, i) => ctx.fillText(line, textX, textTop + i * lineHeight));
     } else if (a.type === "rect") {
       ctx.strokeStyle = a.color;
-      ctx.lineWidth = Math.max(1, a.strokeWidth * dpiScale);
-      ctx.strokeRect(bx, by, bw, bh);
+      const sw = Math.max(1, a.strokeWidth * dpiScale);
+      ctx.lineWidth = sw;
+      // Match the preview's `border-box`: the outer edge of the stroke sits on
+      // the box edge (CSS centers the border on the box edge), so inset by half
+      // the stroke width instead of stroking centered on the path.
+      ctx.strokeRect(bx + sw / 2, by + sw / 2, Math.max(0, bw - sw), Math.max(0, bh - sw));
     } else if (a.type === "circle") {
       ctx.strokeStyle = a.color;
-      ctx.lineWidth = Math.max(1, a.strokeWidth * dpiScale);
+      const sw = Math.max(1, a.strokeWidth * dpiScale);
+      ctx.lineWidth = sw;
       ctx.beginPath();
-      ctx.ellipse(bx + bw / 2, by + bh / 2, bw / 2, bh / 2, 0, 0, Math.PI * 2);
+      ctx.ellipse(bx + bw / 2, by + bh / 2, Math.max(0, bw / 2 - sw / 2), Math.max(0, bh / 2 - sw / 2), 0, 0, Math.PI * 2);
       ctx.stroke();
     } else {
       const startX = a.x * width;
@@ -148,8 +156,8 @@ export function drawWatermark(
     const ih = m.naturalHeight || m.height || 1;
     const aspect = iw / ih;
     let drawW = watermarkSize * aspect;
-    // Wide logos must not dominate the corner: cap at 40% of the canvas width.
-    const maxW = width * 0.4;
+    // Wide logos must not dominate the corner: cap at 45% of the canvas width.
+    const maxW = width * 0.45;
     if (drawW > maxW) drawW = maxW;
     const drawH = drawW / aspect;
     const imgX = onLeft ? inset : width - inset - drawW;
@@ -160,11 +168,11 @@ export function drawWatermark(
   }
 
   const textX = onLeft ? inset : width - inset;
-  const textY = onTop ? inset + watermarkSize : height - inset;
+  const textY = onTop ? inset : height - inset;
   ctx.fillStyle = "rgba(255,255,255,0.85)";
   ctx.font = `500 ${watermarkSize}px Inter, system-ui, sans-serif`;
   ctx.textAlign = onLeft ? "left" : "right";
-  ctx.textBaseline = onTop ? "top" : "alphabetic";
+  ctx.textBaseline = onTop ? "top" : "bottom";
   ctx.fillText(scene.watermarkText, textX, textY);
   ctx.restore();
 }

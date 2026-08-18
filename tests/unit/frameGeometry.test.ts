@@ -211,7 +211,7 @@ describe("computeFrameInstances", () => {
   it("applies zoom from transform to instance dimensions", () => {
     const s = scene({
       frameInstances: [
-        { id: "i1", frame: "iphone15", x: 0.5, y: 0.5, scale: 0.5, layerId: null }
+        { id: "i1", frame: "iphone15", x: 0.5, y: 0.5, scale: 0.5, layerId: "layer-test" }
       ]
     });
     const result = computeFrameInstances(s, 1200, 1200, 2, { zoom: 2, offsetX: 0, offsetY: 0 });
@@ -256,7 +256,7 @@ describe("computeFrameInstances", () => {
   it("translates instances by the transform offsets (preview scale × dpr)", () => {
     const s = scene({
       frameInstances: [
-        { id: "i1", frame: "iphone15", x: 0.5, y: 0.5, scale: 0.5, layerId: null }
+        { id: "i1", frame: "iphone15", x: 0.5, y: 0.5, scale: 0.5, layerId: "layer-test" }
       ]
     });
     const base = computeFrameInstances(s, 1200, 1200, 2);

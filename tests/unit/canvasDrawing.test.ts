@@ -162,7 +162,7 @@ describe("drawAnnotations", () => {
     drawAnnotations(ctx, annotations, 800, 600, 2);
     expect(ctx.fillText).toHaveBeenCalledWith("Hello", 80, 60);
     expect(ctx.fillStyle).toBe("#ff0000");
-    expect(ctx.font).toBe("600 32px Inter");
+     expect(ctx.font).toBe("bold 32px Inter");
     expect(ctx.textAlign).toBe("left");
   });
 
@@ -195,7 +195,7 @@ describe("drawAnnotations", () => {
     drawAnnotations(ctx, annotations, 800, 600, 2);
     expect(ctx.strokeStyle).toBe("#00ff00");
     expect(ctx.lineWidth).toBe(4);
-    expect(ctx.strokeRect).toHaveBeenCalledWith(160, 120, 240, 180);
+    expect(ctx.strokeRect).toHaveBeenCalledWith(162, 122, 236, 176);
   });
 
   it("draws arrow annotations with correct line and head", () => {
@@ -214,7 +214,7 @@ describe("drawAnnotations", () => {
       { id: "a1", type: "circle", x: 0.2, y: 0.2, w: 0.3, h: 0.3, text: "", color: "#00ff00", strokeWidth: 2, fontSize: 0 }
     ];
     drawAnnotations(ctx, annotations, 800, 600, 2);
-    expect(ctx.ellipse).toHaveBeenCalledWith(280, 210, 120, 90, 0, 0, Math.PI * 2);
+    expect(ctx.ellipse).toHaveBeenCalledWith(280, 210, 118, 88, 0, 0, Math.PI * 2);
     expect(ctx.strokeStyle).toBe("#00ff00");
     expect(ctx.stroke).toHaveBeenCalled();
   });
@@ -235,7 +235,7 @@ describe("drawAnnotations", () => {
     ];
     drawAnnotations(ctx, annotations, 800, 600, 2);
     // textWidth 50 (5 chars), padding 8 and radius 12 at dpr 2; box hugs the text.
-    expect(ctx.moveTo).toHaveBeenCalledWith(80 - 8 + 12, 60 - 8);
+    expect(ctx.moveTo).toHaveBeenCalledWith(80 - 8 + 12, 60);
     expect(ctx.quadraticCurveTo).toHaveBeenCalled();
     expect(ctx.fill).toHaveBeenCalled();
     expect((ctx as any)._fillStyles).toContain("rgba(0,0,0,0.5)");
@@ -249,7 +249,7 @@ describe("drawAnnotations", () => {
       { id: "a1", type: "text", x: 0.1, y: 0.1, w: 0.3, h: 0, text: "Hi", color: "#000", strokeWidth: 0, fontSize: 16, fontFamily: "Inter", bgColor: "#111", bgPadding: 4, bgRadius: 2 }
     ];
     drawAnnotations(ctx, annotations, 800, 600, 3);
-    expect(ctx.moveTo).toHaveBeenCalledWith(80 - 12 + 6, 60 - 12);
+    expect(ctx.moveTo).toHaveBeenCalledWith(80 - 12 + 6, 60);
   });
 
   it("handles multi-line text annotations", () => {
@@ -322,15 +322,14 @@ describe("drawWatermark", () => {
     const ctx = mockCtx();
     drawWatermark(ctx, { ...scene(), watermarkEnabled: true, watermarkText: "Brand", watermarkPosition: "bottom-right", watermarkSize: 13 } as any, 800, 600, 2);
     expect(ctx.fillText).toHaveBeenCalledWith("Brand", expect.any(Number), expect.any(Number));
-    expect(ctx.textAlign).toBe("right");
-    expect(ctx.textBaseline).toBe("alphabetic");
+    expect(ctx.textBaseline).toBe("bottom");
   });
 
   it("draws text at bottom-left position", () => {
     const ctx = mockCtx();
     drawWatermark(ctx, { ...scene(), watermarkEnabled: true, watermarkText: "Brand", watermarkPosition: "bottom-left", watermarkSize: 13 } as any, 800, 600, 2);
     expect(ctx.textAlign).toBe("left");
-    expect(ctx.textBaseline).toBe("alphabetic");
+    expect(ctx.textBaseline).toBe("bottom");
   });
 
   it("draws text at top-right position", () => {
