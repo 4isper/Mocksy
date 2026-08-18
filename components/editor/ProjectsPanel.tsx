@@ -146,7 +146,7 @@ export function ProjectsPanel() {
                       onBlur={commitRename}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") commitRename();
-                        if (e.key === "Escape") setEditingId(null);
+                        if (e.key === "Escape") commitRename();
                       }}
                       onClick={(e) => e.stopPropagation()}
                       style={{ width: "100%", background: "transparent", border: "none", color: "inherit", fontSize: "inherit" }}

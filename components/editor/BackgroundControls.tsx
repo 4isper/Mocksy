@@ -260,8 +260,11 @@ export function BackgroundControls({
             onClick={() => {
               if (!hasPalette) return;
               const [from, to] = pickGradientPair(scenePalette!);
+              // Cycle through a fixed set of angles so repeated clicks are
+              // predictable instead of jumping to a random angle each time.
               const angles = [0, 45, 90, 135, 180];
-              const angle = angles[Math.floor(Math.random() * angles.length)]!;
+              const currentIndex = angles.indexOf(gradientAngle);
+              const angle = angles[(currentIndex + 1) % angles.length]!;
               setBackgroundGradient(from, to, angle);
             }}
           >

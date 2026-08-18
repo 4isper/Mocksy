@@ -135,7 +135,7 @@ describe("ProjectsPanel", () => {
     expect(useProjectsStore.getState().projects[0]!.name).toBe("New Name");
   });
 
-  it("cancels renaming on Escape", async () => {
+  it("commits renaming on Escape", async () => {
     useProjectsStore.setState({ projects: [project("p1", "Keep Me")], activeProjectId: "p1" });
     render(<ProjectsPanel />);
     await userEvent.click(screen.getByLabelText("projects.renameLabel"));
@@ -144,7 +144,7 @@ describe("ProjectsPanel", () => {
     await userEvent.type(input, "Changed");
     await userEvent.keyboard("{Escape}");
     expect(document.querySelector(".project-rename")).toBeNull();
-    expect(useProjectsStore.getState().projects[0]!.name).toBe("Keep Me");
+    expect(useProjectsStore.getState().projects[0]!.name).toBe("Changed");
   });
 
   it("duplicates a project on button click", async () => {
