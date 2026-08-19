@@ -1,6 +1,10 @@
 "use client";
 
-import { FFmpeg } from "@ffmpeg/ffmpeg";
+// Type-only import: erased at compile time so the heavy `@ffmpeg/ffmpeg`
+// runtime is NOT pulled into the initial client bundle. The value is loaded
+// lazily via dynamic import inside getFfmpegInstance, keeping ffmpeg (and its
+// 32MB WASM worker) out of the page-load path until a video/GIF export runs.
+import type { FFmpeg } from "@ffmpeg/ffmpeg";
 
 let ffmpegSingleton: FFmpeg | null = null;
 let ffmpegLoadPromise: Promise<FFmpeg> | null = null;
@@ -18,6 +22,7 @@ export async function getFfmpegInstance(onStatus?: (message: string) => void) {
   // twice. On failure the promise is cleared so the next call retries.
   if (!ffmpegLoadPromise) {
     ffmpegLoadPromise = (async () => {
+      const { FFmpeg } = await import("@ffmpeg/ffmpeg");
       const ffmpeg = new FFmpeg();
       onStatus?.("Preparing encoder…");
       await ffmpeg.load({

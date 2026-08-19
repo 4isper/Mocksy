@@ -128,6 +128,29 @@ describe("themeStore", () => {
     expect(mediaQuery.removeEventListener).toHaveBeenCalled();
   });
 
+  it("setMode system-change handler live-updates resolvedTheme", () => {
+    useThemeStore.setState({ mode: "dark", resolvedTheme: "dark" });
+    useThemeStore.getState().setMode("system");
+    // The runtime switch into "system" registers its own change handler
+    // (distinct from initialize's), which must re-resolve on OS theme change.
+    const handler = (mediaQuery.addEventListener as any).mock.calls.at(-1)[1] as () => void;
+    mediaQuery.matches = true;
+    handler();
+    expect(useThemeStore.getState().resolvedTheme).toBe("dark");
+    expect(docRoot.classList.add).toHaveBeenCalledWith("dark");
+  });
+
+  it("setMode system-change handler ignores the event when mode left system", () => {
+    useThemeStore.setState({ mode: "system", resolvedTheme: "dark" });
+    useThemeStore.getState().setMode("system");
+    const handler = (mediaQuery.addEventListener as any).mock.calls.at(-1)[1] as () => void;
+    useThemeStore.setState({ mode: "light", resolvedTheme: "light" });
+    mediaQuery.matches = true;
+    handler();
+    // Still light — the handler bails out because mode is no longer "system".
+    expect(useThemeStore.getState().resolvedTheme).toBe("light");
+  });
+
   it("initialize resolves system theme and applies it", () => {
     mediaQuery.matches = true;
     useThemeStore.setState({ mode: "system", resolvedTheme: "light" });

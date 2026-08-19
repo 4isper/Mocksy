@@ -34,6 +34,13 @@ const ANNOTATION_TYPES: AnnotationType[] = ["text", "arrow", "rect", "circle"];
 const SCREEN_CHROME_STYLES: ScreenChromeStyle[] = ["lock", "home", "statusBar"];
 const SCREEN_CHROME_THEMES: ScreenChromeTheme[] = ["dark", "light"];
 
+// Caps on attacker-controlled collection sizes. A crafted share URL could
+// otherwise carry a million-item `layers`/`annotations` array and freeze the
+// tab during normalization — these bound that without affecting real scenes.
+const MAX_LAYERS = 200;
+const MAX_ANNOTATIONS = 500;
+const MAX_FRAME_INSTANCES = 100;
+
 /** Normalizes the on-screen decoration, falling back to defaults per flag. */
 export function normalizeScreenChrome(raw: unknown, fallback: ScreenChrome = initialScene.screen): ScreenChrome {
   if (!raw || typeof raw !== "object") return fallback;
@@ -184,7 +191,7 @@ export function normalizeScene(raw: unknown): EditorScene {
   const fallbackLayer = initialScene.layers[0];
   if (!fallbackLayer) return { ...initialScene };
   const legacyMedia = r.mediaUrl != null ? r : null;
-  const rawLayers = Array.isArray(r.layers) ? r.layers : legacyMedia ? [r] : [];
+  const rawLayers = Array.isArray(r.layers) ? r.layers.slice(0, MAX_LAYERS) : legacyMedia ? [r] : [];
   const layers = rawLayers.length > 0 ? rawLayers.map((l) => normalizeLayer(l, fallbackLayer)) : [{ ...fallbackLayer }];
 
   const fallbackFrame: FrameInstance = {
@@ -208,7 +215,7 @@ export function normalizeScene(raw: unknown): EditorScene {
     activeLayerId: typeof r.activeLayerId === "string" ? r.activeLayerId : layers[0]?.id ?? null,
     frame,
     frameInstances: Array.isArray(r.frameInstances) && r.frameInstances.length > 0
-      ? r.frameInstances.map((fi) => normalizeFrameInstance(fi, fallbackFrame))
+      ? r.frameInstances.slice(0, MAX_FRAME_INSTANCES).map((fi) => normalizeFrameInstance(fi, fallbackFrame))
       : [],
     customFrame,
     stylePreset: pick(r.stylePreset, STYLE_PRESETS, initialScene.stylePreset),
@@ -239,7 +246,7 @@ export function normalizeScene(raw: unknown): EditorScene {
     animationDurationMs: num(r.animationDurationMs, initialScene.animationDurationMs, 500, 20000),
     screen: normalizeScreenChrome(r.screen, initialScene.screen),
     annotations: Array.isArray(r.annotations)
-      ? r.annotations.map((a) =>
+      ? r.annotations.slice(0, MAX_ANNOTATIONS).map((a) =>
           normalizeAnnotation(a, {
             id: nextAnnotationId(),
             type: "rect",

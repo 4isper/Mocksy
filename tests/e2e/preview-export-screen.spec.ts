@@ -21,6 +21,7 @@ interface ScreenCase {
   name: string;
   frame: string;
   screen: Record<string, unknown>;
+  mediaUrl?: string;
   tiltX?: number;
   tiltY?: number;
 }
@@ -44,7 +45,9 @@ const cases: ScreenCase[] = [
   { name: "home screen (frame none)", frame: "none", screen: home },
   { name: "home screen (css iphone)", frame: "iphone", screen: home },
   { name: "home screen (overlay ipad)", frame: "ipad", screen: home },
-  { name: "home screen (overlay macbook)", frame: "macbook", screen: home }
+  { name: "home screen (overlay macbook)", frame: "macbook", screen: home },
+  { name: "lock screen (overlay iphone15, real photo)", frame: "iphone15", screen: lock, mediaUrl: "/test-photo.png" },
+  { name: "home screen (overlay ipad, real photo)", frame: "ipad", screen: home, mediaUrl: "/test-photo.png" }
 ];
 
 for (const c of cases) {
@@ -54,7 +57,7 @@ for (const c of cases) {
       aspectRatio: "9 / 16",
       backgroundMode: "solid",
       backgroundColor: "#15151c",
-      layers: [{ id: "l1", mediaUrl: SOLID_MEDIA, mediaType: "image" }],
+      layers: [{ id: "l1", mediaUrl: c.mediaUrl ?? SOLID_MEDIA, mediaType: "image" }],
       tiltX: c.tiltX ?? 0,
       tiltY: c.tiltY ?? 0,
       screen: c.screen

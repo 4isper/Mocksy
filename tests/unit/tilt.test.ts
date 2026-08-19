@@ -132,6 +132,105 @@ describe("drawTiltedQuad", () => {
     });
     expect(ctx.drawImage).not.toHaveBeenCalled();
   });
+
+  it("warps the source into a grid of tiles for a real quad", () => {
+    const calls: Record<string, number> = {};
+    const track = (name: string) => () => {
+      calls[name] = (calls[name] ?? 0) + 1;
+    };
+    const ctx = {
+      save: track("save"),
+      restore: track("restore"),
+      beginPath: track("beginPath"),
+      moveTo: track("moveTo"),
+      lineTo: track("lineTo"),
+      closePath: track("closePath"),
+      clip: track("clip"),
+      transform: track("transform"),
+      drawImage: track("drawImage")
+    } as unknown as CanvasRenderingContext2D;
+
+    const source = { width: 200, height: 100 } as unknown as HTMLCanvasElement;
+    const quad = {
+      tl: { x: 0, y: 0 },
+      tr: { x: 100, y: 0 },
+      bl: { x: 0, y: 100 },
+      br: { x: 100, y: 100 }
+    };
+
+    drawTiltedQuad(ctx, source, quad);
+
+    // Default TILT_SUBDIVISIONS = 20 → 20×20 = 400 tiles, each clipped +
+    // transformed + drawn, wrapped in save/restore.
+    expect(calls.transform).toBe(400);
+    expect(calls.drawImage).toBe(400);
+    expect(calls.clip).toBe(400);
+    expect(calls.save).toBe(400);
+    expect(calls.restore).toBe(400);
+  });
+
+  it("honors a custom subdivision count", () => {
+    const calls: Record<string, number> = {};
+    const track = (name: string) => () => {
+      calls[name] = (calls[name] ?? 0) + 1;
+    };
+    const ctx = {
+      save: track("save"),
+      restore: track("restore"),
+      beginPath: track("beginPath"),
+      moveTo: track("moveTo"),
+      lineTo: track("lineTo"),
+      closePath: track("closePath"),
+      clip: track("clip"),
+      transform: track("transform"),
+      drawImage: track("drawImage")
+    } as unknown as CanvasRenderingContext2D;
+
+    const source = { width: 50, height: 50 } as unknown as HTMLCanvasElement;
+    const quad = {
+      tl: { x: 0, y: 0 },
+      tr: { x: 50, y: 0 },
+      bl: { x: 0, y: 50 },
+      br: { x: 50, y: 50 }
+    };
+
+    drawTiltedQuad(ctx, source, quad, 4);
+    expect(calls.drawImage).toBe(16);
+  });
+
+  it("maps each tile transform to its destination quad", () => {
+    const transforms: number[][] = [];
+    const ctx = {
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      closePath: () => {},
+      clip: () => {},
+      transform: (...args: number[]) => transforms.push(args),
+      drawImage: () => {}
+    } as unknown as CanvasRenderingContext2D;
+
+    const source = { width: 100, height: 100 } as unknown as HTMLCanvasElement;
+    // Affine parallelogram: top edge spans (0,0)→(100,0), left edge (0,0)→(0,100).
+    const quad = {
+      tl: { x: 0, y: 0 },
+      tr: { x: 100, y: 0 },
+      bl: { x: 0, y: 100 },
+      br: { x: 100, y: 100 }
+    };
+    drawTiltedQuad(ctx, source, quad, 2);
+
+    // transform(a,b,c,d,e,f): a = (tr - tl).x / subW, e = tl.x of the tile.
+    // Tiles overlap by half a cell (EPS_U = 0.5 / subdivisions), so the second
+    // column starts at u0 = 0.5 - 0.25 = 0.25 → e = 25, not 50.
+    const first = transforms[0]!;
+    expect(first[0]).toBeCloseTo(1, 5); // a: horizontal scale (unit quad)
+    expect(first[4]).toBeCloseTo(0, 5); // e: top-left corner starts at x=0
+    const last = transforms[transforms.length - 1]!;
+    expect(last[4]).toBeCloseTo(25, 3); // last column overlaps: starts at x=25
+  });
 });
 
 describe("TILT_LIMIT", () => {

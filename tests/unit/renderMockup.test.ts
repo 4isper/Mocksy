@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { computeFrameBox, computeFrameInstances } from "@/lib/render/frameGeometry";
 import { renderMockupToCanvas } from "@/lib/render/renderMockup";
 import { getFrameSpec, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
@@ -1545,5 +1545,85 @@ describe("renderMockupToCanvas pattern edge cases", () => {
     renderMockupToCanvas(canvas, scn, null, undefined, undefined, 400, 300, 1);
     expect(strokeCalls).toBeGreaterThan(0);
     expect(fillStyles).toContain("#18181b");
+  });
+});
+
+describe("renderMockupToCanvas 3D tilt path", () => {
+  // `drawTiltedFrame` renders the flat frame into an offscreen canvas
+  // (`document.createElement("canvas")`) and then warps it, so the tilt path
+  // only runs when `document` is available. These tests stub it.
+  function permissiveCtx(track?: Record<string, number>) {
+    const gradientStub = { addColorStop: () => {} };
+    const base: Record<string, unknown> = {
+      createLinearGradient: () => gradientStub,
+      createRadialGradient: () => gradientStub,
+      createPattern: () => null,
+      measureText: () => ({ width: 0 }),
+      getImageData: () => ({ data: new Uint8ClampedArray(4) }),
+      canvas: { width: 200, height: 400 }
+    };
+    return new Proxy(base, {
+      get(target, prop: string) {
+        if (prop in target) return target[prop];
+        return (..._args: unknown[]) => {
+          if (track) track[prop] = (track[prop] ?? 0) + 1;
+        };
+      },
+      set(target, prop: string, value) {
+        target[prop] = value;
+        return true;
+      }
+    }) as unknown as CanvasRenderingContext2D;
+  }
+
+  function stubOffscreenCanvas() {
+    vi.stubGlobal("document", {
+      createElement: (tag: string) => {
+        if (tag === "canvas") {
+          const el: Record<string, unknown> = { width: 0, height: 0 };
+          el.getContext = () => permissiveCtx();
+          return el as unknown as HTMLCanvasElement;
+        }
+        return {} as unknown as HTMLElement;
+      }
+    });
+  }
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("warps the single frame through drawTiltedQuad when tilted", () => {
+    const calls: Record<string, number> = {};
+    const ctx = permissiveCtx(calls);
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    const media = { width: 100, height: 100 } as unknown as CanvasImageSource;
+
+    stubOffscreenCanvas();
+    const scn = { ...initialScene, frame: "iphone15" as const, tiltX: 12, tiltY: 8, layers: [] };
+    renderMockupToCanvas(canvas, scn, media, undefined, undefined, 200, 400, 2);
+
+    // The warp grid is TILT_SUBDIVISIONS² = 20×20 = 400 tiles.
+    expect(calls.transform).toBe(400);
+    expect(calls.drawImage).toBe(400);
+  });
+
+  it("warps each frame instance when the scene is tilted (multi-frame)", () => {
+    const calls: Record<string, number> = {};
+    const ctx = permissiveCtx(calls);
+    const canvas = { width: 1000, height: 800, getContext: () => ctx } as unknown as HTMLCanvasElement;
+
+    stubOffscreenCanvas();
+    const scn: EditorScene = {
+      ...initialScene,
+      tiltX: 10,
+      tiltY: -5,
+      frameInstances: [
+        { id: "f1", frame: "iphone15" as const, x: 0.5, y: 0.5, scale: 1, layerId: null },
+        { id: "f2", frame: "ipad" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }
+      ]
+    };
+    renderMockupToCanvas(canvas, scn, null, undefined, undefined, 200, 400, 2);
+
+    expect(calls.transform).toBe(800); // 2 frames × 400 tiles
+    expect(calls.drawImage).toBe(800);
   });
 });

@@ -337,4 +337,27 @@ describe("normalizeScene", () => {
     expect(s.screen.showClock).toBe(false);
     expect(s.screen.showHomeIndicator).toBe(false);
   });
+
+  it("caps oversized layers collection to avoid freezing on hostile payloads", () => {
+    const huge = { layers: Array.from({ length: 5000 }, (_, i) => ({ id: `l${i}`, mediaUrl: "x" })) };
+    const s = normalizeScene(huge);
+    expect(s.layers.length).toBe(200);
+  });
+
+  it("caps oversized annotations collection", () => {
+    const huge = { annotations: Array.from({ length: 5000 }, (_, i) => ({ id: `a${i}`, type: "text", x: 0, y: 0, w: 0.1, h: 0, text: "t", color: "#fff", fontSize: 24, strokeWidth: 0 })) };
+    const s = normalizeScene(huge);
+    expect(s.annotations.length).toBe(500);
+  });
+
+  it("caps oversized frame instances collection", () => {
+    const huge = { frameInstances: Array.from({ length: 5000 }, (_, i) => ({ id: `f${i}`, frame: "iphone" })) };
+    const s = normalizeScene(huge);
+    expect(s.frameInstances.length).toBe(100);
+  });
+
+  it("keeps all items when collections are within the cap", () => {
+    const s = normalizeScene({ layers: Array.from({ length: 5 }, (_, i) => ({ id: `l${i}` })) });
+    expect(s.layers.length).toBe(5);
+  });
 });
