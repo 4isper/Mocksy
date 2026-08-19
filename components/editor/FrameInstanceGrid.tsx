@@ -62,6 +62,65 @@ export function FrameInstanceGrid({
     return canvasRef.current?.getBoundingClientRect();
   }, [canvasRef]);
 
+  // ═══ Pan media inside a frame ═══════════════════════════════
+  // Dragging directly on the media (not the frame chrome) pans the media,
+  // mirroring the single-frame preview's drag-to-pan. We select the media's
+  // layer first so the per-layer offset setters target the right layer.
+  const panState = useRef<{ layerId: string; startX: number; startY: number; offX: number; offY: number } | null>(null);
+  const [panningId, setPanningId] = useState<string | null>(null);
+
+  const handleMediaPanDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>, instId: string) => {
+      const inst = scene.frameInstances.find((fi) => fi.id === instId);
+      if (!inst || !inst.layerId) return;
+      const layer = scene.layers.find((l) => l.id === inst.layerId);
+      if (!layer?.mediaUrl) return;
+      const target = e.target as HTMLElement;
+      if (target.closest("video") || target.closest("button") || target.closest("input")) {
+        // Selecting the layer still happens via the separate onPointerDown on
+        // the media element; here we just arm the pan.
+      }
+      selectLayer(inst.layerId);
+      panState.current = {
+        layerId: inst.layerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        offX: layer.mediaOffsetX,
+        offY: layer.mediaOffsetY
+      };
+      setPanningId(instId);
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    [scene.frameInstances, scene.layers, selectLayer]
+  );
+
+  const handleMediaPanMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>, instId: string) => {
+      const ps = panState.current;
+      const el = e.currentTarget as HTMLElement;
+      if (!ps || ps.layerId !== instId) return;
+      const w = el.offsetWidth || 1;
+      const h = el.offsetHeight || 1;
+      const nx = Math.max(-1, Math.min(1, ps.offX + ((e.clientX - ps.startX) / w) * 2));
+      const ny = Math.max(-1, Math.min(1, ps.offY + ((e.clientY - ps.startY) / h) * 2));
+      const st = useEditorStore.getState();
+      st.setMediaOffsetX(nx);
+      st.setMediaOffsetY(ny);
+    },
+    []
+  );
+
+  const handleMediaPanUp = useCallback((e: React.PointerEvent<HTMLDivElement>, instId: string) => {
+    if (panState.current?.layerId === instId) {
+      panState.current = null;
+      setPanningId((prev) => (prev === instId ? null : prev));
+      const el = e.currentTarget as HTMLElement;
+      if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+    }
+  }, []);
+
   // ═══ Move ═════════════════════════════════════════════
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>, instId: string) => {
@@ -263,6 +322,10 @@ export function FrameInstanceGrid({
                 position: "relative",
                 ...zoomStyle
               }}
+              onPointerDown={layer?.mediaUrl ? (e) => handleMediaPanDown(e, inst.id) : undefined}
+              onPointerMove={layer?.mediaUrl ? (e) => handleMediaPanMove(e, inst.id) : undefined}
+              onPointerUp={layer?.mediaUrl ? (e) => handleMediaPanUp(e, inst.id) : undefined}
+              onPointerCancel={layer?.mediaUrl ? (e) => handleMediaPanUp(e, inst.id) : undefined}
             >
               {instCss.screenChrome ? (
                 <div
@@ -284,13 +347,13 @@ export function FrameInstanceGrid({
                     loop={layer.videoLoop}
                     autoPlay={layer.videoAutoplay}
                     crossOrigin="anonymous"
-                    style={{ ...instCss.mediaStyle, objectFit: "contain", backgroundColor: "var(--panel-solid)" }}
+                    style={{ ...instCss.mediaStyle, objectFit: "contain", backgroundColor: "var(--panel-solid)", cursor: panningId === inst.id ? "grabbing" : "grab" }}
                     onPointerDown={() => selectLayer(layer.id)}
                     onLoadedData={(e) => analyzeMedia(e.currentTarget)}
                     onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration || 0, layer.id)}
                   />
                 ) : (
-                  <img src={layer.mediaUrl} alt={t("editor.uploadedMediaAlt")} style={instCss.mediaStyle} onLoad={(e) => analyzeMedia(e.currentTarget)} onPointerDown={() => selectLayer(layer.id)} />
+                  <img src={layer.mediaUrl} alt={t("editor.uploadedMediaAlt")} style={{ ...instCss.mediaStyle, cursor: panningId === inst.id ? "grabbing" : "grab" }} onLoad={(e) => analyzeMedia(e.currentTarget)} onPointerDown={() => selectLayer(layer.id)} />
                 )
               ) : null}
             </div>

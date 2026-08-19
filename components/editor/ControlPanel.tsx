@@ -11,6 +11,7 @@ import { MediaSection } from "@/components/editor/sections/MediaSection";
 import { FrameSection } from "@/components/editor/sections/FrameSection";
 import { PositionSection } from "@/components/editor/sections/PositionSection";
 import { FiltersSection } from "@/components/editor/sections/FiltersSection";
+import { AnimationSection } from "@/components/editor/sections/AnimationSection";
 
 export function ControlPanel() {
   const t = useTranslations();
@@ -58,6 +59,7 @@ export function ControlPanel() {
 
       <MediaSection />
       <FrameSection />
+      <AnimationSection />
       <PositionSection />
       <FiltersSection />
 

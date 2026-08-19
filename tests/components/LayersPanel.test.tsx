@@ -350,4 +350,65 @@ describe("LayersPanel", () => {
     expect(layer.mediaUrl).toBeNull();
     expect(layer.mediaType).toBe("none");
   });
+
+  it("renames a layer via double-click and Enter", async () => {
+    useEditorStore.setState({
+      scene: {
+        ...useEditorStore.getState().scene,
+        layers: [makeLayer("a", { mediaName: "Old name" })],
+        activeLayerId: "a",
+      },
+      activeLayerId: "a"
+    });
+    render(<LayersPanel />);
+    await userEvent.dblClick(screen.getByText("Old name"));
+    const input = screen.getByLabelText("editor.renameLayer") as HTMLInputElement;
+    expect(input).toBeInTheDocument();
+    fireEvent.change(input, { target: { value: "Renamed" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(useEditorStore.getState().scene.layers[0]!.mediaName).toBe("Renamed");
+  });
+
+  it("multi-selects and deletes several layers at once", async () => {
+    useEditorStore.setState({
+      scene: {
+        ...useEditorStore.getState().scene,
+        layers: [
+          makeLayer("a", { mediaName: "A" }),
+          makeLayer("b", { mediaName: "B" }),
+          makeLayer("c", { mediaName: "C" }),
+        ],
+        activeLayerId: "a",
+      },
+      activeLayerId: "a",
+      selectedLayerIds: ["a"],
+    });
+    const st = useEditorStore.getState();
+    st.toggleLayerSelected("b");
+    st.toggleLayerSelected("c");
+    expect(useEditorStore.getState().selectedLayerIds.sort()).toEqual(["a", "b", "c"]);
+    useEditorStore.getState().removeLayers(["a", "b"]);
+    // Two of three layers removed; one remains.
+    expect(useEditorStore.getState().scene.layers.length).toBe(1);
+  });
+
+  it("duplicates multiple selected layers", async () => {
+    useEditorStore.setState({
+      scene: {
+        ...useEditorStore.getState().scene,
+        layers: [
+          makeLayer("a", { mediaName: "A" }),
+          makeLayer("b", { mediaName: "B" }),
+        ],
+        activeLayerId: "a",
+      },
+      activeLayerId: "a",
+      selectedLayerIds: ["a", "b"],
+    });
+    useEditorStore.getState().duplicateLayers(["a", "b"]);
+    const layers = useEditorStore.getState().scene.layers;
+    expect(layers.length).toBe(4);
+    expect(layers.filter((l) => l.mediaName === "A").length).toBe(2);
+    expect(layers.filter((l) => l.mediaName === "B").length).toBe(2);
+  });
 });

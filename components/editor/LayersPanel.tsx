@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChangeEvent, DragEvent } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/lib/state/editorStore";
@@ -19,19 +19,35 @@ export function LayersPanel() {
   const t = useTranslations();
   const scene = useEditorStore((s) => s.scene);
   const activeLayerId = useEditorStore((s) => s.activeLayerId);
+  const selectedLayerIds = useEditorStore((s) => s.selectedLayerIds);
   const addLayer = useEditorStore((s) => s.addLayer);
   const removeLayer = useEditorStore((s) => s.removeLayer);
   const selectLayer = useEditorStore((s) => s.selectLayer);
+  const selectLayers = useEditorStore((s) => s.selectLayers);
+  const toggleLayerSelected = useEditorStore((s) => s.toggleLayerSelected);
+  const selectLayerRange = useEditorStore((s) => s.selectLayerRange);
   const reorderLayers = useEditorStore((s) => s.reorderLayers);
   const duplicateLayer = useEditorStore((s) => s.duplicateLayer);
+  const duplicateLayers = useEditorStore((s) => s.duplicateLayers);
   const toggleLayerHidden = useEditorStore((s) => s.toggleLayerHidden);
+  const toggleLayersHidden = useEditorStore((s) => s.toggleLayersHidden);
+  const removeLayers = useEditorStore((s) => s.removeLayers);
+  const renameLayer = useEditorStore((s) => s.renameLayer);
   const setMedia = useEditorStore((s) => s.setMedia);
   const isMediaLoading = useEditorStore((s) => s.isMediaLoading);
   const setMediaLoading = useEditorStore((s) => s.setMediaLoading);
+  const selectedSet = useMemo(() => new Set(selectedLayerIds), [selectedLayerIds]);
   const [error, setError] = useAutoDismissError();
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState("");
   const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
+
+  const commitRename = (id: string) => {
+    renameLayer(id, draftName.trim());
+    setEditingId(null);
+  };
 
   const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -139,6 +155,7 @@ export function LayersPanel() {
             const active = layer.id === activeLayerId;
             const label = layer.mediaName ?? (layer.mediaType === "video" ? t("editor.videoLabel") : t("editor.imageLabel"));
             const isDragging = dragId === layer.id;
+            const isSelected = selectedSet.has(layer.id);
             const isTarget = dropTarget?.id === layer.id;
             const dropIndicator = isTarget && !isDragging
               ? { boxShadow: dropTarget?.pos === "above" ? "0 -2px 0 0 var(--accent) inset" : "0 2px 0 0 var(--accent) inset" }
@@ -158,14 +175,22 @@ export function LayersPanel() {
                     gap: 5,
                     padding: "6px 8px",
                     borderRadius: 8,
-                    border: active ? "2px solid var(--accent)" : "1px solid var(--panel-border)",
-                    background: active ? "rgba(0,217,255,0.08)" : "transparent",
+                    border: active ? "2px solid var(--accent)" : isSelected ? "1px solid var(--accent)" : "1px solid var(--panel-border)",
+                    background: active ? "rgba(0,217,255,0.08)" : isSelected ? "rgba(0,217,255,0.04)" : "transparent",
                     cursor: isDragging ? "grabbing" : "grab",
                     opacity: isDragging ? 0.45 : layer.hidden ? 0.5 : 1,
                     minWidth: 0,
                     ...dropIndicator
                   }}
-                  onClick={() => selectLayer(layer.id)}
+                  onClick={(e) => {
+                    if (e.shiftKey) {
+                      selectLayerRange(layer.id, e.metaKey || e.ctrlKey);
+                    } else if (e.metaKey || e.ctrlKey) {
+                      toggleLayerSelected(layer.id);
+                    } else {
+                      selectLayer(layer.id);
+                    }
+                  }}
                 >
                   <span
                     aria-hidden="true"
@@ -206,15 +231,42 @@ export function LayersPanel() {
                     )}
                   </span>
                   <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>
-                    {label}
-                    {isVideoLayer(layer) ? <Video size={10} style={{ marginLeft: 4 }} aria-label={t("editor.videoLabel")} /> : null}
+                    {editingId === layer.id ? (
+                      <input
+                        type="text"
+                        value={draftName}
+                        aria-label={t("editor.renameLayer")}
+                        onChange={(e) => setDraftName(e.target.value)}
+                        onBlur={() => commitRename(layer.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") commitRename(layer.id);
+                          else if (e.key === "Escape") setEditingId(null);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        autoFocus
+                        style={{ width: "100%", fontSize: 12 }}
+                      />
+                    ) : (
+                      <span
+                        title={t("editor.renameHint")}
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
+                          setDraftName(layer.mediaName ?? label);
+                          setEditingId(layer.id);
+                        }}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 4, cursor: "text" }}
+                      >
+                        {label}
+                        {isVideoLayer(layer) ? <Video size={10} aria-label={t("editor.videoLabel")} /> : null}
+                      </span>
+                    )}
                   </span>
                   <button
                     type="button"
                     className="btn-icon"
                     aria-label={layer.hidden ? t("editor.showLayer") : t("editor.hideLayer")}
                     title={layer.hidden ? t("editor.showLayer") : t("editor.hideLayer")}
-                    onClick={(e) => { e.stopPropagation(); toggleLayerHidden(layer.id); }}
+                    onClick={(e) => { e.stopPropagation(); toggleLayersHidden(isSelected ? selectedLayerIds : [layer.id]); }}
                   >
                     {layer.hidden ? <EyeOff size={12} /> : <Eye size={12} />}
                   </button>
@@ -223,7 +275,7 @@ export function LayersPanel() {
                     className="btn-icon"
                     aria-label={t("editor.duplicateLayer")}
                     title={t("editor.duplicateLayer")}
-                    onClick={(e) => { e.stopPropagation(); duplicateLayer(layer.id); }}
+                    onClick={(e) => { e.stopPropagation(); duplicateLayers(isSelected ? selectedLayerIds : [layer.id]); }}
                   >
                     ⧉
                   </button>
@@ -253,15 +305,39 @@ export function LayersPanel() {
                     aria-label={t("editor.removeLayer", { label })}
                     data-tooltip={t("editor.removeLayer", { label })}
                     disabled={scene.layers.length <= 1}
-                    onClick={(e) => { e.stopPropagation(); removeLayer(layer.id); }}
+                    onClick={(e) => { e.stopPropagation(); removeLayers(isSelected ? selectedLayerIds : [layer.id]); }}
                   >
                     <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
                   </button>
             </li>
           );
         })}
+        {isMediaLoading ? (
+          <li className="layer-item" aria-busy="true" aria-label={t("editor.loadingMedia")} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 8px", borderRadius: 8, border: "1px solid var(--panel-border)" }}>
+            <span className="skeleton" style={{ flex: 1, height: 14, borderRadius: 6 }} />
+          </li>
+        ) : null}
         </ul>
       )}
+      {selectedLayerIds.length > 1 ? (
+        <div className="bulk-actions" style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+          <span style={{ fontSize: 12, color: "var(--text-dim)" }}>{t("editor.selectedCount", { count: selectedLayerIds.length })}</span>
+          <button type="button" className="btn btn-sm" onClick={() => toggleLayersHidden(selectedLayerIds)}>
+            {t("editor.toggleVisibility")}
+          </button>
+          <button type="button" className="btn btn-sm" onClick={() => duplicateLayers(selectedLayerIds)}>
+            {t("editor.duplicateLayer")}
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm"
+            disabled={scene.layers.length <= selectedLayerIds.length}
+            onClick={() => removeLayers(selectedLayerIds)}
+          >
+            {t("editor.deleteLayers")}
+          </button>
+        </div>
+      ) : null}
       {activeLayer?.mediaUrl ? (
         <button
           type="button"

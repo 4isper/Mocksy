@@ -34,6 +34,9 @@ export interface EditorStoreState {
    *  of `scene` so selecting doesn't churn undo history or serialize into share
    *  URLs. */
   activeFrameInstanceId: string | null;
+  /** Ids of all currently-selected layers for multi-select bulk operations.
+   *  Kept out of `scene` for the same reason as `activeLayerId`. */
+  selectedLayerIds: string[];
   /** Pixel multiplier used when exporting/copying PNG (1×/2×/4×). Kept out of
    *  `scene` so it doesn't churn undo history or serialize into share URLs. */
   exportScale: 1 | 2 | 4;
@@ -51,12 +54,18 @@ export interface EditorStoreState {
   lastHistoryAt: number;
   /** True while uploaded media is decoding (between setMedia and onLoad). */
   isMediaLoading: boolean;
+  /** Shared upload/validation error surfaced in a single place (the preview
+   *  overlay), regardless of whether the failure came from a drag-drop on the
+   *  canvas, the media section file input, or a paste. Null when no error. */
+  mediaUploadError: string | null;
   /** Dominant-color palette of the active layer's media, used to suggest a
    *  matching background. Kept out of `scene` so it doesn't churn history or
    *  get serialized into share URLs. Null until media has been analyzed. */
   scenePalette: string[] | null;
   setScene: (scene: Partial<EditorScene>, recordHistory?: boolean) => void;
   setMediaLoading: (loading: boolean) => void;
+  /** Sets/clears the shared media upload error. */
+  setMediaUploadError: (msg: string | null) => void;
   setScenePalette: (palette: string[] | null) => void;
   setExportScale: (scale: 1 | 2 | 4) => void;
   setCustomExportSize: (size: ExportSize | null) => void;
@@ -67,6 +76,9 @@ export interface EditorStoreState {
   redo: () => void;
   /** Replaces the active layer's media (or seeds the first layer). */
   setMedia: (mediaUrl: string | null, mediaType: MediaType, mediaName?: string | null) => void;
+  /** Replaces media on a specific layer id (used by the multi-frame preview,
+   *  where the visible frame isn't necessarily the globally-active layer). */
+  setMediaOnLayer: (layerId: string, mediaUrl: string | null, mediaType: MediaType, mediaName?: string | null) => void;
   addLayer: (mediaUrl: string, mediaType: MediaType, mediaName?: string | null) => void;
   /** Clones a layer (same media + per-layer settings) as a new top-of-stack
    *  layer with a fresh id. Shares the source's blob: URL, which the
@@ -77,10 +89,28 @@ export interface EditorStoreState {
   toggleLayerHidden: (id: string) => void;
   removeLayer: (id: string) => void;
   selectLayer: (id: string) => void;
+  /** Sets the full multi-select set (replacing the active layer). `ids` empty
+   *  clears the selection to just nothing. The first id becomes active. */
+  selectLayers: (ids: string[]) => void;
+  /** Toggles a single layer's membership in the current multi-selection without
+   *  discarding the rest; the toggled layer also becomes the active layer. */
+  toggleLayerSelected: (id: string) => void;
+  /** Selects a contiguous range from the current anchor (last selected) to `id`,
+   *  preserving additive behaviour when `additive` is set. */
+  selectLayerRange: (id: string, additive?: boolean) => void;
+  /** Clones every layer in `ids` (order preserved), appending them on top. */
+  duplicateLayers: (ids: string[]) => void;
+  /** Toggles visibility for every layer in `ids`. */
+  toggleLayersHidden: (ids: string[]) => void;
+  /** Removes every layer in `ids`; keeps at least one layer in the scene and
+   *  keeps the selection/active id valid afterwards. */
+  removeLayers: (ids: string[]) => void;
   /** Reorders layers. Pass `coalesce: true` for continuous gestures (drag) so
    *  all intermediate steps collapse into a single undo entry. */
   reorderLayers: (orderedIds: string[], coalesce?: boolean) => void;
   updateActiveLayer: (patch: Partial<MediaLayer>) => void;
+  /** Renames a layer's display label (its `mediaName`). */
+  renameLayer: (id: string, name: string) => void;
   setFrame: (frame: MockupFrame) => void;
   /** Stores a user-uploaded SVG skin and selects it as the active frame; passing
    *  null removes it (and falls back to the default frame when "custom" is

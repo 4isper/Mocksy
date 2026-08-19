@@ -176,6 +176,18 @@ select {
     min-height: 100dvh;
     overflow: visible;
   }
+  /* The preview column needs an explicit height when stacked: its inline
+     `1fr` row can't resolve against a content-sized grid track, so the canvas
+     would collapse to nothing on phones/tablets. */
+  .preview-column {
+    height: min(70dvh, 520px);
+  }
+  .right-panel {
+    height: 60dvh;
+  }
+  .control-panel {
+    max-height: 70dvh;
+  }
 }
 
 /* ---- Glass panels ---- */

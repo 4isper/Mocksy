@@ -7,21 +7,21 @@ import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { loadMediaFromFile, loadMediaFromUrl, UnsupportedMediaError, UnsupportedMediaUrlError } from "@/lib/media/loadFile";
 import { isVideoLayer } from "@/lib/render/mediaKind";
-import { useAutoDismissError } from "@/lib/hooks/useAutoDismissError";
 import { VideoOptions } from "@/components/editor/VideoOptions";
 import { Section } from "@/components/editor/Section";
 
 export function MediaSection() {
   const t = useTranslations();
-  const [mediaError, setMediaError] = useAutoDismissError();
   const [mediaUrlInput, setMediaUrlInput] = useState("");
   const [mediaUrlBusy, setMediaUrlBusy] = useState(false);
-  const { scene, activeLayerId, setMedia, setScenePalette } = useEditorStore(
+  const { scene, activeLayerId, setMedia, setScenePalette, mediaUploadError, setMediaUploadError } = useEditorStore(
     useShallow((s) => ({
       scene: s.scene,
       activeLayerId: s.activeLayerId,
       setMedia: s.setMedia,
-      setScenePalette: s.setScenePalette
+      setScenePalette: s.setScenePalette,
+      mediaUploadError: s.mediaUploadError,
+      setMediaUploadError: s.setMediaUploadError
     }))
   );
 
@@ -32,14 +32,14 @@ export function MediaSection() {
     if (!file) return;
     try {
       const { url, mediaType, mediaName } = await loadMediaFromFile(file);
-      setMediaError(null);
+      setMediaUploadError(null);
       // Drop any palette from the previous media; a fresh one is computed once
       // the new file decodes in the preview.
       setScenePalette(null);
       setMedia(url, mediaType, mediaName);
     } catch (err) {
-      if (err instanceof UnsupportedMediaError) setMediaError(err.message);
-      else setMediaError(t("editor.uploadError"));
+      if (err instanceof UnsupportedMediaError) setMediaUploadError(err.message);
+      else setMediaUploadError(t("editor.uploadError"));
     } finally {
       event.target.value = "";
     }
@@ -49,15 +49,15 @@ export function MediaSection() {
     const value = mediaUrlInput.trim();
     if (!value || mediaUrlBusy) return;
     setMediaUrlBusy(true);
-    setMediaError(null);
+    setMediaUploadError(null);
     try {
       const { url, mediaType, mediaName } = await loadMediaFromUrl(value);
       setScenePalette(null);
       setMedia(url, mediaType, mediaName);
       setMediaUrlInput("");
     } catch (err) {
-      if (err instanceof UnsupportedMediaUrlError) setMediaError(err.message);
-      else setMediaError(t("editor.uploadError"));
+      if (err instanceof UnsupportedMediaUrlError) setMediaUploadError(err.message);
+      else setMediaUploadError(t("editor.uploadError"));
     } finally {
       setMediaUrlBusy(false);
     }
@@ -108,9 +108,9 @@ export function MediaSection() {
             </button>
           </div>
         </div>
-        {mediaError ? (
+        {mediaUploadError ? (
           <span role="alert" style={{ color: "var(--danger)", fontSize: 13 }}>
-            {mediaError}
+            {mediaUploadError}
           </span>
         ) : null}
         {activeLayer && isVideoLayer(activeLayer) && <VideoOptions />}

@@ -209,11 +209,9 @@ export function useEditorExport(
           break;
         case "svg":
           void handleExportSvg();
-          onExportDialogClose();
           break;
         case "html":
           void handleExportHtml();
-          onExportDialogClose();
           break;
         case "pdf":
           handleExportPdf();

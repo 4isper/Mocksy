@@ -253,7 +253,13 @@
     "watermarkLogoError": "Could not load that logo image.",
     "shareLinkCopied": "Share link copied!",
     "exported": "Exported!",
-    "annotationAria": "Annotation. Arrow keys move, Alt+arrows resize, double-click to edit text."
+    "annotationAria": "Annotation. Arrow keys move, Alt+arrows resize, double-click to edit text.",
+    "animationLayerHint": "Applies to the selected layer: {layer}",
+    "renameHint": "Double-click to rename",
+    "renameLayer": "Rename layer",
+    "deleteLayers": "Delete layers",
+    "selectedCount": "{count} layers selected",
+    "toggleVisibility": "Toggle visibility"
   },
   "frame": {
     "none": "Geen",

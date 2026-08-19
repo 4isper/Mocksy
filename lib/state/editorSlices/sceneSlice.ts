@@ -3,6 +3,8 @@ import { buildFreshScene } from "@/lib/state/editorScene";
 import type { EditorScene } from "@/lib/types/editor";
 import type { EditorStoreSetter, EditorStoreState } from "../editorStoreTypes";
 
+let mediaErrorTimer: ReturnType<typeof setTimeout> | null = null;
+
 export type SceneSlice = Pick<
   EditorStoreState,
   | "setScene"
@@ -10,6 +12,7 @@ export type SceneSlice = Pick<
   | "undo"
   | "redo"
   | "setMediaLoading"
+  | "setMediaUploadError"
   | "setScenePalette"
   | "setExportScale"
   | "setCustomExportSize"
@@ -71,6 +74,18 @@ export function createSceneSlice(set: EditorStoreSetter): SceneSlice {
         };
       }),
     setMediaLoading: (loading) => set({ isMediaLoading: loading }),
+    setMediaUploadError: (msg) => {
+      // Auto-clear the shared error so it doesn't linger until the next action,
+      // matching the previous per-component auto-dismiss behaviour.
+      if (mediaErrorTimer) clearTimeout(mediaErrorTimer);
+      if (msg) {
+        mediaErrorTimer = setTimeout(() => {
+          mediaErrorTimer = null;
+          set({ mediaUploadError: null });
+        }, 4000);
+      }
+      set({ mediaUploadError: msg });
+    },
     setScenePalette: (palette) => set({ scenePalette: palette }),
     setExportScale: (exportScale) => set({ exportScale }),
     setCustomExportSize: (customExportSize) => set({ customExportSize }),

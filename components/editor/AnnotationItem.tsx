@@ -241,6 +241,7 @@ export function AnnotationItem({ annotation, selected, canvasRef, snapDivisions 
 
   return (
     <div
+      data-annotation
       tabIndex={0}
       role="group"
       aria-label={t("editor.annotationAria")}

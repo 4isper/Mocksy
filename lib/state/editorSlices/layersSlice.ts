@@ -11,13 +11,21 @@ import type { EditorStoreSetter, EditorStoreState } from "../editorStoreTypes";
 export type LayersSlice = Pick<
   EditorStoreState,
   | "setMedia"
+  | "setMediaOnLayer"
   | "addLayer"
   | "duplicateLayer"
   | "toggleLayerHidden"
   | "removeLayer"
   | "selectLayer"
+  | "selectLayers"
+  | "toggleLayerSelected"
+  | "selectLayerRange"
+  | "duplicateLayers"
+  | "toggleLayersHidden"
+  | "removeLayers"
   | "reorderLayers"
   | "updateActiveLayer"
+  | "renameLayer"
   | "setStylePreset"
   | "setAnimationPreset"
   | "setAnimationEasing"
@@ -75,6 +83,29 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
           isMediaLoading: mediaUrl != null
         };
       }),
+    setMediaOnLayer: (layerId, mediaUrl, mediaType, mediaName = null) =>
+      set((s) => {
+        const exists = s.scene.layers.some((l) => l.id === layerId);
+        if (!exists) return {};
+        const layers = s.scene.layers.map((l) =>
+          l.id === layerId
+            ? {
+                ...l,
+                mediaUrl,
+                mediaType,
+                mediaName,
+                videoDuration: 0,
+                videoTrimStart: 0,
+                videoTrimEnd: 0
+              }
+            : l
+        );
+        return {
+          ...pushHistory(s, { ...s.scene, layers }),
+          videoCurrentTime: 0,
+          isMediaLoading: mediaUrl != null
+        };
+      }),
     addLayer: (mediaUrl, mediaType, mediaName = null) =>
       set((s) => {
         const newLayer: MediaLayer = {
@@ -118,15 +149,77 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         if (s.scene.layers.length <= 1) return {};
         const layers = s.scene.layers.filter((l) => l.id !== id);
         const activeLayerId = s.activeLayerId === id ? layers[0]?.id ?? null : s.activeLayerId;
-        return { ...pushHistory(s, { ...s.scene, layers }), activeLayerId };
+        const selectedLayerIds = s.selectedLayerIds.filter((x) => x !== id);
+        return { ...pushHistory(s, { ...s.scene, layers }), activeLayerId, selectedLayerIds };
+      }),
+    duplicateLayers: (ids) =>
+      set((s) => {
+        if (ids.length === 0) return {};
+        const byId = new Map(s.scene.layers.map((l) => [l.id, l]));
+        const clones = ids
+          .map((id) => byId.get(id))
+          .filter((l): l is MediaLayer => Boolean(l))
+          .map((source) => ({ ...source, id: nextLayerId() }));
+        if (clones.length === 0) return {};
+        const layers = [...s.scene.layers, ...clones];
+        // Keep frame instances that referenced a duplicated layer pointing at
+        // the original, not its clone; clones start unreferenced. Select the
+        // first clone so the user sees the new layer.
+        return {
+          ...pushHistory(s, { ...s.scene, layers }),
+          activeLayerId: clones[0]!.id,
+          selectedLayerIds: [clones[0]!.id],
+          videoCurrentTime: 0,
+          isMediaLoading: false
+        };
+      }),
+    toggleLayersHidden: (ids) =>
+      set((s) => {
+        if (ids.length === 0) return {};
+        const idSet = new Set(ids);
+        const layers = s.scene.layers.map((l) => (idSet.has(l.id) ? { ...l, hidden: !l.hidden } : l));
+        return pushHistory(s, { ...s.scene, layers });
+      }),
+    removeLayers: (ids) =>
+      set((s) => {
+        const idSet = new Set(ids);
+        if (idSet.size === 0 || s.scene.layers.length <= idSet.size) return {};
+        const layers = s.scene.layers.filter((l) => !idSet.has(l.id));
+        const first = layers[0]?.id ?? null;
+        const activeLayerId = s.activeLayerId != null && idSet.has(s.activeLayerId) ? first : s.activeLayerId;
+        const selectedLayerIds = s.selectedLayerIds.filter((x) => !idSet.has(x));
+        return { ...pushHistory(s, { ...s.scene, layers }), activeLayerId, selectedLayerIds };
       }),
     selectLayer: (id) =>
       set((s) => {
         // Selecting lives in store-root state, never touching `scene` — a new
         // scene object would re-render every `scene` subscriber (and rebuild the
         // whole preview CSS) for a pure selection change.
-        if (s.activeLayerId === id) return {};
-        return { activeLayerId: id };
+        if (s.activeLayerId === id && s.selectedLayerIds.length === 1 && s.selectedLayerIds[0] === id) return {};
+        return { activeLayerId: id, selectedLayerIds: [id] };
+      }),
+    selectLayers: (ids) =>
+      set(() => {
+        if (ids.length === 0) return { activeLayerId: null, selectedLayerIds: [] };
+        return { activeLayerId: ids[0] ?? null, selectedLayerIds: [...ids] };
+      }),
+    toggleLayerSelected: (id) =>
+      set((s) => {
+        const exists = s.selectedLayerIds.includes(id);
+        const next = exists ? s.selectedLayerIds.filter((x) => x !== id) : [...s.selectedLayerIds, id];
+        return { activeLayerId: id, selectedLayerIds: next.length > 0 ? next : [id] };
+      }),
+    selectLayerRange: (id, additive = false) =>
+      set((s) => {
+        const ids = s.scene.layers.map((l) => l.id);
+        const anchor = s.selectedLayerIds[s.selectedLayerIds.length - 1] ?? id;
+        const a = ids.indexOf(anchor);
+        const b = ids.indexOf(id);
+        if (a < 0 || b < 0) return { activeLayerId: id, selectedLayerIds: [id] };
+        const [lo, hi] = a < b ? [a, b] : [b, a];
+        const range = ids.slice(lo, hi + 1);
+        const merged = additive ? Array.from(new Set([...s.selectedLayerIds, ...range])) : range;
+        return { activeLayerId: id, selectedLayerIds: merged };
       }),
     reorderLayers: (orderedIds, coalesce) =>
       set((s) => {
@@ -144,6 +237,12 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         if (!layer) return {};
         const layers = s.scene.layers.map((l) => (l.id === layer.id ? { ...l, ...patch } : l));
         return pushHistory(s, { ...s.scene, layers }, Object.keys(patch).join(","));
+      }),
+    renameLayer: (id, name) =>
+      set((s) => {
+        if (!s.scene.layers.some((l) => l.id === id)) return {};
+        const layers = s.scene.layers.map((l) => (l.id === id ? { ...l, mediaName: name || l.mediaName } : l));
+        return pushHistory(s, { ...s.scene, layers }, "rename");
       }),
     setStylePreset: (stylePreset) => set((s) => pushHistory(s, { ...s.scene, stylePreset })),
     setAnimationPreset: (animationPreset) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationPreset }, s.activeLayerId) }, "animation")),

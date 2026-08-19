@@ -132,28 +132,33 @@ export function EditorShell() {
     };
   }, []);
 
-  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    // Only a genuine user edit (a `scene` different from the last persisted
-    // baseline) should flip the indicator to "unsaved". The bootstrap restore
-    // swaps `scene` from the initial demo to the hydrated one; ignore that
-    // transient so we don't flicker a false "unsaved" on every load.
-    if (bootstrapped.current && savedSceneRef.current && savedSceneRef.current !== scene) {
-      setSaved(false);
-    }
+const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+const latestSceneRef = useRef(scene);
+useEffect(() => {
+  latestSceneRef.current = scene;
+  // Only a genuine user edit (a `scene` different from the last persisted
+  // baseline) should flip the indicator to "unsaved". The bootstrap restore
+  // swaps `scene` from the initial demo to the hydrated one; ignore that
+  // transient so we don't flicker a false "unsaved" on every load.
+  if (bootstrapped.current && savedSceneRef.current && savedSceneRef.current !== scene) {
+    setSaved(false);
+  }
+  if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+  autosaveTimer.current = setTimeout(() => {
+    // Persist the current scene into the active project (which writes the
+    // whole project list to localStorage). Dead blob: layers are handled by
+    // the orphaned-blob subscription, so a refresh simply shows the demo.
+    useProjectsStore.getState().updateActiveProjectScene({ ...scene, activeLayerId });
+    savedSceneRef.current = scene;
+    // Only surface "Saved" if no further edit arrived during the debounce
+    // window — otherwise the badge would flip Saved→Unsaved a tick later and
+    // visibly flicker after a fast burst of edits.
+    if (latestSceneRef.current === scene) setSaved(true);
+  }, AUTOSAVE_DELAY);
+  return () => {
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
-    autosaveTimer.current = setTimeout(() => {
-      // Persist the current scene into the active project (which writes the
-      // whole project list to localStorage). Dead blob: layers are handled by
-      // the orphaned-blob subscription, so a refresh simply shows the demo.
-      useProjectsStore.getState().updateActiveProjectScene({ ...scene, activeLayerId });
-      savedSceneRef.current = scene;
-      setSaved(true);
-    }, AUTOSAVE_DELAY);
-    return () => {
-      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
-    };
-  }, [scene, activeLayerId]);
+  };
+}, [scene, activeLayerId]);
 
   useEffect(() => {
     // Bootstrap from projects (URL share, localStorage, or a fresh demo). The
@@ -224,7 +229,7 @@ export function EditorShell() {
       </div>
       <div className="editor-grid">
         <ErrorBoundary message={t("errors.message")}><ControlPanel /></ErrorBoundary>
-        <section style={{ display: "grid", gridTemplateRows: "1fr auto", gap: 12, minHeight: 0, overflow: "hidden" }}>
+        <section className="preview-column" style={{ display: "grid", gridTemplateRows: "1fr auto", gap: 12, minHeight: 0, overflow: "hidden" }}>
           <ErrorBoundary message={t("errors.message")}><PreviewCanvas scene={scene} /></ErrorBoundary>
           <div className="panel toolbar">
             <div className="toolbar-group">

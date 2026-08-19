@@ -12,7 +12,6 @@ import { Check } from "lucide-react";
 import { useFrameTransform } from "@/lib/hooks/useFrameTransform";
 import { tiltCss } from "@/lib/render/tilt";
 import { useScenePalette } from "@/lib/hooks/useScenePalette";
-import { useAutoDismissError } from "@/lib/hooks/useAutoDismissError";
 import { AnnotationItem } from "@/components/editor/AnnotationItem";
 import { FrameInstanceGrid } from "@/components/editor/FrameInstanceGrid";
 import { SingleFrameView } from "@/components/editor/SingleFrameView";
@@ -27,13 +26,14 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const sceneCss = useMemo(() => buildSceneCss(scene, activeLayerId), [scene, activeLayerId]);
   const dragDepth = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [dropError, setDropError] = useAutoDismissError();
   const [canvasFileInputKey, setCanvasFileInputKey] = useState(0);
   const setMedia = useEditorStore((s) => s.setMedia);
   const setVideoDuration = useEditorStore((s) => s.setVideoDuration);
   const setVideoCurrentTime = useEditorStore((s) => s.setVideoCurrentTime);
   const isMediaLoading = useEditorStore((s) => s.isMediaLoading);
   const setMediaLoading = useEditorStore((s) => s.setMediaLoading);
+  const mediaUploadError = useEditorStore((s) => s.mediaUploadError);
+  const setMediaUploadError = useEditorStore((s) => s.setMediaUploadError);
   const selectedAnnotationId = useEditorStore((s) => s.selectedAnnotationId);
   const selectAnnotation = useEditorStore((s) => s.selectAnnotation);
   const updateAnnotation = useEditorStore((s) => s.updateAnnotation);
@@ -144,20 +144,20 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         const project = await importProjectFromFile(file);
         const { useProjectsStore } = await import("@/lib/state/projectsStore");
         useProjectsStore.getState().importProject(project);
-        setDropError(null);
+        setMediaUploadError(null);
       } catch {
-        setDropError(t("projects.importError"));
+        setMediaUploadError(t("projects.importError"));
       }
       return;
     }
     try {
       const { url, mediaType, mediaName } = await loadMediaFromFile(file);
-      setDropError(null);
+      setMediaUploadError(null);
       // Dropping onto the canvas replaces the active layer's media, matching
       // the Media panel upload — not a brand-new layer every time.
       setMedia(url, mediaType, mediaName);
     } catch (err) {
-      setDropError(err instanceof UnsupportedMediaError ? err.message : t("editor.uploadError"));
+      setMediaUploadError(err instanceof UnsupportedMediaError ? err.message : t("editor.uploadError"));
     }
   };
 
@@ -166,10 +166,10 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
     if (!file) return;
     try {
       const { url, mediaType, mediaName } = await loadMediaFromFile(file);
-      setDropError(null);
+      setMediaUploadError(null);
       setMedia(url, mediaType, mediaName);
     } catch (err) {
-      setDropError(err instanceof UnsupportedMediaError ? err.message : t("editor.uploadError"));
+      setMediaUploadError(err instanceof UnsupportedMediaError ? err.message : t("editor.uploadError"));
     } finally {
       setCanvasFileInputKey((k) => k + 1);
     }
@@ -217,7 +217,14 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
       <div
         id="preview-canvas"
         ref={canvasRef}
-        onPointerDown={() => selectAnnotation(null)}
+        onPointerDown={(e) => {
+          // Deselect any active annotation when clicking empty canvas. Clicks
+          // on annotations/watermark use stopPropagation, so they won't bubble
+          // here and won't steal the selection.
+          const target = e.target as HTMLElement;
+          if (target.closest("[data-annotation]") || target.closest(".preview-watermark")) return;
+          selectAnnotation(null);
+        }}
         style={{
           // Contain inside the size container: take the larger of the two
           // axes that still fits the other, so the canvas keeps its aspect
@@ -296,6 +303,42 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             selectLayer={selectLayer}
           />
          )}
+        {scene.frameInstances.length > 0 ? (
+          (() => {
+            const selectedInst = scene.frameInstances.find((i) => i.id === activeFrameInstanceId);
+            const selectedLayerId = selectedInst?.layerId ?? null;
+            const selectedLayer = selectedLayerId ? scene.layers.find((l) => l.id === selectedLayerId) : undefined;
+            const targetLayerId = selectedLayerId ?? scene.frameInstances[0]?.layerId ?? null;
+            if (!targetLayerId) return null;
+            const handleMultiFile = async (event: ChangeEvent<HTMLInputElement>) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              try {
+                const { url, mediaType, mediaName } = await loadMediaFromFile(file);
+                setMediaUploadError(null);
+                useEditorStore.getState().setMediaOnLayer(targetLayerId, url, mediaType, mediaName);
+              } catch (err) {
+                setMediaUploadError(err instanceof UnsupportedMediaError ? err.message : t("editor.uploadError"));
+              } finally {
+                setCanvasFileInputKey((k) => k + 1);
+              }
+            };
+            return (
+              <>
+                {!selectedLayer?.mediaUrl ? (
+                  <label className="preview-chip" style={{ top: 8 }}>
+                    <span>{t("editor.uploadMedia")}</span>
+                    <input type="file" accept="image/*,video/*" onChange={handleMultiFile} key={canvasFileInputKey} style={{ display: "none" }} />
+                  </label>
+                ) : (
+                  <button type="button" className="preview-chip" style={{ top: 8 }} onClick={() => useEditorStore.getState().setMediaOnLayer(targetLayerId, null, "none", null)}>
+                    {t("editor.clearMedia")}
+                  </button>
+                )}
+              </>
+            );
+          })()
+        ) : null}
         {scene.frameInstances.length > 0 && scene.layers.every((l) => !l.mediaUrl) ? (
           <div
             aria-hidden="true"
@@ -410,9 +453,9 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             ))}
           </select>
         ) : null}
-        {dropError ? (
+        {mediaUploadError ? (
           <div role="alert" className="preview-error">
-            {dropError}
+            {mediaUploadError}
           </div>
         ) : null}
       </div>
