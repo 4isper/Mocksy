@@ -6,19 +6,11 @@ import { RENDER, resolveFrameStyle } from "@/lib/render/canvasDrawing";
 import { watermarkEdges } from "@/lib/render/watermark";
 import { screenChromeElements } from "@/lib/render/screenChrome";
 import { PATTERN_TILES } from "@/lib/render/sceneBackground";
+import { escapeMarkup, round2 } from "@/lib/export/markupUtils";
 
 /** Rounds to 2 decimals so generated SVG stays compact but accurate. */
 function num(n: number): string {
-  return String(Math.round(n * 100) / 100);
-}
-
-function escapeXml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
+  return round2(n);
 }
 
 export interface SvgFrameGroup {
@@ -212,7 +204,7 @@ function annotationsMarkup(scene: EditorScene, width: number, height: number): s
        const lineHeight = a.fontSize * RENDER.lineHeightMultiplier;
        const tspans = a.text
           .split("\n")
-          .map((line, i) => `<tspan x="${num(textX)}" dy="${i === 0 ? 0 : num(lineHeight)}">${escapeXml(line)}</tspan>`)
+          .map((line, i) => `<tspan x="${num(textX)}" dy="${i === 0 ? 0 : num(lineHeight)}">${escapeMarkup(line)}</tspan>`)
           .join("");
        let bg = "";
        if (a.bgColor && a.text.trim()) {
@@ -271,7 +263,7 @@ function watermarkMarkup(scene: EditorScene, opts: SvgExportOptions): string {
   const textX = onLeft ? inset : width - inset;
   const textY = onTop ? inset + scene.watermarkSize : height - inset;
   const baseline = onTop ? ' dominant-baseline="hanging"' : "";
-  return `<text x="${num(textX)}" y="${num(textY)}" font-size="${num(scene.watermarkSize)}" font-weight="500" fill="rgba(255,255,255,0.85)" font-family="Inter, system-ui, sans-serif" text-anchor="${onLeft ? "start" : "end"}"${baseline} filter="url(#anno-shadow)">${escapeXml(scene.watermarkText)}</text>`;
+  return `<text x="${num(textX)}" y="${num(textY)}" font-size="${num(scene.watermarkSize)}" font-weight="500" fill="rgba(255,255,255,0.85)" font-family="Inter, system-ui, sans-serif" text-anchor="${onLeft ? "start" : "end"}"${baseline} filter="url(#anno-shadow)">${escapeMarkup(scene.watermarkText)}</text>`;
 }
 
 /**

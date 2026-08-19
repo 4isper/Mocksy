@@ -4,7 +4,7 @@ import type { EditorScene } from "@/lib/types/editor";
 import { computeFrameBox, computeFrameInstances, type FrameBox } from "@/lib/render/frameGeometry";
 import { getFrameSpec, frameViewBox } from "@/lib/render/frames";
 import { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
-import { resolveExportTransform, waitForImage } from "@/lib/export/exportImage";
+import { resolveExportTransform, waitForImage } from "@/lib/export/exportImageCore";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { buildEmbeddedFontCss, collectFontStacks } from "@/lib/export/fontEmbed";
 import { downloadBlob } from "@/lib/export/downloadBlob";

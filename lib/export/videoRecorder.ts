@@ -1,12 +1,11 @@
 "use client";
 
 import type { EditorScene } from "@/lib/types/editor";
-import { loadImage } from "@/lib/render/canvasMedia";
 import { renderMockupToCanvas } from "@/lib/render/renderMockup";
 import type { RenderTransform } from "@/lib/render/frameGeometry";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
-import { getFrameSpec } from "@/lib/render/frames";
 import { chooseWebmMimeType, computeCaptureDuration } from "@/lib/export/videoExportHelpers";
+import { loadExportAssets } from "@/lib/export/exportAssets";
 
 export async function recordCanvasToWebm(
   scene: EditorScene,
@@ -20,35 +19,9 @@ export async function recordCanvasToWebm(
   frameOverlays?: Map<string, CanvasImageSource | null>,
   activeLayerId: string | null = scene.activeLayerId
 ) {
-  const spec = getFrameSpec(scene.frame, scene.customFrame);
-  let overlay: CanvasImageSource | null = null;
-  if (spec.isOverlay && spec.asset) {
-    try {
-      overlay = await loadImage(spec.asset);
-    } catch {
-      overlay = null;
-    }
-  }
-
   // Annotations are drawn from the scene automatically; the background image
   // must be preloaded and passed in (the canvas renderer is synchronous).
-  let backgroundImage: CanvasImageSource | null = null;
-  if (scene.backgroundMode === "image" && scene.backgroundImageUrl) {
-    try {
-      backgroundImage = await loadImage(scene.backgroundImageUrl);
-    } catch {
-      backgroundImage = null;
-    }
-  }
-
-  let watermarkImage: CanvasImageSource | null = null;
-  if (scene.watermarkEnabled && scene.watermarkImageUrl) {
-    try {
-      watermarkImage = await loadImage(scene.watermarkImageUrl);
-    } catch {
-      watermarkImage = null;
-    }
-  }
+  const { overlay, backgroundImage, watermarkImage } = await loadExportAssets(scene);
 
   // Match the PNG export: size the frame from its on-screen box so overlay
   // skins (iphone15/16pro) keep their native aspect ratio instead of being

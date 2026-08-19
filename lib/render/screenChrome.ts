@@ -1,4 +1,5 @@
 import type { ScreenChrome } from "@/lib/types/editor";
+import { escapeMarkup } from "@/lib/export/markupUtils";
 
 /**
  * Screen decoration (status bar, lock-screen clock/date, home dock, home
@@ -16,7 +17,7 @@ function n(v: number): string {
 }
 
 function esc(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return escapeMarkup(s);
 }
 
 /** Palette derived from the chrome theme. */

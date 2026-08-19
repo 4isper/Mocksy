@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildAnimationCss, buildHtmlSnippet, buildRasterHtmlSnippet, exportHtml, serializeCssProperties } from "@/lib/export/exportHtml";
+import { exportHtml } from "@/lib/export/exportHtml";
+import { buildAnimationCss, buildHtmlSnippet, buildRasterHtmlSnippet, serializeCssProperties } from "@/lib/export/htmlMarkup";
 import { initialScene } from "@/lib/state/editorStore";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 

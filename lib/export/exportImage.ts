@@ -3,45 +3,11 @@
 import type { EditorScene, ExportSize } from "@/lib/types/editor";
 import { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
 import { renderMockupToCanvas } from "@/lib/render/renderMockup";
-import type { RenderTransform } from "@/lib/render/frameGeometry";
 import { getFrameSpec } from "@/lib/render/frames";
-import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { downloadBlob } from "@/lib/export/downloadBlob";
-
-/**
- * Transform for the exported PNG. An animated scene samples its mid-animation
- * frame (progress 0.5) so the static image matches what the user sees
- * animating in the live preview, instead of always snapping to the base zoom.
- */
-export function resolveExportTransform(scene: EditorScene, activeLayerId: string | null = scene.activeLayerId): RenderTransform {
-  const active = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
-  if (!active) return { zoom: 1, offsetX: 0, offsetY: 0 };
-  if (active.animationPreset === "none") {
-    // The static preview does not translate the frame (only the media inside
-    // it pans, and that is drawn from mediaOffsetX/Y separately), so the frame
-    // transform offset stays zero here.
-    return { zoom: active.zoom, offsetX: 0, offsetY: 0 };
-  }
-  const sampled = sampleVideoTransform(active, 0.5);
-  return { zoom: sampled.zoom, offsetX: sampled.x, offsetY: sampled.y };
-}
-
-export function waitForImage(img: HTMLImageElement, timeoutMs = 10000) {
-  if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-  return new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("Image load timed out")), timeoutMs);
-    const clear = () => clearTimeout(timer);
-    img.onload = () => {
-      clear();
-      resolve();
-    };
-    img.onerror = () => {
-      clear();
-      reject(new Error("Image load failed"));
-    };
-  });
-}
+import { resolveExportTransform, waitForImage } from "@/lib/export/exportImageCore";
+import { loadExportAssets } from "@/lib/export/exportAssets";
 
 /**
  * Renders the current scene to a raster `Blob` (PNG or WebP) at the preview's
@@ -114,16 +80,6 @@ export async function renderSceneToImageBlob(
       return null;
     }
 
-    const spec = getFrameSpec(scene.frame, scene.customFrame);
-    let overlay: HTMLImageElement | null = null;
-    if (spec.isOverlay && spec.asset) {
-      try {
-        overlay = await loadImage(spec.asset);
-      } catch {
-        overlay = null;
-      }
-    }
-
     const hasCustomSize = customSize !== null && customSize !== undefined && customSize.width > 0 && customSize.height > 0;
     // A custom resolution is rendered at exactly that canvas size; the frame is
     // scaled by the fit ratio (uniform, aspect-preserving) so it keeps its
@@ -141,23 +97,7 @@ export async function renderSceneToImageBlob(
     const frameWidth = baseFrameWidth ? Math.max(1, Math.round(baseFrameWidth * pixelRatio)) : undefined;
     const frameHeight = baseFrameHeight ? Math.max(1, Math.round(baseFrameHeight * pixelRatio)) : undefined;
 
-    let backgroundImage: HTMLImageElement | null = null;
-    if (scene.backgroundMode === "image" && scene.backgroundImageUrl) {
-      try {
-        backgroundImage = await loadImage(scene.backgroundImageUrl);
-      } catch {
-        backgroundImage = null;
-      }
-    }
-
-    let watermarkImage: HTMLImageElement | null = null;
-    if (scene.watermarkEnabled && scene.watermarkImageUrl) {
-      try {
-        watermarkImage = await loadImage(scene.watermarkImageUrl);
-      } catch {
-        watermarkImage = null;
-      }
-    }
+    const { overlay, backgroundImage, watermarkImage } = await loadExportAssets(scene);
 
     const transform = resolveExportTransform(scene, activeLayerId);
 
@@ -307,3 +247,8 @@ export async function copyPngToClipboard(
     onError?.(err instanceof Error ? err.message : "Could not copy the image.");
   }
 }
+
+// Re-exported for callers that previously imported these pure helpers from the
+// image export module; they now live in exportImageCore (DOM-free, shared with
+// the SVG/HTML exporters).
+export { resolveExportTransform, waitForImage } from "@/lib/export/exportImageCore";
