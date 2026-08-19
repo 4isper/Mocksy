@@ -6,6 +6,7 @@ import { buildSceneCss } from "@/lib/render/mockupRenderer";
 import { tiltCss } from "@/lib/render/tilt";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { getFrameSpec } from "@/lib/render/frames";
+import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { renderSceneToImageBlob } from "@/lib/export/exportImage";
 import { buildEmbeddedFontCss, collectFontStacks } from "@/lib/export/fontEmbed";
@@ -119,8 +120,8 @@ export interface HtmlSnippetOptions {
 export function buildHtmlSnippet(scene: EditorScene, opts: HtmlSnippetOptions, activeLayerId: string | null = scene.activeLayerId): string {
   const css = buildSceneCss(scene, activeLayerId);
   const tiltPrefix = tiltCss(scene);
-  const [arW, arH] = scene.aspectRatio.split("/").map((n) => Number(n.trim()));
-  const ar = `${arW ?? 16}/${arH ?? 9}`;
+  const { w: arW, h: arH } = parseAspectRatioOr(scene.aspectRatio, { w: 16, h: 9 });
+  const ar = `${arW}/${arH}`;
   const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
 
   const containerCss = serializeCssProperties(css.container);
@@ -232,7 +233,7 @@ ${animationCss}
     ${chrome}
     ${overlay}
   </div>
-  ${annotationsHtml(scene, arW ?? 16, arH ?? 9)}
+  ${annotationsHtml(scene, arW, arH)}
   ${watermark}
 </div>
 </body>

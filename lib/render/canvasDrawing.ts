@@ -1,6 +1,7 @@
 import type { Annotation, EditorScene, MediaLayer, StylePreset } from "@/lib/types/editor";
 import type { FrameBox } from "./frameGeometry";
 import { getFrameSpec } from "@/lib/render/frames";
+import { watermarkEdges } from "@/lib/render/watermark";
 import { buildLayerFilterCss } from "@/lib/render/layerFilters";
 import { drawScreenChrome } from "@/lib/render/screenChrome";
 
@@ -162,8 +163,7 @@ export function drawWatermark(
   if (!hasImage && !scene.watermarkText) return;
   const watermarkSize = scene.watermarkSize * dpiScale;
   const inset = RENDER.watermarkInset * dpiScale;
-  const onLeft = scene.watermarkPosition === "bottom-left" || scene.watermarkPosition === "top-left";
-  const onTop = scene.watermarkPosition === "top-right" || scene.watermarkPosition === "top-left";
+  const { onLeft, onTop } = watermarkEdges(scene.watermarkPosition);
 
   ctx.save();
   ctx.shadowColor = "rgba(0,0,0,0.6)";

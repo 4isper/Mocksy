@@ -4,6 +4,8 @@ import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
+import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
+import { watermarkEdges } from "@/lib/render/watermark";
 import { GRID_DIVISION_OPTIONS } from "@/lib/render/grid";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { useTranslations } from "next-intl";
@@ -50,11 +52,14 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const frameInstanceCssMap = useMemo(() => {
     const map = new Map<string, ReturnType<typeof buildSceneCss>>();
     for (const inst of scene.frameInstances) {
-      const layer = scene.layers.find((l) => l.id === inst.layerId) ?? activeLayer;
+      const layer = scene.layers.find((l) => l.id !== undefined && l.id === inst.layerId) ?? activeLayer;
       map.set(inst.id, buildSceneCss({ ...scene, frame: inst.frame, layers: layer ? [layer] : [] }));
     }
     return map;
-  }, [scene, activeLayer]);
+    // activeLayer is derived from activeLayerId, so keying on the id keeps the
+    // memo stable across re-renders that don't actually change the scene.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scene, activeLayerId]);
 
   // The whole-mockup zoom/animation is applied to the frame container so the
   // device skin and media scale together, matching the export.
@@ -131,6 +136,19 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
     if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
   };
 
+  /** Loads a media file and applies it to the active layer (or a specific
+   *  layer when `layerId` is given), surfacing upload errors to the user. */
+  const loadMediaToLayer = async (file: File, layerId?: string) => {
+    try {
+      const { url, mediaType, mediaName } = await loadMediaFromFile(file);
+      setMediaUploadError(null);
+      if (layerId) useEditorStore.getState().setMediaOnLayer(layerId, url, mediaType, mediaName);
+      else setMedia(url, mediaType, mediaName);
+    } catch (err) {
+      setMediaUploadError(err instanceof UnsupportedMediaError ? err.message : t("editor.uploadError"));
+    }
+  };
+
   const handleDrop = async (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     dragDepth.current = 0;
@@ -150,32 +168,17 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
       }
       return;
     }
-    try {
-      const { url, mediaType, mediaName } = await loadMediaFromFile(file);
-      setMediaUploadError(null);
-      // Dropping onto the canvas replaces the active layer's media, matching
-      // the Media panel upload — not a brand-new layer every time.
-      setMedia(url, mediaType, mediaName);
-    } catch (err) {
-      setMediaUploadError(err instanceof UnsupportedMediaError ? err.message : t("editor.uploadError"));
-    }
+    await loadMediaToLayer(file);
   };
 
   const handleCanvasFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    try {
-      const { url, mediaType, mediaName } = await loadMediaFromFile(file);
-      setMediaUploadError(null);
-      setMedia(url, mediaType, mediaName);
-    } catch (err) {
-      setMediaUploadError(err instanceof UnsupportedMediaError ? err.message : t("editor.uploadError"));
-    } finally {
-      setCanvasFileInputKey((k) => k + 1);
-    }
+    await loadMediaToLayer(file);
+    setCanvasFileInputKey((k) => k + 1);
   };
 
-  const [arW, arH] = scene.aspectRatio.split("/").map((n) => Number(n.trim()));
+  const { w: arW, h: arH } = parseAspectRatioOr(scene.aspectRatio);
 
   return (
     <div
@@ -313,15 +316,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             const handleMultiFile = async (event: ChangeEvent<HTMLInputElement>) => {
               const file = event.target.files?.[0];
               if (!file) return;
-              try {
-                const { url, mediaType, mediaName } = await loadMediaFromFile(file);
-                setMediaUploadError(null);
-                useEditorStore.getState().setMediaOnLayer(targetLayerId, url, mediaType, mediaName);
-              } catch (err) {
-                setMediaUploadError(err instanceof UnsupportedMediaError ? err.message : t("editor.uploadError"));
-              } finally {
-                setCanvasFileInputKey((k) => k + 1);
-              }
+              await loadMediaToLayer(file, targetLayerId);
+              setCanvasFileInputKey((k) => k + 1);
             };
             return (
               <div className="preview-chip-stack" style={{ top: 8, left: 8 }}>
@@ -394,12 +390,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
               src={scene.watermarkImageUrl}
               alt=""
               style={{
-                ...(scene.watermarkPosition === "bottom-left" || scene.watermarkPosition === "top-left"
-                  ? { left: 16 }
-                  : { right: 16 }),
-                ...(scene.watermarkPosition === "top-left" || scene.watermarkPosition === "top-right"
-                  ? { top: 16 }
-                  : { bottom: 16 }),
+                ...(watermarkEdges(scene.watermarkPosition).onLeft ? { left: 16 } : { right: 16 }),
+                ...(watermarkEdges(scene.watermarkPosition).onTop ? { top: 16 } : { bottom: 16 }),
                 height: scene.watermarkSize
               }}
             />
@@ -407,12 +399,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             <span
               className="preview-watermark"
               style={{
-                ...(scene.watermarkPosition === "bottom-left" || scene.watermarkPosition === "top-left"
-                  ? { left: 16 }
-                  : { right: 16 }),
-                ...(scene.watermarkPosition === "top-left" || scene.watermarkPosition === "top-right"
-                  ? { top: 16 }
-                  : { bottom: 16 }),
+                ...(watermarkEdges(scene.watermarkPosition).onLeft ? { left: 16 } : { right: 16 }),
+                ...(watermarkEdges(scene.watermarkPosition).onTop ? { top: 16 } : { bottom: 16 }),
                 fontSize: scene.watermarkSize
               }}
             >

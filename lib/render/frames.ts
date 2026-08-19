@@ -1,4 +1,5 @@
 import type { AnimationPreset, CustomFrame, MockupFrame } from "@/lib/types/editor";
+import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
 
 /** Native SVG viewBox size shared by the iPhone overlay skins. The screen
  *  cutout (FrameSpec.cutout) is expressed in these units, so insets and
@@ -158,8 +159,8 @@ export function frameInstAr(
 ): number | null {
   const spec = getFrameSpec(frame, customFrame);
   const ratioSrc = spec.aspectRatio ?? (frame === "none" ? sceneAspectRatio : "1 / 1");
-  const [rW, rH] = ratioSrc.split("/").map((n) => Number(n.trim()));
-  return rW && rH ? rH / rW : null;
+  const { w: rW, h: rH } = parseAspectRatioOr(ratioSrc);
+  return rH / rW;
 }
 
 /** Builds a FrameSpec from a user-uploaded SVG skin. The media fills the whole

@@ -3,6 +3,7 @@ import { computeFrameBox, computeFrameInstances, type FrameBox } from "@/lib/ren
 import { frameViewBox, getFrameSpec, DEFAULT_VIEWBOX } from "@/lib/render/frames";
 import { tiltMatrixSvg } from "@/lib/render/tilt";
 import { RENDER, resolveFrameStyle } from "@/lib/render/canvasDrawing";
+import { watermarkEdges } from "@/lib/render/watermark";
 import { screenChromeElements } from "@/lib/render/screenChrome";
 
 /** Rounds to 2 decimals so generated SVG stays compact but accurate. */
@@ -240,8 +241,7 @@ function watermarkMarkup(scene: EditorScene, opts: SvgExportOptions): string {
   if (!scene.watermarkEnabled) return "";
   const { width, height } = opts;
   const inset = RENDER.watermarkInset;
-  const onLeft = scene.watermarkPosition === "bottom-left" || scene.watermarkPosition === "top-left";
-  const onTop = scene.watermarkPosition === "top-right" || scene.watermarkPosition === "top-left";
+  const { onLeft, onTop } = watermarkEdges(scene.watermarkPosition);
 
   if (scene.watermarkImageUrl && opts.watermarkHref) {
     const iw = opts.watermarkWidth ?? 1;

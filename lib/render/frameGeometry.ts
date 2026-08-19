@@ -1,6 +1,7 @@
 import type { EditorScene } from "@/lib/types/editor";
 import { getFrameSpec, frameViewBox } from "@/lib/render/frames";
 import { RENDER } from "@/lib/render/canvasDrawing";
+import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
 
 export interface FrameBox {
   x: number;
@@ -52,9 +53,9 @@ export function computeFrameBox(
    const activeLayerForRender = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
     const actualZoom = Math.max(RENDER.minZoom, transform?.zoom ?? activeLayerForRender?.zoom ?? 1);
     const defaultFrameW = Math.min(RENDER.defaultFrameWidth, (canvasWidth / dpiScale) * RENDER.defaultFrameFill) * dpiScale;
-   const ratioSrc = spec.aspectRatio ?? (scene.frame === "none" ? scene.aspectRatio : "1 / 1");
-   const [ratioW, ratioH] = ratioSrc.split("/").map((n) => Number(n.trim()));
-   const frameAr = (ratioH ?? 1) / (ratioW ?? 1);
+    const ratioSrc = spec.aspectRatio ?? (scene.frame === "none" ? scene.aspectRatio : "1 / 1");
+    const { w: ratioW, h: ratioH } = parseAspectRatioOr(ratioSrc);
+    const frameAr = ratioH / ratioW;
    const frameW = (typeof frameWidth === "number" && frameWidth > 0 ? frameWidth : defaultFrameW) * actualZoom;
    const frameH = typeof frameHeight === "number" && frameHeight > 0 ? frameHeight * actualZoom : frameW * frameAr;
   const { panX, panY } = panOffset(transform, dpiScale, actualZoom);
@@ -108,8 +109,8 @@ export function computeFrameInstances(
     const spec = getFrameSpec(inst.frame, scene.customFrame);
     const instScale = inst.scale ?? 1;
     const ratioSrc = spec.aspectRatio ?? (inst.frame === "none" ? scene.aspectRatio : "1 / 1");
-    const [rW, rH] = ratioSrc.split("/").map((n) => Number(n.trim()));
-    const instAr = (rH ?? 1) / (rW ?? 1);
+    const { w: rW, h: rH } = parseAspectRatioOr(ratioSrc);
+    const instAr = rH / rW;
 
     const w = instScale * canvasWidth * instZoom;
     const h = w * instAr;

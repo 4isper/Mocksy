@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { frameViewBox, getFrameSpec } from "@/lib/render/frames";
+import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
 import { buildLayerFilterCss } from "@/lib/render/layerFilters";
 import { resolveFrameStyle } from "@/lib/render/canvasDrawing";
 import { screenChromeSvg } from "@/lib/render/screenChrome";
@@ -106,10 +107,10 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
   // aspect ratio only resizes the canvas, never distorts the frame. The
   // "none" frame has no device shape, so it still follows the scene.
   const ratioSrc = spec.aspectRatio ?? (scene.frame === "none" ? scene.aspectRatio : "1 / 1");
-  const [ratioW, ratioH] = ratioSrc.split("/").map((n) => Number(n.trim()));
-  const [canvasW, canvasH] = scene.aspectRatio.split("/").map((n) => Number(n.trim()));
-  const frameAr = (ratioW ?? 1) / (ratioH ?? 1);
-  const canvasAr = (canvasW ?? 1) / (canvasH ?? 1);
+  const { w: ratioW, h: ratioH } = parseAspectRatioOr(ratioSrc);
+  const { w: canvasW, h: canvasH } = parseAspectRatioOr(scene.aspectRatio);
+  const frameAr = ratioW / ratioH;
+  const canvasAr = canvasW / canvasH;
   // Contain the frame inside the canvas: pick the limiting axis so the cross-
   // axis max constraint never clamps and breaks the aspect ratio. A fixed
   // width + maxHeight (the old code) let maxHeight clamp the height while the
@@ -220,7 +221,7 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
   // fills the box exactly when the SVG stretches to 100%/100%.
   const screenAspect = spec.isOverlay && spec.cutout
     ? spec.cutout.w / spec.cutout.h
-    : (ratioW ?? 1) / (ratioH ?? 1);
+    : ratioW / ratioH;
   const chromeW = 390;
   const chromeH = chromeW / screenAspect;
   // Overlay skins define their screen via a cutout, so a viewBox matching the

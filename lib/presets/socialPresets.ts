@@ -1,5 +1,9 @@
 /** A one-click canvas preset tuned for a social media format: an aspect ratio
  *  for the scene canvas plus the recommended pixel size for raster exports. */
+import { parseAspectRatio } from "@/lib/render/aspectRatio";
+
+export { parseAspectRatio };
+
 export interface SocialPreset {
   id: string;
   /** Scene aspect ratio in "W / H" format (e.g. "4 / 5"). */
@@ -20,13 +24,3 @@ export const SOCIAL_PRESETS: SocialPreset[] = [
   { id: "pinterest", aspectRatio: "2 / 3", width: 1000, height: 1500 },
   { id: "youtubeThumbnail", aspectRatio: "16 / 9", width: 1280, height: 720 }
 ];
-
-/** Parses a "W / H" ratio string into its numeric components, or null when the
- *  string is malformed. */
-export function parseAspectRatio(ratio: string): { w: number; h: number } | null {
-  const parts = ratio.split("/").map((n) => Number(n.trim()));
-  const w = parts[0] as number | undefined;
-  const h = parts[1] as number | undefined;
-  if (w === undefined || h === undefined || !Number.isFinite(w) || !Number.isFinite(h) || h === 0) return null;
-  return { w, h };
-}

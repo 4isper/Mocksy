@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { useTranslations } from "next-intl";
 import type { CustomFrame, MockupFrame } from "@/lib/types/editor";
 import { FRAME_ORDER, getFrameSpec } from "@/lib/render/frames";
+import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
 
 interface FramePickerProps {
   value: MockupFrame;
@@ -14,9 +15,8 @@ interface FramePickerProps {
 }
 
 function ratioParts(aspectRatio: string | null): [number, number] {
-  if (!aspectRatio) return [1, 1];
-  const [w, h] = aspectRatio.split("/").map((n) => Number(n.trim()));
-  return [w || 1, h || 1];
+  const { w, h } = parseAspectRatioOr(aspectRatio ?? "1 / 1");
+  return [w, h];
 }
 
 export function FramePicker({ value, onChange, customFrame, onUploadCustom, onRemoveCustom }: FramePickerProps) {
