@@ -1,10 +1,11 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties } from "react";
 import type { Annotation } from "@/lib/types/editor";
 import { useTranslations } from "next-intl";
 import { snapToGrid } from "@/lib/render/grid";
+import { AnnotationContent } from "@/components/editor/AnnotationContent";
 
 interface AnnotationItemProps {
   annotation: Annotation;
@@ -18,9 +19,10 @@ interface AnnotationItemProps {
 
 /**
  * One annotation overlay in the live preview. Coordinates are fractions of the
- * canvas, so the element is positioned with percentages and the SVG arrow is
- * drawn at measured pixel size (read from the canvas after layout) so its
- * stroke width and arrowhead match the exported PNG exactly.
+ * canvas, so the element is positioned with percentages. Dragging/resizing are
+ * pointer gestures that map deltas onto the canvas fractions (snapping when a
+ * grid is active); the rendered body (text/rect/circle/arrow) is delegated to
+ * AnnotationContent.
  */
 export function AnnotationItem({ annotation, selected, canvasRef, snapDivisions = null, onSelect, onUpdate }: AnnotationItemProps) {
   const t = useTranslations();
@@ -127,91 +129,6 @@ export function AnnotationItem({ annotation, selected, canvasRef, snapDivisions 
     textAlign: annotation.textAlign ?? "left"
   };
 
-  let content: ReactNode = null;
-  if (annotation.type === "text") {
-    const textStyle: CSSProperties = {
-      fontSize: annotation.fontSize,
-      color: annotation.color,
-      lineHeight: 1.2,
-      fontWeight: annotation.fontWeight ?? "bold",
-      fontStyle: annotation.fontStyle ?? "normal",
-      textAlign: annotation.textAlign ?? "left",
-      fontFamily: annotation.fontFamily ?? "Inter, system-ui, sans-serif",
-      whiteSpace: "pre-wrap",
-      textShadow: "0 1px 3px rgba(0,0,0,0.5)",
-      background: annotation.bgColor ?? undefined,
-      padding: annotation.bgColor ? (annotation.bgPadding ?? 0) : 0,
-      borderRadius: annotation.bgColor ? (annotation.bgRadius ?? 0) : 0,
-      display: "inline-block"
-    };
-    // Double-click edits the text in place: the label becomes contentEditable
-    // until it loses focus, then the edited value is committed back to the
-    // scene. Pointer-down must not start a drag while editing.
-    content = editing ? (
-      <div
-        ref={editRef}
-        contentEditable
-        suppressContentEditableWarning
-        style={{ ...textStyle, outline: "none", minWidth: 24, cursor: "text" }}
-        onPointerDown={(e) => e.stopPropagation()}
-        onInput={(e) => onUpdate(annotation.id, { text: e.currentTarget.textContent ?? "" })}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") {
-            e.currentTarget.blur();
-          }
-        }}
-        onBlur={() => setEditing(false)}
-      >
-        {annotation.text}
-      </div>
-    ) : (
-      <div style={textStyle} onDoubleClick={() => setEditing(true)}>
-        {annotation.text}
-      </div>
-    );
-  } else if (annotation.type === "rect") {
-    content = (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          border: `${annotation.strokeWidth}px solid ${annotation.color}`,
-          borderRadius: 4,
-          boxSizing: "border-box"
-        }}
-      />
-    );
-  } else if (annotation.type === "circle") {
-    content = (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          border: `${annotation.strokeWidth}px solid ${annotation.color}`,
-          borderRadius: "50%",
-          boxSizing: "border-box"
-        }}
-      />
-    );
-  } else {
-    const cw = size.w || 1;
-    const ch = size.h || 1;
-    const startX = (annotation.x - bx) * cw;
-    const startY = (annotation.y - by) * ch;
-    const endX = startX + annotation.w * cw;
-    const endY = startY + annotation.h * ch;
-    const angle = Math.atan2(endY - startY, endX - startX);
-    const head = 14;
-    const a1 = angle + Math.PI - 0.45;
-    const a2 = angle + Math.PI + 0.45;
-    content = (
-      <svg width={bw * cw} height={bh * ch} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-        <line x1={startX} y1={startY} x2={endX} y2={endY} stroke={annotation.color} strokeWidth={annotation.strokeWidth} strokeLinecap="round" />
-        <polygon points={`${endX},${endY} ${endX + head * Math.cos(a1)},${endY + head * Math.sin(a1)} ${endX + head * Math.cos(a2)},${endY + head * Math.sin(a2)}`} fill={annotation.color} />
-      </svg>
-    );
-  }
-
   const onBoxKeyDown = (e: React.KeyboardEvent) => {
     if (editing) return;
     if (!e.key.startsWith("Arrow")) return;
@@ -252,7 +169,17 @@ export function AnnotationItem({ annotation, selected, canvasRef, snapDivisions 
       onPointerUp={onBodyUp}
       onPointerCancel={onBodyUp}
     >
-      {content}
+      <AnnotationContent
+        annotation={annotation}
+        size={size}
+        bx={bx}
+        by={by}
+        editing={editing}
+        editRef={editRef}
+        onTextInput={(text) => onUpdate(annotation.id, { text })}
+        onStopEditing={() => setEditing(false)}
+        onStartEditing={() => setEditing(true)}
+      />
       {selected ? (
         <span
           aria-label={t("editor.resizeAnnotation")}
