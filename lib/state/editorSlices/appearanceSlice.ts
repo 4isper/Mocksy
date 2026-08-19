@@ -20,8 +20,10 @@ export type AppearanceSlice = Pick<
   | "setAspectRatio"
   | "addAnnotation"
   | "updateAnnotation"
+  | "applyAnnotationPatches"
   | "removeAnnotation"
   | "selectAnnotation"
+  | "selectAnnotations"
   | "clearAnnotations"
   | "setBackgroundAudio"
   | "clearBackgroundAudio"
@@ -59,7 +61,8 @@ export function createAppearanceSlice(set: EditorStoreSetter): AppearanceSlice {
         const annotation = makeAnnotation(type);
         return {
           ...pushHistory(s, { ...s.scene, annotations: [...s.scene.annotations, annotation] }),
-          selectedAnnotationId: annotation.id
+          selectedAnnotationId: annotation.id,
+          selectedAnnotationIds: [annotation.id]
         };
       }),
     updateAnnotation: (id, patch) =>
@@ -76,15 +79,44 @@ export function createAppearanceSlice(set: EditorStoreSetter): AppearanceSlice {
           `annotation:${id}`
         )
       ),
+    applyAnnotationPatches: (patches) =>
+      set((s) =>
+        pushHistory(
+          s,
+          {
+            ...s.scene,
+            annotations: s.scene.annotations.map((a) => (a.id in patches ? { ...a, ...patches[a.id]! } : a))
+          },
+          // One history entry for the whole align/distribute operation.
+          "annotations:align"
+        )
+      ),
     removeAnnotation: (id) =>
       set((s) => {
         const annotations = s.scene.annotations.filter((a) => a.id !== id);
         return {
           ...pushHistory(s, { ...s.scene, annotations }),
-          selectedAnnotationId: s.selectedAnnotationId === id ? null : s.selectedAnnotationId
+          selectedAnnotationId: s.selectedAnnotationId === id ? null : s.selectedAnnotationId,
+          selectedAnnotationIds: s.selectedAnnotationIds.filter((x) => x !== id)
         };
       }),
-    selectAnnotation: (id) => set({ selectedAnnotationId: id }),
+    selectAnnotation: (id, additive = false) => {
+      if (id === null) return set({ selectedAnnotationId: null, selectedAnnotationIds: [] });
+      if (!additive) return set({ selectedAnnotationId: id, selectedAnnotationIds: [id] });
+      // Shift-click toggles membership in the multi-selection.
+      set((s) => {
+        const exists = s.selectedAnnotationIds.includes(id);
+        const next = exists ? s.selectedAnnotationIds.filter((x) => x !== id) : [...s.selectedAnnotationIds, id];
+        return {
+          selectedAnnotationIds: next,
+          selectedAnnotationId: next.length > 0 ? next[next.length - 1]! : null
+        };
+      });
+    },
+    selectAnnotations: (ids) => set({
+      selectedAnnotationIds: [...new Set(ids)],
+      selectedAnnotationId: ids.length > 0 ? ids[ids.length - 1]! : null
+    }),
     clearAnnotations: () => set((s) => ({ ...pushHistory(s, { ...s.scene, annotations: [] }), selectedAnnotationId: null })),
     setBackgroundAudio: (backgroundAudioUrl, backgroundAudioName) =>
       set((s) => pushHistory(s, { ...s.scene, backgroundAudioUrl, backgroundAudioName })),

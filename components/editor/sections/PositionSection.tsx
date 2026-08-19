@@ -15,6 +15,7 @@ export function PositionSection() {
     setZoom,
     setMediaOffsetX,
     setMediaOffsetY,
+    setRotation,
     setShadowOpacity,
     setBorderRadius,
     setTiltX,
@@ -27,6 +28,7 @@ export function PositionSection() {
       setZoom: s.setZoom,
       setMediaOffsetX: s.setMediaOffsetX,
       setMediaOffsetY: s.setMediaOffsetY,
+      setRotation: s.setRotation,
       setShadowOpacity: s.setShadowOpacity,
       setBorderRadius: s.setBorderRadius,
       setTiltX: s.setTiltX,
@@ -73,6 +75,13 @@ export function PositionSection() {
           <div className="range-wrap">
             <input type="range" min={-1} max={1} step={0.01} value={activeLayer?.mediaOffsetY ?? 0} aria-label={t("editor.positionY")} aria-valuetext={`${Math.round((activeLayer?.mediaOffsetY ?? 0) * 100)}%`} onChange={(e) => setMediaOffsetY(Number(e.target.value))} />
             <span className="range-val">{Math.round((activeLayer?.mediaOffsetY ?? 0) * 100)}%</span>
+          </div>
+        </label>
+        <label className="field">
+          <span>{t("editor.rotation")}</span>
+          <div className="range-wrap">
+            <input type="range" min={-180} max={180} step={1} value={activeLayer?.rotation ?? 0} aria-label={t("editor.rotation")} aria-valuetext={`${Math.round(activeLayer?.rotation ?? 0)}°`} onChange={(e) => setRotation(Number(e.target.value))} />
+            <span className="range-val">{Math.round(activeLayer?.rotation ?? 0)}°</span>
           </div>
         </label>
         <label className="field">

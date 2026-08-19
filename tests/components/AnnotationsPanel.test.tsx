@@ -282,4 +282,37 @@ describe("AnnotationsPanel remaining controls", () => {
     fireEvent.change(screen.getByRole("slider", { name: "annotation.strokeWidth" }), { target: { value: "6" } });
     expect(useEditorStore.getState().scene.annotations[0]!.strokeWidth).toBe(6);
   });
+
+  it("shows the align toolbar only with a multi-selection and aligns left", async () => {
+    const mk = (id: string, x: number) => ({ id, type: "rect" as const, text: "", x, y: 0.1, w: 0.2, h: 0.2, color: "#fff", fontSize: 16, strokeWidth: 2 });
+    useEditorStore.setState({
+      scene: {
+        ...useEditorStore.getState().scene,
+        annotations: [mk("a1", 0.1), mk("a2", 0.6)],
+      },
+      selectedAnnotationId: "a1",
+      selectedAnnotationIds: ["a1", "a2"],
+    });
+    render(<AnnotationsPanel />);
+    const alignLeft = screen.getByRole("button", { name: "annotation.alignLeft" });
+    expect(alignLeft).toBeInTheDocument();
+    await userEvent.click(alignLeft);
+    const ann = useEditorStore.getState().scene.annotations;
+    expect(ann.find((a) => a.id === "a1")!.x).toBeCloseTo(0.1);
+    expect(ann.find((a) => a.id === "a2")!.x).toBeCloseTo(0.1);
+  });
+
+  it("disables distribute unless three or more are selected", () => {
+    const mk = (id: string, x: number) => ({ id, type: "rect" as const, text: "", x, y: 0.1, w: 0.2, h: 0.2, color: "#fff", fontSize: 16, strokeWidth: 2 });
+    useEditorStore.setState({
+      scene: {
+        ...useEditorStore.getState().scene,
+        annotations: [mk("a1", 0.1), mk("a2", 0.6)],
+      },
+      selectedAnnotationId: "a1",
+      selectedAnnotationIds: ["a1", "a2"],
+    });
+    render(<AnnotationsPanel />);
+    expect(screen.getByRole("button", { name: "annotation.distributeH" })).toBeDisabled();
+  });
 });

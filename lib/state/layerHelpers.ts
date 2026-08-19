@@ -46,6 +46,7 @@ export function makeDemoLayer(): MediaLayer {
     mediaOffsetX: 0,
     mediaOffsetY: 0,
     mediaFit: "cover",
+    rotation: 0,
     brightness: 100,
     contrast: 100,
     saturate: 100,

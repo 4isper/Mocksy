@@ -261,7 +261,8 @@
     "selectedCount": "{count} layers selected",
     "toggleVisibility": "Toggle visibility",
     "commandPaletteTitle": "Open command palette (⌘K)",
-    "layoutNeedsFrames": "Add frames first"
+    "layoutNeedsFrames": "Add frames first",
+    "rotation": "Rotation"
   },
   "frame": {
     "none": "없음",
@@ -332,7 +333,13 @@
     "clearAllConfirm_message": "This removes every annotation from the scene. You can undo afterwards.",
     "clearAllConfirm_cancel": "Cancel",
     "clearAllConfirm_confirm": "Clear all",
-    "editHint": "Drag on the canvas to move, use the corner handle to resize, or arrow keys to nudge (Alt+arrows to resize)."
+    "editHint": "Drag on the canvas to move, use the corner handle to resize, or arrow keys to nudge (Alt+arrows to resize).",
+    "alignTop": "Align top",
+    "alignCenterV": "Center vertically",
+    "alignBottom": "Align bottom",
+    "distributeH": "Distribute horizontally",
+    "distributeV": "Distribute vertically",
+    "alignCenterH": "Center horizontally"
   },
   "video": {
     "options": "비디오 옵션",

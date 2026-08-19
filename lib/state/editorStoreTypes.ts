@@ -25,6 +25,9 @@ export interface EditorStoreState {
   /** Id of the annotation currently selected for editing; kept out of `scene`
    *  so selecting doesn't churn undo history or serialize into share URLs. */
   selectedAnnotationId: string | null;
+  /** Ids of all currently-selected annotations for multi-select align/
+   *  distribute. Kept out of `scene` for the same reason as `selectedLayerIds`. */
+  selectedAnnotationIds: string[];
   /** Id of the layer currently selected for editing. Kept out of `scene` so
    *  selecting a layer doesn't re-create the scene object (re-rendering the
    *  whole preview tree) or churn undo history. `scene.activeLayerId` stays as
@@ -129,6 +132,7 @@ export interface EditorStoreState {
   setZoom: (zoom: number) => void;
   setMediaOffsetX: (offset: number) => void;
   setMediaOffsetY: (offset: number) => void;
+  setRotation: (rotation: number) => void;
   setMediaFit: (fit: "cover" | "contain") => void;
   setBrightness: (brightness: number) => void;
   setContrast: (contrast: number) => void;
@@ -157,8 +161,12 @@ export interface EditorStoreState {
   setAspectRatio: (aspectRatio: string) => void;
   addAnnotation: (type: AnnotationType) => void;
   updateAnnotation: (id: string, patch: Partial<Annotation>) => void;
+  /** Applies a set of per-id patches (e.g. from align/distribute) to many
+   *  annotations in one undo step. */
+  applyAnnotationPatches: (patches: Record<string, Partial<Annotation>>) => void;
   removeAnnotation: (id: string) => void;
-  selectAnnotation: (id: string | null) => void;
+  selectAnnotation: (id: string | null, additive?: boolean) => void;
+  selectAnnotations: (ids: string[]) => void;
   selectFrameInstance: (id: string | null) => void;
   clearAnnotations: () => void;
   setVideoMuted: (muted: boolean) => void;

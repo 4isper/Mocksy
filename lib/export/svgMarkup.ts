@@ -33,6 +33,8 @@ export interface SvgFrameGroup {
   mediaFit?: "cover" | "contain";
   offsetX?: number;
   offsetY?: number;
+  /** Rotation of the media inside the frame, in degrees (clockwise). */
+  rotation?: number;
 }
 
 export interface SvgExportOptions {
@@ -143,10 +145,14 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
   const dx = box.innerX + (box.innerW - dw) / 2 + (offX * (box.innerW - dw)) / 2;
   const dy = box.innerY + (box.innerH - dh) / 2 + (offY * (box.innerH - dh)) / 2;
 
-  const media =
+  const mediaRaw =
     group.mediaHref != null
       ? `<image href="${group.mediaHref}" x="${num(dx)}" y="${num(dy)}" width="${num(dw)}" height="${num(dh)}"/>`
       : `<rect x="${num(box.innerX)}" y="${num(box.innerY)}" width="${num(box.innerW)}" height="${num(box.innerH)}" fill="${RENDER.emptyMediaFill}"/>`;
+  // Rotate the media about the inner screen's center to match the CSS preview
+  // (transform-origin: center). The rotation is applied only to the media so
+  // the device bezel and chrome stay put.
+  const media = group.rotation ? `<g transform="rotate(${num(group.rotation)} ${num(box.innerX + box.innerW / 2)} ${num(box.innerY + box.innerH / 2)})">${mediaRaw}</g>` : mediaRaw;
 
   // On-screen decoration in canvas space: the geometry is expressed in units
   // of the inner screen box, so just translate to its origin. Placed inside

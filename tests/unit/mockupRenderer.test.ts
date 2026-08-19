@@ -149,6 +149,14 @@ describe("buildSceneCss", () => {
     expect(overlay.mediaStyle.objectPosition).toBe("0% 100%");
   });
 
+  it("rotates the media via a CSS transform around its center", () => {
+    const { mediaStyle } = buildSceneCss(base({ layer: { rotation: 45 } }));
+    expect(mediaStyle.transform).toBe("rotate(45deg)");
+    expect(mediaStyle.transformOrigin).toBe("center");
+    const none = buildSceneCss(base({ layer: { rotation: 0 } }));
+    expect(none.mediaStyle.transform).toBeUndefined();
+  });
+
   it("renders the watch frame as a full circle", () => {
     const { frame } = buildSceneCss(base({ frame: "watch" }));
     expect(frame.borderRadius).toBe("50%");

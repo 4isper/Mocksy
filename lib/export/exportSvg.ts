@@ -145,7 +145,8 @@ export async function exportSvg(
           overlayInner,
           mediaFit: layer?.mediaFit,
           offsetX: layer?.mediaOffsetX,
-          offsetY: layer?.mediaOffsetY
+          offsetY: layer?.mediaOffsetY,
+          rotation: layer?.rotation ?? 0
         });
       }
     } else {
@@ -184,7 +185,8 @@ export async function exportSvg(
         overlayInner,
         mediaFit: activeLayer?.mediaFit,
         offsetX: activeLayer?.mediaOffsetX,
-        offsetY: activeLayer?.mediaOffsetY
+        offsetY: activeLayer?.mediaOffsetY,
+        rotation: activeLayer?.rotation ?? 0
       });
     }
 

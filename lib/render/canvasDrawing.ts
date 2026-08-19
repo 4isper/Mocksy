@@ -248,6 +248,15 @@ export function drawFrameAndMedia(
     const offsetY = layer?.mediaOffsetY ?? 0;
     const dx = innerX + (innerW - dw) / 2 + offsetX * (innerW - dw) / 2;
     const dy = innerY + (innerH - dh) / 2 + offsetY * (innerH - dh) / 2;
+    const rotation = layer?.rotation ?? 0;
+    if (rotation) {
+      // Rotate the media about the inner screen's center so the rotation pivot
+      // matches the CSS preview (transform-origin: center) and stays inside the
+      // rounded-screen clip.
+      ctx.translate(innerX + innerW / 2, innerY + innerH / 2);
+      ctx.rotate((rotation * Math.PI) / 180);
+      ctx.translate(-(innerX + innerW / 2), -(innerY + innerH / 2));
+    }
     ctx.filter = buildLayerFilterCss(layer);
     ctx.drawImage(media, dx, dy, dw, dh);
   } else {

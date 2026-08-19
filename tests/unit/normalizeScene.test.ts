@@ -40,6 +40,12 @@ describe("normalizeScene", () => {
     expect(s.layers[0]!.mediaOffsetY).toBe(initialScene.layers[0]!.mediaOffsetY);
   });
 
+  it("clamps rotation into [-180, 180] and falls back for NaN", () => {
+    const s = normalizeScene({ layers: [{ rotation: 360, mediaOffsetX: Number.NaN }] });
+    expect(s.layers[0]!.rotation).toBe(180);
+    expect(s.layers[0]!.mediaOffsetX).toBe(initialScene.layers[0]!.mediaOffsetX);
+  });
+
   it("coerces numeric strings and drops values outside range", () => {
     const s = normalizeScene({ layers: [{ zoom: "1.5" }], shadowOpacity: "2" });
     expect(s.layers[0]!.zoom).toBe(1.5);

@@ -119,6 +119,7 @@ function normalizeLayer(raw: unknown, fallback: MediaLayer): MediaLayer {
     mediaOffsetX: num(r.mediaOffsetX, fallback.mediaOffsetX, -1, 1),
     mediaOffsetY: num(r.mediaOffsetY, fallback.mediaOffsetY, -1, 1),
     mediaFit: pick(r.mediaFit, MEDIA_FITS, fallback.mediaFit),
+    rotation: num(r.rotation, fallback.rotation ?? 0, -180, 180),
     brightness: num(r.brightness, fallback.brightness ?? LAYER_FILTER_DEFAULTS.brightness, 0, 200),
     contrast: num(r.contrast, fallback.contrast ?? LAYER_FILTER_DEFAULTS.contrast, 0, 200),
     saturate: num(r.saturate, fallback.saturate ?? LAYER_FILTER_DEFAULTS.saturate, 0, 200),

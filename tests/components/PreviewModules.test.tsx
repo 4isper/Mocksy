@@ -37,10 +37,14 @@ describe("PreviewOverlays", () => {
         scene={s}
         canvasRef={{ current: null } as any}
         selectedAnnotationId="a"
+        selectedAnnotationIds={["a"]}
         showGrid={false}
         gridDivisions={12}
+        guides={[]}
         onSelectAnnotation={vi.fn()}
         onUpdateAnnotation={vi.fn()}
+        onSelectMany={vi.fn()}
+        onGuides={vi.fn()}
       />
     );
     expect(screen.getByText("Hi")).toBeInTheDocument();

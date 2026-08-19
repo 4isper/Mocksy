@@ -28,6 +28,7 @@ function mockCtx(): CanvasRenderingContext2D {
     fillText: vi.fn(),
     strokeRect: vi.fn(),
     translate: vi.fn(),
+    rotate: vi.fn(),
     measureText: (text: string) => ({ width: text.length * 10 }),
     createLinearGradient: () => ({ addColorStop: vi.fn() }),
     set fillStyle(v: unknown) { fillStyles.push(String(v)); state.fillStyle = v; },
@@ -357,6 +358,45 @@ describe("drawWatermark", () => {
     drawWatermark(ctx, { ...scene(), watermarkEnabled: true, watermarkText: "Brand", watermarkPosition: "bottom-right", watermarkSize: 13 } as any, 800, 600, 2);
     expect(ctx.shadowColor).toBe("rgba(0,0,0,0.6)");
     expect(ctx.shadowBlur).toBe(6);
+  });
+});
+
+describe("drawFrameAndMedia rotation", () => {
+  const box: FrameBox = { x: 0, y: 0, width: 400, height: 800, outerRadius: 20, innerX: 10, innerY: 10, innerW: 380, innerH: 780, innerRadius: 16 };
+
+  it("rotates the media about the inner screen center when rotation is set", () => {
+    const ctx = mockCtx();
+    drawFrameAndMedia(
+      ctx,
+      scene(),
+      getFrameSpec("iphone"),
+      mediaLayer({ mediaUrl: "x", rotation: 90 }),
+      box,
+      1,
+      1,
+      {} as CanvasImageSource,
+      null
+    );
+    // rotate is applied around (innerX+innerW/2, innerY+innerH/2) = (200, 400)
+    expect(ctx.rotate).toHaveBeenCalledWith((90 * Math.PI) / 180);
+    expect(ctx.translate).toHaveBeenCalledWith(200, 400);
+    expect(ctx.drawImage).toHaveBeenCalled();
+  });
+
+  it("does not rotate when rotation is zero", () => {
+    const ctx = mockCtx();
+    drawFrameAndMedia(
+      ctx,
+      scene(),
+      getFrameSpec("iphone"),
+      mediaLayer({ mediaUrl: "x", rotation: 0 }),
+      box,
+      1,
+      1,
+      null,
+      null
+    );
+    expect(ctx.rotate).not.toHaveBeenCalled();
   });
 });
 

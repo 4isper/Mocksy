@@ -161,6 +161,28 @@ describe("buildSvgMarkup", () => {
     expect(markup).toContain('<image href="data:image/png;base64,AAAA" x="200" y="250" width="400" height="100"/>');
   });
 
+  it("wraps the media in a rotation group about the screen center", () => {
+    const scene = sceneWith({ frame: "none", backgroundMode: "transparent" });
+    const box = boxFor(scene);
+    const markup = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      zoom: 1,
+      groups: [{ box, mediaHref: MEDIA, mediaWidth: 400, mediaHeight: 100, isOverlay: false, overlayInner: null, rotation: 30 }]
+    });
+    // rotate(30 deg) about the inner screen center (200+200, 150+150)
+    expect(markup).toContain('<g transform="rotate(30 400 300)"><image href="data:image/png;base64,AAAA"');
+    const noRotation = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      zoom: 1,
+      groups: [{ box, mediaHref: MEDIA, mediaWidth: 400, mediaHeight: 100, isOverlay: false, overlayInner: null }]
+    });
+    expect(noRotation).not.toContain("rotate(");
+  });
+
   it("embeds the screen chrome inside the screen clip when enabled", () => {
     const scene = sceneWith({ frame: "none", backgroundMode: "transparent", screen: { ...initialScene.screen, enabled: true } });
     const box = boxFor(scene);

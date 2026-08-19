@@ -132,6 +132,8 @@ export interface MediaLayer {
   mediaOffsetY: number;
   /** How the media fills the frame: cover (fill/crop) or contain (fit/letterbox). */
   mediaFit: "cover" | "contain";
+  /** Rotation of the media inside the frame, in degrees (clockwise). */
+  rotation?: number;
   /** Brightness of the media in percent, 0–200 (100 = unchanged). Absent
    *  means unchanged, matching `buildLayerFilterCss` neutral defaults. */
   brightness?: number;

@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
+import type { GuideLine } from "@/lib/render/annotationAlign";
 import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
 import { tiltCss } from "@/lib/render/tilt";
 import { useEditorStore } from "@/lib/state/editorStore";
@@ -29,8 +30,11 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const isMediaLoading = useEditorStore((s) => s.isMediaLoading);
   const mediaUploadError = useEditorStore((s) => s.mediaUploadError);
   const selectedAnnotationId = useEditorStore((s) => s.selectedAnnotationId);
+  const selectedAnnotationIds = useEditorStore((s) => s.selectedAnnotationIds);
   const selectAnnotation = useEditorStore((s) => s.selectAnnotation);
+  const selectAnnotations = useEditorStore((s) => s.selectAnnotations);
   const updateAnnotation = useEditorStore((s) => s.updateAnnotation);
+  const [guides, setGuides] = useState<GuideLine[]>([]);
   const activeFrameInstanceId = useEditorStore((s) => s.activeFrameInstanceId);
   const selectFrameInstance = useEditorStore((s) => s.selectFrameInstance);
   const selectLayer = useEditorStore((s) => s.selectLayer);
@@ -200,10 +204,14 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           scene={scene}
           canvasRef={canvasRef}
           selectedAnnotationId={selectedAnnotationId}
+          selectedAnnotationIds={selectedAnnotationIds}
           showGrid={showGrid}
           gridDivisions={gridDivisions}
+          guides={guides}
           onSelectAnnotation={selectAnnotation}
           onUpdateAnnotation={updateAnnotation}
+          onSelectMany={selectAnnotations}
+          onGuides={setGuides}
         />
         <PreviewGridToggle
           showGrid={showGrid}

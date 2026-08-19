@@ -33,6 +33,7 @@ export type LayersSlice = Pick<
   | "setZoom"
   | "setMediaOffsetX"
   | "setMediaOffsetY"
+  | "setRotation"
   | "setMediaFit"
   | "setBrightness"
   | "setContrast"
@@ -251,6 +252,7 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
     setZoom: (zoom) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { zoom }, s.activeLayerId) }, "zoom")),
     setMediaOffsetX: (mediaOffsetX) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetX }, s.activeLayerId) }, "mediaOffset")),
     setMediaOffsetY: (mediaOffsetY) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetY }, s.activeLayerId) }, "mediaOffset")),
+    setRotation: (rotation) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { rotation }, s.activeLayerId) }, "rotation")),
     setMediaFit: (mediaFit) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaFit }, s.activeLayerId) }, "mediaFit")),
     setBrightness: (brightness) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { brightness }, s.activeLayerId) }, "layerFilter")),
     setContrast: (contrast) => set((s) => pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { contrast }, s.activeLayerId) }, "layerFilter")),

@@ -5,26 +5,31 @@ import type { CSSProperties } from "react";
 import type { Annotation } from "@/lib/types/editor";
 import { useTranslations } from "next-intl";
 import { snapToGrid } from "@/lib/render/grid";
+import { computeSmartGuide, type GuideLine } from "@/lib/render/annotationAlign";
 import { AnnotationContent } from "@/components/editor/AnnotationContent";
 
 interface AnnotationItemProps {
   annotation: Annotation;
   selected: boolean;
+  /** Other annotations on the canvas, used for smart-guide snapping. */
+  others: Annotation[];
   canvasRef: React.RefObject<HTMLDivElement | null>;
   /** Grid divisions per axis to snap to, or null to move freely. */
   snapDivisions?: number | null;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, additive?: boolean) => void;
+  onSelectMany: (ids: string[]) => void;
   onUpdate: (id: string, patch: Partial<Annotation>) => void;
+  onGuides: (guides: GuideLine[]) => void;
 }
 
 /**
  * One annotation overlay in the live preview. Coordinates are fractions of the
  * canvas, so the element is positioned with percentages. Dragging/resizing are
  * pointer gestures that map deltas onto the canvas fractions (snapping when a
- * grid is active); the rendered body (text/rect/circle/arrow) is delegated to
- * AnnotationContent.
+ * grid is active; smart-guide snapping to other annotations otherwise); the
+ * rendered body (text/rect/circle/arrow) is delegated to AnnotationContent.
  */
-export function AnnotationItem({ annotation, selected, canvasRef, snapDivisions = null, onSelect, onUpdate }: AnnotationItemProps) {
+export function AnnotationItem({ annotation, selected, others, canvasRef, snapDivisions = null, onSelect, onSelectMany, onUpdate, onGuides }: AnnotationItemProps) {
   const t = useTranslations();
   const moveRef = useRef<{ x: number; y: number; ax: number; ay: number } | null>(null);
   const resizeRef = useRef<{ x: number; y: number; aw: number; ah: number } | null>(null);
@@ -56,7 +61,9 @@ export function AnnotationItem({ annotation, selected, canvasRef, snapDivisions 
 
   const onBodyDown = (e: React.PointerEvent) => {
     e.stopPropagation();
-    onSelect(annotation.id);
+    // Shift-click extends the selection (toggle) for align/distribute; a plain
+    // click selects just this annotation.
+    onSelect(annotation.id, e.shiftKey);
     const canvas = canvasRef.current;
     if (!canvas) return;
     moveRef.current = { x: e.clientX, y: e.clientY, ax: annotation.x, ay: annotation.y };
@@ -73,11 +80,20 @@ export function AnnotationItem({ annotation, selected, canvasRef, snapDivisions 
     if (snapDivisions) {
       nx = snapToGrid(nx, snapDivisions);
       ny = snapToGrid(ny, snapDivisions);
+    } else {
+      // Smart guides: snap the dragged box to the canvas centerlines and to the
+      // edges/centers of other annotations when within a small threshold. The
+      // grid takes precedence when it is active.
+      const guided = computeSmartGuide({ ...annotation, x: nx, y: ny }, others);
+      nx = guided.x;
+      ny = guided.y;
+      onGuides(guided.guides);
     }
     onUpdate(annotation.id, { x: nx, y: ny });
   };
   const onBodyUp = (e: React.PointerEvent) => {
     moveRef.current = null;
+    onGuides([]);
     if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
   };
 

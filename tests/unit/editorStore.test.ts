@@ -387,6 +387,32 @@ describe("annotations", () => {
     expect(store().selectedAnnotationId).toBe(selectedId);
   });
 
+  it("selectAnnotation additive (shift) toggles multi-selection", () => {
+    reset();
+    store().addAnnotation("rect");
+    const a = store().selectedAnnotationId!;
+    store().addAnnotation("arrow");
+    const b = store().selectedAnnotationId!;
+    store().selectAnnotations([a]);
+    store().selectAnnotation(b, true);
+    expect(store().selectedAnnotationIds.sort()).toEqual([a, b].sort());
+    store().selectAnnotation(b, true);
+    expect(store().selectedAnnotationIds).toEqual([a]);
+  });
+
+  it("applyAnnotationPatches updates many annotations in one undo step", () => {
+    reset();
+    store().addAnnotation("rect");
+    const a = store().selectedAnnotationId!;
+    store().addAnnotation("arrow");
+    const b = store().selectedAnnotationId!;
+    const pastBefore = store().past.length;
+    store().applyAnnotationPatches({ [a]: { x: 0.1 }, [b]: { x: 0.9 } });
+    expect(store().scene.annotations.find((x) => x.id === a)!.x).toBeCloseTo(0.1);
+    expect(store().scene.annotations.find((x) => x.id === b)!.x).toBeCloseTo(0.9);
+    expect(store().past.length).toBe(pastBefore + 1);
+  });
+
   it("clearAnnotations empties the list and selection", () => {
     reset();
     store().addAnnotation("text");

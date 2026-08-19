@@ -25,6 +25,19 @@ function makeAnnotation(overrides: Partial<Annotation> = {}): Annotation {
   };
 }
 
+/** Props shared by every render so the multi-select/guide additions stay
+ *  out of each individual test. */
+function baseProps(overrides: Record<string, unknown> = {}) {
+  return {
+    others: [],
+    onSelect: () => {},
+    onSelectMany: vi.fn(),
+    onGuides: vi.fn(),
+    onUpdate: vi.fn(),
+    ...overrides
+  };
+}
+
 afterEach(cleanup);
 
 describe("AnnotationItem", () => {
@@ -42,6 +55,9 @@ describe("AnnotationItem", () => {
         snapDivisions={10}
         onSelect={() => {}}
         onUpdate={onUpdate}
+        others={[]}
+        onSelectMany={vi.fn()}
+        onGuides={vi.fn()}
       />
     );
     const body = document.body;
@@ -72,6 +88,9 @@ describe("AnnotationItem", () => {
         snapDivisions={null}
         onSelect={() => {}}
         onUpdate={onUpdate}
+        others={[]}
+        onSelectMany={vi.fn()}
+        onGuides={vi.fn()}
       />
     );
     const box = document.querySelector("div[style*='cursor: move']") as HTMLDivElement;
@@ -100,6 +119,9 @@ describe("AnnotationItem", () => {
         canvasRef={canvasRef}
         onSelect={() => {}}
         onUpdate={onUpdate}
+        others={[]}
+        onSelectMany={vi.fn()}
+        onGuides={vi.fn()}
       />
     );
 
@@ -128,6 +150,9 @@ describe("AnnotationItem", () => {
         snapDivisions={null}
         onSelect={() => {}}
         onUpdate={onUpdate}
+        others={[]}
+        onSelectMany={vi.fn()}
+        onGuides={vi.fn()}
       />
     );
     const handle = screen.getByLabelText("editor.resizeAnnotation");
@@ -148,6 +173,9 @@ describe("AnnotationItem", () => {
         canvasRef={{ current: null }}
         onSelect={() => {}}
         onUpdate={() => {}}
+        others={[]}
+        onSelectMany={vi.fn()}
+        onGuides={vi.fn()}
       />
     );
     expect(screen.queryByLabelText("editor.resizeAnnotation")).not.toBeInTheDocument();
@@ -165,6 +193,9 @@ describe("AnnotationItem", () => {
         canvasRef={canvasRef}
         onSelect={() => {}}
         onUpdate={() => {}}
+        others={[]}
+        onSelectMany={vi.fn()}
+        onGuides={vi.fn()}
       />
     );
     const svg = document.querySelector("svg");
@@ -185,6 +216,9 @@ describe("AnnotationItem", () => {
         canvasRef={canvasRef}
         onSelect={() => {}}
         onUpdate={() => {}}
+        others={[]}
+        onSelectMany={vi.fn()}
+        onGuides={vi.fn()}
       />
     );
     expect(document.querySelector("div[style*='border-radius: 50%']")).not.toBeNull();
@@ -203,11 +237,14 @@ describe("AnnotationItem", () => {
         canvasRef={canvasRef}
         onSelect={onSelect}
         onUpdate={() => {}}
+        others={[]}
+        onSelectMany={vi.fn()}
+        onGuides={vi.fn()}
       />
     );
     const box = document.querySelector("div[style*='cursor: move']") as HTMLDivElement;
     fireEvent.pointerDown(box, { clientX: 10, clientY: 10, pointerId: 1 });
-    expect(onSelect).toHaveBeenCalledWith("a1");
+    expect(onSelect).toHaveBeenCalledWith("a1", false);
   });
 
   it("closes the in-place editor on Escape", () => {
@@ -222,6 +259,9 @@ describe("AnnotationItem", () => {
         canvasRef={canvasRef}
         onSelect={() => {}}
         onUpdate={() => {}}
+        others={[]}
+        onSelectMany={vi.fn()}
+        onGuides={vi.fn()}
       />
     );
     fireEvent.doubleClick(screen.getByText("Hello"));

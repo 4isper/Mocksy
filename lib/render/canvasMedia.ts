@@ -81,6 +81,12 @@ export async function drawFrameMediaFromLayer(
     const offsetY = layer.mediaOffsetY ?? 0;
     const dx = innerX + (innerW - dw) / 2 + offsetX * (innerW - dw) / 2;
     const dy = innerY + (innerH - dh) / 2 + offsetY * (innerH - dh) / 2;
+    const rotation = layer.rotation ?? 0;
+    if (rotation) {
+      ctx.translate(innerX + innerW / 2, innerY + innerH / 2);
+      ctx.rotate((rotation * Math.PI) / 180);
+      ctx.translate(-(innerX + innerW / 2), -(innerY + innerH / 2));
+    }
     ctx.drawImage(media, dx, dy, dw, dh);
     ctx.restore();
   } catch {
