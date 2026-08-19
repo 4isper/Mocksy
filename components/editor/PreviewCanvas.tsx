@@ -324,18 +324,18 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
               }
             };
             return (
-              <>
+              <div className="preview-chip-stack" style={{ top: 8, left: 8 }}>
                 {!selectedLayer?.mediaUrl ? (
-                  <label className="preview-chip" style={{ top: 8 }}>
+                  <label className="preview-chip">
                     <span>{t("editor.uploadMedia")}</span>
                     <input type="file" accept="image/*,video/*" onChange={handleMultiFile} key={canvasFileInputKey} style={{ display: "none" }} />
                   </label>
                 ) : (
-                  <button type="button" className="preview-chip" style={{ top: 8 }} onClick={() => useEditorStore.getState().setMediaOnLayer(targetLayerId, null, "none", null)}>
+                  <button type="button" className="preview-chip" onClick={() => useEditorStore.getState().setMediaOnLayer(targetLayerId, null, "none", null)}>
                     {t("editor.clearMedia")}
                   </button>
                 )}
-              </>
+              </div>
             );
           })()
         ) : null}
@@ -421,38 +421,43 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           )
         )}
         </div>
-        <label className="preview-chip" style={{ top: 8 }}>
-          <span>{t("editor.uploadMedia")}</span>
-          <input type="file" accept="image/*,video/*" onChange={handleCanvasFile} key={canvasFileInputKey} style={{ display: "none" }} />
-        </label>
-        {activeLayer?.mediaUrl ? (
-          <button type="button" className="preview-chip" style={{ top: 40 }} onClick={() => setMedia(null, "none", null)}>
-            {t("editor.clearMedia")}
-          </button>
+        {scene.frameInstances.length === 0 ? (
+          <div className="preview-chip-stack" style={{ top: 8, left: 8 }}>
+            <label className="preview-chip">
+              <span>{t("editor.uploadMedia")}</span>
+              <input type="file" accept="image/*,video/*" onChange={handleCanvasFile} key={canvasFileInputKey} style={{ display: "none" }} />
+            </label>
+            {activeLayer?.mediaUrl ? (
+              <button type="button" className="preview-chip" onClick={() => setMedia(null, "none", null)}>
+                {t("editor.clearMedia")}
+              </button>
+            ) : null}
+          </div>
         ) : null}
-        <button
-          type="button"
-          className="preview-chip"
-          style={{ top: "auto", bottom: 8, right: 12 }}
-          aria-pressed={showGrid}
-          aria-label={t("editor.grid")}
-          onClick={() => setShowGrid(!showGrid)}
-        >
-          {showGrid ? <Check size={12} /> : ""}{t("editor.grid")}
-        </button>
-        {showGrid ? (
-          <select
+        <div className="preview-chip-stack" style={{ bottom: 8, right: 8 }}>
+          <button
+            type="button"
             className="preview-chip"
-            style={{ top: "auto", bottom: 44, right: 12, cursor: "pointer" }}
-            value={gridDivisions}
-            aria-label={t("editor.gridDivisions")}
-            onChange={(e) => setGridDivisions(Number(e.target.value))}
+            aria-pressed={showGrid}
+            aria-label={t("editor.grid")}
+            onClick={() => setShowGrid(!showGrid)}
           >
-            {GRID_DIVISION_OPTIONS.map((n) => (
-              <option key={n} value={n}>{n}</option>
-            ))}
-          </select>
-        ) : null}
+            {showGrid ? <Check size={12} /> : ""}{t("editor.grid")}
+          </button>
+          {showGrid ? (
+            <select
+              className="preview-chip"
+              style={{ cursor: "pointer" }}
+              value={gridDivisions}
+              aria-label={t("editor.gridDivisions")}
+              onChange={(e) => setGridDivisions(Number(e.target.value))}
+            >
+              {GRID_DIVISION_OPTIONS.map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+          ) : null}
+        </div>
         {mediaUploadError ? (
           <div role="alert" className="preview-error">
             {mediaUploadError}

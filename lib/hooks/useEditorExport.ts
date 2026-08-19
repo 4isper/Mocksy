@@ -111,6 +111,7 @@ export function useEditorExport(
     try {
       const { exportSvg } = await import("@/lib/export/exportSvg");
       await exportSvg(scene, "preview-canvas", "mocksy-export", setExportError, activeLayerId);
+      setCopyStatus(t("editor.exported"));
     } catch (err) {
       setExportError(err instanceof Error ? err.message : t("export.svgFailed"));
     }
@@ -121,6 +122,7 @@ export function useEditorExport(
     try {
       const { exportHtml } = await import("@/lib/export/exportHtml");
       await exportHtml(scene, "preview-canvas", "mocksy-export", setExportError, activeLayerId);
+      setCopyStatus(t("editor.exported"));
     } catch (err) {
       setExportError(err instanceof Error ? err.message : t("export.htmlFailed"));
     }

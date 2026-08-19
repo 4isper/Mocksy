@@ -251,6 +251,7 @@ export function AnnotationsPanel() {
           <button type="button" className="btn btn-sm" onClick={() => removeAnnotation(selected.id)}>
             {t("annotation.delete")}
           </button>
+          <p className="anno-hint">{t("annotation.editHint")}</p>
         </div>
       ) : null}
 

@@ -47,7 +47,7 @@ type TabId = (typeof tabs)[number]["id"];
 
 export function RightPanel() {
   const t = useTranslations();
-  const [activeTab, setActiveTab] = useState<TabId>("layers");
+  const [activeTab, setActiveTab] = useState<TabId>("templates");
   const layersCount = useEditorStore((s) => s.scene.layers.length);
   const annotationsCount = useEditorStore((s) => s.scene.annotations.length);
   const [animDir, setAnimDir] = useState<"left" | "right">("right");

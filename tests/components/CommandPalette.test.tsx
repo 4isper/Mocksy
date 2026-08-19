@@ -86,6 +86,21 @@ describe("CommandPalette", () => {
     expect(items[0]).toHaveAttribute("aria-selected", "true");
   });
 
+  it("points aria-activedescendant at the selected option and tracks navigation", async () => {
+    const cmds: Command[] = [
+      { id: "a", label: "Alpha", keywords: [], category: "test", action: vi.fn() },
+      { id: "b", label: "Beta", keywords: [], category: "test", action: vi.fn() },
+    ];
+    render(<CommandPalette commands={cmds} isOpen={true} onClose={vi.fn()} />);
+    const input = screen.getByRole("textbox");
+    expect(input).toHaveAttribute("aria-controls", "command-palette-list");
+    expect(input).toHaveAttribute("aria-activedescendant", "command-option-0");
+    await userEvent.type(input, "{ArrowDown}");
+    expect(input).toHaveAttribute("aria-activedescendant", "command-option-1");
+    await userEvent.type(input, "{ArrowUp}");
+    expect(input).toHaveAttribute("aria-activedescendant", "command-option-0");
+  });
+
   it("executes selected command on Enter", async () => {
     const a = vi.fn();
     const b = vi.fn();

@@ -92,11 +92,12 @@ describe("EditorShell", () => {
     expect(screen.getByTitle("editor.systemTheme")).toBeInTheDocument();
   });
 
-  it("renders saved/unsaved status indicator", () => {
+  it("does not show a persistent saved/unsaved indicator on load", () => {
     render(<EditorShell />);
-    // A restored scene matches what's persisted, so it starts as "saved"
-    // rather than flickering a false "unsaved" on every load.
-    expect(screen.getByText("editor.saved")).toBeInTheDocument();
+    // A restored scene matches what's persisted, so it starts with no
+    // transient toast rather than flickering a false "unsaved" on load.
+    expect(screen.queryByText("editor.saved")).not.toBeInTheDocument();
+    expect(screen.queryByText("editor.unsaved")).not.toBeInTheDocument();
   });
 
   it("enables undo after reset creates history", async () => {

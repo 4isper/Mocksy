@@ -43,6 +43,8 @@ export function EditorShell() {
   const setThemeMode = useThemeStore((s) => s.setMode);
   const saveError = useProjectsStore((s) => s.saveError);
   const [saved, setSaved] = useState(true);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
+  const savedToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -134,14 +136,27 @@ export function EditorShell() {
 
 const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 const latestSceneRef = useRef(scene);
+const showSavedToast = useCallback((msg: string) => {
+  setSaveToast(msg);
+  if (savedToastTimer.current) clearTimeout(savedToastTimer.current);
+  savedToastTimer.current = setTimeout(() => setSaveToast(null), 2000);
+}, []);
 useEffect(() => {
   latestSceneRef.current = scene;
   // Only a genuine user edit (a `scene` different from the last persisted
   // baseline) should flip the indicator to "unsaved". The bootstrap restore
   // swaps `scene` from the initial demo to the hydrated one; ignore that
-  // transient so we don't flicker a false "unsaved" on every load.
-  if (bootstrapped.current && savedSceneRef.current && savedSceneRef.current !== scene) {
-    setSaved(false);
+  // transient so we don't flicker a false "unsaved" on every load. Deferred
+  // to a microtask so we don't setState synchronously inside the effect.
+  if (bootstrapped.current && savedSceneRef.current && savedSceneRef.current !== scene && saved) {
+    setTimeout(() => {
+      // Re-check the live scene is still the one that triggered the edit
+      // (a fast autosave could have already resolved it to "saved").
+      if (latestSceneRef.current === scene) {
+        setSaved(false);
+        showSavedToast(t("editor.unsaved"));
+      }
+    }, 0);
   }
   if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
   autosaveTimer.current = setTimeout(() => {
@@ -153,12 +168,15 @@ useEffect(() => {
     // Only surface "Saved" if no further edit arrived during the debounce
     // window — otherwise the badge would flip Saved→Unsaved a tick later and
     // visibly flicker after a fast burst of edits.
-    if (latestSceneRef.current === scene) setSaved(true);
+    if (latestSceneRef.current === scene && !saved) {
+      setSaved(true);
+      showSavedToast(t("editor.saved"));
+    }
   }, AUTOSAVE_DELAY);
   return () => {
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
   };
-}, [scene, activeLayerId]);
+}, [scene, activeLayerId, saved, t, showSavedToast]);
 
   useEffect(() => {
     // Bootstrap from projects (URL share, localStorage, or a fresh demo). The
@@ -185,19 +203,13 @@ useEffect(() => {
       ? { msg: exportApi.exportError, type: "error" as const }
       : saveError
         ? { msg: saveError, type: "error" as const }
-        : { msg: saved ? t("editor.saved") : t("editor.unsaved"), type: "info" as const };
-
-  useEffect(() => {
-    if (toastStatus.msg) {
-      const timer = setTimeout(() => {
-        // auto-dismiss handled by toastStatus reactivity
-      }, 2500);
-      return () => clearTimeout(timer);
-    }
-  }, [toastStatus.msg]);
+        : saveToast
+          ? { msg: saveToast, type: "info" as const }
+          : null;
 
   useEffect(() => () => {
     if (resetNoticeTimer.current) clearTimeout(resetNoticeTimer.current);
+    if (savedToastTimer.current) clearTimeout(savedToastTimer.current);
   }, []);
 
   const confirmReset = useCallback(() => {
@@ -279,7 +291,7 @@ useEffect(() => {
                 </button>
               </div>
             ) : null}
-{toastStatus.msg ? (
+{toastStatus ? (
                 <span className="toast-status" role={toastStatus.type === "error" ? "alert" : undefined} style={{ color: toastStatus.type === "error" ? "var(--danger)" : toastStatus.type === "success" ? "var(--success)" : "var(--text-secondary)", fontSize: 12, whiteSpace: "nowrap" }}>
                   {toastStatus.msg}
                 </span>
@@ -339,6 +351,9 @@ useEffect(() => {
             <div className="toolbar-group">
               <button type="button" className="btn-tb btn-tb-icon" onClick={exportApi.copyShareUrl} title={t("editor.shareTitle")} aria-label={t("editor.shareTitle")}>
                 <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M5.5 8.5l3-3M8 5.5l-1-1A2.5 2.5 0 119.5 3l.5.5M6 8.5l1 1A2.5 2.5 0 114.5 11l-.5-.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              <button type="button" className="btn-tb btn-tb-icon" onClick={() => setCommandPaletteOpen(true)} title={t("editor.commandPaletteTitle")} aria-label={t("editor.commandPaletteTitle")} aria-keyshortcuts="Meta+K Control+K">
+                <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="2.5" width="10.5" height="9.5" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M4 5.5h6M4 8.5h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
               </button>
               <button type="button" className="btn-tb btn-tb-icon" onClick={() => setShortcutsOpen(true)} title={t("editor.shortcutsTitle")} aria-label={t("editor.shortcutsTitle")}>
                 <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="1.5" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M5 5l4 4M9 5l-4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>

@@ -116,20 +116,24 @@ export function FrameSection() {
         <div className="field" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.layoutLabel")}</span>
           <div style={{ display: "flex", gap: 4, width: "100%" }}>
-            {layoutPresets.map((layout) => (
-              <button
-                key={layout}
-                type="button"
-                className="btn btn-sm"
-                title={t(`editor.layout${layout.charAt(0).toUpperCase() + layout.slice(1)}`)}
-                onClick={() => {
-                  const count = Math.max(2, scene.frameInstances.length || 2);
-                  applyFrameLayout(scene.frame, count, layout);
-                }}
-              >
-                {t(`editor.layout${layout.charAt(0).toUpperCase() + layout.slice(1)}`)}
-              </button>
-            ))}
+            {layoutPresets.map((layout) => {
+              const disabled = scene.frameInstances.length === 0;
+              return (
+                <button
+                  key={layout}
+                  type="button"
+                  className="btn btn-sm"
+                  disabled={disabled}
+                  title={disabled ? t("editor.layoutNeedsFrames") : t(`editor.layout${layout.charAt(0).toUpperCase() + layout.slice(1)}`)}
+                  onClick={() => {
+                    const count = Math.max(2, scene.frameInstances.length || 2);
+                    applyFrameLayout(scene.frame, count, layout);
+                  }}
+                >
+                  {t(`editor.layout${layout.charAt(0).toUpperCase() + layout.slice(1)}`)}
+                </button>
+              );
+            })}
           </div>
         </div>
         <FrameInstanceList

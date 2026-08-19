@@ -259,7 +259,9 @@
     "renameLayer": "Rename layer",
     "deleteLayers": "Delete layers",
     "selectedCount": "{count} layers selected",
-    "toggleVisibility": "Toggle visibility"
+    "toggleVisibility": "Toggle visibility",
+    "commandPaletteTitle": "Open command palette (⌘K)",
+    "layoutNeedsFrames": "Add frames first"
   },
   "frame": {
     "none": "Ingen",
@@ -329,7 +331,8 @@
     "clearAllConfirm_title": "Clear all annotations?",
     "clearAllConfirm_message": "This removes every annotation from the scene. You can undo afterwards.",
     "clearAllConfirm_cancel": "Cancel",
-    "clearAllConfirm_confirm": "Clear all"
+    "clearAllConfirm_confirm": "Clear all",
+    "editHint": "Drag on the canvas to move, use the corner handle to resize, or arrow keys to nudge (Alt+arrows to resize)."
   },
   "video": {
     "options": "Videoinställningar",

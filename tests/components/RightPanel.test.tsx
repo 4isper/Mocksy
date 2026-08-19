@@ -20,9 +20,9 @@ describe("RightPanel", () => {
     expect(screen.getByText("projects.title")).toBeInTheDocument();
   });
 
-  it("defaults to layers tab", () => {
+  it("defaults to templates tab", () => {
     render(<RightPanel />);
-    expect(screen.getByRole("tab", { name: /layers/i })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: /templates/i })).toHaveAttribute("aria-selected", "true");
   });
 
   it("switches tab on click", async () => {
@@ -71,26 +71,26 @@ describe("RightPanel", () => {
 
   it("wires tablist ARIA (controls/labelledby, roving tabindex)", () => {
     render(<RightPanel />);
-    const layersTab = screen.getByRole("tab", { name: /layers/i });
-    expect(layersTab).toHaveAttribute("aria-controls", "right-panel-content");
-    expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", "right-tab-layers");
+    const templatesTab = screen.getByRole("tab", { name: /templates/i });
+    expect(templatesTab).toHaveAttribute("aria-controls", "right-panel-content");
+    expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", "right-tab-templates");
     // Only the active tab is in the tab sequence.
-    expect(layersTab).toHaveAttribute("tabindex", "0");
-    expect(screen.getByRole("tab", { name: /templates/i })).toHaveAttribute("tabindex", "-1");
+    expect(templatesTab).toHaveAttribute("tabindex", "0");
+    expect(screen.getByRole("tab", { name: /layers/i })).toHaveAttribute("tabindex", "-1");
   });
 
   it("navigates tabs with arrow keys and moves focus", async () => {
     const user = userEvent.setup();
     render(<RightPanel />);
+    const templatesTab = screen.getByRole("tab", { name: /templates/i });
     const layersTab = screen.getByRole("tab", { name: /layers/i });
-    const annotationsTab = screen.getByRole("tab", { name: /annotations/i });
-    layersTab.focus();
+    templatesTab.focus();
     await user.keyboard("{ArrowRight}");
-    expect(annotationsTab).toHaveAttribute("aria-selected", "true");
-    expect(annotationsTab).toHaveFocus();
-    await user.keyboard("{ArrowLeft}");
     expect(layersTab).toHaveAttribute("aria-selected", "true");
     expect(layersTab).toHaveFocus();
+    await user.keyboard("{ArrowLeft}");
+    expect(templatesTab).toHaveAttribute("aria-selected", "true");
+    expect(templatesTab).toHaveFocus();
   });
 
   it("jumps to ends with Home/End", async () => {
