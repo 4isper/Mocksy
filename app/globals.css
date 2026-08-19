@@ -1341,6 +1341,9 @@ select {
 
 .preview-chip-stack > .preview-chip {
   position: static;
+  /* The stack disables pointer events so it never blocks the canvas; re-enable
+     them on the chips themselves so upload/grid controls stay clickable. */
+  pointer-events: auto;
 }
 
 .preview-watermark {
