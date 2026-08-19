@@ -5,6 +5,7 @@ import { tiltMatrixSvg } from "@/lib/render/tilt";
 import { RENDER, resolveFrameStyle } from "@/lib/render/canvasDrawing";
 import { watermarkEdges } from "@/lib/render/watermark";
 import { screenChromeElements } from "@/lib/render/screenChrome";
+import { PATTERN_TILES } from "@/lib/render/sceneBackground";
 
 /** Rounds to 2 decimals so generated SVG stays compact but accurate. */
 function num(n: number): string {
@@ -105,6 +106,16 @@ function backgroundMarkup(scene: EditorScene, opts: SvgExportOptions): string {
       // The preview's container paints a dark base under the blurred photo.
       return `<rect width="${width}" height="${height}" fill="#0a0a0f"/>`
         + `<image href="${opts.backgroundHref}" x="${num(x)}" y="${num(y)}" width="${num(dw + pad * 2)}" height="${num(dh + pad * 2)}" preserveAspectRatio="none"${blurFilter}/>`;
+    }
+    case "pattern": {
+      const tile = scene.patternId ? PATTERN_TILES[scene.patternId] : undefined;
+      if (!tile) return "";
+      const tileSize = scene.patternId === "noise" ? 100 : 20;
+      // The CSS preview paints patterns as a tiled background-image; mirror it
+      // here with a repeating <pattern> so SVG exports show the same dots/grid/
+      // diagonal/noise/plus/cross/triangle instead of a blank background.
+      return `<defs><pattern id="bg-pattern" width="${tileSize}" height="${tileSize}" patternUnits="userSpaceOnUse">${tile}</pattern></defs>`
+        + `<rect width="${width}" height="${height}" fill="url(#bg-pattern)"/>`;
     }
     default:
       return "";

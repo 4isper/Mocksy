@@ -5,6 +5,7 @@ import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
 import { buildLayerFilterCss } from "@/lib/render/layerFilters";
 import { resolveFrameStyle } from "@/lib/render/canvasDrawing";
 import { screenChromeSvg } from "@/lib/render/screenChrome";
+import { buildCssBackground } from "@/lib/render/sceneBackground";
 
 export interface SceneCss {
   container: CSSProperties;
@@ -32,71 +33,12 @@ export interface SceneCss {
   backgroundSize?: string;
 }
 
-function buildGradientBackground(scene: EditorScene): string {
-  if (scene.gradientType === "radial") {
-    const stops = scene.gradientVia
-      ? `${scene.gradientFrom}, ${scene.gradientVia}, ${scene.gradientTo}`
-      : `${scene.gradientFrom}, ${scene.gradientTo}`;
-    return `radial-gradient(circle at center, ${stops})`;
-  }
-  const stops = scene.gradientVia
-    ? `${scene.gradientFrom}, ${scene.gradientVia}, ${scene.gradientTo}`
-    : `${scene.gradientFrom}, ${scene.gradientTo}`;
-  return `linear-gradient(${scene.gradientAngle}deg, ${stops})`;
-}
-
-function buildPatternBackground(patternId: import("@/lib/types/editor").PatternId): string {
-  switch (patternId) {
-    case "dots":
-      return `radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)`;
-    case "grid":
-      return `repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px, transparent 1px, transparent 20px), repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px, transparent 1px, transparent 20px)`;
-    case "diagonal":
-      return `repeating-linear-gradient(45deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px, transparent 1px, transparent 20px)`;
-    case "noise": {
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23n)" opacity="0.15"/></svg>`;
-      return `url('data:image/svg+xml,${encodeURIComponent(svg)}')`;
-    }
-    case "plus": {
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><path d="M9 4h2v5h5v2h-5v5h-2v-5h-5v-2h5z" fill="rgba(255,255,255,0.12)"/></svg>`;
-      return `url('data:image/svg+xml,${encodeURIComponent(svg)}')`;
-    }
-    case "cross": {
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><path d="M6 6l8 8M14 6l-8 8" stroke="rgba(255,255,255,0.12)" stroke-width="2" stroke-linecap="round"/></svg>`;
-      return `url('data:image/svg+xml,${encodeURIComponent(svg)}')`;
-    }
-    case "triangle": {
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><path d="M5 0L10 20H0zM15 20L10 0h10z" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/></svg>`;
-      return `url('data:image/svg+xml,${encodeURIComponent(svg)}')`;
-    }
-    default:
-      return "transparent";
-  }
-}
-
 export function buildSceneCss(scene: EditorScene, activeLayerId: string | null = scene.activeLayerId): SceneCss {
   const spec = getFrameSpec(scene.frame, scene.customFrame);
   const baseShadow = `0 28px 70px rgba(0,0,0,${scene.shadowOpacity})`;
   const framePadding = spec.padding;
 
-  const background =
-    scene.backgroundMode === "solid"
-      ? scene.backgroundColor
-      : scene.backgroundMode === "gradient"
-        ? buildGradientBackground(scene)
-        : scene.backgroundMode === "image"
-          ? "#0a0a0f"
-          : scene.backgroundMode === "pattern" && scene.patternId
-            ? buildPatternBackground(scene.patternId)
-            : "transparent";
-
-  const backgroundSize =
-    scene.backgroundMode === "pattern" &&
-    (scene.patternId === "dots" || scene.patternId === "plus" || scene.patternId === "cross" || scene.patternId === "triangle")
-      ? "20px 20px"
-      : scene.backgroundMode === "pattern"
-        ? "cover"
-        : undefined;
+  const { background, backgroundSize } = buildCssBackground(scene);
 
   const frameChrome = resolveFrameStyle(scene.stylePreset);
   const frameBorder = frameChrome.stroke

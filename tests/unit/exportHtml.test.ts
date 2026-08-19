@@ -126,6 +126,14 @@ describe("buildHtmlSnippet", () => {
     expect(html).toContain("filter: blur(8px);");
   });
 
+  it("renders a pattern background through the shared CSS background", () => {
+    const scene = sceneWith({ backgroundMode: "pattern", patternId: "dots" });
+    const html = buildHtmlSnippet(scene, { mediaHref: MEDIA, mediaType: "image", backgroundHref: null, overlayHref: null });
+    // The pattern comes from buildSceneCss -> buildCssBackground, so it matches
+    // the live preview instead of the HTML export dropping it.
+    expect(html).toContain("radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)");
+  });
+
   it("inlines the overlay skin when present", () => {
     const scene = sceneWith({ frame: "iphone15" });
     const html = buildHtmlSnippet(scene, { mediaHref: MEDIA, mediaType: "image", backgroundHref: null, overlayHref: SKIN });

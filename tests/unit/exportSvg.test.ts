@@ -88,6 +88,16 @@ describe("buildSvgMarkup", () => {
     expect(markup).not.toContain("bg-gradient");
   });
 
+  it.each(["dots", "grid", "diagonal", "noise", "plus", "cross", "triangle"] as const)(
+    "renders a %s pattern background as a repeating <pattern>",
+    (patternId) => {
+      const scene = sceneWith({ backgroundMode: "pattern", patternId });
+      const markup = buildSvgMarkup(scene, { width: 800, height: 600, backgroundHref: null, groups: [] });
+      expect(markup).toContain('<pattern id="bg-pattern"');
+      expect(markup).toContain('fill="url(#bg-pattern)"');
+    }
+  );
+
   it("renders a radial gradient with a radialGradient definition", () => {
     const scene = sceneWith({ backgroundMode: "gradient", gradientType: "radial", gradientFrom: "#1d4ed8", gradientTo: "#7c3aed" });
     const markup = buildSvgMarkup(scene, { width: 800, height: 600, backgroundHref: null, groups: [] });
