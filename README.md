@@ -89,6 +89,7 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 - Per-layer rotation and filters: brightness, contrast, saturation, blur, grayscale
 - Per-layer opacity slider (0–100%) — fades the media while bezel and chrome stay crisp
 - Layer locking: locked layers reject edits and deletion; visibility/duplication stay available
+- Video playback speed per layer (0.5×–2×) — preview, exports and HTML embed stay in sync
 - Layer management: add, duplicate, hide/show, reorder, remove
 - AI background removal (runs fully in-browser via Transformers.js)
 - Unsupported file types rejected with inline error
@@ -103,7 +104,9 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 
 ### Annotations
 
-- Text, arrow, rectangle, and circle annotations
+- Text, arrow, rectangle, circle, and blur-region annotations
+- Blur regions pixel-blur whatever is beneath them (backdrop-filter in the preview/HTML, self-snapshot blur on canvas/SVG) — great for redacting screenshots
+- Emoji stickers: one-click emoji text annotations at display size
 - Color picker, stroke-width, and font family selection
 - Text styling: font weight, italic, alignment, background box with padding and radius
 - Draggable and resizable on canvas
@@ -114,7 +117,7 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 - Poster frame selector
 - Timeline scrubber
 - Trim with dual-range control
-- Background audio track upload
+- Background audio track upload with fade in/out
 - Export quality: Low, Medium, High
 
 ### Background
@@ -173,7 +176,7 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 | Video | @ffmpeg/ffmpeg (client-side WebM→MP4 / GIF / WebP) |
 | AI | @huggingface/transformers (in-browser background removal) |
 | i18n | next-intl (57 locales) |
-| Unit tests | Vitest (1,585 tests, 106 files) |
+| Unit tests | Vitest (1,596 tests, 107 files) |
 | E2E tests | Playwright (94 tests: 73 editor, 8 UX flows, 9 visual regression, 4 preview/export parity) |
 | Language | TypeScript (strict) |
 
@@ -241,7 +244,7 @@ tests/
 
 ```bash
 npm run typecheck       # TypeScript strict check
-npm run test            # Vitest (1,585 tests, 106 files)
+npm run test            # Vitest (1,596 tests, 107 files)
 npm run test:coverage   # Unit tests with coverage report
 npm run test:e2e        # Playwright (requires browser install)
 npm run test:vrt        # Visual regression tests

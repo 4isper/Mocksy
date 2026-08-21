@@ -111,7 +111,7 @@ tests/e2e/        Playwright (editor, UX flows, visual regression, preview/expor
 
 ## Testing
 
-- `npm run test` — Vitest (1,585 tests, 106 files)
+- `npm run test` — Vitest (1,596 tests, 107 files)
 - `npm run test:e2e` — Playwright (94 tests: 73 in editor.spec.ts, 8 in ux.spec.ts, 9 visual regression, 4 preview/export parity; requires browser install, needs dev server)
 - `npm run test:vrt` — Visual regression tests via Playwright
 - `npm run test:vrt:update` — Update visual regression baselines
