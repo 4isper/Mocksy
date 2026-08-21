@@ -266,6 +266,10 @@
     "customFrameRemove": "Remove custom frame",
     "browserUrl": "Address bar URL",
     "browserUrlPlaceholder": "example.com",
+    "removeBackground": "Remove background (AI)",
+    "removingBackground": "Removing… {progress}%",
+    "removeBackgroundHint": "Runs locally in your browser. The first use downloads the model (~40 MB) and is cached afterwards.",
+    "removeBackgroundError": "Background removal failed. Please try again.",
     "noLayers": "No layers yet.",
     "noAnnotations": "No annotations yet."
   },

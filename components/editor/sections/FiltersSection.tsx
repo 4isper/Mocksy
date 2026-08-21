@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { Section } from "@/components/editor/Section";
+import { canRemoveBackground, cutoutMediaName, removeImageBackground } from "@/lib/media/backgroundRemoval";
 
 function FilterSlider({
   label,
@@ -49,7 +51,11 @@ export function FiltersSection() {
     setContrast,
     setSaturate,
     setBlur,
-    setGrayscale
+    setGrayscale,
+    isRemovingBackground,
+    setRemovingBackground,
+    setMediaOnLayer,
+    setMediaUploadError
   } = useEditorStore(
     useShallow((s) => ({
       scene: s.scene,
@@ -58,11 +64,35 @@ export function FiltersSection() {
       setContrast: s.setContrast,
       setSaturate: s.setSaturate,
       setBlur: s.setBlur,
-      setGrayscale: s.setGrayscale
+      setGrayscale: s.setGrayscale,
+      isRemovingBackground: s.isRemovingBackground,
+      setRemovingBackground: s.setRemovingBackground,
+      setMediaOnLayer: s.setMediaOnLayer,
+      setMediaUploadError: s.setMediaUploadError
     }))
   );
 
   const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
+  const eligible = canRemoveBackground(activeLayer);
+  const [progress, setProgress] = useState<number | null>(null);
+
+  const handleRemoveBackground = async () => {
+    if (!activeLayer || !eligible || isRemovingBackground || activeLayer.id == null) return;
+    const layerId = activeLayer.id;
+    setRemovingBackground(true);
+    setProgress(0);
+    try {
+      const cutoutUrl = await removeImageBackground(activeLayer.mediaUrl!, (p) => {
+        if (typeof p.progress === "number") setProgress(Math.round(p.progress));
+      });
+      setMediaOnLayer(layerId, cutoutUrl, "image", cutoutMediaName(activeLayer.mediaName));
+    } catch {
+      setMediaUploadError(t("editor.removeBackgroundError"));
+    } finally {
+      setRemovingBackground(false);
+      setProgress(null);
+    }
+  };
 
   return (
     <Section
@@ -91,6 +121,19 @@ export function FiltersSection() {
         >
           {t("editor.resetFilters")}
         </button>
+        {eligible || isRemovingBackground ? (
+          <button
+            type="button"
+            className="btn btn-sm"
+            disabled={!eligible || isRemovingBackground}
+            title={t("editor.removeBackgroundHint")}
+            onClick={handleRemoveBackground}
+          >
+            {isRemovingBackground
+              ? t("editor.removingBackground", { progress: progress ?? 0 })
+              : t("editor.removeBackground")}
+          </button>
+        ) : null}
       </div>
     </Section>
   );

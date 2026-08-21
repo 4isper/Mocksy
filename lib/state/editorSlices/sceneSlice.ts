@@ -12,6 +12,7 @@ export type SceneSlice = Pick<
   | "undo"
   | "redo"
   | "setMediaLoading"
+  | "setRemovingBackground"
   | "setMediaUploadError"
   | "setScenePalette"
   | "setExportScale"
@@ -74,6 +75,7 @@ export function createSceneSlice(set: EditorStoreSetter): SceneSlice {
         };
       }),
     setMediaLoading: (loading) => set({ isMediaLoading: loading }),
+    setRemovingBackground: (loading) => set({ isRemovingBackground: loading }),
     setMediaUploadError: (msg) => {
       // Auto-clear the shared error so it doesn't linger until the next action,
       // matching the previous per-component auto-dismiss behaviour.

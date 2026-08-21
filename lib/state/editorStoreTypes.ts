@@ -57,6 +57,9 @@ export interface EditorStoreState {
   lastHistoryAt: number;
   /** True while uploaded media is decoding (between setMedia and onLoad). */
   isMediaLoading: boolean;
+  /** True while the AI background removal runs on the active layer (the
+   *  first run also downloads the wasm/model assets). Kept out of `scene`. */
+  isRemovingBackground: boolean;
   /** Shared upload/validation error surfaced in a single place (the preview
    *  overlay), regardless of whether the failure came from a drag-drop on the
    *  canvas, the media section file input, or a paste. Null when no error. */
@@ -67,6 +70,8 @@ export interface EditorStoreState {
   scenePalette: string[] | null;
   setScene: (scene: Partial<EditorScene>, recordHistory?: boolean) => void;
   setMediaLoading: (loading: boolean) => void;
+  /** Toggles the background-removal-in-progress flag. */
+  setRemovingBackground: (loading: boolean) => void;
   /** Sets/clears the shared media upload error. */
   setMediaUploadError: (msg: string | null) => void;
   setScenePalette: (palette: string[] | null) => void;

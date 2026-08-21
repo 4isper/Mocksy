@@ -264,7 +264,11 @@
     "layoutNeedsFrames": "Add frames first",
     "rotation": "Rotation",
     "browserUrl": "Address bar URL",
-    "browserUrlPlaceholder": "example.com"
+    "browserUrlPlaceholder": "example.com",
+    "removeBackground": "Remove background (AI)",
+    "removingBackground": "Removing… {progress}%",
+    "removeBackgroundHint": "Runs locally in your browser. The first use downloads the model (~40 MB) and is cached afterwards.",
+    "removeBackgroundError": "Background removal failed. Please try again."
   },
   "frame": {
     "none": "ምንም",

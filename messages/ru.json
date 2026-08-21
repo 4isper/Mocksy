@@ -266,6 +266,10 @@
     "customFrameRemove": "Удалить свою рамку",
     "browserUrl": "URL адресной строки",
     "browserUrlPlaceholder": "example.com",
+    "removeBackground": "Удалить фон (ИИ)",
+    "removingBackground": "Обработка… {progress}%",
+    "removeBackgroundHint": "Выполняется локально в браузере. При первом запуске скачается модель (~40 МБ) и закэшируется.",
+    "removeBackgroundError": "Не удалось удалить фон. Попробуйте ещё раз.",
     "noLayers": "Нет слоёв.",
     "noAnnotations": "Нет аннотаций."
   },
