@@ -153,3 +153,62 @@ export function applySceneStylePreset(preset: SceneStylePreset): Partial<EditorS
   };
 }
 
+const SURPRISE_STYLE_PRESETS: EditorScene["stylePreset"][] = ["default", "glassLight", "glassDark", "outline"];
+const SURPRISE_RADII = [8, 12, 16, 20, 24, 28, 36];
+
+function pick<T>(arr: readonly T[], rand: () => number): T {
+  return arr[Math.floor(rand() * arr.length)]!;
+}
+
+/**
+ * Builds a random scene appearance for the "Surprise me" action: a random
+ * frame style, a solid/gradient/pattern background sampled from the built-in
+ * swatches, and matching shadow/corner values. Deliberately leaves media
+ * layers, the device frame choice, the watermark and annotations untouched —
+ * it restyles the scene without changing its content. Pure: takes an optional
+ * RNG so tests (and future replay) can be deterministic.
+ */
+export function randomSceneStyle(rand: () => number = Math.random): Partial<EditorScene> {
+  const stylePreset = pick(SURPRISE_STYLE_PRESETS, rand);
+  const roll = rand();
+
+  if (roll < 0.5) {
+    // Gradient backgrounds get a 50% share — they are the most visual.
+    const gradients = backgroundPresets.filter((p) => p.kind === "gradient");
+    const g = pick(gradients, rand);
+    return {
+      stylePreset,
+      backgroundMode: "gradient",
+      backgroundColor: g.swatch,
+      gradientFrom: g.gradientFrom!,
+      gradientTo: g.gradientTo!,
+      gradientVia: null,
+      gradientType: rand() < 0.75 ? "linear" : "radial",
+      gradientAngle: Math.floor(rand() * 360),
+      shadowOpacity: Math.round((0.2 + rand() * 0.4) * 100) / 100,
+      borderRadius: pick(SURPRISE_RADII, rand)
+    };
+  }
+
+  if (roll < 0.8) {
+    const solids = backgroundPresets.filter((p) => p.kind === "solid");
+    const s = pick(solids, rand);
+    return {
+      stylePreset,
+      backgroundMode: "solid",
+      backgroundColor: s.backgroundColor!,
+      shadowOpacity: Math.round((0.2 + rand() * 0.4) * 100) / 100,
+      borderRadius: pick(SURPRISE_RADII, rand)
+    };
+  }
+
+  const patterns = backgroundPresets.filter((p) => p.kind === "pattern");
+  return {
+    stylePreset,
+    backgroundMode: "pattern",
+    patternId: pick(patterns, rand).patternId!,
+    shadowOpacity: Math.round((0.2 + rand() * 0.4) * 100) / 100,
+    borderRadius: pick(SURPRISE_RADII, rand)
+  };
+}
+

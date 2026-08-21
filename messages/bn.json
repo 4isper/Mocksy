@@ -389,7 +389,9 @@
   },
   "templates": {
     "title": "দৃশ্যের পূর্বনির্ধারিত",
-    "apply": "প্রয়োগ করুন {name}"
+    "apply": "প্রয়োগ করুন {name}",
+    "surprise": "Surprise me",
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
   },
   "help": {
     "layersStack": "স্তরগুলি উপর থেকে নিচে সাজানো আছে। স্তরের আকার, অবস্থান এবং ছবি বিকল্প পরিবর্তন করতে একটি স্তর নির্বাচন করুন। স্তরের ক্রম পরিবর্তন করতে স্তরটি টেনে নিন। সক্রিয় স্তরের শর্টকাট: ⌘D প্রতিলিপি, ⌘↑ / ⌘↓ পুনর্বিন্যাস, ⌘[ / ⌘] টোগল।"
@@ -630,7 +632,11 @@
     "exportPdf": "Export PDF",
     "exportPdfDesc": "Export current scene as PDF document",
     "fullscreenPreview": "Toggle full-screen preview",
-    "fullscreenPreviewDesc": "Hide the panels and preview the mockup full-screen"
+    "fullscreenPreviewDesc": "Hide the panels and preview the mockup full-screen",
+    "surpriseStyle": "Surprise me: random style",
+    "surpriseStyleDesc": "Apply a random frame style and background",
+    "showOnboarding": "Show the intro tour",
+    "showOnboardingDesc": "Replay the guided tour of the editor"
   },
   "errors": {
     "title": "কিছু ভুল হয়েছে",
@@ -671,5 +677,21 @@
     "plus": "Plus",
     "cross": "Cross",
     "triangle": "Triangle"
+  },
+  "onboarding": {
+    "welcomeTitle": "Welcome to Mocksy",
+    "welcomeBody": "A free mockup editor that runs entirely in your browser. Take a 30-second tour to find your way around.",
+    "canvasTitle": "Preview canvas",
+    "canvasBody": "Drag frames to arrange them, right-click for quick actions, and drop an image or video anywhere on the canvas.",
+    "controlsTitle": "Controls",
+    "controlsBody": "Pick a device frame, adjust tilt, style, background, watermark and screen chrome here.",
+    "rightTitle": "Layers & projects",
+    "rightBody": "Manage layers, add annotations, apply templates and switch between saved projects from these tabs.",
+    "doneTitle": "You're all set",
+    "doneBody": "Press ⌘K for the command palette or ? for keyboard shortcuts. Everything stays on your device.",
+    "next": "Next",
+    "back": "Back",
+    "skip": "Skip tour",
+    "done": "Done"
   }
 }

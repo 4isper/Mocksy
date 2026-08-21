@@ -3,12 +3,12 @@ import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TemplatesPanel } from "@/components/editor/TemplatesPanel";
-import { useEditorStore } from "@/lib/state/editorStore";
+import { useEditorStore, initialScene } from "@/lib/state/editorStore";
 import { sceneStylePresets } from "@/lib/presets/presets";
 
 afterEach(() => {
   cleanup();
-  useEditorStore.setState({ scene: useEditorStore.getState().scene });
+  useEditorStore.setState({ scene: { ...initialScene }, past: [], future: [] });
 });
 
 describe("TemplatesPanel", () => {
@@ -32,5 +32,17 @@ describe("TemplatesPanel", () => {
     render(<TemplatesPanel />);
     const cards = document.querySelectorAll(".template-card");
     expect(cards.length).toBe(sceneStylePresets.length);
+  });
+
+  it("surprise button applies a valid random style in one undo step", async () => {
+    render(<TemplatesPanel />);
+    await userEvent.click(screen.getByText("templates.surprise"));
+    const state = useEditorStore.getState();
+    expect(["solid", "gradient", "pattern"]).toContain(state.scene.backgroundMode);
+    // Media layers and the device frame survive the randomize.
+    expect(state.scene.layers).toEqual(initialScene.layers);
+    expect(state.scene.frame).toBe(initialScene.frame);
+    // Exactly one history entry for the whole action.
+    expect(state.past.length).toBe(1);
   });
 });

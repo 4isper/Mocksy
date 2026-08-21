@@ -188,7 +188,7 @@ describe("createFrameCommands", () => {
 
 describe("createStyleCommands", () => {
   it("applies each scene style preset to the editor store", () => {
-    const cmds = createStyleCommands(t);
+    const cmds = createStyleCommands(t).filter((c) => c.id !== "surprise-style");
     expect(cmds).toHaveLength(sceneStylePresets.length);
     for (let i = 0; i < cmds.length; i++) {
       cmds[i]!.action();
@@ -196,6 +196,16 @@ describe("createStyleCommands", () => {
       expect(scene.stylePreset).toBe(sceneStylePresets[i]!.stylePreset);
       expect(scene.frame).toBe(sceneStylePresets[i]!.frame);
     }
+  });
+
+  it("surprise-style applies a random appearance without touching the frame", () => {
+    useEditorStore.setState({ scene: { ...initialScene }, past: [], future: [] });
+    const cmd = createStyleCommands(t).find((c) => c.id === "surprise-style")!;
+    cmd.action();
+    const state = useEditorStore.getState();
+    expect(["solid", "gradient", "pattern"]).toContain(state.scene.backgroundMode);
+    expect(state.scene.frame).toBe(initialScene.frame);
+    expect(state.past.length).toBe(1);
   });
 });
 
@@ -373,10 +383,9 @@ describe("createViewCommands", () => {
   it("toggles the full-screen preview", () => {
     const toggleFullscreenPreview = vi.fn();
     const cmds = createViewCommands(t, { toggleFullscreenPreview });
-    expect(cmds).toHaveLength(1);
-    expect(cmds[0]!.id).toBe("fullscreen-preview");
-    expect(cmds[0]!.shortcut).toBe("F");
-    cmds[0]!.action();
+    const fullscreen = cmds.find((c) => c.id === "fullscreen-preview")!;
+    expect(fullscreen.shortcut).toBe("F");
+    fullscreen.action();
     expect(toggleFullscreenPreview).toHaveBeenCalledOnce();
   });
 });

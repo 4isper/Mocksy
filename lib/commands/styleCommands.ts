@@ -1,11 +1,11 @@
 import type { Command } from "@/lib/types/editor";
-import { sceneStylePresets, applySceneStylePreset } from "@/lib/presets/presets";
+import { sceneStylePresets, applySceneStylePreset, randomSceneStyle } from "@/lib/presets/presets";
 import { useEditorStore } from "@/lib/state/editorStore";
 
 export function createStyleCommands(
   t: (key: string, values?: Record<string, string | number | Date>) => string,
 ): Command[] {
-  return sceneStylePresets.map(preset => ({
+  const presetCommands = sceneStylePresets.map(preset => ({
     id: `preset-${preset.id}`,
     category: "style",
     label: t("commandPalette.styleLabel", { name: t(`preset.${preset.id}`) }),
@@ -16,4 +16,15 @@ export function createStyleCommands(
       useEditorStore.getState().setScene(scenePatch);
     },
   }));
+  return [
+    ...presetCommands,
+    {
+      id: "surprise-style",
+      category: "style",
+      label: t("commandPalette.surpriseStyle"),
+      description: t("commandPalette.surpriseStyleDesc"),
+      keywords: ["surprise", "random", "shuffle", "dice", "style", "background", "inspiration"],
+      action: () => useEditorStore.getState().setScene(randomSceneStyle()),
+    },
+  ];
 }

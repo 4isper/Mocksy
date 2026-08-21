@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applySceneStylePreset, backgroundPresets, sceneStylePresets } from "@/lib/presets/presets";
+import { applySceneStylePreset, backgroundPresets, randomSceneStyle, sceneStylePresets } from "@/lib/presets/presets";
 import { SOCIAL_PRESETS, parseAspectRatio } from "@/lib/presets/socialPresets";
 import { initialScene } from "@/lib/state/editorStore";
 
@@ -72,6 +72,50 @@ describe("sceneStylePresets", () => {
     expect(next.layers).toEqual(scene.layers);
     expect(next.frame).toBe(preset.frame);
     expect(next.watermarkEnabled).toBe(preset.watermarkEnabled);
+  });
+});
+
+describe("randomSceneStyle", () => {
+  it("produces a valid appearance patch for any RNG sequence", () => {
+    let seed = 42;
+    const rand = () => {
+      // Deterministic LCG so the test covers many distinct outcomes.
+      seed = (seed * 1664525 + 1013904223) % 4294967296;
+      return seed / 4294967296;
+    };
+    for (let i = 0; i < 200; i++) {
+      const patch = randomSceneStyle(rand);
+      expect(["default", "glassLight", "glassDark", "outline"]).toContain(patch.stylePreset);
+      expect(["solid", "gradient", "pattern"]).toContain(patch.backgroundMode);
+      if (patch.backgroundMode === "gradient") {
+        expect(patch.gradientFrom).toMatch(/^#/);
+        expect(patch.gradientTo).toMatch(/^#/);
+        expect(patch.gradientAngle).toBeGreaterThanOrEqual(0);
+        expect(patch.gradientAngle).toBeLessThan(360);
+      }
+      if (patch.backgroundMode === "solid") {
+        expect(patch.backgroundColor).toMatch(/^#/);
+      }
+      if (patch.backgroundMode === "pattern") {
+        expect(["dots", "grid", "diagonal", "noise", "plus", "cross", "triangle"]).toContain(patch.patternId);
+      }
+      expect(patch.shadowOpacity!).toBeGreaterThanOrEqual(0.2);
+      expect(patch.shadowOpacity!).toBeLessThanOrEqual(0.6);
+    }
+  });
+
+  it("never touches media layers, frame, watermark or annotations", () => {
+    const patch = randomSceneStyle(() => 0.99);
+    expect("layers" in patch).toBe(false);
+    expect("frame" in patch).toBe(false);
+    expect("watermarkEnabled" in patch).toBe(false);
+    expect("annotations" in patch).toBe(false);
+    expect("aspectRatio" in patch).toBe(false);
+  });
+
+  it("is deterministic for a fixed RNG", () => {
+    const rand = () => 0.3;
+    expect(randomSceneStyle(rand)).toEqual(randomSceneStyle(rand));
   });
 });
 
