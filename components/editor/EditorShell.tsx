@@ -157,7 +157,11 @@ export function EditorShell() {
   }, [setScene, savedSceneRef]);
 
   useEffect(() => {
-    // Show the guided tour once, on the first visit only.
+    // Show the guided tour once, on the first visit only. Skipped under
+    // automation (navigator.webdriver): every e2e run starts with empty
+    // localStorage and the backdrop would blanket every screenshot/click.
+    // The tour itself stays testable via its command-palette entry.
+    if (navigator.webdriver) return;
     if (!hasSeenOnboarding()) {
       const t = setTimeout(() => useEditorStore.getState().setOnboardingOpen(true), 600);
       return () => clearTimeout(t);

@@ -25,7 +25,6 @@ export function TemplatesPanel() {
         className="btn"
         onClick={() => setScene(randomSceneStyle(), true)}
         title={t("templates.surpriseTitle")}
-        aria-label={t("templates.surpriseTitle")}
         style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, padding: "6px 10px" }}
       >
         <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
