@@ -52,6 +52,9 @@ export interface EditorStoreState {
   showGrid: boolean;
   /** Number of grid lines on each axis while the overlay is visible. */
   gridDivisions: number;
+  /** Full-screen preview mode: side panels and toolbar are hidden so the
+   *  mockup fills the editor. Pure view state — never persisted or undone. */
+  fullscreenPreview: boolean;
   /** Groups rapid same-field edits (e.g. slider drags) into one undo step. */
   lastHistoryKey: string | null;
   lastHistoryAt: number;
@@ -79,6 +82,8 @@ export interface EditorStoreState {
   setCustomExportSize: (size: ExportSize | null) => void;
   setShowGrid: (show: boolean) => void;
   setGridDivisions: (divisions: number) => void;
+  /** Enters/exits the full-screen preview mode. */
+  setFullscreenPreview: (on: boolean) => void;
   resetScene: () => void;
   undo: () => void;
   redo: () => void;

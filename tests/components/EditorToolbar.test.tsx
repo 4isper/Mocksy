@@ -37,7 +37,8 @@ const baseProps = {
   saveToast: null,
   saveStatusType: "info" as const,
   resetNotice: false,
-  onUndoReset: vi.fn()
+  onUndoReset: vi.fn(),
+  onToggleFullscreen: vi.fn()
 };
 
 describe("EditorToolbar", () => {

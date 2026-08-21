@@ -12,6 +12,7 @@ import {
   createProjectCommands,
   createStyleCommands,
   createThemeCommands,
+  createViewCommands,
   createWatermarkCommands
 } from "@/lib/commands/commandFactories";
 import { FRAME_ORDER, FRAME_SPECS, ASPECT_RATIOS } from "@/lib/render/frames";
@@ -83,6 +84,7 @@ function makeOrchestratorArgs(scene: EditorScene) {
     setExportScale: vi.fn(),
     switchProject: vi.fn(),
     setThemeMode: vi.fn(),
+    onToggleFullscreen: vi.fn(),
     ...makeFileCallbacks()
   };
 }
@@ -367,6 +369,18 @@ describe("createThemeCommands", () => {
   });
 });
 
+describe("createViewCommands", () => {
+  it("toggles the full-screen preview", () => {
+    const toggleFullscreenPreview = vi.fn();
+    const cmds = createViewCommands(t, { toggleFullscreenPreview });
+    expect(cmds).toHaveLength(1);
+    expect(cmds[0]!.id).toBe("fullscreen-preview");
+    expect(cmds[0]!.shortcut).toBe("F");
+    cmds[0]!.action();
+    expect(toggleFullscreenPreview).toHaveBeenCalledOnce();
+  });
+});
+
 describe("createProjectCommands", () => {
   it("switches projects and disables the active one", () => {
     const projects = [makeProject("p1", "One"), makeProject("p2", "Two")];
@@ -397,7 +411,7 @@ describe("createCommands", () => {
       "dark", a.setThemeMode,
       a.onExportPng, a.onExportWebp, a.onExportSvg, a.onExportHtml, a.onExportPdf,
       a.onExportMp4, a.onExportWebm, a.onExportGif, a.onExportWebpAnim,
-      a.onCopyPng, a.onCopyShareUrl, a.onSave
+      a.onCopyPng, a.onCopyShareUrl, a.onSave, a.onToggleFullscreen
     );
 
     expect(cmds.find((c) => c.id === "export-png")).toBeDefined();
@@ -408,6 +422,7 @@ describe("createCommands", () => {
     expect(cmds.find((c) => c.id === "watermark-toggle")).toBeDefined();
     expect(cmds.find((c) => c.id === "export-scale-2x")).toBeDefined();
     expect(cmds.find((c) => c.id === "theme-system")).toBeDefined();
+    expect(cmds.find((c) => c.id === "fullscreen-preview")).toBeDefined();
     expect(cmds.find((c) => c.id === "project-switch-p1")).toBeDefined();
 
     cmds.find((c) => c.id === "export-svg")!.action();

@@ -35,6 +35,7 @@ afterEach(() => {
     future: [],
     exportScale: 2,
     customExportSize: null,
+    fullscreenPreview: false,
   });
   useProjectsStore.setState({ projects: [], activeProjectId: null, saveError: null });
   useThemeStore.setState({ mode: "dark" });
@@ -199,6 +200,34 @@ describe("EditorShell keyboard shortcuts", () => {
     expect(screen.getByText("editor.resetTitle")).toBeInTheDocument();
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByText("editor.resetTitle")).not.toBeInTheDocument();
+  });
+
+  it("enters full-screen preview on F and hides the panels", () => {
+    render(<EditorShell />);
+    expect(screen.getByText("Mocksy")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "f" });
+    expect(useEditorStore.getState().fullscreenPreview).toBe(true);
+    // Brand header, control panel and right panel are unmounted; an exit
+    // button is shown instead.
+    expect(screen.queryByText("Mocksy")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button").find(b => b.title === "editor.exitFullscreen")).toBeTruthy();
+  });
+
+  it("leaves full-screen preview on Escape", () => {
+    useEditorStore.setState({ fullscreenPreview: true });
+    render(<EditorShell />);
+    expect(screen.queryByText("Mocksy")).not.toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(useEditorStore.getState().fullscreenPreview).toBe(false);
+    expect(screen.getByText("Mocksy")).toBeInTheDocument();
+  });
+
+  it("toggles full-screen preview from the toolbar button", () => {
+    render(<EditorShell />);
+    const btn = screen.getAllByRole("button").find(b => b.title === "editor.fullscreenTitle");
+    expect(btn).toBeTruthy();
+    fireEvent.click(btn!);
+    expect(useEditorStore.getState().fullscreenPreview).toBe(true);
   });
 
   it("undoes on ⌘Z and redoes on ⌘⇧Z", () => {

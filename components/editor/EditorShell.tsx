@@ -39,6 +39,8 @@ export function EditorShell() {
   const customExportSize = useEditorStore((s) => s.customExportSize);
   const setCustomExportSize = useEditorStore((s) => s.setCustomExportSize);
   const saveError = useProjectsStore((s) => s.saveError);
+  const fullscreenPreview = useEditorStore((s) => s.fullscreenPreview);
+  const setFullscreenPreview = useEditorStore((s) => s.setFullscreenPreview);
 
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -72,7 +74,8 @@ export function EditorShell() {
     exportApi.handleExportWebpAnim,
     exportApi.handleCopyPng,
     exportApi.copyShareUrl,
-    saveNow
+    saveNow,
+    () => setFullscreenPreview(!fullscreenPreview)
   );
 
   const handleReset = useCallback(() => setConfirmResetOpen(true), []);
@@ -96,6 +99,7 @@ export function EditorShell() {
     onCopyPng: exportApi.handleCopyPng,
     onOpenShortcuts: () => setShortcutsOpen(true),
     onOpenCommandPalette: () => setCommandPaletteOpen(true),
+    onToggleFullscreen: () => setFullscreenPreview(!fullscreenPreview),
     isModalOpen: () => hasOpenModalRef.current
   });
 
@@ -165,40 +169,66 @@ export function EditorShell() {
 
   return (
     <main className="editor-shell" id="main-content" tabIndex={-1}>
-      <div className="brand">
-        <span className="brand-mark" aria-hidden="true" />
-        <h1>Mocksy</h1>
-        <span className="tag">{t("editor.tagline")}</span>
-      </div>
-      <div className="editor-grid">
-        <ErrorBoundary message={t("errors.message")}><ControlPanel /></ErrorBoundary>
-        <section className="preview-column" style={{ display: "grid", gridTemplateRows: "1fr auto", gap: 12, minHeight: 0, overflow: "hidden" }}>
+      {!fullscreenPreview ? (
+        <div className="brand">
+          <span className="brand-mark" aria-hidden="true" />
+          <h1>Mocksy</h1>
+          <span className="tag">{t("editor.tagline")}</span>
+        </div>
+      ) : null}
+      <div className={fullscreenPreview ? "editor-grid fullscreen" : "editor-grid"}>
+        {!fullscreenPreview ? <ErrorBoundary message={t("errors.message")}><ControlPanel /></ErrorBoundary> : null}
+        <section
+          className="preview-column"
+          style={{
+            display: "grid",
+            gridTemplateRows: fullscreenPreview ? "1fr" : "1fr auto",
+            gap: 12,
+            minHeight: 0,
+            overflow: "hidden",
+            position: "relative"
+          }}
+        >
+          {fullscreenPreview ? (
+            <button
+              type="button"
+              className="btn-tb btn-tb-icon fullscreen-exit"
+              onClick={() => setFullscreenPreview(false)}
+              title={t("editor.exitFullscreen")}
+              aria-label={t("editor.exitFullscreen")}
+            >
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M9 1v4h4M5 13V9H1M13 5H9V1M1 9h4v4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+          ) : null}
           <ErrorBoundary message={t("errors.message")}><PreviewCanvas scene={scene} /></ErrorBoundary>
-          <EditorToolbar
-            canUndo={canUndo}
-            canRedo={canRedo}
-            undoCount={undoCount}
-            redoCount={redoCount}
-            onUndo={undo}
-            onRedo={redo}
-            onExport={() => setExportOpen(true)}
-            isExporting={exportApi.isExporting}
-            videoExportStatus={exportApi.videoExportStatus}
-            videoExportProgress={exportApi.videoExportProgress}
-            gifExportStatus={exportApi.gifExportStatus}
-            gifExportProgress={exportApi.gifExportProgress}
-            onCancelExport={exportApi.cancelExport}
-            onShare={exportApi.copyShareUrl}
-            onOpenCommandPalette={() => setCommandPaletteOpen(true)}
-            onOpenShortcuts={() => setShortcutsOpen(true)}
-            onReset={handleReset}
-            saveToast={toastStatus ? toastStatus.msg : null}
-            saveStatusType={toastStatus ? toastStatus.type : "info"}
-            resetNotice={resetNotice}
-            onUndoReset={() => { undo(); setResetNotice(false); }}
-          />
+          {!fullscreenPreview ? (
+            <EditorToolbar
+              canUndo={canUndo}
+              canRedo={canRedo}
+              undoCount={undoCount}
+              redoCount={redoCount}
+              onUndo={undo}
+              onRedo={redo}
+              onExport={() => setExportOpen(true)}
+              isExporting={exportApi.isExporting}
+              videoExportStatus={exportApi.videoExportStatus}
+              videoExportProgress={exportApi.videoExportProgress}
+              gifExportStatus={exportApi.gifExportStatus}
+              gifExportProgress={exportApi.gifExportProgress}
+              onCancelExport={exportApi.cancelExport}
+              onShare={exportApi.copyShareUrl}
+              onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+              onOpenShortcuts={() => setShortcutsOpen(true)}
+              onReset={handleReset}
+              saveToast={toastStatus ? toastStatus.msg : null}
+              saveStatusType={toastStatus ? toastStatus.type : "info"}
+              resetNotice={resetNotice}
+              onUndoReset={() => { undo(); setResetNotice(false); }}
+              onToggleFullscreen={() => setFullscreenPreview(true)}
+            />
+          ) : null}
         </section>
-        <ErrorBoundary message={t("errors.message")}><RightPanel /></ErrorBoundary>
+        {!fullscreenPreview ? <ErrorBoundary message={t("errors.message")}><RightPanel /></ErrorBoundary> : null}
       </div>
       <ResetConfirmDialog open={confirmResetOpen} onConfirm={confirmReset} onCancel={cancelReset} />
       <ExportDialog

@@ -25,7 +25,8 @@ export function EditorToolbar({
   saveToast,
   saveStatusType,
   resetNotice,
-  onUndoReset
+  onUndoReset,
+  onToggleFullscreen
 }: {
   canUndo: boolean;
   canRedo: boolean;
@@ -48,6 +49,7 @@ export function EditorToolbar({
   saveStatusType: "success" | "error" | "info";
   resetNotice: boolean;
   onUndoReset: () => void;
+  onToggleFullscreen: () => void;
 }) {
   const t = useTranslations();
   const themeMode = useThemeStore((s) => s.mode);
@@ -168,6 +170,9 @@ export function EditorToolbar({
         </button>
         <button type="button" className="btn-tb btn-tb-icon" onClick={onReset} title={t("editor.resetBtnTitle")} aria-label={t("editor.resetBtnTitle")}>
           <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M4 3H2v2M2 5l2.5-2.5A4.5 4.5 0 1111.5 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <button type="button" className="btn-tb btn-tb-icon" onClick={onToggleFullscreen} title={t("editor.fullscreenTitle")} aria-label={t("editor.fullscreenTitle")} aria-keyshortcuts="f">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M9 1h4v4M5 13H1V9M13 9v4H9M1 5V1h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
       </div>
       <div className="toolbar-group">

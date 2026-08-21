@@ -50,6 +50,7 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
       title: t("shortcuts.scene"),
       items: [
         { keys: ["R"], label: t("shortcuts.reset") },
+        { keys: ["F"], label: t("shortcuts.fullscreenPreview") },
         { keys: ["↑", "↓", "←", "→"], label: t("shortcuts.nudgeFrame") }
       ]
     }

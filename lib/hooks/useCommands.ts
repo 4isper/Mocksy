@@ -18,7 +18,8 @@ export function useCommands(
   onExportWebpAnim: () => void,
   onCopyPng: () => void,
   onCopyShareUrl: () => void,
-  onSave: () => void
+  onSave: () => void,
+  onToggleFullscreenPreview: () => void
 ): Command[] {
   const t = useTranslations();
   const scene = useEditorStore(s => s.scene);
@@ -66,11 +67,11 @@ export function useCommands(
     activeProjectId, projects, switchProject,
     themeMode, setThemeMode,
     onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim,
-    onCopyPng, onCopyShareUrl, onSave
+    onCopyPng, onCopyShareUrl, onSave, onToggleFullscreenPreview
   ), [
     t, scene, activeLayerId, pastLength, futureLength, activeProjectId, projects, themeMode, exportScale,
     onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim,
-    onCopyPng, onCopyShareUrl, onSave,
+    onCopyPng, onCopyShareUrl, onSave, onToggleFullscreenPreview,
     undo, redo, resetScene,
     setFrame, setStylePreset, setAnimationPreset,
     setBackgroundSolid, setBackgroundGradient, setBackgroundPattern, setBackgroundTransparent, setBackgroundImage,

@@ -30,13 +30,14 @@ function makeActions() {
     onCopyPng: vi.fn(),
     onOpenShortcuts: vi.fn(),
     onOpenCommandPalette: vi.fn(),
+    onToggleFullscreen: vi.fn(),
     isModalOpen: vi.fn(() => false),
   };
 }
 
 afterEach(() => {
   cleanup();
-  useEditorStore.setState({ scene: initialScene, past: [], future: [], activeLayerId: initialScene.activeLayerId });
+  useEditorStore.setState({ scene: initialScene, past: [], future: [], activeLayerId: initialScene.activeLayerId, fullscreenPreview: false });
 });
 
 describe("useEditorShortcuts", () => {
@@ -195,6 +196,34 @@ describe("useEditorShortcuts", () => {
     render(<Harness actions={actions} />);
     fireEvent.keyDown(window, { key: "r" });
     expect(actions.onReset).toHaveBeenCalledTimes(1);
+  });
+
+  it("toggles full-screen preview on F and exits on Escape", () => {
+    const actions = makeActions();
+    render(<Harness actions={actions} />);
+    fireEvent.keyDown(window, { key: "f" });
+    expect(actions.onToggleFullscreen).toHaveBeenCalledTimes(1);
+    useEditorStore.setState({ fullscreenPreview: true });
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(useEditorStore.getState().fullscreenPreview).toBe(false);
+  });
+
+  it("does not toggle full-screen while typing in an input", () => {
+    const actions = makeActions();
+    render(<Harness actions={actions} />);
+    const input = document.createElement("input");
+    document.body.appendChild(input);
+    fireEvent.keyDown(input, { key: "f" });
+    expect(actions.onToggleFullscreen).not.toHaveBeenCalled();
+    input.remove();
+  });
+
+  it("exports PDF on ⌘⇧F instead of toggling full-screen", () => {
+    const actions = makeActions();
+    render(<Harness actions={actions} />);
+    fireEvent.keyDown(window, { key: "f", metaKey: true, shiftKey: true });
+    expect(actions.onExportPdf).toHaveBeenCalledTimes(1);
+    expect(actions.onToggleFullscreen).not.toHaveBeenCalled();
   });
 
   it("removes the keydown listener on unmount", () => {

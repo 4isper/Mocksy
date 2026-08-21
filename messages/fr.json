@@ -268,7 +268,9 @@
     "removeBackground": "Remove background (AI)",
     "removingBackground": "Removing… {progress}%",
     "removeBackgroundHint": "Runs locally in your browser. The first use downloads the model (~40 MB) and is cached afterwards.",
-    "removeBackgroundError": "Background removal failed. Please try again."
+    "removeBackgroundError": "Background removal failed. Please try again.",
+    "fullscreenTitle": "Full-screen preview (F)",
+    "exitFullscreen": "Exit full screen (Esc)"
   },
   "frame": {
     "none": "Aucun",
@@ -460,7 +462,8 @@
     "exportSvg": "Export SVG",
     "exportHtml": "Export HTML",
     "exportPdf": "Export PDF",
-    "nudgeFrame": "Nudge selected frame"
+    "nudgeFrame": "Nudge selected frame",
+    "fullscreenPreview": "Toggle full-screen preview"
   },
   "projects": {
     "title": "Projets",
@@ -607,10 +610,13 @@
       "watermark": "Watermark",
       "export": "Export",
       "project": "Project",
-      "theme": "Theme"
+      "theme": "Theme",
+      "view": "View"
     },
     "exportPdf": "Export PDF",
-    "exportPdfDesc": "Export current scene as PDF document"
+    "exportPdfDesc": "Export current scene as PDF document",
+    "fullscreenPreview": "Toggle full-screen preview",
+    "fullscreenPreviewDesc": "Hide the panels and preview the mockup full-screen"
   },
   "errors": {
     "title": "Quelque chose a mal tourné",

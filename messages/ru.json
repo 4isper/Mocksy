@@ -174,6 +174,8 @@
     "renameHint": "Двойной клик для переименования",
     "renameLayer": "Переименовать слой",
     "resetBtnTitle": "Сброс (R)",
+    "fullscreenTitle": "Полноэкранный просмотр (F)",
+    "exitFullscreen": "Выйти из полного экрана (Esc)",
     "resetCancel": "Отмена",
     "resetConfirm": "Сбросить",
     "resetConfirm_cancel": "Отмена",
@@ -448,6 +450,7 @@
     "moveLayer": "Переместить слой вверх / вниз",
     "selectLayer": "Выбрать предыдущий / следующий слой",
     "reset": "Сбросить к настройкам по умолчанию",
+    "fullscreenPreview": "Полноэкранный просмотр",
     "nudgeFrame": "Сдвинуть выбранный кадр",
     "commandPalette": "Палитра команд",
     "toggleTheme": "Переключить тему",
@@ -627,6 +630,8 @@
     "themeDarkDesc": "Переключить на тёмную тему",
     "themeSystem": "Тема: Системная",
     "themeSystemDesc": "Следовать системным настройкам",
+    "fullscreenPreview": "Полноэкранный просмотр",
+    "fullscreenPreviewDesc": "Скрыть панели и показать макет на весь экран",
     "switchProject": "Переключиться на проект: {name}",
     "current": "(текущий)",
     "updated": "Обновлён {date}",
@@ -642,7 +647,8 @@
       "watermark": "Водяной знак",
       "export": "Экспорт",
       "project": "Проект",
-      "theme": "Тема"
+      "theme": "Тема",
+      "view": "Вид"
     }
   },
   "errors": {

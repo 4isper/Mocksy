@@ -17,6 +17,7 @@ export interface EditorShortcutActions {
   onCopyPng: () => void;
   onOpenShortcuts: () => void;
   onOpenCommandPalette: () => void;
+  onToggleFullscreen: () => void;
   isModalOpen: () => boolean;
 }
 
@@ -29,9 +30,9 @@ function isTypingTarget(target: EventTarget | null): boolean {
  * Global editor keyboard shortcuts: ⌘K command palette, ⌘Z/⌘⇧Z/⌘Y undo/redo,
  * ⌘N new project, ⌘S save, ⌘E/⌘⇧E/⇧⌘G/⇧⌘W/⇧⌘P/⌘⇧A/⌘⇧S/⌘⇧H/⌘⇧F exports,
  * ⌘⇧C clipboard copy, ⌘D duplicate layer, ⌘↑/⌘↓/⌘[/⌘] layer order, plain
- * arrow keys nudge frames, "?" cheat sheet, "R" reset. Actions are read
- * through a ref so the window listener is bound once and never needs
- * re-subscribing.
+ * arrow keys nudge frames, "?" cheat sheet, "R" reset, "F" full-screen preview
+ * (Esc exits). Actions are read through a ref so the window listener is bound
+ * once and never needs re-subscribing.
  */
 export function useEditorShortcuts(actions: EditorShortcutActions): void {
   const actionsRef = useRef(actions);
@@ -205,6 +206,23 @@ export function useEditorShortcuts(actions: EditorShortcutActions): void {
         if (typing) return;
         event.preventDefault();
         a.onReset();
+        return;
+      }
+      // F toggles the full-screen preview (plain key, like R). Skipped while
+      // typing so it can't hijack text fields; ⌘⇧F (PDF export) is matched
+      // earlier because of its modifier.
+      if (event.key.toLowerCase() === "f" && !modifier && !typing) {
+        event.preventDefault();
+        a.onToggleFullscreen();
+        return;
+      }
+      // Esc leaves the full-screen preview. Modal dialogs handle their own Esc
+      // and are excluded by the isModalOpen guard at the top of this handler.
+      if (event.key === "Escape" && !typing) {
+        const st = useEditorStore.getState();
+        if (!st.fullscreenPreview) return;
+        event.preventDefault();
+        st.setFullscreenPreview(false);
       }
     };
     window.addEventListener("keydown", onKeyDown);

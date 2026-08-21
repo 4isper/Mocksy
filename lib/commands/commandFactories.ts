@@ -13,6 +13,7 @@ import { createWatermarkCommands } from "./watermarkCommands";
 import { createExportScaleCommands } from "./exportScaleCommands";
 import { createThemeCommands } from "./themeCommands";
 import { createProjectCommands } from "./projectCommands";
+import { createViewCommands } from "./viewCommands";
 
 export { createFileCommands } from "./fileCommands";
 export { createEditCommands } from "./editCommands";
@@ -26,6 +27,7 @@ export { createWatermarkCommands } from "./watermarkCommands";
 export { createExportScaleCommands } from "./exportScaleCommands";
 export { createThemeCommands } from "./themeCommands";
 export { createProjectCommands } from "./projectCommands";
+export { createViewCommands } from "./viewCommands";
 
 export function createCommands(
   t: ReturnType<typeof useTranslations>,
@@ -73,6 +75,7 @@ export function createCommands(
   onCopyPng: () => void,
   onCopyShareUrl: () => void,
   onSave: () => void,
+  toggleFullscreenPreview: () => void,
 ): Command[] {
   return [
     ...createFileCommands(t, { onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onCopyPng, onCopyShareUrl, onSave }),
@@ -86,6 +89,7 @@ export function createCommands(
     ...createWatermarkCommands(t, scene, { toggleWatermark }),
     ...createExportScaleCommands(t, { setExportScale }),
     ...createThemeCommands(t, { setThemeMode }),
+    ...createViewCommands(t, { toggleFullscreenPreview }),
     ...createProjectCommands(t, projects, activeProjectId, { switchProject }),
   ];
 }

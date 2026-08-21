@@ -19,6 +19,7 @@ export type SceneSlice = Pick<
   | "setCustomExportSize"
   | "setShowGrid"
   | "setGridDivisions"
+  | "setFullscreenPreview"
   | "setVideoCurrentTime"
 >;
 
@@ -93,6 +94,7 @@ export function createSceneSlice(set: EditorStoreSetter): SceneSlice {
     setCustomExportSize: (customExportSize) => set({ customExportSize }),
     setShowGrid: (showGrid) => set({ showGrid }),
     setGridDivisions: (gridDivisions) => set({ gridDivisions }),
+    setFullscreenPreview: (fullscreenPreview) => set({ fullscreenPreview }),
     setVideoCurrentTime: (videoCurrentTime) => set({ videoCurrentTime })
   };
 }

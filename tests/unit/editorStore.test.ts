@@ -1196,6 +1196,35 @@ describe("grid overlay state", () => {
   });
 });
 
+describe("fullscreen preview state", () => {
+  function reset() {
+    useEditorStore.setState({
+      past: [],
+      future: [],
+      scene: { ...initialScene },
+      fullscreenPreview: false,
+      lastHistoryKey: null,
+      lastHistoryAt: 0
+    });
+  }
+
+  it("defaults to off", () => {
+    reset();
+    expect(useEditorStore.getState().fullscreenPreview).toBe(false);
+  });
+
+  it("setFullscreenPreview toggles without touching scene/history", () => {
+    reset();
+    const before = useEditorStore.getState().scene;
+    useEditorStore.getState().setFullscreenPreview(true);
+    expect(useEditorStore.getState().fullscreenPreview).toBe(true);
+    useEditorStore.getState().setFullscreenPreview(false);
+    expect(useEditorStore.getState().fullscreenPreview).toBe(false);
+    expect(useEditorStore.getState().scene).toBe(before);
+    expect(useEditorStore.getState().past).toHaveLength(0);
+  });
+});
+
 describe("editorHelpers", () => {
   it("activePosterTime returns 0 when there are no layers", () => {
     expect(activePosterTime({ ...initialScene, layers: [] })).toBe(0);

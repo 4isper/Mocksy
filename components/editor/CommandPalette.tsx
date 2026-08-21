@@ -20,7 +20,8 @@ const CATEGORY_ORDER = [
   "watermark",
   "export",
   "project",
-  "theme"
+  "theme",
+  "view"
 ] as const;
 
 function HighlightedLabel({ text, query }: { text: string; query: string }) {
