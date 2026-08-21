@@ -174,7 +174,8 @@ function normalizeFrameInstance(raw: unknown, fallback: FrameInstance): FrameIns
     x: num(r.x, fallback.x, 0, 1),
     y: num(r.y, fallback.y, 0, 1),
     scale: num(r.scale, fallback.scale, 0.1, 5),
-    layerId: typeof r.layerId === "string" ? r.layerId : null
+    layerId: typeof r.layerId === "string" ? r.layerId : null,
+    orientation: r.orientation === "landscape" ? "landscape" : r.orientation === "portrait" ? "portrait" : undefined
   };
 }
 

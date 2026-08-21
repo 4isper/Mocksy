@@ -38,6 +38,9 @@ export interface SvgFrameGroup {
   offsetY?: number;
   /** Rotation of the media inside the frame, in degrees (clockwise). */
   rotation?: number;
+  /** Whole-group rotation for landscape instances (90). The box already
+   *  carries swapped dimensions; this turns skin+media+chrome together. */
+  orientation?: number;
 }
 
 export interface SvgExportOptions {
@@ -172,7 +175,15 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
   if (tilt) {
     return `<g transform="${tilt}"><clipPath id="clip-t${index}">${groupClipRect(group)}</clipPath><g clip-path="url(#clip-t${index})">${media}${chromeMarkup}</g>${frameGroupInner(scene, group)}</g>`;
   }
-  return `<g clip-path="url(#clip-${index})">${media}${chromeMarkup}</g>${frameGroupInner(scene, group)}`;
+  let inner = `<g clip-path="url(#clip-${index})">${media}${chromeMarkup}</g>${frameGroupInner(scene, group)}`;
+  if (group.orientation) {
+    // The clip must live inside the rotated group so its rect rotates with
+    // it (same trick as the tilt branch above).
+    const cx = num(box.x + box.width / 2);
+    const cy = num(box.y + box.height / 2);
+    inner = `<g transform="rotate(${num(group.orientation)} ${cx} ${cy})"><clipPath id="clip-o${index}">${groupClipRect(group)}</clipPath><g clip-path="url(#clip-o${index})">${media}${chromeMarkup}</g>${frameGroupInner(scene, group)}</g>`;
+  }
+  return inner;
 }
 
 function frameGroupInner(scene: EditorScene, group: SvgFrameGroup): string {

@@ -149,6 +149,18 @@ describe("normalizeScene", () => {
     expect(s.frameInstances[0]!.scale).toBe(0.5);
   });
 
+  it("normalizes frame instance orientation (valid kept, invalid dropped)", () => {
+    const s = normalizeScene({
+      frameInstances: [
+        { id: "f1", frame: "iphone15", x: 0.2, y: 0.5, scale: 0.4, layerId: null, orientation: "landscape" },
+        { id: "f2", frame: "iphone15", x: 0.8, y: 0.5, scale: 0.4, layerId: null, orientation: "sideways" }
+      ]
+    });
+    expect(s.frameInstances[0]!.orientation).toBe("landscape");
+    // Invalid values fall back to portrait (undefined = absent).
+    expect(s.frameInstances[1]!.orientation).toBeUndefined();
+  });
+
   it("ignores invalid frameInstances entries", () => {
     const s = normalizeScene({
       frameInstances: [null, { frame: "invalid" }, { id: "f2", frame: "iphone", x: 10, y: -5, scale: 0.5 }]

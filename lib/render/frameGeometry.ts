@@ -1,5 +1,5 @@
 import type { EditorScene } from "@/lib/types/editor";
-import { getFrameSpec, frameViewBox } from "@/lib/render/frames";
+import { frameInstanceSize, getFrameSpec, frameViewBox } from "@/lib/render/frames";
 import { RENDER } from "@/lib/render/canvasDrawing";
 import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
 
@@ -14,6 +14,10 @@ export interface FrameBox {
   innerW: number;
   innerH: number;
   innerRadius: number;
+  /** 0 for portrait, Math.PI/2 for a landscape (rotated) instance. The box
+   *  above already carries the swapped dimensions; rotation is applied around
+   *  the box center by the canvas renderer. */
+  rotation?: number;
 }
 
 export interface RenderTransform {
@@ -110,10 +114,15 @@ export function computeFrameInstances(
     const instScale = inst.scale ?? 1;
     const ratioSrc = spec.aspectRatio ?? (inst.frame === "none" ? scene.aspectRatio : "1 / 1");
     const { w: rW, h: rH } = parseAspectRatioOr(ratioSrc);
-    const instAr = rH / rW;
-
-    const w = instScale * canvasWidth * instZoom;
-    const h = w * instAr;
+    const nativeAr = rH / rW;
+    const landscape = inst.orientation === "landscape";
+    // Physical box in pixels, mirroring the CSS preview exactly: portrait
+    // width = scale · canvasW with height following the native ratio;
+    // landscape swaps those two extents.
+    const pw = instScale * canvasWidth;
+    const ph = pw * nativeAr;
+    const w = (landscape ? ph : pw) * instZoom;
+    const h = (landscape ? pw : ph) * instZoom;
     const { panX, panY } = isActiveInstance
       ? panOffset(transform, dpiScale, instZoom)
       : { panX: 0, panY: 0 };
@@ -122,22 +131,31 @@ export function computeFrameInstances(
 
     const cutout = spec.cutout;
     const vb = frameViewBox(spec);
-    const padX = cutout ? (cutout.x / vb.w) * w : spec.padding * dpiScale * instZoom;
-    const padY = cutout ? (cutout.y / vb.h) * h : spec.padding * dpiScale * instZoom;
-    const outerRadius = spec.isOverlay ? 0 : (inst.frame === "watch" ? Math.min(w, h) / 2 : scene.borderRadius + spec.padding) * dpiScale * instZoom;
+    // Skin/media geometry below stays in NATIVE orientation — the renderer
+    // rotates the whole assembly around the box center when landscape.
+    const drawW = landscape ? h : w;
+    const drawH = landscape ? w : h;
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    const dx = cx - drawW / 2;
+    const dy = cy - drawH / 2;
+    const padX = cutout ? (cutout.x / vb.w) * drawW : spec.padding * dpiScale * instZoom;
+    const padY = cutout ? (cutout.y / vb.h) * drawH : spec.padding * dpiScale * instZoom;
+    const outerRadius = spec.isOverlay ? 0 : (inst.frame === "watch" ? Math.min(drawW, drawH) / 2 : scene.borderRadius + spec.padding) * dpiScale * instZoom;
 
     return {
       x,
       y,
       width: w,
       height: h,
+      rotation: landscape ? Math.PI / 2 : undefined,
       outerRadius,
-      innerX: x + padX,
-      innerY: y + padY,
-      innerW: cutout ? (cutout.w / vb.w) * w : w - padX * 2,
-      innerH: cutout ? (cutout.h / vb.h) * h : h - padY * 2,
+      innerX: dx + padX,
+      innerY: dy + padY,
+      innerW: cutout ? (cutout.w / vb.w) * drawW : drawW - padX * 2,
+      innerH: cutout ? (cutout.h / vb.h) * drawH : drawH - padY * 2,
       innerRadius: cutout
-        ? Math.max(0, (cutout.rx / cutout.w) * (w - padX * 2), (cutout.rx / cutout.h) * (h - padY * 2))
+        ? Math.max(0, (cutout.rx / cutout.w) * (drawW - padX * 2), (cutout.rx / cutout.h) * (drawH - padY * 2))
         : spec.screenRadius * dpiScale * instZoom
     };
   });

@@ -175,6 +175,7 @@
     "renameLayer": "Переименовать слой",
     "resetBtnTitle": "Сброс (R)",
     "ctxDuplicate": "Дублировать",
+    "ctxRotate": "Повернуть на 90°",
     "ctxBringToFront": "На передний план",
     "ctxSendToBack": "На задний план",
     "ctxRemove": "Удалить кадр",

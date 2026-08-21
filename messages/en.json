@@ -175,6 +175,7 @@
     "renameLayer": "Rename layer",
     "resetBtnTitle": "Reset (R)",
     "ctxDuplicate": "Duplicate",
+    "ctxRotate": "Rotate 90°",
     "ctxBringToFront": "Bring to front",
     "ctxSendToBack": "Send to back",
     "ctxRemove": "Remove frame",

@@ -199,24 +199,37 @@ export function frameInstAr(
   return rH / rW;
 }
 
-/** Half-extents of a frame instance's box as fractions of the canvas (w along
- *  the canvas width, h along the canvas height). The box is centered on the
- *  instance's (x, y); its width is `scale` of the canvas width and its height
- *  follows the frame's native ratio scaled into canvas-height fractions.
- *  Mirrors computeFrameInstances so smart guides snap against the same box the
- *  renderer draws. */
-export function frameInstanceHalfExtents(
-  inst: Pick<FrameInstance, "frame" | "scale">,
+/** Box of a frame instance as fractions of the canvas width (w) and height
+ *  (h), honoring landscape rotation. The two fractions relate to DIFFERENT
+ *  axes, so a rotated box does not simply trade places: physically the box's
+ *  width becomes the portrait height and vice versa. Mirrors
+ *  computeFrameInstances so preview, guides, auto-layouts and exports share
+ *  one source of truth. */
+export function frameInstanceSize(
+  inst: Pick<FrameInstance, "frame" | "scale" | "orientation">,
   customFrame?: CustomFrame | null,
   sceneAspectRatio = "16 / 9"
 ): { w: number; h: number } {
-  const arW = parseAspectRatioOr(sceneAspectRatio).w;
-  const arH = parseAspectRatioOr(sceneAspectRatio).h;
+  const parsed = parseAspectRatioOr(sceneAspectRatio);
   const instAr = frameInstAr(inst.frame, customFrame, sceneAspectRatio) ?? 1;
-  return {
-    w: inst.scale / 2,
-    h: (inst.scale * instAr * (arW / arH)) / 2
-  };
+  if (inst.orientation === "landscape") {
+    // Physical: width' = portraitHeightPx, height' = portraitWidthPx.
+    return { w: inst.scale * instAr, h: inst.scale * (parsed.w / parsed.h) };
+  }
+  return { w: inst.scale, h: inst.scale * instAr * (parsed.w / parsed.h) };
+}
+
+/** Half-extents of a frame instance's box as fractions of the canvas (w along
+ *  the canvas width, h along the canvas height). The box is centered on the
+ *  instance's (x, y). Mirrors computeFrameInstances so smart guides snap
+ *  against the same box the renderer draws. */
+export function frameInstanceHalfExtents(
+  inst: Pick<FrameInstance, "frame" | "scale" | "orientation">,
+  customFrame?: CustomFrame | null,
+  sceneAspectRatio = "16 / 9"
+): { w: number; h: number } {
+  const size = frameInstanceSize(inst, customFrame, sceneAspectRatio);
+  return { w: size.w / 2, h: size.h / 2 };
 }
 
 /** Builds a FrameSpec from a user-uploaded SVG skin. The media fills the whole

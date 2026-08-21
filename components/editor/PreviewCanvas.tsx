@@ -53,6 +53,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const duplicateFrameInstance = useEditorStore((s) => s.duplicateFrameInstance);
   const reorderFrameInstance = useEditorStore((s) => s.reorderFrameInstance);
   const removeFrameInstance = useEditorStore((s) => s.removeFrameInstance);
+  const updateFrameInstance = useEditorStore((s) => s.updateFrameInstance);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
 
   const { analyzeMedia } = useScenePalette(scene, activeLayerId);
@@ -100,10 +101,13 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         const id = frameEl.getAttribute("data-frame-instance-id");
         if (!id) return;
         selectFrameInstance(id);
+        const inst = scene.frameInstances.find((fi) => fi.id === id);
+        const nextOrientation = inst?.orientation === "landscape" ? "portrait" : "landscape";
         setContextMenu({
           x: e.clientX,
           y: e.clientY,
           items: [
+            { id: "rotate", label: t("editor.ctxRotate"), onSelect: () => updateFrameInstance(id, { orientation: nextOrientation }) },
             { id: "dup", label: t("editor.ctxDuplicate"), onSelect: () => duplicateFrameInstance(id) },
             { id: "front", label: t("editor.ctxBringToFront"), onSelect: () => reorderFrameInstance(id, "front") },
             { id: "back", label: t("editor.ctxSendToBack"), onSelect: () => reorderFrameInstance(id, "back") },
@@ -146,7 +150,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         ]
       });
     },
-    [t, selectAnnotation, selectFrameInstance, addAnnotation, duplicateAnnotation, reorderAnnotation, removeAnnotation, duplicateFrameInstance, reorderFrameInstance, removeFrameInstance]
+    [t, selectAnnotation, selectFrameInstance, addAnnotation, duplicateAnnotation, reorderAnnotation, removeAnnotation, duplicateFrameInstance, reorderFrameInstance, removeFrameInstance, updateFrameInstance, scene.frameInstances]
   );
 
   return (

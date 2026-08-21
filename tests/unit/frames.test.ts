@@ -6,6 +6,7 @@ import {
   FRAME_ORDER,
   FRAME_SPECS,
   frameInstanceHalfExtents,
+  frameInstanceSize,
   frameViewBox,
   getFrameSpec
 } from "@/lib/render/frames";
@@ -166,5 +167,36 @@ describe("frameInstanceHalfExtents", () => {
     const tall = frameInstanceHalfExtents({ frame: "none", scale: 0.4 }, null, "9 / 16");
     expect(wide.w).toBeCloseTo(tall.w);
     expect(wide.h).toBeLessThan(tall.h);
+  });
+});
+
+describe("frameInstanceSize", () => {
+  it("keeps portrait dimensions: width = scale, height follows native ratio", () => {
+    const size = frameInstanceSize({ frame: "iphone15", scale: 0.4 }, null, "16 / 9");
+    expect(size.w).toBeCloseTo(0.4);
+    // h/w fraction = native ratio × (canvasW/canvasH) = 2.1641 × (16/9)
+    expect(size.h).toBeCloseTo(0.4 * (844 / 390) * (16 / 9));
+  });
+
+  it("swaps the physical extents for landscape", () => {
+    const portrait = frameInstanceSize({ frame: "iphone15", scale: 0.4 }, null, "16 / 9");
+    const landscape = frameInstanceSize({ frame: "iphone15", scale: 0.4, orientation: "landscape" }, null, "16 / 9");
+    // Physical swap: landscape width (px) equals portrait height (px), so as
+    // canvas-width fractions: w' = scale·nativeAr; height fraction relative
+    // to canvasH: h' = scale·(arW/arH).
+    expect(landscape.w).toBeCloseTo(0.4 * (844 / 390));
+    expect(landscape.h).toBeCloseTo(0.4 * (16 / 9));
+    // Physical pixel check on a matching-AR canvas: swapped exactly.
+    const cw = 1600;
+    const ch = 900;
+    expect(landscape.w * cw).toBeCloseTo(portrait.h * ch);
+    expect(landscape.h * ch).toBeCloseTo(portrait.w * cw);
+  });
+
+  it("lets 'none' follow the scene in both orientations", () => {
+    const p = frameInstanceSize({ frame: "none", scale: 0.5 }, null, "1 / 1");
+    expect(p.w).toBeCloseTo(p.h);
+    const l = frameInstanceSize({ frame: "none", scale: 0.5, orientation: "landscape" }, null, "1 / 1");
+    expect(l.w).toBeCloseTo(l.h);
   });
 });

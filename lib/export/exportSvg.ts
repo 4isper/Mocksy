@@ -148,7 +148,8 @@ export async function exportSvg(
           mediaFit: layer?.mediaFit,
           offsetX: layer?.mediaOffsetX,
           offsetY: layer?.mediaOffsetY,
-          rotation: layer?.rotation ?? 0
+          rotation: layer?.rotation ?? 0,
+          orientation: box.rotation ? (box.rotation * 180) / Math.PI : undefined
         });
       }
     } else {

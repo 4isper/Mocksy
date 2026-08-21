@@ -296,3 +296,39 @@ describe("computeFrameInstances", () => {
     expect(result[0]!.outerRadius).toBeCloseTo(Math.min(result[0]!.width, result[0]!.height) / 2 * 2, 3);
   });
 });
+describe("computeFrameInstances landscape orientation", () => {
+  it("swaps the physical box dimensions and reports a 90° rotation", () => {
+    const portraitInst = { id: "p", frame: "iphone15" as const, x: 0.3, y: 0.5, scale: 0.4, layerId: null };
+    const landscapeInst = { ...portraitInst, id: "l", x: 0.7, orientation: "landscape" as const };
+    const s = scene({ frameInstances: [portraitInst, landscapeInst] });
+
+    const [p, l] = computeFrameInstances(s, 1600, 900, 1);
+    expect(p!.rotation).toBeUndefined();
+    expect(l!.rotation).toBe(Math.PI / 2);
+
+    // Portrait: width = scale * canvasW; height follows the native ratio.
+    expect(p!.width).toBeCloseTo(0.4 * 1600);
+    expect(l!.width).toBeCloseTo(p!.height);
+    expect(l!.height).toBeCloseTo(p!.width);
+
+    // Centers stay put.
+    expect(l!.x + l!.width / 2).toBeCloseTo(0.7 * 1600);
+    expect(l!.y + l!.height / 2).toBeCloseTo(0.5 * 900);
+  });
+
+  it("centers native-orientation screen geometry in the swapped box", () => {
+    const s = scene({
+      frameInstances: [{ id: "l", frame: "iphone15", x: 0.5, y: 0.5, scale: 0.4, layerId: null, orientation: "landscape" }]
+    });
+    const box = computeFrameInstances(s, 1600, 900, 1)[0]!;
+    const drawW = box.height; // native width becomes the rotated extent
+    const drawH = box.width;
+    // innerX/innerY are native-space coords around the shared center.
+    const nativeCx = box.innerX + box.innerW / 2;
+    const nativeCy = box.innerY + box.innerH / 2;
+    const expectedDx = box.x + box.width / 2 - drawW / 2;
+    const expectedDy = box.y + box.height / 2 - drawH / 2;
+    expect(nativeCx).toBeCloseTo(expectedDx + drawW / 2);
+    expect(nativeCy).toBeCloseTo(expectedDy + drawH / 2);
+  });
+});

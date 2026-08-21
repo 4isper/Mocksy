@@ -99,6 +99,11 @@ export interface ExportSize {
   height: number;
 }
 
+/** Orientation of a device frame instance. "landscape" rotates a portrait
+ *  skin (phone lying sideways) 90° clockwise; the frame box swaps its
+ *  aspect ratio while the skin and media inside rotate together. */
+export type FrameOrientation = "portrait" | "landscape";
+
 /** One device frame instance in a multi-frame scene. When frameInstances exists,
  *  it takes precedence over scene.frame (which becomes legacy/single-frame mode). */
 export interface FrameInstance {
@@ -112,6 +117,8 @@ export interface FrameInstance {
   scale: number;
   /** Optional layer to render inside this frame; if omitted, uses active layer. */
   layerId: string | null;
+  /** Portrait (default) or rotated 90° landscape. Absent = portrait. */
+  orientation?: FrameOrientation;
 }
 
 /** A user-uploaded SVG device skin. Rendered as an overlay frame whose

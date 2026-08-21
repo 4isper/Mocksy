@@ -284,7 +284,8 @@
     "ctxAddText": "Add text",
     "ctxAddArrow": "Add arrow",
     "ctxAddRect": "Add rectangle",
-    "ctxAddCircle": "Add circle"
+    "ctxAddCircle": "Add circle",
+    "ctxRotate": "Rotate 90°"
   },
   "frame": {
     "none": "Egyik sem",

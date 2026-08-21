@@ -4,7 +4,7 @@ import { useRef, useCallback, useState } from "react";
 import type { CSSProperties } from "react";
 import { useTranslations } from "next-intl";
 import type { EditorScene, FrameInstance, MediaLayer } from "@/lib/types/editor";
-import { frameInstanceHalfExtents, getFrameSpec } from "@/lib/render/frames";
+import { frameInstanceHalfExtents, frameInstAr, getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import type { SceneCss } from "@/lib/render/mockupRenderer";
 import { useEditorStore } from "@/lib/state/editorStore";
@@ -291,12 +291,19 @@ export function FrameInstanceGrid({
               position: "absolute",
               left: (inst.x * 100) + "%",
               top: (inst.y * 100) + "%",
-              width: (inst.scale * 100) + "%",
+              // Landscape swaps the physical extents: the box becomes
+              // scale·nativeAr wide (fraction of canvas width).
+              width: ((inst.orientation === "landscape"
+                ? inst.scale * (frameInstAr(inst.frame, scene.customFrame, scene.aspectRatio) ?? 1)
+                : inst.scale) * 100) + "%",
               height: "auto",
               transform: "translate(-50%, -50%)",
-              // Same ratio source as computeFrameInstances/frameInstAr so the
-              // preview box matches the export ("none" follows the scene).
-              aspectRatio: spec.aspectRatio ?? (inst.frame === "none" ? scene.aspectRatio : "1 / 1"),
+              // Physical width/height ratio so the browser sizes the box
+              // exactly like computeFrameInstances does.
+              aspectRatio: (() => {
+                const native = frameInstAr(inst.frame, scene.customFrame, scene.aspectRatio) ?? 390 / 844;
+                return inst.orientation === "landscape" ? `${native} / 1` : `1 / ${native}`;
+              })(),
               cursor: (draggingId === inst.id ? "grabbing" : "grab") as CSSProperties["cursor"],
               outline: isSelected ? "2px solid var(--accent)" : undefined,
               outlineOffset: 4,
@@ -304,7 +311,22 @@ export function FrameInstanceGrid({
               touchAction: "none"
             } as CSSProperties}
           >
-            {/* ── Frame content ── */}
+            {/* ── Frame content ──
+                Landscape wraps everything in a rotor whose PRE-rotation box
+                equals the native-orientation assembly: width = swapped-box
+                height (calc(100% / native)), ratio = native physical w/h.
+                After rotate(90°) its footprint lands exactly on the swapped
+                wrapper, matching computeFrameInstances. */}
+            <div
+              style={inst.orientation === "landscape" ? {
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                width: `calc(100% / ${(frameInstAr(inst.frame, scene.customFrame, scene.aspectRatio) ?? 1).toFixed(6)})`,
+                aspectRatio: `${(1 / (frameInstAr(inst.frame, scene.customFrame, scene.aspectRatio) ?? 1)).toFixed(6)} / 1`,
+                transform: "translate(-50%, -50%) rotate(90deg)"
+              } as CSSProperties : undefined}
+            >
             <div
               data-mockup-frame
               style={{
@@ -352,6 +374,7 @@ export function FrameInstanceGrid({
                   <img src={layer.mediaUrl} alt={t("editor.uploadedMediaAlt")} style={{ ...instCss.mediaStyle, cursor: "grab" }} onLoad={(e) => analyzeMedia(e.currentTarget)} onPointerDown={() => selectLayer(layer.id)} />
                 )
               ) : null}
+            </div>
             </div>
 
             {/* ── Resize handle ── */}

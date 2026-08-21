@@ -107,11 +107,22 @@ export function renderMockupToCanvas(
       const frameMedia = layer?.id ? (layerMedias?.get(layer.id) ?? null) : media;
       const overlay = layer?.id && instSpec.isOverlay ? (frameOverlays?.get(layer.id) ?? null) : null;
 
+      // Landscape instances carry swapped box dimensions plus a rotation —
+      // the whole assembly (skin, media, chrome) turns around the box center,
+      // which also composes correctly with the tilted-quad path below.
+      const rotated = !!box.rotation;
+      if (rotated) {
+        ctx.save();
+        ctx.translate(box.x + box.width / 2, box.y + box.height / 2);
+        ctx.rotate(box.rotation!);
+        ctx.translate(-(box.x + box.width / 2), -(box.y + box.height / 2));
+      }
       if (hasTilt(scene)) {
         drawTiltedFrame(ctx, scene, instSpec, layer, box, dpiScale, instZoom, frameMedia, overlay);
       } else {
         drawFrameAndMedia(ctx, scene, instSpec, layer, box, dpiScale, instZoom, frameMedia, overlay);
       }
+      if (rotated) ctx.restore();
     }
     drawWatermark(ctx, scene, width, height, dpiScale, watermarkImage);
     if (scene.annotations.length > 0) drawAnnotations(ctx, scene.annotations, width, height, dpiScale);
