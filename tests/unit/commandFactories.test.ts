@@ -110,7 +110,7 @@ describe("createFileCommands", () => {
     const cb = makeFileCallbacks();
     const cmds = createFileCommands(t, cb);
     expect(cmds.map((c) => c.id)).toEqual([
-      "new-project", "save-project", "export-png", "export-mp4", "export-webm",
+      "record-screen", "new-project", "save-project", "export-png", "export-mp4", "export-webm",
       "export-webp", "export-webp-anim", "export-svg", "export-html", "export-pdf",
       "export-gif", "copy-png", "copy-share-url"
     ]);

@@ -1,5 +1,7 @@
 import type { Command } from "@/lib/types/editor";
 import { useProjectsStore } from "@/lib/state/projectsStore";
+import { useEditorStore } from "@/lib/state/editorStore";
+import { isScreenRecordingActive, isScreenRecordingSupported, startScreenRecording, stopScreenRecording } from "@/lib/media/screenRecording";
 
 export function createFileCommands(
   t: (key: string, values?: Record<string, string | number | Date>) => string,
@@ -19,7 +21,34 @@ export function createFileCommands(
   }
 ): Command[] {
   const { onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onCopyPng, onCopyShareUrl, onSave } = callbacks;
+  const recording = isScreenRecordingActive();
   return [
+    {
+      id: "record-screen",
+      category: "file",
+      label: t(recording ? "editor.stopRecording" : "editor.recordScreen"),
+      description: t("commandPalette.recordScreenDesc"),
+      keywords: ["record", "screen", "capture", "display", "screencast", "video"],
+      disabled: !isScreenRecordingSupported() && !recording,
+      action: () => {
+        if (isScreenRecordingActive()) {
+          stopScreenRecording();
+          return;
+        }
+        // The clip lands in the active layer through the same flow the
+        // MediaSection button uses.
+        void import("@/lib/hooks/useScreenRecording").then(({ loadRecordedClip }) =>
+          startScreenRecording({
+            onDone: (blob) => {
+              loadRecordedClip(blob).catch(() => {
+                useEditorStore.getState().setMediaUploadError(t("editor.uploadError"));
+              });
+            },
+            onError: (message) => useEditorStore.getState().setMediaUploadError(message)
+          })
+        );
+      },
+    },
     {
       id: "new-project",
       category: "file",

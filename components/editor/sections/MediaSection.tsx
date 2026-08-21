@@ -7,8 +7,13 @@ import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { loadMediaFromFile, loadMediaFromUrl, UnsupportedMediaError, UnsupportedMediaUrlError } from "@/lib/media/loadFile";
 import { isVideoLayer } from "@/lib/render/mediaKind";
+import { useScreenRecording } from "@/lib/hooks/useScreenRecording";
 import { VideoOptions } from "@/components/editor/VideoOptions";
 import { Section } from "@/components/editor/Section";
+
+function formatElapsed(seconds: number): string {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
 
 export function MediaSection() {
   const t = useTranslations();
@@ -26,6 +31,7 @@ export function MediaSection() {
   );
 
   const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
+  const screenRecording = useScreenRecording();
 
   const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -77,6 +83,19 @@ export function MediaSection() {
             {t("editor.uploadMediaShort")}
             <input type="file" accept="image/*,video/*" onChange={handleFile} />
           </label>
+          <button
+            type="button"
+            className="btn btn-sm"
+            disabled={!screenRecording.supported}
+            title={screenRecording.supported ? t("editor.recordScreenHint") : t("editor.screenRecordUnsupported")}
+            aria-label={screenRecording.recording ? t("editor.stopRecording") : t("editor.recordScreen")}
+            style={screenRecording.recording ? { color: "var(--danger)", borderColor: "var(--danger)" } : undefined}
+            onClick={() => (screenRecording.recording ? screenRecording.stop() : screenRecording.start())}
+          >
+            {screenRecording.recording
+              ? t("editor.stopRecordingElapsed", { time: formatElapsed(screenRecording.elapsed) })
+              : t("editor.recordScreen")}
+          </button>
           {activeLayer?.mediaUrl ? (
             <button
               type="button"

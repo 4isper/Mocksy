@@ -303,7 +303,14 @@
     "lockLayer": "Lock layer",
     "unlockLayer": "Unlock layer",
     "ctxAddBlur": "Add blur",
-    "addBlur": "Add blur"
+    "addBlur": "Add blur",
+    "recordScreen": "Record screen",
+    "recordScreenHint": "Record your screen into a video clip (goes to the active layer)",
+    "stopRecording": "Stop recording",
+    "stopRecordingElapsed": "Stop recording ({time})",
+    "screenRecordError": "Screen recording failed. Try a different tab or window.",
+    "screenRecordUnsupported": "Screen recording is not supported in this browser",
+    "previewZoom": "Preview zoom"
   },
   "frame": {
     "none": "无",
@@ -505,7 +512,9 @@
     "exportPdf": "Export PDF",
     "nudgeFrame": "Nudge selected frame",
     "fullscreenPreview": "Toggle full-screen preview",
-    "pasteMedia": "Paste media from clipboard"
+    "pasteMedia": "Paste media from clipboard",
+    "copyObject": "Copy selected annotation / frame",
+    "pasteObject": "Paste copy of annotation / frame"
   },
   "projects": {
     "title": "项目",
@@ -666,7 +675,8 @@
     "toggleGlare": "Toggle screen glare",
     "toggleGlareDesc": "Add or remove the light sweep on device screens",
     "toggleReflection": "Toggle floor reflection",
-    "toggleReflectionDesc": "Mirror the device below its bottom edge"
+    "toggleReflectionDesc": "Mirror the device below its bottom edge",
+    "recordScreenDesc": "Capture your screen into a video clip in the active layer"
   },
   "errors": {
     "title": "出错了",
