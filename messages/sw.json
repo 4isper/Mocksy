@@ -417,7 +417,11 @@
     "pdf": "PDF",
     "zip": "ZIP (all frames)",
     "exportingZip": "Exporting frame {current} of {total}…",
-    "zipFailed": "ZIP export failed."
+    "zipFailed": "ZIP export failed.",
+    "presets": "Presets",
+    "savePreset": "Save current",
+    "applyPreset": "Apply preset: {label}",
+    "deletePreset": "Delete preset: {label}"
   },
   "shortcuts": {
     "title": "Mfumo wa kufungua kwa kasi wa kibodi",

@@ -420,7 +420,11 @@
     "shareLinkFailed": "Could not create share link",
     "svgFailed": "SVG export failed.",
     "exportingZip": "Exporting frame {current} of {total}…",
-    "zipFailed": "ZIP export failed."
+    "zipFailed": "ZIP export failed.",
+    "presets": "Presets",
+    "savePreset": "Save current",
+    "applyPreset": "Apply preset: {label}",
+    "deletePreset": "Delete preset: {label}"
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",

@@ -78,6 +78,20 @@ export type VideoQuality = "low" | "medium" | "high";
 export type WatermarkPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
 export type LayoutPreset = "grid" | "fan" | "cascade" | "masonry" | "stack";
 
+/** Formats offered by the export dialog (raster, vector, video, batch zip). */
+export type ExportFormat = "png" | "webp" | "svg" | "html" | "mp4" | "webm" | "gif" | "webpAnim" | "pdf" | "zip";
+
+/** A named snapshot of export-dialog settings (format + scale/size), stored
+ *  outside the scene in localStorage so it survives reloads and projects. */
+export interface ExportPreset {
+  id: string;
+  label: string;
+  format: ExportFormat;
+  scale: 1 | 2 | 4;
+  /** Absolute pixel size; null when the preset uses the scale control. */
+  customSize: ExportSize | null;
+}
+
 /** Absolute pixel dimensions for a custom-size export. When set, it overrides
  *  the 1×/2×/4× scale control for raster formats (PNG, WebP, MP4, WebM). */
 export interface ExportSize {

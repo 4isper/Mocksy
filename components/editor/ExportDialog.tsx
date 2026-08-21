@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import type { ExportSize } from "@/lib/types/editor";
+import { useExportPresetsStore } from "@/lib/state/exportPresetsStore";
 
-export type ExportFormat = "png" | "webp" | "svg" | "html" | "mp4" | "webm" | "gif" | "webpAnim" | "pdf" | "zip";
+export type { ExportFormat } from "@/lib/types/editor";
+import type { ExportFormat } from "@/lib/types/editor";
 
 /** Raster formats honor the 1×/2×/4× scale control (and custom size); vector
  *  formats don't. */
@@ -64,6 +66,9 @@ export function ExportDialog({
   ];
   const [format, setFormat] = useState<ExportFormat>("png");
   const trapRef = useFocusTrap(open);
+  const presets = useExportPresetsStore((s) => s.presets);
+  const savePreset = useExportPresetsStore((s) => s.savePreset);
+  const removePreset = useExportPresetsStore((s) => s.removePreset);
 
   const isCustom = customSize !== null;
   const activeScale: 1 | 2 | 4 | "custom" = isCustom ? "custom" : scale;
@@ -94,6 +99,52 @@ export function ExportDialog({
       >
         <h3 id="export-title">{t("export.title")}</h3>
         <div className="field-group">
+          {presets.length > 0 ? (
+            <label className="field">
+              <span>{t("export.presets")}</span>
+              <div className="segmented" role="group" aria-label={t("export.presets")}>
+                {presets.map((preset) => (
+                  <span key={preset.id} style={{ display: "inline-flex", gap: 4, flex: "1 1 auto", minWidth: 0 }}>
+                    <button
+                      type="button"
+                      title={t("export.applyPreset", { label: preset.label })}
+                      onClick={() => {
+                        setFormat(preset.format);
+                        if (preset.customSize) {
+                          onCustomSizeChange({ ...preset.customSize });
+                        } else {
+                          onScaleChange(preset.scale);
+                          onCustomSizeChange(null);
+                        }
+                      }}
+                    >
+                      {preset.label}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={t("export.deletePreset", { label: preset.label })}
+                      title={t("export.deletePreset", { label: preset.label })}
+                      onClick={() => removePreset(preset.id)}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+                <button type="button" onClick={() => savePreset(format, scale, customSize)}>
+                  + {t("export.savePreset")}
+                </button>
+              </div>
+            </label>
+          ) : (
+            <label className="field">
+              <span>{t("export.presets")}</span>
+              <div className="segmented" role="group" aria-label={t("export.presets")}>
+                <button type="button" onClick={() => savePreset(format, scale, customSize)}>
+                  + {t("export.savePreset")}
+                </button>
+              </div>
+            </label>
+          )}
           <label className="field">
             <span>{t("export.image")}</span>
             <div className="segmented" role="group" aria-label={t("export.image")}>

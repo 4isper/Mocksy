@@ -420,7 +420,11 @@
     "shareLinkFailed": "Не удалось создать ссылку для публикации",
     "svgFailed": "Ошибка экспорта SVG.",
     "exportingZip": "Экспорт кадра {current} из {total}…",
-    "zipFailed": "Ошибка экспорта ZIP."
+    "zipFailed": "Ошибка экспорта ZIP.",
+    "presets": "Пресеты",
+    "savePreset": "Сохранить текущие",
+    "applyPreset": "Применить пресет: {label}",
+    "deletePreset": "Удалить пресет: {label}"
   },
   "shortcuts": {
     "title": "Сочетания клавиш",
