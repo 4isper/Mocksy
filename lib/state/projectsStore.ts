@@ -6,9 +6,42 @@ import { makeDemoScene, useEditorStore } from "@/lib/state/editorStore";
 import { normalizeScene } from "@/lib/state/normalizeScene";
 import { readSceneFromUrl, clearSceneFromUrl } from "@/lib/state/shareState";
 import { nextProjectId } from "@/lib/state/ids";
+import { decodeProjectsState, encodeProjectsState, stateNeedsMediaOffload, sweepOrphanedMedia, type PersistedProjectsState } from "@/lib/state/mediaPersistence";
 
 const STORAGE_KEY = "mocksy-projects";
 const AUTOSAVE_KEY = "mocksy-scene";
+
+/**
+ * Decoded-once view of localStorage. `hydrate` must stay synchronous (the
+ * editor bootstraps from its return value), so the async IndexedDB decode of
+ * media placeholders happens in `warmProjectCache`, which the app shell awaits
+ * once before hydrating. Callers that skip warming (tests, SSR) transparently
+ * get the legacy inline parse — small scenes never carry placeholders anyway.
+ */
+let decodedCache: PersistedProjectsState | null | undefined;
+
+export async function warmProjectCache(): Promise<void> {
+  if (typeof window === "undefined") {
+    decodedCache = null;
+    return;
+  }
+  let raw: string | null = null;
+  try {
+    raw = window.localStorage.getItem(STORAGE_KEY);
+  } catch {
+    raw = null;
+  }
+  decodedCache = await decodeProjectsState(raw);
+  // Blobs left over from deleted scenes/replaced uploads would otherwise sit
+  // in IndexedDB forever.
+  void sweepOrphanedMedia(decodedCache);
+}
+
+/** Clears the decode-once cache. Test seam: the module-level cache must not
+ *  leak between suites that stub different storage backends. */
+export function resetProjectCacheForTests(): void {
+  decodedCache = undefined;
+}
 
 function cloneScene(scene: EditorScene): EditorScene {
   return JSON.parse(JSON.stringify(scene)) as EditorScene;
@@ -50,17 +83,45 @@ export interface ProjectsStoreState {
   importProject: (project: Project) => void;
 }
 
-function persist(state: ProjectsStoreState): boolean {
+let persistSeq = 0;
+
+/** Persists projects, offloading large media into IndexedDB first. Writes are
+ *  serialized by sequence number: a slow encode that finishes after a newer
+ *  save must not clobber it. Scenes without large media — the common case —
+ *  take the legacy synchronous write path with no behavioral change. */
+async function persist(state: ProjectsStoreState): Promise<boolean> {
   if (typeof window === "undefined") return true;
+  const seq = ++persistSeq;
   try {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ projects: state.projects, activeProjectId: state.activeProjectId })
-    );
+    // Fast path: nothing to offload → write inline synchronously (the async
+    // function body runs sync until the first await, so quota errors surface
+    // in the same tick as before).
+    if (!stateNeedsMediaOffload(state)) {
+      const json = JSON.stringify({ projects: state.projects, activeProjectId: state.activeProjectId });
+      window.localStorage.setItem(STORAGE_KEY, json);
+      decodedCache = { projects: state.projects, activeProjectId: state.activeProjectId };
+      useProjectsStore.setState({ saveError: null });
+      return true;
+    }
+
+    let json = await encodeProjectsState(state);
+    // Superseded by a newer persist meanwhile — drop this stale write.
+    if (seq !== persistSeq) return true;
+    if (json === null) {
+      // Encoding unavailable: keep the old fully-inline format so nothing
+      // breaks (large media just costs localStorage quota, as before).
+      json = JSON.stringify({ projects: state.projects, activeProjectId: state.activeProjectId });
+    }
+    window.localStorage.setItem(STORAGE_KEY, json);
+    // Keep the decode-once cache in sync so later reads see this write even
+    // if they happen before the next warm-up.
+    decodedCache = { projects: state.projects, activeProjectId: state.activeProjectId };
     // A successful write clears any prior quota warning.
     useProjectsStore.setState({ saveError: null });
     return true;
   } catch (err) {
+    void err;
+    if (seq !== persistSeq) return true;
     // A full quota means the latest edits were NOT persisted, even though the
     // in-memory state is intact. Surface it so the UI stops showing "Saved".
     // Other storage failures (private mode, disabled storage) aren't
@@ -77,6 +138,8 @@ function persist(state: ProjectsStoreState): boolean {
 
 function readStorage(): { projects: Project[]; activeProjectId: string | null } | null {
   if (typeof window === "undefined") return null;
+  // Prefer the warmed cache (media placeholders already resolved from IDB).
+  if (decodedCache !== undefined) return decodedCache;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;

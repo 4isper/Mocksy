@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useProjectsStore } from "@/lib/state/projectsStore";
+import { useProjectsStore, resetProjectCacheForTests, warmProjectCache } from "@/lib/state/projectsStore";
 import { initialScene, makeDemoScene, useEditorStore } from "@/lib/state/editorStore";
 import { readSharedSceneFromUrl, sceneToShareUrl } from "@/lib/state/shareState";
+import { createFakeIndexedDB, FakeFileReader } from "./helpers/fakeIdb";
 import type { EditorScene, Project } from "@/lib/types/editor";
 
 const ORIGINAL_WINDOW = globalThis.window;
@@ -30,6 +31,7 @@ describe("projectsStore", () => {
   beforeEach(() => {
     stubWindow(storage);
     storage.clear();
+    resetProjectCacheForTests();
     // reset the store to a clean bootstrap state between tests
     useProjectsStore.setState({ projects: [], activeProjectId: null, hydrated: false, saveError: null });
   });
@@ -508,5 +510,50 @@ describe("projectsStore", () => {
     expect(useProjectsStore.getState().saveError).toBe(
       "Storage full — recent changes may not be saved"
     );
+  });
+});
+
+describe("projectsStore media offload", () => {
+  const storage = makeStorage();
+  const ORIGINAL_FILE_READER = globalThis.FileReader;
+
+  afterEach(() => {
+    globalThis.FileReader = ORIGINAL_FILE_READER;
+    resetProjectCacheForTests();
+  });
+
+  function makeBigDataUrl(kb = 96): string {
+    const bytes = new Uint8Array(kb * 1024).fill(97); // 'a'
+    return `data:image/png;base64,${Buffer.from(bytes).toString("base64")}`;
+  }
+
+  it("persists large media as IndexedDB placeholders and hydrates them back", async () => {
+    const idb = createFakeIndexedDB();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: { localStorage: storage, location: { href: "https://mocksy.test/" }, indexedDB: idb }
+    });
+    globalThis.FileReader = FakeFileReader as unknown as typeof FileReader;
+    resetProjectCacheForTests();
+
+    const big = makeBigDataUrl();
+    const scene: EditorScene = { ...makeDemoScene(), layers: [{ ...makeDemoScene().layers[0]!, id: "l-big", mediaUrl: big }] };
+    useProjectsStore.setState({ projects: [{ id: "p1", name: "Big", scene, updatedAt: 1 }], activeProjectId: "p1" });
+
+    // Any store action triggers persist; rename is side-effect-free here.
+    useProjectsStore.getState().renameProject("p1", "Renamed");
+
+    // Wait for the async encode → localStorage write with placeholders.
+    await vi.waitFor(() => {
+      const raw = storage.getItem("mocksy-projects") ?? "";
+      expect(raw).toContain("@idb:");
+    });
+    expect(storage.getItem("mocksy-projects")).not.toContain(big.slice(0, 100));
+
+    // A fresh load warms the cache and restores the real data URL.
+    useProjectsStore.setState({ projects: [], activeProjectId: null, hydrated: false });
+    await warmProjectCache();
+    const restored = useProjectsStore.getState().hydrate(null);
+    expect(restored.layers[0]?.mediaUrl).toBe(big);
   });
 });

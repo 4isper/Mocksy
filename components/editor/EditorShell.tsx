@@ -22,6 +22,7 @@ import { useEditorStore } from "@/lib/state/editorStore";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { initHistoryPersistence, restoreHistory } from "@/lib/state/historyStorage";
 import { readSharedSceneFromUrl } from "@/lib/state/shareState";
+import { warmProjectCache } from "@/lib/state/projectsStore";
 import type { EditorScene } from "@/lib/types/editor";
 
 export function EditorShell() {
@@ -133,7 +134,7 @@ export function EditorShell() {
     // restored scene is not a user edit, so don't push it onto the undo stack
     // (also keeps StrictMode's double-mount from recording a duplicate entry).
     let alive = true;
-    void readSharedSceneFromUrl().then((shared) => {
+    void Promise.all([readSharedSceneFromUrl(), warmProjectCache()]).then(([shared]) => {
       if (!alive) return;
       const restored = useProjectsStore.getState().hydrate(shared);
       // The restored scene already matches what's persisted, so treat it as the
