@@ -57,7 +57,9 @@ test("annotations render consistently", async ({ page }) => {
 
 test("export dialog renders consistently", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Export", exact: true }).click();
+  // The toolbar button's accessible name carries its shortcut tooltip
+  // ("Export PNG / MP4 / GIF (⌘E)"), so match by prefix instead of exact.
+  await page.getByRole("button", { name: /^Export/ }).click();
   await expect(page.locator(".modal[role='dialog']")).toBeVisible();
   await waitForStable(page);
   await expect(page).toHaveScreenshot("export-dialog.png", {
@@ -88,9 +90,8 @@ test("2-frame grid renders consistently", async ({ page }) => {
 
 test("fan layout renders consistently", async ({ page }) => {
   await page.goto("/");
-  // Remove default grid frames so fan starts from scratch
-  await page.locator(".control-panel .btn-icon[title='Remove frame']").first().click();
-  await page.locator(".control-panel .btn-icon[title='Remove frame']").first().click();
+  // Layout buttons are disabled while no frames exist ("Add frames first"),
+  // so re-layout the default grid instead of starting from an empty canvas.
   await page.getByRole("button", { name: "Fan" }).click();
   await waitForStable(page);
   await expect(page).toHaveScreenshot("fan-layout.png", {
