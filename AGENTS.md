@@ -2,7 +2,7 @@
 
 ## Project overview
 
-Free browser-based mockup editor (Next.js 16 + React 19 + TypeScript). All media is data URLs; state lives in `localStorage`. No auth, no backend.
+Free browser-based mockup editor (Next.js 16 + React 19 + TypeScript). Media is stored as data URLs — small items in `localStorage`, large ones offloaded to IndexedDB (`lib/media/idbMediaStore.ts` + `lib/state/mediaPersistence.ts`) with a localStorage fallback. No auth, no backend.
 
 ## i18n (next-intl)
 
@@ -84,19 +84,19 @@ Free browser-based mockup editor (Next.js 16 + React 19 + TypeScript). All media
 
 ## Share URL
 
-Scene serialized as base64 JSON; demo media stripped to keep URLs short. 16KB URL length guard. Invalid payloads are normalized via `normalizeScene`, never trusted blindly.
+Scene serialized as deflate-compressed base64url JSON (`CompressionStream` with a legacy raw-JSON fallback); demo media stripped to keep URLs short. 16KB URL length guard. Invalid payloads are normalized via `normalizeScene`, never trusted blindly.
 
 ## Project structure
 
 ```
 app/              Next.js router ([locale]/layout, page, error boundary)
-components/editor/ 28 React components (EditorShell, ControlPanel, PreviewCanvas, ...)
+components/editor/ 50 React components (EditorShell, ControlPanel, PreviewCanvas, ...)
 i18n/             Locale request config + canonical locale list (locales.ts)
 lib/state/        Zustand stores, normalization, id generators, share URL, projects
 lib/render/       Frame specs, CSS/canvas geometry, video timeline, canvas drawing
 lib/export/       PNG/SVG/HTML/MP4-GIF export, canvas rendering, filename helpers
 lib/commands/     Command-palette command factories (per feature area)
-lib/media/        File loading, demo image, palette extraction
+lib/media/        File loading, demo image, palette extraction, IndexedDB media store, AI background removal
 lib/presets/      Background swatches, scene style presets
 lib/hooks/        Client hooks (commands, focus trap, frame transform, scene palette)
 lib/search/       Frame search utilities
@@ -106,13 +106,13 @@ public/devices/   SVG device skins for overlay frames
 proxy.ts          Locale middleware for next-intl
 tests/unit/       Vitest (mirrors lib/ structure)
 tests/components/ Vitest + Testing Library (component tests)
-tests/e2e/        Playwright (editor.spec.ts, visual.spec.ts)
+tests/e2e/        Playwright (editor, UX flows, visual regression, preview/export parity)
 ```
 
 ## Testing
 
-- `npm run test` — Vitest (1,146 tests, 67 files)
-- `npm run test:e2e` — Playwright (73 tests in editor.spec.ts, 9 in visual.spec.ts; requires browser install, needs dev server)
+- `npm run test` — Vitest (1,585 tests, 106 files)
+- `npm run test:e2e` — Playwright (94 tests: 73 in editor.spec.ts, 8 in ux.spec.ts, 9 visual regression, 4 preview/export parity; requires browser install, needs dev server)
 - `npm run test:vrt` — Visual regression tests via Playwright
 - `npm run test:vrt:update` — Update visual regression baselines
 - `npm run test:lhci` — Lighthouse CI (requires built app + server)

@@ -26,6 +26,9 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 - Multi-panel layout: controls, canvas preview, layers, annotations, templates, projects
 - Undo/redo (`⌘Z` / `⇧⌘Z`) with keyboard shortcuts; rapid slider drags coalesce into one step
 - Command palette (`⌘K`) with actions grouped by category and match highlighting
+- Right-click context menus for canvas, frames, annotations and layers
+- "Surprise me" action — randomizes style, background, shadow and corners; media stays untouched
+- First-run onboarding tour (replayable from the command palette)
 - Visual frame picker with device thumbnails
 - Collapsible control sections with tooltips
 - Toast notifications, empty states and skeleton loading
@@ -34,8 +37,11 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 - Save / unsaved status indicator with 500ms autosave debounce
 - Multi-frame scenes (2–4 frames) with per-frame device select, position (X/Y/scale), and layer assignment
 - Auto layout presets for multi-frame scenes: grid, fan, cascade, masonry, stack
+- Align (left/center/right/top/middle/bottom) and distribute buttons for frame instances
+- Smart guides snap frame instances to canvas edges and sibling frames while dragging
 - 3D tilt (`tiltX`/`tiltY`, ±25°) kept in sync across CSS preview, canvas/SVG exports and video
 - Optional grid overlay with adjustable divisions
+- Full-screen preview mode (`F` to toggle, `Esc` to exit)
 - Undo/redo history persists to localStorage — `⌘Z` survives a page reload
 - Installable PWA: service worker caches the app shell for offline use
 - Localized into 57 languages via `next-intl`, with a locale switcher in the toolbar
@@ -77,9 +83,12 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 
 ### Media & layers
 
-- Image and video support (drag-drop or file picker)
+- Media & layers: images and video, drag-drop or file picker
+- Paste from clipboard (`⌘V`): screenshots and copied image/video files land in the active layer; http(s) media links paste as remote media
 - Zoom (0.8–1.5x), position X/Y, and fill/fit toggle
 - Per-layer rotation and filters: brightness, contrast, saturation, blur, grayscale
+- Per-layer opacity slider (0–100%) — fades the media while bezel and chrome stay crisp
+- Layer locking: locked layers reject edits and deletion; visibility/duplication stay available
 - Layer management: add, duplicate, hide/show, reorder, remove
 - AI background removal (runs fully in-browser via Transformers.js)
 - Unsupported file types rejected with inline error
@@ -164,8 +173,8 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 | Video | @ffmpeg/ffmpeg (client-side WebM→MP4 / GIF / WebP) |
 | AI | @huggingface/transformers (in-browser background removal) |
 | i18n | next-intl (57 locales) |
-| Unit tests | Vitest (1,485 tests, 100 files) |
-| E2E tests | Playwright (85 tests: 73 editor, 9 visual regression, 3 preview/export parity) |
+| Unit tests | Vitest (1,585 tests, 106 files) |
+| E2E tests | Playwright (94 tests: 73 editor, 8 UX flows, 9 visual regression, 4 preview/export parity) |
 | Language | TypeScript (strict) |
 
 ---
@@ -175,12 +184,14 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 ```
 app/                    Next.js router ([locale]/layout, page, error boundary)
 proxy.ts                Locale detection middleware for next-intl
-components/editor/      48 React components
+components/editor/      50 React components
   EditorShell            Main orchestrator with keyboard shortcuts
   ControlPanel           Frame, style, media, background, watermark controls
   sections/              Control panel sections (frame, media, position, filters, animation)
   PreviewCanvas          Canvas renderer with drag/pan/pinch/annotations
   CommandPalette         ⌘K action search palette
+  ContextMenu            Right-click menus for canvas, frames, annotations, layers
+  OnboardingTour         First-run guided tour with replay from the palette
   LayersPanel            Layer list with hide/reorder/remove
   AnnotationsPanel       Annotation CRUD and editor
   TemplatesPanel         Scene style preset gallery
@@ -221,7 +232,7 @@ public/devices/          SVG device skins for overlay frames
 tests/
   unit/                  Pure function and store tests
   components/            Component tests (Testing Library)
-  e2e/                   Playwright end-to-end tests (editor, visual regression, preview/export parity)
+  e2e/                   Playwright end-to-end tests (editor, UX flows, visual regression, preview/export parity)
 ```
 
 ---
@@ -230,7 +241,7 @@ tests/
 
 ```bash
 npm run typecheck       # TypeScript strict check
-npm run test            # Vitest (1,485 tests, 100 files)
+npm run test            # Vitest (1,585 tests, 106 files)
 npm run test:coverage   # Unit tests with coverage report
 npm run test:e2e        # Playwright (requires browser install)
 npm run test:vrt        # Visual regression tests
@@ -252,6 +263,7 @@ Press `?` in the editor (or click the Shortcuts button) for the in-app cheat she
 | `⌘Z` / `Ctrl+Z` | Undo |
 | `⇧⌘Z` / `Ctrl+Y` | Redo |
 | `⌘S` / `Ctrl+S` | Save to localStorage |
+| `⌘V` / `Ctrl+V` | Paste image/video (or media URL) from clipboard into the active layer |
 | `⌘E` / `Ctrl+E` | Export PNG |
 | `⇧⌘C` / `Ctrl+⇧C` | Copy PNG to clipboard |
 | `⇧⌘E` / `Ctrl+⇧E` | Export MP4 |
@@ -259,6 +271,8 @@ Press `?` in the editor (or click the Shortcuts button) for the in-app cheat she
 | `⌘D` / `Ctrl+D` | Duplicate active layer |
 | `⌘↑` / `⌘↓` | Move active layer up/down |
 | `⌘[` / `⌘]` | Select previous / next layer |
+| `F` | Toggle full-screen preview |
+| `Esc` | Exit full-screen preview |
 | `R` | Reset to defaults |
 
 All layer shortcuts are ignored while typing in a text field.
