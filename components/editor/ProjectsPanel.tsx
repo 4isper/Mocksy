@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { exportProjectToFile, importProjectFromFile } from "@/lib/state/projectFile";
+import { exportTemplateToFile, importTemplateFromFile } from "@/lib/state/templateFile";
 import { relativeTime } from "@/lib/utils/relativeTime";
 import { ProjectItem } from "@/components/editor/ProjectItem";
 import { TrashSection } from "@/components/editor/TrashSection";
@@ -30,6 +31,7 @@ export function ProjectsPanel() {
   const emptyTrash = useProjectsStore((s) => s.emptyTrash);
   const importProject = useProjectsStore((s) => s.importProject);
   const currentScene = useEditorStore((s) => s.scene);
+  const setScene = useEditorStore((s) => s.setScene);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
@@ -68,6 +70,24 @@ export function ProjectsPanel() {
     }
   };
 
+  const handleTemplateImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    try {
+      const scene = await importTemplateFromFile(file);
+      setScene(scene);
+      setError(null);
+    } catch {
+      setError(t("projects.templateError"));
+    }
+  };
+
+  const handleTemplateExport = () => {
+    const active = projects.find((p) => p.id === activeProjectId);
+    exportTemplateToFile(currentScene, active?.name ?? "mocksy-template");
+  };
+
   return (
     <div style={{ padding: 10, display: "grid", gap: 8, alignContent: "start", overflow: "auto", minHeight: 0 }}>
       <div style={{ display: "flex", gap: 6 }}>
@@ -77,6 +97,26 @@ export function ProjectsPanel() {
         <label className="btn" style={{ flex: 1, fontSize: 12, padding: "7px 10px", cursor: "pointer", textAlign: "center" }}>
           {t("projects.import")}
           <input type="file" accept="application/json,.json" onChange={handleImport} style={{ display: "none" }} />
+        </label>
+      </div>
+      <div style={{ display: "flex", gap: 6 }}>
+        <button
+          type="button"
+          className="btn"
+          style={{ flex: 1, fontSize: 12, padding: "7px 10px" }}
+          title={t("projects.templateExportHint")}
+          onClick={handleTemplateExport}
+        >
+          {t("projects.templateExportBtn")}
+        </button>
+        <label className="btn" style={{ flex: 1, fontSize: 12, padding: "7px 10px", cursor: "pointer", textAlign: "center" }} title={t("projects.templateImportHint")}>
+          {t("projects.templateImportBtn")}
+          <input
+            type="file"
+            accept="application/json,.json,.mocksy.json"
+            onChange={handleTemplateImport}
+            style={{ display: "none" }}
+          />
         </label>
       </div>
       {error ? (

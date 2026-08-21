@@ -494,7 +494,12 @@
     "emptyTrashConfirm_title": "Empty trash?",
     "emptyTrashConfirm_message": "This permanently deletes every trashed project. This cannot be undone.",
     "emptyTrashConfirm_cancel": "Cancel",
-    "emptyTrashConfirm_confirm": "Empty trash"
+    "emptyTrashConfirm_confirm": "Empty trash",
+    "templateExportBtn": "Save template",
+    "templateImportBtn": "Apply template",
+    "templateExportHint": "Download the current scene as a shareable .mocksy.json template (media not included).",
+    "templateImportHint": "Load a .mocksy.json template into the current mockup.",
+    "templateError": "Could not apply that template."
   },
   "theme": {
     "light": "Lys",
