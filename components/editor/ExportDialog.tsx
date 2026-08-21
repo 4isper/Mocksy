@@ -5,11 +5,11 @@ import { useTranslations } from "next-intl";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import type { ExportSize } from "@/lib/types/editor";
 
-export type ExportFormat = "png" | "webp" | "svg" | "html" | "mp4" | "webm" | "gif" | "webpAnim" | "pdf";
+export type ExportFormat = "png" | "webp" | "svg" | "html" | "mp4" | "webm" | "gif" | "webpAnim" | "pdf" | "zip";
 
 /** Raster formats honor the 1×/2×/4× scale control (and custom size); vector
  *  formats don't. */
-const RASTER_FORMATS: ExportFormat[] = ["png", "webp", "mp4", "webm", "gif", "webpAnim"];
+const RASTER_FORMATS: ExportFormat[] = ["png", "webp", "mp4", "webm", "gif", "webpAnim", "zip"];
 const VECTOR_FORMATS: ExportFormat[] = ["svg", "html", "pdf"];
 
 /** Fallback size offered when the user first enables the custom-size option. */
@@ -25,7 +25,8 @@ export function ExportDialog({
   onExport,
   onCopy,
   busy,
-  onCancel
+  onCancel,
+  isMultiFrame = false
 }: {
   open: boolean;
   onClose: () => void;
@@ -37,11 +38,14 @@ export function ExportDialog({
   onCopy: () => void;
   busy?: boolean;
   onCancel?: () => void;
+  /** When true (multi-frame mode), offers the per-frame ZIP batch export. */
+  isMultiFrame?: boolean;
 }) {
   const t = useTranslations();
   const IMAGE_FORMATS: { value: ExportFormat; label: string }[] = [
     { value: "png", label: t("export.png") },
     { value: "webp", label: t("export.webp") },
+    ...(isMultiFrame ? [{ value: "zip" as ExportFormat, label: t("export.zip") }] : []),
     { value: "svg", label: t("export.svg") },
     { value: "html", label: t("export.html") },
     { value: "pdf", label: t("export.pdf") }

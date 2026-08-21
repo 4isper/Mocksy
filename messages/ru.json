@@ -389,6 +389,7 @@
     "svg": "SVG",
     "html": "HTML",
     "pdf": "PDF",
+    "zip": "ZIP (все кадры)",
     "mp4": "MP4",
     "webm": "WebM",
     "gif": "GIF",
@@ -417,7 +418,9 @@
     "exportingWebpAnim": "Экспорт WebP…",
     "htmlFailed": "Ошибка экспорта HTML.",
     "shareLinkFailed": "Не удалось создать ссылку для публикации",
-    "svgFailed": "Ошибка экспорта SVG."
+    "svgFailed": "Ошибка экспорта SVG.",
+    "exportingZip": "Экспорт кадра {current} из {total}…",
+    "zipFailed": "Ошибка экспорта ZIP."
   },
   "shortcuts": {
     "title": "Сочетания клавиш",

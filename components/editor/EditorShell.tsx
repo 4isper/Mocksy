@@ -212,6 +212,7 @@ export function EditorShell() {
         onCopy={exportApi.handleCopyFromDialog}
         busy={exportApi.isExporting}
         onCancel={exportApi.cancelExport}
+        isMultiFrame={scene.frameInstances.length > 0}
       />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <CommandPalette

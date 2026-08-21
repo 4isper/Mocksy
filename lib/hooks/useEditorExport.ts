@@ -22,6 +22,7 @@ export interface EditorExportApi {
   handleExportSvg: () => void;
   handleExportHtml: () => void;
   handleExportPdf: () => void;
+  handleExportZip: () => void;
   handleExportMp4: () => void;
   handleExportWebm: () => void;
   handleExportWebpAnim: () => void;
@@ -135,6 +136,30 @@ export function useEditorExport(
     );
   }, [scene, exportScale, customExportSize, activeLayerId, t]);
 
+  const handleExportZip = useCallback(async () => {
+    setExportError(null);
+    try {
+      const { exportBatchZip } = await import("@/lib/export/exportBatch");
+      await exportBatchZip(
+        scene,
+        "preview-canvas",
+        "mocksy-export",
+        setExportError,
+        exportScale,
+        activeLayerId,
+        (current, total) => {
+          setVideoExportStatus(t("export.exportingZip", { current, total }));
+          setVideoExportProgress(Math.round((current / total) * 100));
+        }
+      );
+      setCopyStatus(t("editor.exported"));
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : t("export.zipFailed"));
+    } finally {
+      setTimeout(clearVideoStatus, STATUS_CLEAR_DELAY);
+    }
+  }, [scene, exportScale, t, clearVideoStatus, activeLayerId]);
+
   const handleExportMp4 = useCallback(async () => {
     setExportError(null);
     const ctrl = new AbortController();
@@ -218,6 +243,9 @@ export function useEditorExport(
         case "pdf":
           handleExportPdf();
           break;
+        case "zip":
+          void handleExportZip();
+          break;
         case "mp4":
           void handleExportMp4();
           break;
@@ -239,6 +267,7 @@ export function useEditorExport(
       handleExportSvg,
       handleExportHtml,
       handleExportPdf,
+      handleExportZip,
       handleExportMp4,
       handleExportWebm,
       handleExportGif,
@@ -275,6 +304,7 @@ export function useEditorExport(
     handleExportSvg,
     handleExportHtml,
     handleExportPdf,
+    handleExportZip,
     handleExportMp4,
     handleExportWebm,
     handleExportWebpAnim,

@@ -414,7 +414,10 @@
     "htmlFailed": "HTML export failed.",
     "shareLinkFailed": "Could not create share link",
     "svgFailed": "SVG export failed.",
-    "pdf": "PDF"
+    "pdf": "PDF",
+    "zip": "ZIP (all frames)",
+    "exportingZip": "Exporting frame {current} of {total}…",
+    "zipFailed": "ZIP export failed."
   },
   "shortcuts": {
     "title": "Flýtilyklar á borði",
