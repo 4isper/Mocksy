@@ -287,7 +287,9 @@
     "tablet": "טאבלט",
     "watch": "שעון",
     "custom": "Custom",
-    "browser": "Browser"
+    "browser": "Browser",
+    "tv": "TV",
+    "watchUltra": "Watch Ultra"
   },
   "style": {
     "default": "ברירת מחדל",

@@ -287,7 +287,9 @@
     "tablet": "டேப்லெட்",
     "watch": "கடிகாரம்",
     "custom": "Custom",
-    "browser": "Browser"
+    "browser": "Browser",
+    "tv": "TV",
+    "watchUltra": "Watch Ultra"
   },
   "style": {
     "default": "இயல்புநிலை",

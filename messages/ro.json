@@ -287,7 +287,9 @@
     "tablet": "Tabletă",
     "watch": "Ceas",
     "custom": "Custom",
-    "browser": "Browser"
+    "browser": "Browser",
+    "tv": "TV",
+    "watchUltra": "Watch Ultra"
   },
   "style": {
     "default": "Implicit",

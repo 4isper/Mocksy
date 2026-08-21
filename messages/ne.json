@@ -287,7 +287,9 @@
     "tablet": "ट्याबलेट",
     "watch": "घडी",
     "custom": "Custom",
-    "browser": "Browser"
+    "browser": "Browser",
+    "tv": "TV",
+    "watchUltra": "Watch Ultra"
   },
   "style": {
     "default": "डिफोल्ट",

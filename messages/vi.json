@@ -287,7 +287,9 @@
     "tablet": "Máy tính bảng",
     "watch": "Đồng hồ",
     "custom": "Custom",
-    "browser": "Browser"
+    "browser": "Browser",
+    "tv": "TV",
+    "watchUltra": "Watch Ultra"
   },
   "style": {
     "default": "Mặc định",

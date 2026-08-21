@@ -287,7 +287,9 @@
     "tablet": "Tablet",
     "watch": "Ur",
     "custom": "Custom",
-    "browser": "Browser"
+    "browser": "Browser",
+    "tv": "TV",
+    "watchUltra": "Watch Ultra"
   },
   "style": {
     "default": "Standard",

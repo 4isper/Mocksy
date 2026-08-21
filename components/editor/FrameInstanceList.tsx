@@ -43,6 +43,8 @@ export function FrameInstanceList({
     imac: t("frame.imac"),
     notebook: t("frame.notebook"),
     browser: t("frame.browser"),
+    tv: t("frame.tv"),
+    watchUltra: t("frame.watchUltra"),
     watch: t("frame.watch")
   };
 

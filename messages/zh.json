@@ -287,7 +287,9 @@
     "tablet": "平板",
     "watch": "手表",
     "custom": "Custom",
-    "browser": "Browser"
+    "browser": "Browser",
+    "tv": "TV",
+    "watchUltra": "Watch Ultra"
   },
   "style": {
     "default": "默认",

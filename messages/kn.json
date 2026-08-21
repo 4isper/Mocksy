@@ -287,7 +287,9 @@
     "tablet": "ಟ್ಯಾಬ್ಲೆಟ್",
     "watch": "ಗಡಿ",
     "custom": "Custom",
-    "browser": "Browser"
+    "browser": "Browser",
+    "tv": "TV",
+    "watchUltra": "Watch Ultra"
   },
   "style": {
     "default": "ಪೂರ್ವನಿಯೋಗ",

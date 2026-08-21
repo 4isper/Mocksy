@@ -287,7 +287,9 @@
     "tablet": "Tablette",
     "watch": "Montre",
     "custom": "Custom",
-    "browser": "Browser"
+    "browser": "Browser",
+    "tv": "TV",
+    "watchUltra": "Watch Ultra"
   },
   "style": {
     "default": "Par défaut",

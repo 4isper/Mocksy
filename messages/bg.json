@@ -287,7 +287,9 @@
     "tablet": "Таблет",
     "watch": "Часовник",
     "custom": "Custom",
-    "browser": "Browser"
+    "browser": "Browser",
+    "tv": "TV",
+    "watchUltra": "Watch Ultra"
   },
   "style": {
     "default": "По подразбиране",

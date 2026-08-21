@@ -287,7 +287,9 @@
     "tablet": "Планшет",
     "watch": "Годинник",
     "custom": "Custom",
-    "browser": "Browser"
+    "browser": "Browser",
+    "tv": "TV",
+    "watchUltra": "Watch Ultra"
   },
   "style": {
     "default": "За замовчуванням",

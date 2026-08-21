@@ -157,6 +157,26 @@ export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
     viewBox: { w: 1440, h: 1000 },
     urlBar: true
   },
+  tv: {
+    asset: "/devices/tv.svg",
+    padding: 24,
+    screenRadius: 12,
+    isOverlay: true,
+    aspectRatio: "1600 / 1000",
+    // viewBox 1600x1000; screen rect x40 y24 w1520 h855 rx12 (16/9)
+    cutout: { x: 40, y: 24, w: 1520, h: 855, rx: 12 },
+    viewBox: { w: 1600, h: 1000 }
+  },
+  watchUltra: {
+    asset: "/devices/watchUltra.svg",
+    padding: 22,
+    screenRadius: 76,
+    isOverlay: true,
+    aspectRatio: "430 / 520",
+    // viewBox 430x520; screen rect x37 y32 w356 h456 rx76
+    cutout: { x: 37, y: 32, w: 356, h: 456, rx: 76 },
+    viewBox: { w: 430, h: 520 }
+  },
   watch: { asset: null, padding: 18, screenRadius: 999, isOverlay: false, aspectRatio: "1 / 1", cutout: null }
 };
 
@@ -219,6 +239,8 @@ export const FRAME_ORDER: Exclude<MockupFrame, "custom">[] = [
   "imac",
   "notebook",
   "browser",
+  "tv",
+  "watchUltra",
   "watch"
 ];
 

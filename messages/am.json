@@ -287,7 +287,9 @@
     "tablet": "ታብሌት",
     "watch": "የሰዓት ሰንአለው",
     "custom": "Custom",
-    "browser": "Browser"
+    "browser": "Browser",
+    "tv": "TV",
+    "watchUltra": "Watch Ultra"
   },
   "style": {
     "default": "ነባሪ",

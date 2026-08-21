@@ -287,7 +287,9 @@
     "tablet": "태블릿",
     "watch": "시계",
     "custom": "Custom",
-    "browser": "Browser"
+    "browser": "Browser",
+    "tv": "TV",
+    "watchUltra": "Watch Ultra"
   },
   "style": {
     "default": "기본값",

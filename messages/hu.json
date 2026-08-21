@@ -287,7 +287,9 @@
     "tablet": "Tabletta",
     "watch": "Óra",
     "custom": "Custom",
-    "browser": "Browser"
+    "browser": "Browser",
+    "tv": "TV",
+    "watchUltra": "Watch Ultra"
   },
   "style": {
     "default": "Alapértelmezett",

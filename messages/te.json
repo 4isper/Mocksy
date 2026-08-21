@@ -287,7 +287,9 @@
     "tablet": "టేబులెట్",
     "watch": "గడియారం",
     "custom": "Custom",
-    "browser": "Browser"
+    "browser": "Browser",
+    "tv": "TV",
+    "watchUltra": "Watch Ultra"
   },
   "style": {
     "default": "అప్రమాణస్థితి",

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="520" viewBox="0 0 430 520" fill="none">
+  <!-- Apple Watch Ultra frame-only overlay: flat titanium case with a real
+       transparent screen cutout (via mask) so the media shows through. -->
+  <defs>
+    <linearGradient id="wu-case" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8a8a90"/>
+      <stop offset="0.5" stop-color="#4c4c52"/>
+      <stop offset="1" stop-color="#6e6e75"/>
+    </linearGradient>
+    <mask id="wu-screen">
+      <rect x="0" y="0" width="430" height="520" fill="white"/>
+      <rect x="37" y="32" width="356" height="456" rx="76" ry="76" fill="black"/>
+    </mask>
+  </defs>
+  <!-- Flat titanium case with the screen masked out to transparency -->
+  <rect x="15" y="10" width="400" height="500" rx="118" ry="118" fill="url(#wu-case)" stroke="#0a0a0a" stroke-width="2" mask="url(#wu-screen)"/>
+  <!-- Screen edge highlight (visible rim only) -->
+  <rect x="37" y="32" width="356" height="456" rx="76" ry="76" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="1.5"/>
+  <!-- Digital Crown with the signature international-orange ring -->
+  <rect x="409" y="150" width="14" height="66" rx="7" fill="#3d3d42"/>
+  <rect x="409" y="150" width="14" height="14" rx="7" fill="#ff5f1f"/>
+  <!-- Side button -->
+  <rect x="411" y="238" width="10" height="88" rx="5" fill="#3d3d42"/>
+  <!-- Speaker grille (left side) -->
+  <rect x="11" y="220" width="6" height="80" rx="3" fill="#333338"/>
+</svg>

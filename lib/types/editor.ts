@@ -40,7 +40,7 @@ export interface Annotation {
   /** Border-radius of background box, in px (default 0). */
   bgRadius?: number;
 }
-export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "pixel8pro" | "galaxy24" | "iphoneSE" | "ipad" | "galaxyTab" | "desktop" | "tablet" | "macbook" | "imac" | "notebook" | "browser" | "watch" | "custom";
+export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "pixel8pro" | "galaxy24" | "iphoneSE" | "ipad" | "galaxyTab" | "desktop" | "tablet" | "macbook" | "imac" | "notebook" | "browser" | "tv" | "watchUltra" | "watch" | "custom";
 export type StylePreset = "default" | "glassLight" | "glassDark" | "outline";
 export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax" | "panLeft" | "panRight" | "breathe";
 /** Easing curve applied between animation keyframes. */

@@ -287,7 +287,9 @@
     "tablet": "แท็บเล็ต",
     "watch": "นาฬิกา",
     "custom": "Custom",
-    "browser": "Browser"
+    "browser": "Browser",
+    "tv": "TV",
+    "watchUltra": "Watch Ultra"
   },
   "style": {
     "default": "ค่าเริ่มต้น",

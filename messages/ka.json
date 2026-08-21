@@ -287,7 +287,9 @@
     "tablet": "ნობთა",
     "watch": "საათი",
     "custom": "Custom",
-    "browser": "Browser"
+    "browser": "Browser",
+    "tv": "TV",
+    "watchUltra": "Watch Ultra"
   },
   "style": {
     "default": "ნაგველი",

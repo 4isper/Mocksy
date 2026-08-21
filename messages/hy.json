@@ -287,7 +287,9 @@
     "tablet": "Պլատետ",
     "watch": "Հարկ",
     "custom": "Custom",
-    "browser": "Browser"
+    "browser": "Browser",
+    "tv": "TV",
+    "watchUltra": "Watch Ultra"
   },
   "style": {
     "default": "Կանխադրված",
