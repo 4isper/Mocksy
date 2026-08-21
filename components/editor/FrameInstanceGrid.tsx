@@ -249,6 +249,8 @@ export function FrameInstanceGrid({
         const offsetX = layer?.mediaOffsetX ?? 0;
         const offsetY = layer?.mediaOffsetY ?? 0;
         const zoomStyle = { transform: tiltCss(scene) + "scale(" + zoom + ") translate(" + (offsetX * 2) + "px, " + (offsetY * 2) + "px)", transformOrigin: "center" };
+        // Live preview uses the native -webkit-box-reflect (Chromium/Safari);
+        // canvas-based exports implement the effect fully for every browser.
         const isSelected = activeFrameInstanceId === inst.id;
         return (
           <div
@@ -308,7 +310,10 @@ export function FrameInstanceGrid({
               outline: isSelected ? "2px solid var(--accent)" : undefined,
               outlineOffset: 4,
               borderRadius: 4,
-              touchAction: "none"
+              touchAction: "none",
+              ...(scene.floorReflection
+                ? ({ WebkitBoxReflect: "below 0 linear-gradient(transparent 45%, rgba(255,255,255,0.30))" } as CSSProperties)
+                : {})
             } as CSSProperties}
           >
             {/* ── Frame content ──

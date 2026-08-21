@@ -299,6 +299,16 @@ function watermarkMarkup(scene: EditorScene, opts: SvgExportOptions): string {
  * cover/contain + pan math, shadow, watermark, annotations) so the vector
  * export matches the preview and the raster exports.
  */
+/** Mirrored copy of one frame group below its bottom edge, faded out via a
+ *  userSpaceOnUse mask. Rendered before the real groups so it sits behind. */
+function reflectionGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: number, offset: number): string {
+  void scene;
+  const r = index + offset;
+  const bottom = num(group.box.y + group.box.height);
+  const content = frameGroupMarkup(scene, group, r);
+  return `<g mask="url(#refl-mask-${r})"><g transform="translate(0 ${num(2 * Number(bottom))}) scale(1 -1)">${content}</g></g>`;
+}
+
 export function buildSvgMarkup(scene: EditorScene, opts: SvgExportOptions): string {
   const { width, height, groups, zoom = 1 } = opts;
   const shadowDy = num(RENDER.shadowOffsetY * zoom);
@@ -312,6 +322,17 @@ export function buildSvgMarkup(scene: EditorScene, opts: SvgExportOptions): stri
       ? `<linearGradient id="glare-sweep" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.32"/><stop offset="0.3" stop-color="#fff" stop-opacity="0.14"/><stop offset="0.52" stop-color="#fff" stop-opacity="0"/></linearGradient>`
       : "",
     ...groups.map((g, i) => groupClipMarkup(g, i)),
+    ...(scene.floorReflection
+      ? groups.flatMap((g, i) => {
+          const r = i + groups.length;
+          const bottom = num(g.box.y + g.box.height);
+          return [
+            groupClipMarkup(g, r),
+            `<linearGradient id="refl-fade-${r}" x1="0" y1="${bottom}" x2="0" y2="${num(g.box.y + g.box.height * 0.45)}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity="0.30"/></linearGradient>`,
+            `<mask id="refl-mask-${r}"><rect x="${num(g.box.x - g.box.width)}" y="${bottom}" width="${num(g.box.width * 3)}" height="${num(g.box.height * 2)}" fill="url(#refl-fade-${r})"/></mask>`
+          ];
+        })
+      : []),
     opts.fontCss ? `<style>${opts.fontCss}</style>` : ""
   ].filter(Boolean);
 
@@ -319,6 +340,7 @@ export function buildSvgMarkup(scene: EditorScene, opts: SvgExportOptions): stri
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${num(width)} ${num(height)}" width="${num(width)}" height="${num(height)}">`,
     `<defs>${defs.join("")}</defs>`,
     backgroundMarkup(scene, opts),
+    ...(scene.floorReflection ? groups.map((g, i) => reflectionGroupMarkup(scene, g, i, groups.length)) : []),
     ...groups.map((g, i) => frameGroupMarkup(scene, g, i)),
     annotationsMarkup(scene, width, height),
     watermarkMarkup(scene, opts),

@@ -62,6 +62,52 @@ function drawTiltedFrame(
   drawTiltedQuad(ctx, off, quad);
 }
 
+/**
+ * Draws vertically-mirrored, downward-fading copies of every frame box onto an
+ * isolated layer, then composites it under the frames. The flip maps original
+ * pixel y to 2·bottom − y so each reflection starts exactly at its device's
+ * bottom edge; a per-strip `destination-in` gradient fades it out without
+ * touching the background. Returns silently when the document is unavailable
+ * (tests / SSR callers).
+ */
+function paintFloorReflection(
+  ctx: CanvasRenderingContext2D,
+  boxes: Array<{ x: number; y: number; width: number; height: number }>,
+  drawOne: (target: CanvasRenderingContext2D) => void,
+  width: number,
+  height: number,
+  opacity = 0.28
+): void {
+  const layer = document.createElement("canvas");
+  layer.width = Math.max(1, width);
+  layer.height = Math.max(1, height);
+  const lctx = layer.getContext("2d");
+  if (!lctx) return;
+
+  for (const box of boxes) {
+    const bottom = box.y + box.height;
+    lctx.save();
+    lctx.setTransform(1, 0, 0, -1, 0, 2 * bottom);
+    drawOne(lctx);
+    lctx.restore();
+
+    // Fade this strip: keep ~opacity at the device edge, gone by ~55% down.
+    lctx.save();
+    lctx.beginPath();
+    lctx.rect(box.x, bottom, box.width, box.height);
+    lctx.clip();
+    lctx.globalCompositeOperation = "destination-in";
+    const fade = lctx.createLinearGradient(0, bottom, 0, bottom + box.height * 0.55);
+    fade.addColorStop(0, `rgba(0,0,0,${opacity})`);
+    fade.addColorStop(1, "rgba(0,0,0,0)");
+    lctx.fillStyle = fade;
+    lctx.fillRect(box.x, bottom, box.width, box.height);
+    lctx.restore();
+  }
+
+  ctx.drawImage(layer, 0, 0);
+}
+
 export function renderMockupToCanvas(
   canvas: HTMLCanvasElement,
   scene: EditorScene,
@@ -94,11 +140,12 @@ export function renderMockupToCanvas(
     paintBackground(ctx, scene, width, height, dpiScale, backgroundFill, backgroundImage);
 
     const frameBoxes = computeFrameInstances(scene, width, height, pixelRatio, transform, activeLayerId);
-    for (let i = 0; i < frameBoxes.length; i++) {
-      const box = frameBoxes[i];
-      const inst = scene.frameInstances[i];
-      if (!box || !inst) continue;
 
+    const renderInstance = (
+      target: CanvasRenderingContext2D,
+      box: FrameBox,
+      inst: EditorScene["frameInstances"][number]
+    ) => {
       const layer = scene.layers.find((l) => l.id === inst.layerId) ?? activeLayerForRender;
       const instSpec = getFrameSpec(inst.frame, scene.customFrame);
       const isActiveInstance = !!layer && layer.id === activeLayerId;
@@ -112,17 +159,40 @@ export function renderMockupToCanvas(
       // which also composes correctly with the tilted-quad path below.
       const rotated = !!box.rotation;
       if (rotated) {
-        ctx.save();
-        ctx.translate(box.x + box.width / 2, box.y + box.height / 2);
-        ctx.rotate(box.rotation!);
-        ctx.translate(-(box.x + box.width / 2), -(box.y + box.height / 2));
+        target.save();
+        target.translate(box.x + box.width / 2, box.y + box.height / 2);
+        target.rotate(box.rotation!);
+        target.translate(-(box.x + box.width / 2), -(box.y + box.height / 2));
       }
       if (hasTilt(scene)) {
-        drawTiltedFrame(ctx, scene, instSpec, layer, box, dpiScale, instZoom, frameMedia, overlay);
+        drawTiltedFrame(target, scene, instSpec, layer, box, dpiScale, instZoom, frameMedia, overlay);
       } else {
-        drawFrameAndMedia(ctx, scene, instSpec, layer, box, dpiScale, instZoom, frameMedia, overlay);
+        drawFrameAndMedia(target, scene, instSpec, layer, box, dpiScale, instZoom, frameMedia, overlay);
       }
-      if (rotated) ctx.restore();
+      if (rotated) target.restore();
+    };
+
+    if (scene.floorReflection) {
+      paintFloorReflection(
+        ctx,
+        frameBoxes,
+        (target) => {
+          for (let i = 0; i < frameBoxes.length; i++) {
+            const box = frameBoxes[i];
+            const inst = scene.frameInstances[i];
+            if (box && inst) renderInstance(target, box, inst);
+          }
+        },
+        width,
+        height
+      );
+    }
+
+    for (let i = 0; i < frameBoxes.length; i++) {
+      const box = frameBoxes[i];
+      const inst = scene.frameInstances[i];
+      if (!box || !inst) continue;
+      renderInstance(ctx, box, inst);
     }
     drawWatermark(ctx, scene, width, height, dpiScale, watermarkImage);
     if (scene.annotations.length > 0) drawAnnotations(ctx, scene.annotations, width, height, dpiScale);
@@ -132,8 +202,26 @@ export function renderMockupToCanvas(
   paintBackground(ctx, scene, width, height, dpiScale, backgroundFill, backgroundImage, "rgba(0,0,0,0)");
 
   const box = computeFrameBox(scene, width, height, pixelRatio, frameWidth, frameHeight, transform, frameX, frameY, activeLayerId);
+
   const activeLayerForRender2 = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
    const actualZoom = Math.max(RENDER.minZoom, transform?.zoom ?? activeLayerForRender2?.zoom ?? 1);
+
+
+  if (scene.floorReflection) {
+    paintFloorReflection(
+      ctx,
+      [box],
+      (target) => {
+        if (hasTilt(scene)) {
+          drawTiltedFrame(target, scene, spec, activeLayerForRender2 ?? scene.layers[0], box, dpiScale, actualZoom, media, frameOverlay ?? null);
+        } else {
+          drawFrameAndMedia(target, scene, spec, activeLayerForRender2 ?? scene.layers[0], box, dpiScale, actualZoom, media, frameOverlay ?? null);
+        }
+      },
+      width,
+      height
+    );
+  }
 
   if (hasTilt(scene)) {
     drawTiltedFrame(ctx, scene, spec, activeLayerForRender2, box, dpiScale, actualZoom, media, frameOverlay ?? null);

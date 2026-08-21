@@ -17,6 +17,7 @@ export function PositionSection() {
     setMediaOffsetY,
     setRotation,
     setShadowOpacity,
+    setFloorReflection,
     setBorderRadius,
     setTiltX,
     setTiltY
@@ -30,6 +31,7 @@ export function PositionSection() {
       setMediaOffsetY: s.setMediaOffsetY,
       setRotation: s.setRotation,
       setShadowOpacity: s.setShadowOpacity,
+      setFloorReflection: s.setFloorReflection,
       setBorderRadius: s.setBorderRadius,
       setTiltX: s.setTiltX,
       setTiltY: s.setTiltY
@@ -90,6 +92,11 @@ export function PositionSection() {
             <input type="range" min={0} max={1} step={0.01} value={scene.shadowOpacity} aria-label={t("editor.shadowOpacity")} aria-valuetext={`${Math.round(scene.shadowOpacity * 100)}%`} onChange={(e) => setShadowOpacity(Number(e.target.value))} />
             <span className="range-val">{Math.round(scene.shadowOpacity * 100)}%</span>
           </div>
+        </label>
+        <label className="toggle">
+          <input type="checkbox" checked={scene.floorReflection} onChange={(e) => setFloorReflection(e.target.checked)} />
+          <span className="track" aria-hidden="true" />
+          <span>{t("editor.floorReflection")}</span>
         </label>
         <label className="field">
           <span>{t("editor.cornerRadius")}</span>

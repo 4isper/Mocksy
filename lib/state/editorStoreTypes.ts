@@ -180,6 +180,8 @@ export interface EditorStoreState {
   setScreenChrome: (patch: Partial<import("@/lib/types/editor").ScreenChrome>) => void;
   /** Toggles the screen-glare light sweep. */
   setScreenGlare: (on: boolean) => void;
+  /** Toggles the floor reflection under the device. */
+  setFloorReflection: (on: boolean) => void;
   /** Sets the URL shown in the browser frame's address bar. */
   setBrowserUrl: (url: string) => void;
   setAspectRatio: (aspectRatio: string) => void;

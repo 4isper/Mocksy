@@ -228,6 +228,8 @@ export interface EditorScene {
   screen: ScreenChrome;
   /** Subtle diagonal light sweep over the screen media (shots.so-style). */
   screenGlare: boolean;
+  /** Mirrored, fading copy of the device below its bottom edge. */
+  floorReflection: boolean;
   /** URL shown in the browser frame's address bar (frame "browser"). */
   browserUrl: string;
   /** Non-media overlays (text, arrows, rectangles) drawn above the mockup. */

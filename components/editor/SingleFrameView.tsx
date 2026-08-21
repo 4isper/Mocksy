@@ -4,6 +4,7 @@ import { useEffect, type ChangeEvent } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import type { SceneCss } from "@/lib/render/mockupRenderer";
+import type { CSSProperties } from "react";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 
@@ -65,7 +66,17 @@ export function SingleFrameView({
   return (
     <div
       ref={frameRef}
-      style={{ ...sceneCss.frame, zIndex: 1, cursor: canPan ? "grab" : undefined, touchAction: canPan ? "none" : undefined }}
+      style={{
+        ...sceneCss.frame,
+        zIndex: 1,
+        cursor: canPan ? "grab" : undefined,
+        touchAction: canPan ? "none" : undefined,
+        // Live-preview reflection (Chromium/Safari); exports implement it
+        // fully via the canvas pipeline for every browser.
+        ...(scene.floorReflection
+          ? ({ WebkitBoxReflect: "below 0 linear-gradient(transparent 45%, rgba(255,255,255,0.30))" } as CSSProperties)
+          : {})
+      }}
       data-mockup-frame
       onPointerDown={onPanDown}
       onPointerMove={onPanMove}

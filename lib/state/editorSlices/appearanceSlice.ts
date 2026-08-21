@@ -19,6 +19,7 @@ export type AppearanceSlice = Pick<
   | "setWatermarkImage"
   | "setScreenChrome"
   | "setScreenGlare"
+  | "setFloorReflection"
   | "setBrowserUrl"
   | "setAspectRatio"
   | "addAnnotation"
@@ -61,6 +62,7 @@ export function createAppearanceSlice(set: EditorStoreSetter): AppearanceSlice {
     setWatermarkImage: (watermarkImageUrl) => set((s) => pushHistory(s, { ...s.scene, watermarkImageUrl })),
     setScreenChrome: (patch) => set((s) => pushHistory(s, { ...s.scene, screen: { ...s.scene.screen, ...patch } }, "screen")),
     setScreenGlare: (screenGlare) => set((s) => pushHistory(s, { ...s.scene, screenGlare })),
+    setFloorReflection: (floorReflection) => set((s) => pushHistory(s, { ...s.scene, floorReflection })),
     setBrowserUrl: (browserUrl) => set((s) => pushHistory(s, { ...s.scene, browserUrl }, "browserUrl")),
     setAspectRatio: (aspectRatio) => set((s) => pushHistory(s, { ...s.scene, aspectRatio })),
     addAnnotation: (type) =>

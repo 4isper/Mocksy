@@ -149,6 +149,17 @@ describe("normalizeScene", () => {
     expect(s.frameInstances[0]!.scale).toBe(0.5);
   });
 
+  it("normalizes screenGlare and floorReflection flags", () => {
+    const s = normalizeScene({ screenGlare: true, floorReflection: true });
+    expect(s.screenGlare).toBe(true);
+    expect(s.floorReflection).toBe(true);
+    const d = normalizeScene({});
+    expect(d.screenGlare).toBe(false);
+    expect(d.floorReflection).toBe(false);
+    // Truthy-but-not-true values are rejected (strict boolean).
+    expect(normalizeScene({ screenGlare: "yes" }).screenGlare).toBe(false);
+  });
+
   it("normalizes frame instance orientation (valid kept, invalid dropped)", () => {
     const s = normalizeScene({
       frameInstances: [

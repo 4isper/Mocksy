@@ -286,7 +286,8 @@
     "ctxAddRect": "Add rectangle",
     "ctxAddCircle": "Add circle",
     "ctxRotate": "Rotate 90°",
-    "screenGlare": "Screen glare"
+    "screenGlare": "Screen glare",
+    "floorReflection": "Floor reflection"
   },
   "frame": {
     "none": "Brez",
@@ -640,7 +641,9 @@
     "showOnboarding": "Show the intro tour",
     "showOnboardingDesc": "Replay the guided tour of the editor",
     "toggleGlare": "Toggle screen glare",
-    "toggleGlareDesc": "Add or remove the light sweep on device screens"
+    "toggleGlareDesc": "Add or remove the light sweep on device screens",
+    "toggleReflection": "Toggle floor reflection",
+    "toggleReflectionDesc": "Mirror the device below its bottom edge"
   },
   "errors": {
     "title": "Nekaj je šlo narobe",

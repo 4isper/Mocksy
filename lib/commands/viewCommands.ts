@@ -30,6 +30,17 @@ export function createViewCommands(
       },
     },
     {
+      id: "toggle-reflection",
+      category: "view",
+      label: t("commandPalette.toggleReflection"),
+      description: t("commandPalette.toggleReflectionDesc"),
+      keywords: ["reflection", "mirror", "floor", "shadow", "device"],
+      action: () => {
+        const st = useEditorStore.getState();
+        st.setFloorReflection(!st.scene.floorReflection);
+      },
+    },
+    {
       id: "show-onboarding",
       category: "view",
       label: t("commandPalette.showOnboarding"),

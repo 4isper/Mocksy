@@ -53,6 +53,7 @@ export const initialScene: EditorScene = {
   animationDurationMs: 3000,
   screen: DEFAULT_SCREEN_CHROME,
   screenGlare: false,
+  floorReflection: false,
   browserUrl: DEFAULT_BROWSER_URL
 };
 // The first layer is the active one by default.

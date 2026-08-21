@@ -250,6 +250,7 @@ export function normalizeScene(raw: unknown): EditorScene {
     // Clamp the length so a crafted share URL can't bloat the scene with a
     // megabyte-long "URL"; the address bar truncates visually anyway.
     screenGlare: r.screenGlare === true,
+    floorReflection: r.floorReflection === true,
     browserUrl: str(r.browserUrl, initialScene.browserUrl)?.slice(0, 200) ?? initialScene.browserUrl,
     annotations: Array.isArray(r.annotations)
       ? r.annotations.slice(0, MAX_ANNOTATIONS).map((a) =>

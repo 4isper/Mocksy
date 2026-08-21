@@ -1338,6 +1338,15 @@ describe("screen glare state", () => {
   });
 });
 
+describe("floor reflection state", () => {
+  it("defaults to off and records history on toggle", () => {
+    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene, floorReflection: false } });
+    useEditorStore.getState().setFloorReflection(true);
+    expect(useEditorStore.getState().scene.floorReflection).toBe(true);
+    expect(useEditorStore.getState().past.length).toBe(1);
+  });
+});
+
 describe("editorHelpers", () => {
   it("activePosterTime returns 0 when there are no layers", () => {
     expect(activePosterTime({ ...initialScene, layers: [] })).toBe(0);
