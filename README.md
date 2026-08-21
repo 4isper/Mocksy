@@ -39,6 +39,9 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 - Auto layout presets for multi-frame scenes: grid, fan, cascade, masonry, stack
 - Align (left/center/right/top/middle/bottom) and distribute buttons for frame instances
 - Smart guides snap frame instances to canvas edges and sibling frames while dragging
+- Drop a file onto a specific device in multi-frame mode — it targets that device's layer
+- Preview zoom chips (fit / 50 / 100 / 200%) over the canvas; exports are unaffected
+- `⌘C`/`⌘V` copies and duplicates the selected annotation or frame instance (media paste still wins when the OS clipboard holds files)
 - 3D tilt (`tiltX`/`tiltY`, ±25°) kept in sync across CSS preview, canvas/SVG exports and video
 - Optional grid overlay with adjustable divisions
 - Full-screen preview mode (`F` to toggle, `Esc` to exit)
@@ -85,6 +88,7 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 
 - Media & layers: images and video, drag-drop or file picker
 - Paste from clipboard (`⌘V`): screenshots and copied image/video files land in the active layer; http(s) media links paste as remote media
+- Screen recording (`getDisplayMedia`): capture a tab/window into a WebM clip that lands in the active layer — via the Media section button or the command palette
 - Zoom (0.8–1.5x), position X/Y, and fill/fit toggle
 - Per-layer rotation and filters: brightness, contrast, saturation, blur, grayscale
 - Per-layer opacity slider (0–100%) — fades the media while bezel and chrome stay crisp
@@ -176,7 +180,7 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 | Video | @ffmpeg/ffmpeg (client-side WebM→MP4 / GIF / WebP) |
 | AI | @huggingface/transformers (in-browser background removal) |
 | i18n | next-intl (57 locales) |
-| Unit tests | Vitest (1,596 tests, 107 files) |
+| Unit tests | Vitest (1,612 tests, 110 files) |
 | E2E tests | Playwright (94 tests: 73 editor, 8 UX flows, 9 visual regression, 4 preview/export parity) |
 | Language | TypeScript (strict) |
 
@@ -244,7 +248,7 @@ tests/
 
 ```bash
 npm run typecheck       # TypeScript strict check
-npm run test            # Vitest (1,596 tests, 107 files)
+npm run test            # Vitest (1,612 tests, 110 files)
 npm run test:coverage   # Unit tests with coverage report
 npm run test:e2e        # Playwright (requires browser install)
 npm run test:vrt        # Visual regression tests
@@ -269,6 +273,8 @@ Press `?` in the editor (or click the Shortcuts button) for the in-app cheat she
 | `⌘V` / `Ctrl+V` | Paste image/video (or media URL) from clipboard into the active layer |
 | `⌘E` / `Ctrl+E` | Export PNG |
 | `⇧⌘C` / `Ctrl+⇧C` | Copy PNG to clipboard |
+| `⌘C` / `Ctrl+C` | Copy selected annotation / frame instance |
+| `⌘V` / `Ctrl+V` | Paste media from clipboard, or duplicate the copied object |
 | `⇧⌘E` / `Ctrl+⇧E` | Export MP4 |
 | `⇧⌘G` / `Ctrl+⇧G` | Export GIF |
 | `⌘D` / `Ctrl+D` | Duplicate active layer |
