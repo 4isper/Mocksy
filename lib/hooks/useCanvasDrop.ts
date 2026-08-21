@@ -11,6 +11,15 @@ interface UseCanvasDrop {
   scene: EditorScene;
 }
 
+/** Finds the frame instance id under a drop target, if any. Multi-frame
+ *  previews tag each instance with `data-frame-instance-id`, so dropping a
+ *  file onto a specific device targets that device's layer. */
+export function closestFrameInstanceId(target: EventTarget | null): string | null {
+  const el = target as HTMLElement | null;
+  if (!el || typeof el.closest !== "function") return null;
+  return el.closest("[data-frame-instance-id]")?.getAttribute("data-frame-instance-id") ?? null;
+}
+
 /**
  * Handles media drops / file picks on the preview canvas: image & video uploads
  * plus JSON project import. Surfaces upload errors to the store so the canvas
@@ -60,9 +69,24 @@ export function useCanvasDrop({ scene }: UseCanvasDrop) {
         }
         return;
       }
+      // Dropping onto a specific device in a multi-frame scene targets that
+      // device's layer (locked layers reject the swap inside the store).
+      const instanceId = closestFrameInstanceId(event.target);
+      const inst = instanceId ? scene.frameInstances.find((fi) => fi.id === instanceId) : undefined;
+      if (inst?.layerId) {
+        try {
+          const { url, mediaType, mediaName } = await loadMediaFromFile(file);
+          setMediaUploadError(null);
+          useEditorStore.getState().setScenePalette(null);
+          useEditorStore.getState().setMediaOnLayer(inst.layerId, url, mediaType, mediaName);
+        } catch (err) {
+          setMediaUploadError(err instanceof UnsupportedMediaError ? err.message : t("editor.uploadError"));
+        }
+        return;
+      }
       await loadMediaToLayer(file);
     },
-    [loadMediaToLayer, setMediaUploadError, t]
+    [loadMediaToLayer, scene.frameInstances, setMediaUploadError, t]
   );
 
   const handleFile = useCallback(

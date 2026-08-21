@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useEditorStore } from "@/lib/state/editorStore";
+import { getCopiedObject, setCopiedObject } from "@/lib/state/editorClipboard";
 
 export interface EditorShortcutActions {
   saveNow: () => void;
@@ -138,6 +139,20 @@ export function useEditorShortcuts(actions: EditorShortcutActions): void {
       if (modifier && event.shiftKey && event.key.toLowerCase() === "c") {
         event.preventDefault();
         a.onCopyPng();
+        return;
+      }
+      // ⌘C copies the selected annotation or frame instance onto the editor's
+      // internal object clipboard (plain ⌘C; ⌘⇧C above is the PNG copy).
+      // Pasting happens in useClipboardPaste's window paste handler so OS
+      // clipboard media always wins over object paste on ⌘V.
+      if (modifier && !event.shiftKey && !typing && event.key.toLowerCase() === "c") {
+        const st = useEditorStore.getState();
+        const annId = st.selectedAnnotationId;
+        const frameId = st.activeFrameInstanceId;
+        if (annId) setCopiedObject({ kind: "annotation", id: annId });
+        else if (frameId) setCopiedObject({ kind: "frameInstance", id: frameId });
+        else return;
+        event.preventDefault();
         return;
       }
       // Layer shortcuts: ⌘D duplicates the active layer, ⌘↑/⌘↓ move it.

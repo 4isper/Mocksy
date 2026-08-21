@@ -52,6 +52,10 @@ export interface EditorStoreState {
   showGrid: boolean;
   /** Number of grid lines on each axis while the overlay is visible. */
   gridDivisions: number;
+  /** Preview zoom level: "fit" (default) or a scale multiplier (0.5/1/2).
+   *  Pure view state — never persisted, never undone. Values >1 crop into
+   *  the canvas from its center; <1 letterbox it inside the panel. */
+  previewZoom: number | "fit";
   /** Full-screen preview mode: side panels and toolbar are hidden so the
    *  mockup fills the editor. Pure view state — never persisted or undone. */
   fullscreenPreview: boolean;
@@ -85,6 +89,8 @@ export interface EditorStoreState {
   setCustomExportSize: (size: ExportSize | null) => void;
   setShowGrid: (show: boolean) => void;
   setGridDivisions: (divisions: number) => void;
+  /** Sets the preview zoom level ("fit" or 0.5/1/2). */
+  setPreviewZoom: (zoom: number | "fit") => void;
   /** Enters/exits the full-screen preview mode. */
   setFullscreenPreview: (on: boolean) => void;
   /** Opens/closes the onboarding tour. */

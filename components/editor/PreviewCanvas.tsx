@@ -18,7 +18,7 @@ import { FrameInstanceGrid } from "@/components/editor/FrameInstanceGrid";
 import { SingleFrameView } from "@/components/editor/SingleFrameView";
 import { PreviewBackground } from "@/components/editor/PreviewBackground";
 import { PreviewOverlays } from "@/components/editor/PreviewOverlays";
-import { PreviewChips, PreviewGridToggle } from "@/components/editor/PreviewChips";
+import { PreviewChips, PreviewGridToggle, PreviewZoomControl } from "@/components/editor/PreviewChips";
 
 interface PreviewCanvasProps {
   scene: EditorScene;
@@ -41,6 +41,11 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const selectLayer = useEditorStore((s) => s.selectLayer);
   const showGrid = useEditorStore((s) => s.showGrid);
   const gridDivisions = useEditorStore((s) => s.gridDivisions);
+  // View-only zoom of the scene layer: fit (default) or 0.5/1/2. Layout size
+  // is untouched, so exports and pointer math keep working; >fit crops from
+  // the canvas center via the parent's overflow:hidden.
+  const previewZoom = useEditorStore((s) => s.previewZoom);
+  const zoomScale = previewZoom === "fit" ? undefined : previewZoom;
   const setShowGrid = useEditorStore((s) => s.setShowGrid);
   const setGridDivisions = useEditorStore((s) => s.setGridDivisions);
   const setVideoDuration = useEditorStore((s) => s.setVideoDuration);
@@ -209,6 +214,16 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           ...sceneCss.container
         }}
       >
+        {/* View-zoom layer: scales the scene content only; chips, alerts and
+            menus stay unscaled outside of it. */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            transform: zoomScale ? `scale(${zoomScale})` : undefined,
+            transformOrigin: "center"
+          }}
+        >
         <PreviewBackground sceneCss={sceneCss} showGrid={showGrid} gridDivisions={gridDivisions} />
         {isMultiFrame ? (
           <FrameInstanceGrid
@@ -291,12 +306,14 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           onSelectMany={selectAnnotations}
           onGuides={setGuides}
         />
+        </div>
         <PreviewGridToggle
           showGrid={showGrid}
           gridDivisions={gridDivisions}
           setShowGrid={setShowGrid}
           setGridDivisions={setGridDivisions}
         />
+        <PreviewZoomControl />
         {mediaUploadError ? (
           <div role="alert" className="preview-error">
             {mediaUploadError}

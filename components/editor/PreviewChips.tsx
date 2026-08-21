@@ -69,6 +69,37 @@ export function PreviewChips({
   );
 }
 
+/** Bottom-left preview zoom chips: fit / 50 / 100 / 200%. Pure view state. */
+export function PreviewZoomControl() {
+  const t = useTranslations();
+  const previewZoom = useEditorStore((s) => s.previewZoom);
+  const setPreviewZoom = useEditorStore((s) => s.setPreviewZoom);
+  const options: Array<{ value: number | "fit"; label: string }> = [
+    { value: "fit", label: t("editor.fit") },
+    { value: 0.5, label: "50%" },
+    { value: 1, label: "100%" },
+    { value: 2, label: "200%" }
+  ];
+  return (
+    <div className="preview-chip-stack" style={{ bottom: 8, left: 8 }}>
+      <div style={{ display: "flex", gap: 4 }} role="group" aria-label={t("editor.previewZoom")}>
+        {options.map((opt) => (
+          <button
+            key={String(opt.value)}
+            type="button"
+            className="preview-chip"
+            aria-pressed={previewZoom === opt.value}
+            onClick={() => setPreviewZoom(opt.value)}
+          >
+            {opt.value !== "fit" && previewZoom === opt.value ? <Check size={12} /> : null}
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Bottom-right grid toggle + divisions select. */
 export function PreviewGridToggle({
   showGrid,

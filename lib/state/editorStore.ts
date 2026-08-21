@@ -38,6 +38,7 @@ export const useEditorStore = create<EditorStoreState>()((set) => ({
   customExportSize: null,
   showGrid: false,
   gridDivisions: DEFAULT_GRID_DIVISIONS,
+  previewZoom: "fit",
   fullscreenPreview: false,
   onboardingOpen: false,
   ...createSceneSlice(set),
