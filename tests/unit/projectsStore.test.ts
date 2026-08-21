@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { initialScene, makeDemoScene, useEditorStore } from "@/lib/state/editorStore";
-import { sceneToShareUrl } from "@/lib/state/shareState";
+import { readSharedSceneFromUrl, sceneToShareUrl } from "@/lib/state/shareState";
 import type { EditorScene, Project } from "@/lib/types/editor";
 
 const ORIGINAL_WINDOW = globalThis.window;
@@ -264,14 +264,16 @@ describe("projectsStore", () => {
     expect(state.activeProjectId).toBe(copy!.id);
   });
 
-  it("hydrate creates shared mockup project from URL scene parameter", () => {
+  it("hydrate creates shared mockup project from URL scene parameter", async () => {
     const scene: EditorScene = { ...initialScene, frame: "desktop" };
-    const url = sceneToShareUrl(scene);
+    const url = await sceneToShareUrl(scene);
     Object.defineProperty(globalThis, "window", {
       configurable: true,
       value: { localStorage: storage, location: { href: url } }
     });
-    const result = useProjectsStore.getState().hydrate();
+    // Compressed links resolve asynchronously before hydration (as the app bootstrap does).
+    const shared = await readSharedSceneFromUrl();
+    const result = useProjectsStore.getState().hydrate(shared);
     const { projects, activeProjectId } = useProjectsStore.getState();
     expect(projects).toHaveLength(1);
     expect(projects[0]!.name).toBe("Shared mockup");
@@ -280,18 +282,19 @@ describe("projectsStore", () => {
     expect(result.layers.some((l) => l.mediaUrl)).toBe(true);
   });
 
-  it("hydrate merges a shared scene with existing projects instead of wiping them", () => {
+  it("hydrate merges a shared scene with existing projects instead of wiping them", async () => {
     const saved: Project[] = [
       { id: "p1", name: "Saved one", scene: makeDemoScene(), updatedAt: 1 },
       { id: "p2", name: "Saved two", scene: makeDemoScene(), updatedAt: 2 }
     ];
     storage.setItem("mocksy-projects", JSON.stringify({ projects: saved, activeProjectId: "p1" }));
-    const url = sceneToShareUrl({ ...initialScene, frame: "tablet" });
+    const url = await sceneToShareUrl({ ...initialScene, frame: "tablet" });
     Object.defineProperty(globalThis, "window", {
       configurable: true,
       value: { localStorage: storage, location: { href: url } }
     });
-    const result = useProjectsStore.getState().hydrate();
+    const shared = await readSharedSceneFromUrl();
+    const result = useProjectsStore.getState().hydrate(shared);
     const { projects, activeProjectId } = useProjectsStore.getState();
     expect(projects).toHaveLength(3);
     expect(projects.find((p) => p.id === "p1")).toBeDefined();
@@ -301,8 +304,8 @@ describe("projectsStore", () => {
     expect(result.frame).toBe("tablet");
   });
 
-  it("hydrate clears the scene param from the URL after reading it", () => {
-    const url = sceneToShareUrl({ ...initialScene, frame: "desktop" });
+  it("hydrate clears the scene param from the URL after reading it", async () => {
+    const url = await sceneToShareUrl({ ...initialScene, frame: "desktop" });
     const replaceState = vi.fn();
     Object.defineProperty(globalThis, "window", {
       configurable: true,
@@ -312,7 +315,8 @@ describe("projectsStore", () => {
         history: { replaceState }
       }
     });
-    useProjectsStore.getState().hydrate();
+    const shared = await readSharedSceneFromUrl();
+    useProjectsStore.getState().hydrate(shared);
     expect(replaceState).toHaveBeenCalledTimes(1);
     const cleared = new URL(replaceState.mock.calls[0]![2]);
     expect(cleared.searchParams.has("scene")).toBe(false);

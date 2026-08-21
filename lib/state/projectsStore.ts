@@ -31,8 +31,9 @@ export interface ProjectsStoreState {
    *  stop showing "Saved" and warn the user their latest edits weren't stored. */
   saveError: string | null;
   /** Loads persisted projects (or migrates a legacy autosave / demo) and
-   *  returns the scene that should become the editor's active scene. */
-  hydrate: () => EditorScene;
+   *  returns the scene that should become the editor's active scene. Pass a
+   *  pre-resolved share-URL scene (or explicit null) to skip URL reading. */
+  hydrate: (preloaded?: EditorScene | null) => EditorScene;
   createProject: (name?: string, scene?: EditorScene) => string;
   switchProject: (id: string) => void;
   renameProject: (id: string, name: string) => void;
@@ -110,10 +111,16 @@ export const useProjectsStore = create<ProjectsStoreState>((set, get) => ({
   activeProjectId: null,
   hydrated: false,
   saveError: null,
-  hydrate: () => {
+  /**
+   * Bootstraps the project list. By default the shared-scene URL is read
+   * synchronously (legacy raw-JSON links). When the caller has pre-resolved a
+   * share link (compressed links need async inflate) it passes the result in —
+   * including an explicit null, which skips URL handling entirely.
+   */
+  hydrate: (preloaded?: EditorScene | null) => {
     // A shared scene URL takes precedence as the active scene, but it must not
     // wipe the user's saved projects — merge it in as a new project instead.
-    const fromUrl = readSceneFromUrl();
+    const fromUrl = preloaded !== undefined ? preloaded : readSceneFromUrl();
     if (fromUrl) {
       const stored = readStorage();
       const projects = stored?.projects ?? [];

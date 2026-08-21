@@ -76,7 +76,7 @@ export function useEditorExport(
 
   const copyShareUrl = useCallback(async () => {
     try {
-      const url = sceneToShareUrl({ ...scene, activeLayerId });
+      const url = await sceneToShareUrl({ ...scene, activeLayerId });
       await navigator.clipboard.writeText(url);
       setCopyStatus(t("editor.shareLinkCopied"));
     } catch (err) {

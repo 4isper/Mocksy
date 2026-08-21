@@ -4,13 +4,19 @@ import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
 
 /** Above this length the URL becomes impractical to share (some browsers cap
  *  URLs around 64KB; long data: media also can't be pasted reliably). Demo
- *  media is already stripped, but a large uploaded asset still can blow this. */
+ *  media is already stripped, but a large uploaded asset still can blow this.
+ *  The limit is checked AFTER deflate compression, so scenes that used to
+ *  overflow may now fit. */
 const MAX_SHARE_URL_LENGTH = 16000;
 
 /** Marker left in place of the demo data: URL so the reader knows exactly which
   * layers were the demo and can restore real demo media for them alone — without
   * resurrecting the demo in layers the user genuinely cleared. */
 const DEMO_MEDIA_PLACEHOLDER = "__mocksy_demo__";
+
+/** Compressed payloads carry this prefix so the reader can tell them apart
+ *  from legacy raw-JSON params (which start with "{"). */
+const COMPRESSED_PREFIX = "z.";
 
 export class ShareUrlTooLarge extends Error {
   constructor() {
@@ -19,27 +25,79 @@ export class ShareUrlTooLarge extends Error {
   }
 }
 
-export function sceneToShareUrl(scene: EditorScene): string {
-  // The demo media is a long data: URI bundled into the app; encoding it into
-  // every share link bloats the URL for no reason since the reader restores
-  // the same demo by default. Drop demo layers (replaced on read).
+/** Strips the bundled demo media out of the scene before serialization so
+ *  share links don't carry the app's own assets (the reader restores them). */
+function stripDemoMedia(scene: EditorScene): EditorScene {
   const hasDemo = scene.layers.some((l) => l.mediaUrl === DEMO_MEDIA_URL);
-  const payload = hasDemo
-    ? {
-        ...scene,
-        layers: scene.layers.map((l) =>
-          l.mediaUrl === DEMO_MEDIA_URL
-            ? { ...l, mediaUrl: DEMO_MEDIA_PLACEHOLDER, mediaType: "none" as const, mediaName: null }
-            : l
-        )
-      }
-    : scene;
-  const serialized = JSON.stringify(payload);
+  if (!hasDemo) return scene;
+  return {
+    ...scene,
+    layers: scene.layers.map((l) =>
+      l.mediaUrl === DEMO_MEDIA_URL
+        ? { ...l, mediaUrl: DEMO_MEDIA_PLACEHOLDER, mediaType: "none" as const, mediaName: null }
+        : l
+    )
+  };
+}
+
+/** Base64url (URL-safe, unpadded) of raw bytes. btoa is available everywhere
+ *  the editor runs; chunked String.fromCharCode avoids call-stack overflows
+ *  on multi-KB payloads. */
+function bytesToBase64Url(bytes: Uint8Array): string {
+  let binary = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function base64UrlToBytes(value: string): Uint8Array {
+  const b64 = value.replace(/-/g, "+").replace(/_/g, "/");
+  const binary = atob(b64 + "=".repeat((4 - (b64.length % 4)) % 4));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+async function deflateJson(json: string): Promise<Uint8Array | null> {
+  const CS = (globalThis as { CompressionStream?: typeof CompressionStream }).CompressionStream;
+  if (!CS) return null;
+  try {
+    const stream = new Blob([json]).stream().pipeThrough(new CS("deflate"));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
+async function inflateJson(bytes: Uint8Array): Promise<string | null> {
+  const DS = (globalThis as { DecompressionStream?: typeof DecompressionStream }).DecompressionStream;
+  if (!DS) return null;
+  try {
+    const stream = new Blob([bytes as unknown as BlobPart]).stream().pipeThrough(new DS("deflate"));
+    return await new Response(stream).text();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Serializes the scene into a shareable URL. When the browser supports
+ * CompressionStream the JSON payload is deflated and stored base64url-encoded
+ * behind a `z.` prefix (typically several times shorter than raw JSON);
+ * otherwise it falls back to the legacy raw-JSON param that every reader
+ * understands. Throws ShareUrlTooLarge when even the compressed link exceeds
+ * the practical URL budget.
+ */
+export async function sceneToShareUrl(scene: EditorScene): Promise<string> {
+  const serialized = JSON.stringify(stripDemoMedia(scene));
   const url = new URL(window.location.href);
   // URLSearchParams percent-encodes the value on its own; pre-encoding with
   // encodeURIComponent here used to double-encode the payload (~2x the special
   // characters, eating half the URL budget for nothing).
-  url.searchParams.set("scene", serialized);
+  const compressed = await deflateJson(serialized);
+  url.searchParams.set("scene", compressed ? COMPRESSED_PREFIX + bytesToBase64Url(compressed) : serialized);
   if (url.toString().length > MAX_SHARE_URL_LENGTH) {
     // A full-resolution uploaded image/video can't travel in a URL — point the
     // user at the project-file export instead of producing a broken link.
@@ -51,8 +109,43 @@ export function sceneToShareUrl(scene: EditorScene): string {
 /** Parses the `scene` query value. URLSearchParams already decoded the single
  *  percent-encoding of current links; older links carried an extra
  *  encodeURIComponent layer, so fall back to decoding that when the first parse
- *  fails. */
-function parseShareScene(raw: string): EditorScene | null {
+ *  fails. Legacy-only: compressed (`z.`) values are not valid JSON here. */
+export function readSceneFromUrl(): EditorScene | null {
+  const url = new URL(window.location.href);
+  const raw = url.searchParams.get("scene");
+  if (!raw || raw.startsWith(COMPRESSED_PREFIX)) return null;
+  const scene = parseLegacyShareScene(raw);
+  if (!scene) return null;
+  return restoreDemoMedia(scene);
+}
+
+/**
+ * Async reader that understands BOTH formats: current deflate-compressed
+ * links and legacy raw-JSON links. Used by the app bootstrap, which awaits it
+ * once before hydrating projects.
+ */
+export async function readSharedSceneFromUrl(): Promise<EditorScene | null> {
+  const url = new URL(window.location.href);
+  const raw = url.searchParams.get("scene");
+  if (!raw) return null;
+
+  if (raw.startsWith(COMPRESSED_PREFIX)) {
+    try {
+      const json = await inflateJson(base64UrlToBytes(raw.slice(COMPRESSED_PREFIX.length)));
+      if (!json) return null;
+      const scene = normalizeScene(JSON.parse(json));
+      return restoreDemoMedia(scene);
+    } catch {
+      return null;
+    }
+  }
+
+  const scene = parseLegacyShareScene(raw);
+  if (!scene) return null;
+  return restoreDemoMedia(scene);
+}
+
+function parseLegacyShareScene(raw: string): EditorScene | null {
   try {
     return normalizeScene(JSON.parse(raw));
   } catch {
@@ -62,15 +155,6 @@ function parseShareScene(raw: string): EditorScene | null {
       return null;
     }
   }
-}
-
-export function readSceneFromUrl(): EditorScene | null {
-  const url = new URL(window.location.href);
-  const raw = url.searchParams.get("scene");
-  if (!raw) return null;
-  const scene = parseShareScene(raw);
-  if (!scene) return null;
-  return restoreDemoMedia(scene);
 }
 
 /** Re-injects the demo data: URL into the layers that were the demo. Only

@@ -148,7 +148,7 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 - Create, switch, rename, duplicate, import, export, delete
 - Soft delete with a trash section — restore accidentally removed projects
 - All projects persisted to localStorage
-- Share URL encodes the full scene as base64 JSON (demo media stripped); invalid payloads are normalized
+- Share URL carries the scene deflate-compressed (`CompressionStream`, base64url) with a legacy raw-JSON fallback; demo media is stripped and invalid payloads are normalized
 - Reset confirmation modal before clearing
 
 ---

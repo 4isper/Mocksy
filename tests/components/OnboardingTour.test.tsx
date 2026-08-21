@@ -1,7 +1,6 @@
 // @vitest-environment happy-dom
-import { act } from "react";
 import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { OnboardingTour, ONBOARDING_SEEN_KEY, hasSeenOnboarding } from "@/components/editor/OnboardingTour";
 import { useEditorStore } from "@/lib/state/editorStore";
 

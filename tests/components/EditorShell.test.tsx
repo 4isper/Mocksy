@@ -1,11 +1,18 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { EditorShell } from "@/components/editor/EditorShell";
 import { useEditorStore, makeDemoScene, initialScene } from "@/lib/state/editorStore";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { useThemeStore } from "@/lib/state/themeStore";
+
+/** Renders the shell and drains the async bootstrap (share-URL resolution →
+ *  hydrate) so tests observe the same state the old sync bootstrap produced. */
+async function renderShell() {
+  render(<EditorShell />);
+  await act(async () => {});
+}
 
 const mockExportImage = vi.hoisted(() => ({
   exportImage: vi.fn(),
@@ -145,7 +152,7 @@ describe("EditorShell", () => {
   });
 
   it("shows unsaved text after scene change", async () => {
-    render(<EditorShell />);
+    await renderShell();
     // Simulate a scene change via the store
     useEditorStore.setState({
       scene: { ...useEditorStore.getState().scene, shadowOpacity: 0.5 },
@@ -301,9 +308,9 @@ describe("EditorShell keyboard shortcuts", () => {
     expect(useEditorStore.getState().scene.layers.length).toBe(before + 1);
   });
 
-  it("moves the active layer down on ⌘↓", () => {
+  it("moves the active layer down on ⌘↓", async () => {
     useEditorStore.setState({ scene: makeDemoScene() });
-    render(<EditorShell />);
+    await renderShell();
     const scene = useEditorStore.getState().scene;
     const first = scene.layers[0]!;
     const second = scene.layers[1]!;
@@ -312,10 +319,10 @@ describe("EditorShell keyboard shortcuts", () => {
     expect(useEditorStore.getState().scene.layers[1]!.id).toBe(first.id);
   });
 
-  it("moves the active layer up on ⌘↑", () => {
+  it("moves the active layer up on ⌘↑", async () => {
     useEditorStore.setState({ scene: makeDemoScene() });
     useEditorStore.setState({ scene: { ...useEditorStore.getState().scene, activeLayerId: useEditorStore.getState().scene.layers[1]!.id } });
-    render(<EditorShell />);
+    await renderShell();
     const scene = useEditorStore.getState().scene;
     const first = scene.layers[0]!;
     const second = scene.layers[1]!;
@@ -419,21 +426,36 @@ describe("EditorShell share URL", () => {
     render(<EditorShell />);
     const shareBtn = screen.getAllByRole("button").find(b => b.title === "editor.shareTitle");
     await userEvent.click(shareBtn!);
+    // Compression makes the URL build async — wait for the clipboard write.
+    await screen.findByText("editor.shareLinkCopied", {}, { timeout: 2000 });
     expect(writeText).toHaveBeenCalledTimes(1);
     expect(typeof writeText.mock.calls[0]![0]).toBe("string");
   });
 
   it("shows a share error when the URL is too large", async () => {
     const writeText = stubClipboard();
+    // Incompressible (random) media payloads mimic real image data — deflate
+    // can't rescue them, so the practical URL limit still applies.
+    let seed = 987654321;
+    const rand = () => {
+      seed = (seed * 1664525 + 1013904223) % 4294967296;
+      return seed / 4294967296;
+    };
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const randomDataUrl = () => {
+      const body = Array.from({ length: 600 }, () => alphabet[Math.floor(rand() * alphabet.length)]).join("");
+      return `data:image/png;base64,${body}`;
+    };
     useEditorStore.setState({
       scene: {
         ...useEditorStore.getState().scene,
-        layers: Array.from({ length: 60 }, () => ({ ...useEditorStore.getState().scene.layers[0]! })),
+        layers: Array.from({ length: 60 }, () => ({ ...useEditorStore.getState().scene.layers[0]!, mediaUrl: randomDataUrl() })),
       },
     });
-    render(<EditorShell />);
+    await renderShell();
     const shareBtn = screen.getAllByRole("button").find(b => b.title === "editor.shareTitle");
     await userEvent.click(shareBtn!);
+    await screen.findByRole("alert", {}, { timeout: 2000 });
     expect(writeText).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toHaveTextContent("errors.shareUrlTooLarge");
   });
