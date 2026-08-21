@@ -7,12 +7,14 @@ import { Segmented } from "@/components/editor/Segmented";
 interface ScreenControlsProps {
   screen: ScreenChrome;
   setScreenChrome: (patch: Partial<ScreenChrome>) => void;
+  screenGlare: boolean;
+  setScreenGlare: (on: boolean) => void;
 }
 
 const STYLES: ScreenChromeStyle[] = ["lock", "home", "statusBar"];
 const THEMES: ScreenChromeTheme[] = ["dark", "light"];
 
-export function ScreenControls({ screen, setScreenChrome }: ScreenControlsProps) {
+export function ScreenControls({ screen, setScreenChrome, screenGlare, setScreenGlare }: ScreenControlsProps) {
   const t = useTranslations();
 
   const styleLabels: Record<ScreenChromeStyle, string> = {
@@ -109,6 +111,12 @@ export function ScreenControls({ screen, setScreenChrome }: ScreenControlsProps)
       <label className="field">
         <span>{t("editor.screenDateText")}</span>
         <input value={screen.date} disabled={!screen.enabled} onChange={(e) => setScreenChrome({ date: e.target.value })} />
+      </label>
+
+      <label className="toggle">
+        <input type="checkbox" checked={screenGlare} onChange={(e) => setScreenGlare(e.target.checked)} />
+        <span className="track" aria-hidden="true" />
+        <span>{t("editor.screenGlare")}</span>
       </label>
     </div>
   );

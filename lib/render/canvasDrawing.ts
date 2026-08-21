@@ -276,6 +276,22 @@ export function drawFrameAndMedia(
     ctx.restore();
   }
 
+  // Screen glare: diagonal light sweep clipped to the rounded screen, painted
+  // above media/chrome and below the device skin. Stops mirror
+  // SCREEN_GLARE_CSS in mockupRenderer so preview ≡ export.
+  if (scene.screenGlare) {
+    ctx.save();
+    roundedRectPath(ctx, innerX, innerY, innerW, innerH, innerRadius);
+    ctx.clip();
+    const glare = ctx.createLinearGradient(innerX, innerY, innerX + innerW, innerY + innerH);
+    glare.addColorStop(0, "rgba(255,255,255,0.32)");
+    glare.addColorStop(0.3, "rgba(255,255,255,0.14)");
+    glare.addColorStop(0.52, "rgba(255,255,255,0)");
+    ctx.fillStyle = glare;
+    ctx.fillRect(innerX, innerY, innerW, innerH);
+    ctx.restore();
+  }
+
   if (overlay) {
     ctx.save();
     ctx.shadowColor = `rgba(0,0,0,${Math.max(0, Math.min(1, scene.shadowOpacity))})`;

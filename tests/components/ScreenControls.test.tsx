@@ -13,13 +13,15 @@ afterEach(() => {
 describe("ScreenControls", () => {
   const props = {
     screen: { ...DEFAULT_SCREEN_CHROME, enabled: true },
-    setScreenChrome: vi.fn()
+    setScreenChrome: vi.fn(),
+    screenGlare: false,
+    setScreenGlare: vi.fn()
   };
 
   it("renders the master toggle and all sub-toggles", () => {
     render(<ScreenControls {...props} />);
     const toggles = screen.getAllByRole("checkbox");
-    expect(toggles).toHaveLength(6); // master + 5 flags
+    expect(toggles).toHaveLength(7); // master + 5 flags + glare
   });
 
   it("calls setScreenChrome when the master toggle is flipped", async () => {
@@ -27,6 +29,15 @@ describe("ScreenControls", () => {
     render(<ScreenControls {...props} setScreenChrome={setScreenChrome} />);
     await userEvent.click(screen.getAllByRole("checkbox")[0]!);
     expect(setScreenChrome).toHaveBeenCalledWith({ enabled: false });
+  });
+
+  it("toggles the screen glare via its own checkbox", async () => {
+    const setScreenGlare = vi.fn();
+    render(<ScreenControls {...props} screenGlare={true} setScreenGlare={setScreenGlare} />);
+    const glareToggle = screen.getAllByRole("checkbox")[6]!;
+    expect((glareToggle as HTMLInputElement).checked).toBe(true);
+    await userEvent.click(glareToggle);
+    expect(setScreenGlare).toHaveBeenCalledWith(false);
   });
 
   it("renders the style and theme segmented groups", () => {
@@ -74,9 +85,12 @@ describe("ScreenControls", () => {
     // master toggle stays interactive; all sub-toggles are disabled
     const toggles = screen.getAllByRole("checkbox");
     expect(toggles[0]).not.toBeDisabled();
-    for (const el of toggles.slice(1)) {
+    // All screen-chrome toggles disable with the master; the glare toggle
+    // (last) is independent of it.
+    for (const el of toggles.slice(1, -1)) {
       expect(el).toBeDisabled();
     }
+    expect(toggles[toggles.length - 1]).not.toBeDisabled();
     for (const el of screen.getAllByRole("group").flatMap((g) => Array.from(g.querySelectorAll("button")))) {
       expect(el).toBeDisabled();
     }
@@ -100,3 +114,4 @@ describe("ScreenControls", () => {
     expect(screen.getByDisplayValue("Monday, January 1")).toBeInTheDocument();
   });
 });
+

@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import type { EditorScene } from "@/lib/types/editor";
-import { frameViewBox, getFrameSpec } from "@/lib/render/frames";
+import { frameViewBox, getFrameSpec, type FrameSpec } from "@/lib/render/frames";
 import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
 import { buildLayerFilterCss } from "@/lib/render/layerFilters";
 import { resolveFrameStyle } from "@/lib/render/canvasDrawing";
@@ -26,6 +26,9 @@ export interface SceneCss {
   screenChrome: string | null;
   /** Positions the chrome exactly over the media's screen area. */
   screenChromeStyle: CSSProperties;
+  /** Diagonal light sweep over the screen, or null when disabled. Rendered
+   *  above media+chrome, below the device skin overlay. */
+  screenGlareStyle: CSSProperties | null;
   /** SVG markup of the browser frame's address-bar URL text, or null for
    *  non-browser frames. Rendered above the window skin overlay. */
   browserChrome: string | null;
@@ -246,10 +249,42 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
     emptyMediaStyle,
     screenChrome,
     screenChromeStyle,
+    screenGlareStyle: buildScreenGlareStyle(scene, spec),
     browserChrome,
     browserChromeStyle,
     backgroundImage: scene.backgroundMode === "image" ? scene.backgroundImageUrl : null,
     backgroundBlur: scene.backgroundBlur,
     backgroundSize
   };
+}
+
+
+/** Shared gradient stops for the screen-glare sweep. Kept beside the canvas
+ *  renderer's copy so the preview and exports stay pixel-identical. */
+export const SCREEN_GLARE_CSS =
+  "linear-gradient(to bottom right, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.14) 30%, rgba(255,255,255,0) 52%)";
+
+function buildScreenGlareStyle(scene: EditorScene, spec: FrameSpec): CSSProperties | null {
+  if (!scene.screenGlare) return null;
+  const base: CSSProperties = {
+    position: "absolute",
+    background: SCREEN_GLARE_CSS,
+    pointerEvents: "none"
+  };
+  // Overlay skins: clamp to the transparent screen cutout so the sweep never
+  // paints over the bezel (same box the screen chrome uses). CSS frames have
+  // no cutout — their content box IS the screen.
+  if (spec.isOverlay && spec.cutout) {
+    const vb = frameViewBox(spec);
+    return {
+      ...base,
+      left: `${(spec.cutout.x / vb.w) * 100}%`,
+      top: `${(spec.cutout.y / vb.h) * 100}%`,
+      width: `${(spec.cutout.w / vb.w) * 100}%`,
+      height: `${(spec.cutout.h / vb.h) * 100}%`,
+      borderRadius: `${(spec.cutout.rx / spec.cutout.w) * 100}% / ${(spec.cutout.rx / spec.cutout.h) * 100}%`,
+      overflow: "hidden"
+    };
+  }
+  return { ...base, inset: 0, borderRadius: "inherit" };
 }

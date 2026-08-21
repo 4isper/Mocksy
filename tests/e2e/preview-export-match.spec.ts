@@ -120,6 +120,7 @@ test("preview matches the PNG export for a landscape frame instance", async ({ p
     tiltY: 0,
     annotations: [],
     watermarkEnabled: false,
+    screenGlare: true,
     frameInstances: [
       { id: "p", frame: "none", x: 0.25, y: 0.5, scale: 0.28, layerId: "l1" },
       { id: "l", frame: "none", x: 0.72, y: 0.5, scale: 0.28, layerId: "l2", orientation: "landscape" }

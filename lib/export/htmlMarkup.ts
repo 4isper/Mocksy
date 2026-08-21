@@ -136,6 +136,9 @@ export function buildHtmlSnippet(scene: EditorScene, opts: HtmlSnippetOptions, a
   const browserChrome = css.browserChrome && css.browserChromeStyle
     ? `<div style="${serializeCssProperties(css.browserChromeStyle)}">${css.browserChrome}</div>`
     : "";
+  const glare = css.screenGlareStyle
+    ? `<div class="glare" style="${serializeCssProperties(css.screenGlareStyle)}"></div>`
+    : "";
   const chrome = css.screenChrome
     ? `<div class="chrome" style="${serializeCssProperties(css.screenChromeStyle)}">${css.screenChrome}</div>`
     : "";
@@ -227,7 +230,7 @@ ${animationCss}
   ${bg}
   <div class="frame">
     ${media}
-    ${chrome}
+    ${chrome}${glare}
     ${overlay}
     ${browserChrome}
   </div>

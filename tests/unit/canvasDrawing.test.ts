@@ -99,6 +99,7 @@ function scene(overrides: Partial<EditorScene> = {}): EditorScene {
     annotations: [],
     frameInstances: [],
     customFrame: null,
+    screenGlare: false,
     browserUrl: "mocksy.app",
     backgroundMode: "solid",
     backgroundColor: "#09090b",

@@ -178,6 +178,8 @@ export interface EditorStoreState {
   setWatermarkImage: (url: string | null) => void;
   /** Patches the on-screen decoration (status bar / lock / home chrome). */
   setScreenChrome: (patch: Partial<import("@/lib/types/editor").ScreenChrome>) => void;
+  /** Toggles the screen-glare light sweep. */
+  setScreenGlare: (on: boolean) => void;
   /** Sets the URL shown in the browser frame's address bar. */
   setBrowserUrl: (url: string) => void;
   setAspectRatio: (aspectRatio: string) => void;

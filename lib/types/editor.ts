@@ -226,6 +226,8 @@ export interface EditorScene {
   animationDurationMs: number;
   /** Screen decoration (status bar, lock/home chrome) drawn over the media. */
   screen: ScreenChrome;
+  /** Subtle diagonal light sweep over the screen media (shots.so-style). */
+  screenGlare: boolean;
   /** URL shown in the browser frame's address bar (frame "browser"). */
   browserUrl: string;
   /** Non-media overlays (text, arrows, rectangles) drawn above the mockup. */

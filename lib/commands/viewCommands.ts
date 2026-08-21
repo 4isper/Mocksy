@@ -19,6 +19,17 @@ export function createViewCommands(
       action: toggleFullscreenPreview,
     },
     {
+      id: "toggle-glare",
+      category: "view",
+      label: t("commandPalette.toggleGlare"),
+      description: t("commandPalette.toggleGlareDesc"),
+      keywords: ["glare", "gloss", "reflection", "shine", "screen", "light", "sweep"],
+      action: () => {
+        const st = useEditorStore.getState();
+        st.setScreenGlare(!st.scene.screenGlare);
+      },
+    },
+    {
       id: "show-onboarding",
       category: "view",
       label: t("commandPalette.showOnboarding"),

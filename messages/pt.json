@@ -285,7 +285,8 @@
     "ctxAddArrow": "Add arrow",
     "ctxAddRect": "Add rectangle",
     "ctxAddCircle": "Add circle",
-    "ctxRotate": "Rotate 90°"
+    "ctxRotate": "Rotate 90°",
+    "screenGlare": "Screen glare"
   },
   "frame": {
     "none": "Nenhum",
@@ -637,7 +638,9 @@
     "surpriseStyle": "Surprise me: random style",
     "surpriseStyleDesc": "Apply a random frame style and background",
     "showOnboarding": "Show the intro tour",
-    "showOnboardingDesc": "Replay the guided tour of the editor"
+    "showOnboardingDesc": "Replay the guided tour of the editor",
+    "toggleGlare": "Toggle screen glare",
+    "toggleGlareDesc": "Add or remove the light sweep on device screens"
   },
   "errors": {
     "title": "Algo deu errado",

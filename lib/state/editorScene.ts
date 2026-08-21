@@ -52,6 +52,7 @@ export const initialScene: EditorScene = {
   aspectRatio: ASPECT_RATIOS[0] ?? "16 / 9",
   animationDurationMs: 3000,
   screen: DEFAULT_SCREEN_CHROME,
+  screenGlare: false,
   browserUrl: DEFAULT_BROWSER_URL
 };
 // The first layer is the active one by default.

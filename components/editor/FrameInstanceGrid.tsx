@@ -374,6 +374,7 @@ export function FrameInstanceGrid({
                   <img src={layer.mediaUrl} alt={t("editor.uploadedMediaAlt")} style={{ ...instCss.mediaStyle, cursor: "grab" }} onLoad={(e) => analyzeMedia(e.currentTarget)} onPointerDown={() => selectLayer(layer.id)} />
                 )
               ) : null}
+              {instCss.screenGlareStyle ? <div aria-hidden style={instCss.screenGlareStyle} /> : null}
             </div>
             </div>
 

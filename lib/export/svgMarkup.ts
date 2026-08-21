@@ -175,7 +175,10 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
   if (tilt) {
     return `<g transform="${tilt}"><clipPath id="clip-t${index}">${groupClipRect(group)}</clipPath><g clip-path="url(#clip-t${index})">${media}${chromeMarkup}</g>${frameGroupInner(scene, group)}</g>`;
   }
-  let inner = `<g clip-path="url(#clip-${index})">${media}${chromeMarkup}</g>${frameGroupInner(scene, group)}`;
+  const glareMarkup = scene.screenGlare
+    ? `<rect x="${num(box.innerX)}" y="${num(box.innerY)}" width="${num(box.innerW)}" height="${num(box.innerH)}" rx="${num(group.isCircular ? Math.min(box.innerW, box.innerH) / 2 : Math.min(box.innerRadius, Math.min(box.innerW, box.innerH) / 2))}" fill="url(#glare-sweep)"/>`
+    : "";
+  let inner = `<g clip-path="url(#clip-${index})">${media}${chromeMarkup}${glareMarkup}</g>${frameGroupInner(scene, group)}`;
   if (group.orientation) {
     // The clip must live inside the rotated group so its rect rotates with
     // it (same trick as the tilt branch above).
@@ -305,6 +308,9 @@ export function buildSvgMarkup(scene: EditorScene, opts: SvgExportOptions): stri
     `<filter id="frame-shadow" x="-60%" y="-250%" width="220%" height="500%"><feDropShadow dx="0" dy="${shadowDy}" stdDeviation="${shadowStd}" flood-color="#000" flood-opacity="${scene.shadowOpacity}"/></filter>`,
     `<filter id="anno-shadow" x="-50%" y="-100%" width="200%" height="300%"><feDropShadow dx="0" dy="${RENDER.annoShadowOffsetY}" stdDeviation="${RENDER.annoShadowBlur / 2}" flood-color="#000" flood-opacity="0.5"/></filter>`,
     scene.backgroundBlur > 0 ? `<filter id="bg-blur"><feGaussianBlur stdDeviation="${num(scene.backgroundBlur / 2)}"/></filter>` : "",
+    scene.screenGlare
+      ? `<linearGradient id="glare-sweep" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.32"/><stop offset="0.3" stop-color="#fff" stop-opacity="0.14"/><stop offset="0.52" stop-color="#fff" stop-opacity="0"/></linearGradient>`
+      : "",
     ...groups.map((g, i) => groupClipMarkup(g, i)),
     opts.fontCss ? `<style>${opts.fontCss}</style>` : ""
   ].filter(Boolean);

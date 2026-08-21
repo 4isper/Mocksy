@@ -1325,6 +1325,19 @@ describe("onboarding tour state", () => {
   });
 });
 
+describe("screen glare state", () => {
+  it("defaults to off; toggling records exactly one history step", () => {
+    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene, screenGlare: false } });
+    expect(useEditorStore.getState().scene.screenGlare).toBe(false);
+    useEditorStore.getState().setScreenGlare(true);
+    expect(useEditorStore.getState().scene.screenGlare).toBe(true);
+    expect(useEditorStore.getState().past.length).toBe(1);
+    useEditorStore.getState().setScreenGlare(false);
+    expect(useEditorStore.getState().scene.screenGlare).toBe(false);
+    expect(useEditorStore.getState().past.length).toBe(2);
+  });
+});
+
 describe("editorHelpers", () => {
   it("activePosterTime returns 0 when there are no layers", () => {
     expect(activePosterTime({ ...initialScene, layers: [] })).toBe(0);

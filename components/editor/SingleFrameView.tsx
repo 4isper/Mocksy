@@ -120,6 +120,7 @@ export function SingleFrameView({
             )
           ) : null
         )}
+      {sceneCss.screenGlareStyle ? <div aria-hidden style={sceneCss.screenGlareStyle} /> : null}
       {scene.layers.every((l) => !l.mediaUrl) ? (
         <label style={sceneCss.emptyMediaStyle}>
           <span>{t("editor.dropToStart")}</span>
