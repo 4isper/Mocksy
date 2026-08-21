@@ -6,6 +6,7 @@ import { useEditorExport } from "@/lib/hooks/useEditorExport";
 import { useAutosaveStatus } from "@/lib/hooks/useAutosaveStatus";
 import { warmUpFfmpeg } from "@/lib/export/exportVideo";
 import { useEditorShortcuts } from "@/lib/hooks/useEditorShortcuts";
+import { useClipboardPaste } from "@/lib/hooks/useClipboardPaste";
 import { ControlPanel } from "@/components/editor/ControlPanel";
 import { ExportDialog } from "@/components/editor/ExportDialog";
 import { ShortcutsDialog } from "@/components/editor/ShortcutsDialog";
@@ -106,6 +107,9 @@ export function EditorShell() {
     onToggleFullscreen: () => setFullscreenPreview(!fullscreenPreview),
     isModalOpen: () => hasOpenModalRef.current
   });
+  // ⌘V pastes screenshots / copied media files (or an image URL) into the
+  // active layer. Passive listener — no shortcut registration needed.
+  useClipboardPaste();
 
   useEffect(() => {
     // Preload the FFmpeg encoder in the background so the first video/GIF

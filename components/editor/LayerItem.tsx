@@ -2,7 +2,7 @@
 
 import type { DragEvent } from "react";
 import { useTranslations } from "next-intl";
-import { Eye, EyeOff, Video } from "lucide-react";
+import { Eye, EyeOff, Lock, LockOpen, Video } from "lucide-react";
 import type { MediaLayer } from "@/lib/types/editor";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { useEditorStore } from "@/lib/state/editorStore";
@@ -57,6 +57,7 @@ export function LayerItem({
   const t = useTranslations();
   const selectedLayerIds = useEditorStore((s) => s.selectedLayerIds);
   const toggleLayersHidden = useEditorStore((s) => s.toggleLayersHidden);
+  const toggleLayersLocked = useEditorStore((s) => s.toggleLayersLocked);
   const duplicateLayers = useEditorStore((s) => s.duplicateLayers);
   const removeLayers = useEditorStore((s) => s.removeLayers);
 
@@ -173,6 +174,18 @@ export function LayerItem({
       <button
         type="button"
         className="btn-icon"
+        aria-label={layer.locked ? t("editor.unlockLayer") : t("editor.lockLayer")}
+        title={layer.locked ? t("editor.unlockLayer") : t("editor.lockLayer")}
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleLayersLocked(selected ? selectedLayerIds : [layer.id]);
+        }}
+      >
+        {layer.locked ? <Lock size={12} /> : <LockOpen size={12} />}
+      </button>
+      <button
+        type="button"
+        className="btn-icon"
         aria-label={t("editor.duplicateLayer")}
         title={t("editor.duplicateLayer")}
         onClick={(e) => {
@@ -213,7 +226,7 @@ export function LayerItem({
         className="btn-icon tooltip"
         aria-label={t("editor.removeLayer", { label })}
         data-tooltip={t("editor.removeLayer", { label })}
-        disabled={total <= 1}
+        disabled={total <= 1 || layer.locked}
         onClick={(e) => {
           e.stopPropagation();
           removeLayers(selected ? selectedLayerIds : [layer.id]);

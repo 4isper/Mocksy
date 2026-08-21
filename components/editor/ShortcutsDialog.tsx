@@ -16,6 +16,7 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
       title: t("shortcuts.edit"),
       items: [
         { keys: ["⌘", "N"], label: t("shortcuts.newProject") },
+        { keys: ["⌘", "V"], label: t("shortcuts.pasteMedia") },
         { keys: ["⌘", "Z"], label: t("shortcuts.undo") },
         { keys: ["⇧", "⌘", "Z"], label: t("shortcuts.redo") },
         { keys: ["⌘", "S"], label: t("shortcuts.saveLocalStorage") }

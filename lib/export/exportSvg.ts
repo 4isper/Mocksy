@@ -149,6 +149,7 @@ export async function exportSvg(
           offsetX: layer?.mediaOffsetX,
           offsetY: layer?.mediaOffsetY,
           rotation: layer?.rotation ?? 0,
+          opacity: layer?.opacity,
           orientation: box.rotation ? (box.rotation * 180) / Math.PI : undefined
         });
       }
@@ -190,7 +191,8 @@ export async function exportSvg(
         mediaFit: activeLayer?.mediaFit,
         offsetX: activeLayer?.mediaOffsetX,
         offsetY: activeLayer?.mediaOffsetY,
-        rotation: activeLayer?.rotation ?? 0
+        rotation: activeLayer?.rotation ?? 0,
+        opacity: activeLayer?.opacity
       });
     }
 

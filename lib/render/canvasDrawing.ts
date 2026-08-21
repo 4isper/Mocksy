@@ -237,7 +237,11 @@ export function drawFrameAndMedia(
   ctx.save();
   roundedRectPath(ctx, innerX, innerY, innerW, innerH, innerRadius);
   ctx.clip();
+  // Layer opacity applies to the media only — chrome/glare/bezel below stay
+  // at full strength, mirroring the CSS preview's per-element opacity.
+  const layerOpacity = Math.max(0, Math.min(1, (layer?.opacity ?? 100) / 100));
   if (media) {
+    ctx.globalAlpha = layerOpacity;
     const m = media as { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number; videoWidth?: number; videoHeight?: number };
     const mw = m.videoWidth || m.naturalWidth || m.width || innerW;
     const mh = m.videoHeight || m.naturalHeight || m.height || innerH;
@@ -260,6 +264,7 @@ export function drawFrameAndMedia(
     }
     ctx.filter = buildLayerFilterCss(layer);
     ctx.drawImage(media, dx, dy, dw, dh);
+    ctx.globalAlpha = 1;
   } else {
     ctx.fillStyle = RENDER.emptyMediaFill;
     ctx.fillRect(innerX, innerY, innerW, innerH);

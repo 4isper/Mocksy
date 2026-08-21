@@ -3,7 +3,7 @@ import type { Command, EditorScene, MediaType, MockupFrame, PatternId, Project, 
 import { useEditorStore } from "@/lib/state/editorStore";
 import { createFileCommands } from "./fileCommands";
 import { createEditCommands } from "./editCommands";
-import { createFrameCommands } from "./frameCommands";
+import { createFrameCommands, createFrameAlignCommands } from "./frameCommands";
 import { createStyleCommands } from "./styleCommands";
 import { createBackgroundCommands } from "./backgroundCommands";
 import { createAspectRatioCommands } from "./aspectRatioCommands";
@@ -17,7 +17,7 @@ import { createViewCommands } from "./viewCommands";
 
 export { createFileCommands } from "./fileCommands";
 export { createEditCommands } from "./editCommands";
-export { createFrameCommands } from "./frameCommands";
+export { createFrameCommands, createFrameAlignCommands } from "./frameCommands";
 export { createStyleCommands } from "./styleCommands";
 export { createBackgroundCommands } from "./backgroundCommands";
 export { createAspectRatioCommands } from "./aspectRatioCommands";
@@ -81,6 +81,7 @@ export function createCommands(
     ...createFileCommands(t, { onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onCopyPng, onCopyShareUrl, onSave }),
     ...createEditCommands(t, { undo, redo, pastLength, futureLength, resetScene }),
     ...createFrameCommands(t, { setFrame }),
+    ...createFrameAlignCommands(t, scene),
     ...createStyleCommands(t),
     ...createBackgroundCommands(t, { setBackgroundSolid, setBackgroundGradient, setBackgroundPattern, setBackgroundTransparent }),
     ...createAspectRatioCommands(t, { setAspectRatio }),

@@ -287,7 +287,21 @@
     "ctxAddCircle": "Add circle",
     "ctxRotate": "Rotate 90°",
     "screenGlare": "Screen glare",
-    "floorReflection": "Floor reflection"
+    "floorReflection": "Floor reflection",
+    "filterOpacity": "Opacity ({val}%)",
+    "layerLockedHint": "Layer is locked — unlock it to edit",
+    "alignBottom": "Align bottom edges",
+    "alignCenterX": "Center horizontally",
+    "alignCenterY": "Center vertically",
+    "alignLabel": "Align:",
+    "alignLeft": "Align left edges",
+    "alignRight": "Align right edges",
+    "alignTop": "Align top edges",
+    "distributeHorizontal": "Distribute horizontally",
+    "distributeNeedsFrames": "Needs 3 frames",
+    "distributeVertical": "Distribute vertically",
+    "lockLayer": "Lock layer",
+    "unlockLayer": "Unlock layer"
   },
   "frame": {
     "none": "ไม่มี",
@@ -482,7 +496,8 @@
     "exportHtml": "Export HTML",
     "exportPdf": "Export PDF",
     "nudgeFrame": "Nudge selected frame",
-    "fullscreenPreview": "Toggle full-screen preview"
+    "fullscreenPreview": "Toggle full-screen preview",
+    "pasteMedia": "Paste media from clipboard"
   },
   "projects": {
     "title": "โปรเจกต์",

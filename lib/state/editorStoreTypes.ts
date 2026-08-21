@@ -105,6 +105,9 @@ export interface EditorStoreState {
   /** Toggles a layer's visibility (hidden layers are skipped by the preview
    *  and export, but remain in the scene and undo history). */
   toggleLayerHidden: (id: string) => void;
+  /** Toggles the edit lock for every layer in `ids`. Locked layers reject
+   *  content edits and removal; visibility/duplication stay available. */
+  toggleLayersLocked: (ids: string[]) => void;
   removeLayer: (id: string) => void;
   selectLayer: (id: string) => void;
   /** Sets the full multi-select set (replacing the active layer). `ids` empty
@@ -145,6 +148,10 @@ export interface EditorStoreState {
   reorderFrameInstance: (id: string, to: "front" | "back") => void;
   layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") => void;
   applyFrameLayout: (frame: MockupFrame, count: number, layout: import("@/lib/types/editor").LayoutPreset) => void;
+  /** Aligns all frame instances to a shared edge/center (one undo step). */
+  alignFrameInstances: (mode: import("@/lib/state/frameAlign").FrameAlignMode) => void;
+  /** Distributes frame instances with equal gaps along an axis (needs ≥3). */
+  distributeFrameInstances: (axis: "horizontal" | "vertical") => void;
   setStylePreset: (stylePreset: StylePreset) => void;
   setAnimationPreset: (animationPreset: AnimationPreset) => void;
   setAnimationEasing: (animationEasing: AnimationEasing) => void;
@@ -159,6 +166,7 @@ export interface EditorStoreState {
   setSaturate: (saturate: number) => void;
   setBlur: (blur: number) => void;
   setGrayscale: (grayscale: number) => void;
+  setOpacity: (opacity: number) => void;
   setShadowOpacity: (shadowOpacity: number) => void;
   setBorderRadius: (radius: number) => void;
   setTiltX: (tiltX: number) => void;

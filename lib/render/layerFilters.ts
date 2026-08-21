@@ -6,7 +6,8 @@ export const LAYER_FILTER_DEFAULTS = {
   contrast: 100,
   saturate: 100,
   blur: 0,
-  grayscale: 0
+  grayscale: 0,
+  opacity: 100
 } as const;
 
 export const LAYER_FILTER_RANGES = {
@@ -14,7 +15,8 @@ export const LAYER_FILTER_RANGES = {
   contrast: { min: 0, max: 200 },
   saturate: { min: 0, max: 200 },
   blur: { min: 0, max: 20 },
-  grayscale: { min: 0, max: 100 }
+  grayscale: { min: 0, max: 100 },
+  opacity: { min: 0, max: 100 }
 } as const;
 
 export type LayerFilterKey = keyof typeof LAYER_FILTER_DEFAULTS;

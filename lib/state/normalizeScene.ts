@@ -125,6 +125,8 @@ function normalizeLayer(raw: unknown, fallback: MediaLayer): MediaLayer {
     saturate: num(r.saturate, fallback.saturate ?? LAYER_FILTER_DEFAULTS.saturate, 0, 200),
     blur: num(r.blur, fallback.blur ?? LAYER_FILTER_DEFAULTS.blur, 0, 20),
     grayscale: num(r.grayscale, fallback.grayscale ?? LAYER_FILTER_DEFAULTS.grayscale, 0, 100),
+    opacity: num(r.opacity, fallback.opacity ?? LAYER_FILTER_DEFAULTS.opacity, 0, 100),
+    locked: r.locked === true,
     animationPreset: pick(r.animationPreset, ANIMATIONS, fallback.animationPreset),
     animationEasing: pick(r.animationEasing, ANIMATION_EASINGS, fallback.animationEasing ?? "easeInOut"),
     videoMuted: r.videoMuted !== false,

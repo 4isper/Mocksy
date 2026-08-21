@@ -52,6 +52,8 @@ export function makeDemoLayer(): MediaLayer {
     saturate: 100,
     blur: 0,
     grayscale: 0,
+    opacity: 100,
+    locked: false,
     animationPreset: "none",
     animationEasing: "easeInOut",
     videoMuted: true,
@@ -79,8 +81,21 @@ export function activePosterTime(scene: EditorScene, activeLayerId: string | nul
   return layer?.videoPosterTime ?? 0;
 }
 
-/** Applies a patch to the active layer, returning a new layers array. */
+/** True when the target layer exists and is locked. Locked layers reject
+ *  content edits (media swap, transforms, filters, removal) — callers no-op
+ *  instead of pushing a do-nothing undo entry. */
+export function isLayerLocked(scene: EditorScene, layerId: string | null = scene.activeLayerId): boolean {
+  const id = layerId ?? scene.layers[0]?.id ?? null;
+  if (id == null) return false;
+  return scene.layers.find((l) => l.id === id)?.locked === true;
+}
+
+/** Applies a patch to the active layer, returning a new layers array.
+ *  Locked layers are left untouched: the returned array is the same reference,
+ *  so slice setters that spread it into pushHistory still record a scene —
+ *  guard with `isLayerLocked` first to avoid no-op undo entries. */
 export function patchActive(scene: EditorScene, patch: Partial<MediaLayer>, activeLayerId: string | null = scene.activeLayerId): MediaLayer[] {
   const id = activeLayerId ?? scene.layers[0]?.id;
+  if (id != null && scene.layers.find((l) => l.id === id)?.locked === true) return scene.layers;
   return scene.layers.map((l) => (l.id === id ? { ...l, ...patch } : l));
 }

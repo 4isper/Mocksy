@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { frameViewBox, getFrameSpec, type FrameSpec } from "@/lib/render/frames";
 import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
-import { buildLayerFilterCss } from "@/lib/render/layerFilters";
+import { buildLayerFilterCss, LAYER_FILTER_DEFAULTS } from "@/lib/render/layerFilters";
 import { resolveFrameStyle } from "@/lib/render/canvasDrawing";
 import { screenChromeSvg } from "@/lib/render/screenChrome";
 import { browserChromeSvg, isBrowserFrameSpec } from "@/lib/render/browserChrome";
@@ -120,6 +120,12 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
   const activeLayerForCss = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
   const mediaPosX = 50 + (activeLayerForCss?.mediaOffsetX ?? 0) * 50;
   const mediaPosY = 50 + (activeLayerForCss?.mediaOffsetY ?? 0) * 50;
+  // Layer opacity fades the media only; bezel/chrome/glare stay at full
+  // strength. Kept off the style when neutral so the CSS stays clean.
+  const mediaOpacity =
+    activeLayerForCss?.opacity != null && activeLayerForCss.opacity !== LAYER_FILTER_DEFAULTS.opacity
+      ? Math.max(0, Math.min(1, activeLayerForCss.opacity / LAYER_FILTER_DEFAULTS.opacity))
+      : undefined;
   const vb = frameViewBox(spec);
   const mediaStyle: CSSProperties = spec.isOverlay && spec.cutout
     ? {
@@ -134,7 +140,8 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
         transformOrigin: "center",
         borderRadius: `${(spec.cutout.rx / spec.cutout.w) * 100}% / ${(spec.cutout.rx / spec.cutout.h) * 100}%`,
         background: "#0a0a0a",
-        filter: buildLayerFilterCss(activeLayerForCss)
+        filter: buildLayerFilterCss(activeLayerForCss),
+        opacity: mediaOpacity
       }
     : {
         width: "100%",
@@ -145,7 +152,8 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
         transformOrigin: "center",
         borderRadius: spec.screenRadius,
         background: "#0a0a0a",
-        filter: buildLayerFilterCss(activeLayerForCss)
+        filter: buildLayerFilterCss(activeLayerForCss),
+        opacity: mediaOpacity
       };
 
   const emptyMediaStyle: CSSProperties = spec.isOverlay && spec.cutout

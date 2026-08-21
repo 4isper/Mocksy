@@ -1,6 +1,7 @@
-import { activeLayer, buildAutoLayout, layoutFrameGrid, makeDemoLayer, nextLayerId, pushHistory } from "@/lib/state/editorHelpers";
+import { activeLayer, alignFrameInstances, buildAutoLayout, distributeFrameInstances, layoutFrameGrid, makeDemoLayer, nextLayerId, pushHistory } from "@/lib/state/editorHelpers";
 import { nextFrameInstanceId } from "@/lib/state/ids";
 import type { CustomFrame, EditorScene, FrameInstance, MockupFrame } from "@/lib/types/editor";
+import type { FrameAlignMode } from "@/lib/state/frameAlign";
 import type { EditorStoreSetter, EditorStoreState } from "../editorStoreTypes";
 
 export type FramesSlice = Pick<
@@ -14,6 +15,8 @@ export type FramesSlice = Pick<
   | "reorderFrameInstance"
   | "layoutFrameGrid"
   | "applyFrameLayout"
+  | "alignFrameInstances"
+  | "distributeFrameInstances"
   | "selectFrameInstance"
 >;
 
@@ -151,6 +154,18 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
         const instances = buildAutoLayout(frame, count, layout, s.scene.aspectRatio, s.scene.customFrame);
         const { layers, frameInstances, activeLayerId } = materializeLayout(instances, s.scene, s.activeLayerId);
         return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId };
+      }),
+    alignFrameInstances: (mode: FrameAlignMode) =>
+      set((s) => {
+        if (s.scene.frameInstances.length < 2) return {};
+        const frameInstances = alignFrameInstances(s.scene.frameInstances, mode, s.scene.aspectRatio, s.scene.customFrame);
+        return pushHistory(s, { ...s.scene, frameInstances });
+      }),
+    distributeFrameInstances: (axis: "horizontal" | "vertical") =>
+      set((s) => {
+        if (s.scene.frameInstances.length < 3) return {};
+        const frameInstances = distributeFrameInstances(s.scene.frameInstances, axis, s.scene.aspectRatio, s.scene.customFrame);
+        return pushHistory(s, { ...s.scene, frameInstances });
       }),
     selectFrameInstance: (id) => set({ activeFrameInstanceId: id })
   };

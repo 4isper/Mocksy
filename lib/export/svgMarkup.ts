@@ -38,6 +38,9 @@ export interface SvgFrameGroup {
   offsetY?: number;
   /** Rotation of the media inside the frame, in degrees (clockwise). */
   rotation?: number;
+  /** Media opacity, percent 0–100 (default 100). Applied to the media only —
+   *  chrome and device skin stay at full strength. */
+  opacity?: number;
   /** Whole-group rotation for landscape instances (90). The box already
    *  carries swapped dimensions; this turns skin+media+chrome together. */
   orientation?: number;
@@ -158,7 +161,11 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
   // Rotate the media about the inner screen's center to match the CSS preview
   // (transform-origin: center). The rotation is applied only to the media so
   // the device bezel and chrome stay put.
-  const media = group.rotation ? `<g transform="rotate(${num(group.rotation)} ${num(box.innerX + box.innerW / 2)} ${num(box.innerY + box.innerH / 2)})">${mediaRaw}</g>` : mediaRaw;
+  let media = group.rotation ? `<g transform="rotate(${num(group.rotation)} ${num(box.innerX + box.innerW / 2)} ${num(box.innerY + box.innerH / 2)})">${mediaRaw}</g>` : mediaRaw;
+  if (group.opacity != null && group.opacity !== 100) {
+    const alpha = Math.max(0, Math.min(1, group.opacity / 100));
+    media = `<g opacity="${alpha}">${media}</g>`;
+  }
 
   // On-screen decoration in canvas space: the geometry is expressed in units
   // of the inner screen box, so just translate to its origin. Placed inside

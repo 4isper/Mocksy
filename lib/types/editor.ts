@@ -166,6 +166,12 @@ export interface MediaLayer {
   blur?: number;
   /** Grayscale amount in percent, 0–100 (0 = full color). */
   grayscale?: number;
+  /** Opacity of the media inside the frame, percent 0–100 (100 = opaque).
+   *  Applies to the media only — bezel, chrome and glare stay unaffected. */
+  opacity?: number;
+  /** When true the layer rejects edits (media swap, transforms, filters,
+   *  removal). Visibility toggle and duplication stay available. */
+  locked?: boolean;
   animationPreset: AnimationPreset;
   /** Easing curve between animation keyframes (default "easeInOut"). */
   animationEasing?: AnimationEasing;

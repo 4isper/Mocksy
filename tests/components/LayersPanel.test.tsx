@@ -411,4 +411,35 @@ describe("LayersPanel", () => {
     expect(layers.filter((l) => l.mediaName === "A").length).toBe(2);
     expect(layers.filter((l) => l.mediaName === "B").length).toBe(2);
   });
+
+  it("toggles layer lock on lock button click", async () => {
+    useEditorStore.setState({
+      scene: {
+        ...useEditorStore.getState().scene,
+        layers: [makeLayer("a", { mediaName: "A", locked: false })],
+        activeLayerId: "a",
+      },
+      activeLayerId: "a"
+    });
+    render(<LayersPanel />);
+    await userEvent.click(screen.getByRole("button", { name: /editor.lockLayer/i }));
+    expect(useEditorStore.getState().scene.layers[0]!.locked).toBe(true);
+    await userEvent.click(screen.getByRole("button", { name: /editor.unlockLayer/i }));
+    expect(useEditorStore.getState().scene.layers[0]!.locked).toBe(false);
+  });
+
+  it("disables remove for a locked layer", () => {
+    useEditorStore.setState({
+      scene: {
+        ...useEditorStore.getState().scene,
+        layers: [makeLayer("a", { mediaName: "A", locked: true }), makeLayer("b", { mediaName: "B" })],
+        activeLayerId: "b",
+      },
+      activeLayerId: "b"
+    });
+    render(<LayersPanel />);
+    const removeBtns = screen.getAllByRole("button", { name: /editor.removeLayer/i });
+    const lockedBtn = removeBtns.find((btn) => (btn as HTMLButtonElement).disabled);
+    expect(lockedBtn).toBeDefined();
+  });
 });

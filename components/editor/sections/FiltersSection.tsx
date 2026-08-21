@@ -13,6 +13,7 @@ function FilterSlider({
   min,
   max,
   suffix,
+  disabled,
   onChange
 }: {
   label: string;
@@ -20,6 +21,7 @@ function FilterSlider({
   min: number;
   max: number;
   suffix: string;
+  disabled?: boolean;
   onChange: (value: number) => void;
 }) {
   return (
@@ -32,6 +34,7 @@ function FilterSlider({
           max={max}
           step={1}
           value={value}
+          disabled={disabled}
           aria-label={label}
           aria-valuetext={`${value}${suffix}`}
           onChange={(e) => onChange(Number(e.target.value))}
@@ -52,6 +55,7 @@ export function FiltersSection() {
     setSaturate,
     setBlur,
     setGrayscale,
+    setOpacity,
     isRemovingBackground,
     setRemovingBackground,
     setMediaOnLayer,
@@ -65,6 +69,7 @@ export function FiltersSection() {
       setSaturate: s.setSaturate,
       setBlur: s.setBlur,
       setGrayscale: s.setGrayscale,
+      setOpacity: s.setOpacity,
       isRemovingBackground: s.isRemovingBackground,
       setRemovingBackground: s.setRemovingBackground,
       setMediaOnLayer: s.setMediaOnLayer,
@@ -73,6 +78,9 @@ export function FiltersSection() {
   );
 
   const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
+  // A locked layer rejects every edit; the controls say so instead of silently
+  // doing nothing.
+  const layerLocked = activeLayer?.locked === true;
   const eligible = canRemoveBackground(activeLayer);
   const [progress, setProgress] = useState<number | null>(null);
 
@@ -103,20 +111,24 @@ export function FiltersSection() {
       )}
     >
       <div className="field-group">
-        <FilterSlider label={t("editor.filterBrightness", { val: Math.round(activeLayer?.brightness ?? 100) })} value={activeLayer?.brightness ?? 100} min={0} max={200} suffix="%" onChange={setBrightness} />
-        <FilterSlider label={t("editor.filterContrast", { val: Math.round(activeLayer?.contrast ?? 100) })} value={activeLayer?.contrast ?? 100} min={0} max={200} suffix="%" onChange={setContrast} />
-        <FilterSlider label={t("editor.filterSaturate", { val: Math.round(activeLayer?.saturate ?? 100) })} value={activeLayer?.saturate ?? 100} min={0} max={200} suffix="%" onChange={setSaturate} />
-        <FilterSlider label={t("editor.filterBlur", { val: activeLayer?.blur ?? 0 })} value={activeLayer?.blur ?? 0} min={0} max={20} suffix="px" onChange={setBlur} />
-        <FilterSlider label={t("editor.filterGrayscale", { val: Math.round(activeLayer?.grayscale ?? 0) })} value={activeLayer?.grayscale ?? 0} min={0} max={100} suffix="%" onChange={setGrayscale} />
+        {layerLocked ? <span role="status" style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.layerLockedHint")}</span> : null}
+        <FilterSlider label={t("editor.filterBrightness", { val: Math.round(activeLayer?.brightness ?? 100) })} value={activeLayer?.brightness ?? 100} min={0} max={200} suffix="%" disabled={layerLocked} onChange={setBrightness} />
+        <FilterSlider label={t("editor.filterContrast", { val: Math.round(activeLayer?.contrast ?? 100) })} value={activeLayer?.contrast ?? 100} min={0} max={200} suffix="%" disabled={layerLocked} onChange={setContrast} />
+        <FilterSlider label={t("editor.filterSaturate", { val: Math.round(activeLayer?.saturate ?? 100) })} value={activeLayer?.saturate ?? 100} min={0} max={200} suffix="%" disabled={layerLocked} onChange={setSaturate} />
+        <FilterSlider label={t("editor.filterBlur", { val: activeLayer?.blur ?? 0 })} value={activeLayer?.blur ?? 0} min={0} max={20} suffix="px" disabled={layerLocked} onChange={setBlur} />
+        <FilterSlider label={t("editor.filterGrayscale", { val: Math.round(activeLayer?.grayscale ?? 0) })} value={activeLayer?.grayscale ?? 0} min={0} max={100} suffix="%" disabled={layerLocked} onChange={setGrayscale} />
+        <FilterSlider label={t("editor.filterOpacity", { val: Math.round(activeLayer?.opacity ?? 100) })} value={activeLayer?.opacity ?? 100} min={0} max={100} suffix="%" disabled={layerLocked} onChange={setOpacity} />
         <button
           type="button"
           className="btn btn-sm"
+          disabled={layerLocked}
           onClick={() => {
             setBrightness(100);
             setContrast(100);
             setSaturate(100);
             setBlur(0);
             setGrayscale(0);
+            setOpacity(100);
           }}
         >
           {t("editor.resetFilters")}
@@ -125,7 +137,7 @@ export function FiltersSection() {
           <button
             type="button"
             className="btn btn-sm"
-            disabled={!eligible || isRemovingBackground}
+            disabled={!eligible || isRemovingBackground || layerLocked}
             title={t("editor.removeBackgroundHint")}
             onClick={handleRemoveBackground}
           >

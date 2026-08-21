@@ -16,6 +16,16 @@ import { Section } from "@/components/editor/Section";
 const styles: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
 const aspectRatios = ASPECT_RATIOS;
 const layoutPresets = ["grid", "fan", "cascade", "masonry", "stack"] as const;
+const alignModes = ["left", "centerX", "right", "top", "centerY", "bottom"] as const;
+
+const ALIGN_GLYPHS: Record<(typeof alignModes)[number], string> = {
+  left: "⇤",
+  centerX: "↔",
+  right: "⇥",
+  top: "⇧",
+  centerY: "↕",
+  bottom: "⇩"
+};
 
 export function FrameSection() {
   const t = useTranslations();
@@ -32,6 +42,8 @@ export function FrameSection() {
     selectFrameInstance,
     layoutFrameGrid,
     applyFrameLayout,
+    alignFrameInstances,
+    distributeFrameInstances,
     setStylePreset,
     setAspectRatio,
     setBrowserUrl,
@@ -48,6 +60,8 @@ export function FrameSection() {
       selectFrameInstance: s.selectFrameInstance,
       layoutFrameGrid: s.layoutFrameGrid,
       applyFrameLayout: s.applyFrameLayout,
+      alignFrameInstances: s.alignFrameInstances,
+      distributeFrameInstances: s.distributeFrameInstances,
       setStylePreset: s.setStylePreset,
       setAspectRatio: s.setAspectRatio,
       setBrowserUrl: s.setBrowserUrl,
@@ -149,6 +163,47 @@ export function FrameSection() {
                 </button>
               );
             })}
+          </div>
+        </div>
+        <div className="field" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.alignLabel")}</span>
+          <div style={{ display: "flex", gap: 4, width: "100%" }}>
+            {alignModes.map((mode) => {
+              const disabled = scene.frameInstances.length < 2;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  className="btn btn-sm"
+                  disabled={disabled}
+                  title={disabled ? t("editor.layoutNeedsFrames") : t(`editor.align${mode.charAt(0).toUpperCase() + mode.slice(1)}`)}
+                  aria-label={t(`editor.align${mode.charAt(0).toUpperCase() + mode.slice(1)}`)}
+                  onClick={() => alignFrameInstances(mode)}
+                >
+                  {ALIGN_GLYPHS[mode]}
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              className="btn btn-sm"
+              disabled={scene.frameInstances.length < 3}
+              title={scene.frameInstances.length < 3 ? t("editor.distributeNeedsFrames") : t("editor.distributeHorizontal")}
+              aria-label={t("editor.distributeHorizontal")}
+              onClick={() => distributeFrameInstances("horizontal")}
+            >
+              ⇔
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm"
+              disabled={scene.frameInstances.length < 3}
+              title={scene.frameInstances.length < 3 ? t("editor.distributeNeedsFrames") : t("editor.distributeVertical")}
+              aria-label={t("editor.distributeVertical")}
+              onClick={() => distributeFrameInstances("vertical")}
+            >
+              ⇕
+            </button>
           </div>
         </div>
         <FrameInstanceList
