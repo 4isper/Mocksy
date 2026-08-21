@@ -32,8 +32,13 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 - Light/dark/system theme toggle in the toolbar
 - Error boundary with recovery (your saved scene stays safe)
 - Save / unsaved status indicator with 500ms autosave debounce
-- Multi-frame grid layout (2–4 frames, horizontal or vertical)
-- Per-frame device select, position (X/Y/scale), and layer assignment
+- Multi-frame scenes (2–4 frames) with per-frame device select, position (X/Y/scale), and layer assignment
+- Auto layout presets for multi-frame scenes: grid, fan, cascade, masonry, stack
+- 3D tilt (`tiltX`/`tiltY`, ±25°) kept in sync across CSS preview, canvas/SVG exports and video
+- Optional grid overlay with adjustable divisions
+- Undo/redo history persists to localStorage — `⌘Z` survives a page reload
+- Installable PWA: service worker caches the app shell for offline use
+- Localized into 57 languages via `next-intl`, with a locale switcher in the toolbar
 - Respects the OS `prefers-reduced-motion` setting: the live preview shows a static frame and HTML exports ship a reduced-motion fallback
 
 ### Mockup frames
@@ -54,24 +59,44 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 | `macbook` | Overlay | MacBook Pro skin, landscape |
 | `imac` | Overlay | iMac skin with stand |
 | `notebook` | Overlay | Notebook skin, landscape |
+| `browser` | Overlay | Browser window with editable URL in the address bar |
+| `tv` | Overlay | TV skin, 16:9 |
+| `watchUltra` | Overlay | Watch Ultra skin, native ratio |
 | `watch` | CSS | Circular face |
+| `custom` | Overlay | Your own SVG skin — upload any device SVG with a transparent screen cutout |
 
 - Style presets: default, glass (light/dark), outline — with configurable shadow opacity and corner radius
 - Scene style presets: Dark Studio, Soft Glass, Bold Gradient, Minimal, Warm
-- Aspect ratios: 16:9, 4:3, 3:2, 1:1, 9:16
+- Aspect ratios: 16:9, 4:3, 3:2, 1:1, 4:5, 2:3, 9:16
+
+### Screen chrome
+
+- On-screen UI decoration drawn over the media: status bar, lock-screen clock/date, home dock with app icons, home indicator
+- Dark/light accent theme
+- Customizable clock time and date text
 
 ### Media & layers
 
 - Image and video support (drag-drop or file picker)
 - Zoom (0.8–1.5x), position X/Y, and fill/fit toggle
+- Per-layer rotation and filters: brightness, contrast, saturation, blur, grayscale
 - Layer management: add, duplicate, hide/show, reorder, remove
+- AI background removal (runs fully in-browser via Transformers.js)
 - Unsupported file types rejected with inline error
 - Opens with an offline demo image
 
+### Animations
+
+- Presets: zoom in/out, parallax, pan left/right, breathe
+- Easing curves between keyframes: linear, ease-in-out, ease-out, bounce, spring
+- Adjustable loop duration
+- Applied consistently in the live preview, video exports and HTML export
+
 ### Annotations
 
-- Text, arrow, and rectangle annotations
+- Text, arrow, rectangle, and circle annotations
 - Color picker, stroke-width, and font family selection
+- Text styling: font weight, italic, alignment, background box with padding and radius
 - Draggable and resizable on canvas
 
 ### Video
@@ -80,12 +105,14 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 - Poster frame selector
 - Timeline scrubber
 - Trim with dual-range control
+- Background audio track upload
 - Export quality: Low, Medium, High
 
 ### Background
 
 - Mode tabs: solid, gradient, pattern, and image
 - Solid colors, gradient presets, transparent mode
+- Linear and radial gradients with an optional middle stop
 - Pattern presets: dots, grid, diagonal, noise, plus, cross, triangle
 - Background image upload with blur control
 - Auto from media — generates a gradient from the loaded media's dominant colors
@@ -93,7 +120,7 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 ### Watermark
 
 - Toggle on/off
-- Custom text
+- Custom text or uploaded logo image
 - 4-corner positioning
 - Size control (8–64px)
 
@@ -109,13 +136,17 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 | WebM | 1x, 2x, 4x | Direct MediaRecorder capture, no encode — fastest, best quality |
 | GIF | 1x, 2x, 4x | Palette generation for accurate colors |
 | Animated WebP | 1x, 2x, 4x | FFmpeg libwebp_anim at 15fps — fraction of the MP4/GIF size |
+| PDF | 1x, 2x, 4x | Single-page PDF via pdf-lib |
+| ZIP | — | Batch export: every frame instance of a multi-frame scene rendered as its own PNG |
 
+- Reusable export presets (format + scale/size) stored in localStorage
 - Animated exports run for a visible 3s (zoom/parallax) instead of a blink
 - MP4 attaches the canvas to the DOM during recording for reliable frame capture in background tabs
 
 ### Projects
 
 - Create, switch, rename, duplicate, import, export, delete
+- Soft delete with a trash section — restore accidentally removed projects
 - All projects persisted to localStorage
 - Share URL encodes the full scene as base64 JSON (demo media stripped); invalid payloads are normalized
 - Reset confirmation modal before clearing
@@ -131,8 +162,10 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 | State | Zustand |
 | Styling | Tailwind CSS v4 |
 | Video | @ffmpeg/ffmpeg (client-side WebM→MP4 / GIF / WebP) |
-| Unit tests | Vitest (1,146 tests, 67 files) |
-| E2E tests | Playwright (82 tests: 73 editor, 9 visual regression) |
+| AI | @huggingface/transformers (in-browser background removal) |
+| i18n | next-intl (57 locales) |
+| Unit tests | Vitest (1,485 tests, 100 files) |
+| E2E tests | Playwright (85 tests: 73 editor, 9 visual regression, 3 preview/export parity) |
 | Language | TypeScript (strict) |
 
 ---
@@ -140,50 +173,55 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 ## Project layout
 
 ```
-app/                    Next.js router (layout, page, error boundary)
-components/editor/      28 React components
+app/                    Next.js router ([locale]/layout, page, error boundary)
+proxy.ts                Locale detection middleware for next-intl
+components/editor/      48 React components
   EditorShell            Main orchestrator with keyboard shortcuts
   ControlPanel           Frame, style, media, background, watermark controls
+  sections/              Control panel sections (frame, media, position, filters, animation)
   PreviewCanvas          Canvas renderer with drag/pan/pinch/annotations
   CommandPalette         ⌘K action search palette
   LayersPanel            Layer list with hide/reorder/remove
   AnnotationsPanel       Annotation CRUD and editor
   TemplatesPanel         Scene style preset gallery
   ProjectsPanel          Project CRUD
-  ExportDialog           PNG/WebP/SVG/HTML/MP4/WebM/GIF/WebP export modal
+  ExportDialog           PNG/WebP/SVG/HTML/PDF/MP4/WebM/GIF/WebP/ZIP export modal
   ShortcutsDialog        Keyboard shortcuts cheat sheet
-  VideoOptions           Video playback + trim + quality
+  VideoOptions           Video playback + trim + audio + quality
   VideoTrimControl       Dual-range trim slider
-  FramePicker            Visual frame picker
+  FramePicker            Visual frame picker with custom SVG upload
   FrameInstanceGrid      Multi-frame grid layout
   FrameInstanceList      Frame instance layer list
   SingleFrameView        Single-frame canvas view
   BackgroundControls     Background mode tabs + presets
-  WatermarkControls      Watermark toggle/text/position/size
+  WatermarkControls      Watermark toggle/text/logo/position/size
   AnnotationItem         Annotation list item with editor
   RightPanel             Tabbed panel (templates / layers / annotations / projects)
+  TrashSection           Soft-deleted projects with restore
   ErrorBoundary          Crash recovery with retry
   ThemeProvider          Light/dark/system theme
-  LocaleSwitcher         EN / RU toggle
+  LocaleSwitcher         57-locale switcher with translation coverage flags
   PwaRegister            Service worker registration
   SkipLink               Skip-to-content accessibility link
   Toast                  Toast notifications
   Section / Segmented    Collapsible section and segmented control primitives
+i18n/                   Locale request config + canonical locale list + generated coverage map
 lib/
-  state/                 Zustand stores (scene, layers, projects, theme) + normalization + share URL
-  render/                Frame specs, CSS geometry, canvas drawing, video timeline
-  export/                PNG/WebP, SVG/HTML, MP4/WebM/GIF/WebP, canvas rendering
+  state/                 Zustand stores (scene, layers, projects, theme) + normalization + share URL + history persistence
+  render/                Frame specs, CSS geometry, canvas drawing, tilt projection, video timeline
+  export/                PNG/WebP, SVG/HTML/PDF, MP4/WebM/GIF/WebP, batch ZIP, canvas rendering
   commands/              Command-palette command factories per feature area
-  media/                 File loading, demo image, palette extraction
+  media/                 File loading, demo image, palette extraction, AI background removal
   presets/               Background swatches, scene style presets
   hooks/                 Client hooks (commands, shortcuts, frame transform, palette)
   search/                Frame search utilities
   types/                 TypeScript interfaces
+messages/               57 locale JSON files (en.json is the source of truth)
 public/devices/          SVG device skins for overlay frames
 tests/
   unit/                  Pure function and store tests
   components/            Component tests (Testing Library)
-  e2e/                   Playwright end-to-end tests
+  e2e/                   Playwright end-to-end tests (editor, visual regression, preview/export parity)
 ```
 
 ---
@@ -192,7 +230,7 @@ tests/
 
 ```bash
 npm run typecheck       # TypeScript strict check
-npm run test            # Vitest (1,146 tests, 67 files)
+npm run test            # Vitest (1,485 tests, 100 files)
 npm run test:coverage   # Unit tests with coverage report
 npm run test:e2e        # Playwright (requires browser install)
 npm run test:vrt        # Visual regression tests
