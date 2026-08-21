@@ -319,6 +319,39 @@ describe("annotations", () => {
     expect(store().selectedAnnotationId).toBe(scene.annotations[0]!.id);
   });
 
+  it("duplicateAnnotation clones the annotation, offset, and selects the copy", () => {
+    reset();
+    store().addAnnotation("rect");
+    const src = store().scene.annotations[0]!;
+    store().updateAnnotation(src.id, { x: 0.3, y: 0.3, w: 0.2, h: 0.1 });
+    store().duplicateAnnotation(src.id);
+    expect(store().scene.annotations.length).toBe(2);
+    const copy = store().scene.annotations[1]!;
+    expect(copy.id).not.toBe(src.id);
+    expect(copy.w).toBe(0.2);
+    expect(copy.x).toBeCloseTo(0.34);
+    expect(copy.y).toBeCloseTo(0.34);
+    expect(store().selectedAnnotationId).toBe(copy.id);
+  });
+
+  it("duplicateAnnotation is a no-op when annotation not found", () => {
+    reset();
+    const pastBefore = store().past.length;
+    store().duplicateAnnotation("nonexistent");
+    expect(store().past.length).toBe(pastBefore);
+  });
+
+  it("reorderAnnotation moves an annotation to front/back of the render order", () => {
+    reset();
+    store().addAnnotation("text");
+    store().addAnnotation("arrow");
+    const [first] = store().scene.annotations;
+    store().reorderAnnotation(first!.id, "front");
+    expect(store().scene.annotations.map((a) => a.id)[store().scene.annotations.length - 1]).toBe(first!.id);
+    store().reorderAnnotation(first!.id, "back");
+    expect(store().scene.annotations[0]!.id).toBe(first!.id);
+  });
+
   it("updateAnnotation patches only the targeted annotation", () => {
     reset();
     store().addAnnotation("arrow");
@@ -761,6 +794,59 @@ describe("frame control", () => {
     // No layer to orphan, instance removed
     expect(store().scene.frameInstances.length).toBe(0);
     expect(store().past.length).toBeGreaterThan(pastBefore);
+  });
+
+  it("duplicateFrameInstance clones the instance and its layer, offset from the original", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    const srcLayerId = store().scene.layers[1]!.id;
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0.4, y: 0.4, scale: 0.5, layerId: srcLayerId }
+    ]);
+    const layersBefore = store().scene.layers.length;
+    const frameCount = store().scene.frameInstances.length;
+    store().duplicateFrameInstance("fi1");
+    expect(store().scene.frameInstances.length).toBe(frameCount + 1);
+    const copy = store().scene.frameInstances[1]!;
+    expect(copy.id).not.toBe("fi1");
+    expect(copy.frame).toBe("iphone");
+    expect(copy.scale).toBe(0.5);
+    expect(copy.x).toBeCloseTo(0.48);
+    expect(copy.y).toBeCloseTo(0.48);
+    // The copy gets its own cloned layer, not the source's.
+    expect(copy.layerId).not.toBe(srcLayerId);
+    expect(store().scene.layers.length).toBe(layersBefore + 1);
+    expect(store().past.length).toBeGreaterThan(0);
+  });
+
+  it("duplicateFrameInstance keeps layerId null when the source has none", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0.4, y: 0.4, scale: 0.5, layerId: null }
+    ]);
+    store().duplicateFrameInstance("fi1");
+    expect(store().scene.frameInstances[1]!.layerId).toBeNull();
+    expect(store().past.length).toBeGreaterThan(0);
+  });
+
+  it("duplicateFrameInstance is a no-op when instance not found", () => {
+    reset();
+    const pastBefore = store().past.length;
+    store().duplicateFrameInstance("nonexistent");
+    expect(store().past.length).toBe(pastBefore);
+  });
+
+  it("reorderFrameInstance moves an instance to front/back of the render order", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "a", frame: "iphone" as const, x: 0.3, y: 0.5, scale: 0.4, layerId: null },
+      { id: "b", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 0.4, layerId: null },
+      { id: "c", frame: "iphone" as const, x: 0.7, y: 0.5, scale: 0.4, layerId: null }
+    ]);
+    store().reorderFrameInstance("a", "front");
+    expect(store().scene.frameInstances.map((fi) => fi.id)).toEqual(["b", "c", "a"]);
+    store().reorderFrameInstance("a", "back");
+    expect(store().scene.frameInstances.map((fi) => fi.id)).toEqual(["a", "b", "c"]);
   });
 
   it("layoutFrameGrid creates new layers for each frame instance", () => {

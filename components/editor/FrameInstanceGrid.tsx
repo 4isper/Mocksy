@@ -254,6 +254,7 @@ export function FrameInstanceGrid({
           <div
             key={inst.id}
             className="frame-instance"
+            data-frame-instance-id={inst.id}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {

@@ -133,6 +133,11 @@ export interface EditorStoreState {
   setFrameInstances: (instances: FrameInstance[]) => void;
   updateFrameInstance: (id: string, patch: Partial<FrameInstance>, coalesce?: boolean) => void;
   removeFrameInstance: (id: string) => void;
+  /** Clones a frame instance (and its layer) slightly offset from the original. */
+  duplicateFrameInstance: (id: string) => void;
+  /** Moves a frame instance to the top ("front") or bottom ("back") of the
+   *  render order — later instances draw on top. */
+  reorderFrameInstance: (id: string, to: "front" | "back") => void;
   layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") => void;
   applyFrameLayout: (frame: MockupFrame, count: number, layout: import("@/lib/types/editor").LayoutPreset) => void;
   setStylePreset: (stylePreset: StylePreset) => void;
@@ -173,6 +178,11 @@ export interface EditorStoreState {
   setAspectRatio: (aspectRatio: string) => void;
   addAnnotation: (type: AnnotationType) => void;
   updateAnnotation: (id: string, patch: Partial<Annotation>) => void;
+  /** Clones an annotation slightly offset from the original and selects it. */
+  duplicateAnnotation: (id: string) => void;
+  /** Moves an annotation to the top ("front") or bottom ("back") of the
+   *  render order — later annotations draw on top. */
+  reorderAnnotation: (id: string, to: "front" | "back") => void;
   /** Applies a set of per-id patches (e.g. from align/distribute) to many
    *  annotations in one undo step. */
   applyAnnotationPatches: (patches: Record<string, Partial<Annotation>>) => void;

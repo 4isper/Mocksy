@@ -1,4 +1,5 @@
 import { makeAnnotation, pushHistory } from "@/lib/state/editorHelpers";
+import { nextAnnotationId } from "@/lib/state/ids";
 import type { EditorStoreSetter, EditorStoreState } from "../editorStoreTypes";
 
 export type AppearanceSlice = Pick<
@@ -21,6 +22,8 @@ export type AppearanceSlice = Pick<
   | "setAspectRatio"
   | "addAnnotation"
   | "updateAnnotation"
+  | "duplicateAnnotation"
+  | "reorderAnnotation"
   | "applyAnnotationPatches"
   | "removeAnnotation"
   | "selectAnnotation"
@@ -81,6 +84,33 @@ export function createAppearanceSlice(set: EditorStoreSetter): AppearanceSlice {
           `annotation:${id}`
         )
       ),
+    duplicateAnnotation: (id) =>
+      set((s) => {
+        const src = s.scene.annotations.find((a) => a.id === id);
+        if (!src) return {};
+        const copy = {
+          ...src,
+          id: nextAnnotationId(),
+          x: Math.min(1, src.x + 0.04),
+          y: Math.min(1, src.y + 0.04)
+        };
+        return {
+          ...pushHistory(s, { ...s.scene, annotations: [...s.scene.annotations, copy] }),
+          selectedAnnotationId: copy.id,
+          selectedAnnotationIds: [copy.id]
+        };
+      }),
+    reorderAnnotation: (id, to) =>
+      set((s) => {
+        const idx = s.scene.annotations.findIndex((a) => a.id === id);
+        if (idx < 0) return {};
+        const annotations = [...s.scene.annotations];
+        const [item] = annotations.splice(idx, 1);
+        if (!item) return {};
+        if (to === "front") annotations.push(item);
+        else annotations.unshift(item);
+        return pushHistory(s, { ...s.scene, annotations });
+      }),
     applyAnnotationPatches: (patches) =>
       set((s) =>
         pushHistory(

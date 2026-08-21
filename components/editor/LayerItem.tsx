@@ -22,6 +22,7 @@ interface LayerItemProps {
   onCancelEdit: () => void;
   onDraftChange: (v: string) => void;
   onSelect: (e: React.MouseEvent<HTMLLIElement>) => void;
+  onContext: (e: React.MouseEvent<HTMLLIElement>) => void;
   onMove: (id: string, dir: -1 | 1) => void;
   onDragStart: (e: DragEvent<HTMLLIElement>, id: string) => void;
   onDragOver: (e: DragEvent<HTMLLIElement>, id: string) => void;
@@ -46,6 +47,7 @@ export function LayerItem({
   onCancelEdit,
   onDraftChange,
   onSelect,
+  onContext,
   onMove,
   onDragStart,
   onDragOver,
@@ -86,6 +88,7 @@ export function LayerItem({
         ...dropStyle
       }}
       onClick={onSelect}
+      onContextMenu={onContext}
     >
       <span
         aria-hidden="true"

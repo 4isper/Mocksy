@@ -1,4 +1,5 @@
 import { activeLayer, buildAutoLayout, layoutFrameGrid, makeDemoLayer, nextLayerId, pushHistory } from "@/lib/state/editorHelpers";
+import { nextFrameInstanceId } from "@/lib/state/ids";
 import type { CustomFrame, EditorScene, FrameInstance, MockupFrame } from "@/lib/types/editor";
 import type { EditorStoreSetter, EditorStoreState } from "../editorStoreTypes";
 
@@ -9,6 +10,8 @@ export type FramesSlice = Pick<
   | "setFrameInstances"
   | "updateFrameInstance"
   | "removeFrameInstance"
+  | "duplicateFrameInstance"
+  | "reorderFrameInstance"
   | "layoutFrameGrid"
   | "applyFrameLayout"
   | "selectFrameInstance"
@@ -100,6 +103,42 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
         // 400ms window) into a single undo step, dropping the intermediate
         // state. Keying per-instance keeps each frame's drag its own step.
         return pushHistory(s, { ...s.scene, frameInstances }, coalesce ? `frameInstanceDrag:${id}` : undefined);
+      }),
+    duplicateFrameInstance: (id) =>
+      set((s) => {
+        const inst = s.scene.frameInstances.find((fi) => fi.id === id);
+        if (!inst) return {};
+        // Clone the referenced layer so the copy is independent — sharing the
+        // layer would couple media/zoom edits between the two frames.
+        let layers = s.scene.layers;
+        let layerId = inst.layerId;
+        if (layerId) {
+          const src = layers.find((l) => l.id === layerId);
+          if (src) {
+            const clone = { ...src, id: nextLayerId() };
+            layers = [...layers, clone];
+            layerId = clone.id;
+          }
+        }
+        const copy: FrameInstance = {
+          ...inst,
+          id: nextFrameInstanceId(),
+          layerId,
+          x: Math.min(1, inst.x + 0.08),
+          y: Math.min(1, inst.y + 0.08)
+        };
+        return pushHistory(s, { ...s.scene, layers, frameInstances: [...s.scene.frameInstances, copy] });
+      }),
+    reorderFrameInstance: (id, to) =>
+      set((s) => {
+        const idx = s.scene.frameInstances.findIndex((fi) => fi.id === id);
+        if (idx < 0) return {};
+        const frameInstances = [...s.scene.frameInstances];
+        const [item] = frameInstances.splice(idx, 1);
+        if (!item) return {};
+        if (to === "front") frameInstances.push(item);
+        else frameInstances.unshift(item);
+        return pushHistory(s, { ...s.scene, frameInstances });
       }),
     layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") =>
       set((s) => {

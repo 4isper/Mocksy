@@ -270,7 +270,21 @@
     "removeBackgroundHint": "Runs locally in your browser. The first use downloads the model (~40 MB) and is cached afterwards.",
     "removeBackgroundError": "Background removal failed. Please try again.",
     "fullscreenTitle": "Full-screen preview (F)",
-    "exitFullscreen": "Exit full screen (Esc)"
+    "exitFullscreen": "Exit full screen (Esc)",
+    "ctxDuplicate": "Duplicate",
+    "ctxBringToFront": "Bring to front",
+    "ctxSendToBack": "Send to back",
+    "ctxRemove": "Remove frame",
+    "ctxDelete": "Delete",
+    "ctxHide": "Hide",
+    "ctxShow": "Show",
+    "ctxMoveUp": "Move up",
+    "ctxMoveDown": "Move down",
+    "ctxDeselect": "Deselect all",
+    "ctxAddText": "Add text",
+    "ctxAddArrow": "Add arrow",
+    "ctxAddRect": "Add rectangle",
+    "ctxAddCircle": "Add circle"
   },
   "frame": {
     "none": "Ingen",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
 import type { GuideLine } from "@/lib/render/annotationAlign";
@@ -12,6 +12,7 @@ import { useFrameTransform } from "@/lib/hooks/useFrameTransform";
 import { useScenePalette } from "@/lib/hooks/useScenePalette";
 import { useCanvasGestures } from "@/lib/hooks/useCanvasGestures";
 import { useCanvasDrop } from "@/lib/hooks/useCanvasDrop";
+import { ContextMenu, type ContextMenuItem } from "@/components/editor/ContextMenu";
 import { AnnotationItem } from "@/components/editor/AnnotationItem";
 import { FrameInstanceGrid } from "@/components/editor/FrameInstanceGrid";
 import { SingleFrameView } from "@/components/editor/SingleFrameView";
@@ -45,6 +46,14 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const setVideoDuration = useEditorStore((s) => s.setVideoDuration);
   const setVideoCurrentTime = useEditorStore((s) => s.setVideoCurrentTime);
   const setMediaLoading = useEditorStore((s) => s.setMediaLoading);
+  const addAnnotation = useEditorStore((s) => s.addAnnotation);
+  const duplicateAnnotation = useEditorStore((s) => s.duplicateAnnotation);
+  const reorderAnnotation = useEditorStore((s) => s.reorderAnnotation);
+  const removeAnnotation = useEditorStore((s) => s.removeAnnotation);
+  const duplicateFrameInstance = useEditorStore((s) => s.duplicateFrameInstance);
+  const reorderFrameInstance = useEditorStore((s) => s.reorderFrameInstance);
+  const removeFrameInstance = useEditorStore((s) => s.removeFrameInstance);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
 
   const { analyzeMedia } = useScenePalette(scene, activeLayerId);
   const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
@@ -77,6 +86,68 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const canClearActive = !!activeLayer?.mediaUrl;
 
   const { w: arW, h: arH } = parseAspectRatioOr(scene.aspectRatio);
+
+  /** Builds the context-menu items for the right-clicked target: a frame
+   *  instance, an annotation, or the empty canvas (add-annotation actions). */
+  const openContextMenu = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement;
+      e.preventDefault();
+      const frameEl = target.closest("[data-frame-instance-id]");
+      const annEl = target.closest("[data-annotation-id]");
+
+      if (frameEl) {
+        const id = frameEl.getAttribute("data-frame-instance-id");
+        if (!id) return;
+        selectFrameInstance(id);
+        setContextMenu({
+          x: e.clientX,
+          y: e.clientY,
+          items: [
+            { id: "dup", label: t("editor.ctxDuplicate"), onSelect: () => duplicateFrameInstance(id) },
+            { id: "front", label: t("editor.ctxBringToFront"), onSelect: () => reorderFrameInstance(id, "front") },
+            { id: "back", label: t("editor.ctxSendToBack"), onSelect: () => reorderFrameInstance(id, "back") },
+            { id: "remove", label: t("editor.ctxRemove"), danger: true, separatorBefore: true, onSelect: () => removeFrameInstance(id) }
+          ]
+        });
+        return;
+      }
+
+      if (annEl) {
+        const id = annEl.getAttribute("data-annotation-id");
+        if (!id) return;
+        selectAnnotation(id);
+        setContextMenu({
+          x: e.clientX,
+          y: e.clientY,
+          items: [
+            { id: "dup", label: t("editor.ctxDuplicate"), onSelect: () => duplicateAnnotation(id) },
+            { id: "front", label: t("editor.ctxBringToFront"), onSelect: () => reorderAnnotation(id, "front") },
+            { id: "back", label: t("editor.ctxSendToBack"), onSelect: () => reorderAnnotation(id, "back") },
+            { id: "remove", label: t("editor.ctxDelete"), danger: true, separatorBefore: true, onSelect: () => removeAnnotation(id) }
+          ]
+        });
+        return;
+      }
+
+      // Empty canvas: annotation shortcuts plus deselect.
+      setContextMenu({
+        x: e.clientX,
+        y: e.clientY,
+        items: [
+          { id: "add-text", label: t("editor.ctxAddText"), onSelect: () => addAnnotation("text") },
+          { id: "add-arrow", label: t("editor.ctxAddArrow"), onSelect: () => addAnnotation("arrow") },
+          { id: "add-rect", label: t("editor.ctxAddRect"), onSelect: () => addAnnotation("rect") },
+          { id: "add-circle", label: t("editor.ctxAddCircle"), onSelect: () => addAnnotation("circle") },
+          { id: "deselect", label: t("editor.ctxDeselect"), separatorBefore: true, onSelect: () => {
+            selectAnnotation(null);
+            selectFrameInstance(null);
+          } }
+        ]
+      });
+    },
+    [t, selectAnnotation, selectFrameInstance, addAnnotation, duplicateAnnotation, reorderAnnotation, removeAnnotation, duplicateFrameInstance, reorderFrameInstance, removeFrameInstance]
+  );
 
   return (
     <div
@@ -119,6 +190,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           if (target.closest("[data-annotation]") || target.closest(".preview-watermark")) return;
           selectAnnotation(null);
         }}
+        onContextMenu={openContextMenu}
         style={{
           // Contain inside the size container: take the larger of the two
           // axes that still fits the other, so the canvas keeps its aspect
@@ -224,6 +296,14 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           <div role="alert" className="preview-error">
             {mediaUploadError}
           </div>
+        ) : null}
+        {contextMenu ? (
+          <ContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            items={contextMenu.items}
+            onClose={() => setContextMenu(null)}
+          />
         ) : null}
       </div>
     </div>

@@ -175,6 +175,7 @@ export function AnnotationItem({ annotation, selected, others, canvasRef, snapDi
   return (
     <div
       data-annotation
+      data-annotation-id={annotation.id}
       tabIndex={0}
       role="group"
       aria-label={t("editor.annotationAria")}

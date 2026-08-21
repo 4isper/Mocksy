@@ -7,6 +7,7 @@ import { useEditorStore } from "@/lib/state/editorStore";
 import { loadMediaFromFile, UnsupportedMediaError } from "@/lib/media/loadFile";
 import { useAutoDismissError } from "@/lib/hooks/useAutoDismissError";
 import { useLayerReorder } from "@/lib/hooks/useLayerReorder";
+import { ContextMenu, type ContextMenuItem } from "@/components/editor/ContextMenu";
 import { LayerItem } from "@/components/editor/LayerItem";
 import { LayerBulkActions } from "@/components/editor/LayerBulkActions";
 
@@ -27,6 +28,7 @@ export function LayersPanel() {
   const [error, setError] = useAutoDismissError();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
 
   const { dragId, dropTarget, handleDragStart, handleDragOver, handleDrop, handleDragEnd } = useLayerReorder(scene);
@@ -63,6 +65,26 @@ export function LayersPanel() {
     ids[idx] = b;
     ids[next] = a;
     useEditorStore.getState().reorderLayers(ids);
+  };
+
+  /** Right-click menu for one layer row: select it, then offer the same
+   *  actions as the row buttons. */
+  const openLayerContextMenu = (e: React.MouseEvent<HTMLLIElement>, layerId: string) => {
+    e.preventDefault();
+    selectLayer(layerId);
+    const layer = scene.layers.find((l) => l.id === layerId);
+    if (!layer) return;
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      items: [
+        { id: "dup", label: t("editor.ctxDuplicate"), onSelect: () => useEditorStore.getState().duplicateLayer(layerId) },
+        { id: "hide", label: layer.hidden ? t("editor.ctxShow") : t("editor.ctxHide"), onSelect: () => useEditorStore.getState().toggleLayerHidden(layerId) },
+        { id: "up", label: t("editor.ctxMoveUp"), disabled: scene.layers[0]?.id === layerId, onSelect: () => move(layerId, -1) },
+        { id: "down", label: t("editor.ctxMoveDown"), disabled: scene.layers[scene.layers.length - 1]?.id === layerId, onSelect: () => move(layerId, 1) },
+        { id: "remove", label: t("editor.deleteLayers"), danger: true, separatorBefore: true, disabled: scene.layers.length <= 1, onSelect: () => useEditorStore.getState().removeLayer(layerId) }
+      ]
+    });
   };
 
   return (
@@ -124,6 +146,7 @@ export function LayersPanel() {
                   else if (e.metaKey || e.ctrlKey) toggleLayerSelected(layer.id);
                   else selectLayer(layer.id);
                 }}
+                onContext={(e) => openLayerContextMenu(e, layer.id)}
                 onMove={move}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
@@ -155,6 +178,14 @@ export function LayersPanel() {
       <p style={{ color: "var(--text-dim)", fontSize: 12, margin: 0 }}>
         {t("help.layersStack")}
       </p>
+      {contextMenu ? (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={contextMenu.items}
+          onClose={() => setContextMenu(null)}
+        />
+      ) : null}
     </div>
   );
 }
