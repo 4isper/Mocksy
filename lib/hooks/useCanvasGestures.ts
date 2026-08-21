@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 import { useEditorStore } from "@/lib/state/editorStore";
 
@@ -18,6 +18,10 @@ export function useCanvasGestures({ frameRef, activeLayer }: UseCanvasGestures) 
   // Pinch-to-zoom on touch devices: track the two-finger distance and map it
   // to the active layer zoom so mobile users can scale the mockup without a slider.
   const pinchStart = useRef<{ dist: number; zoom: number } | null>(null);
+  const activeLayerRef = useRef(activeLayer);
+  useEffect(() => {
+    activeLayerRef.current = activeLayer;
+  });
   const onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     if (e.touches.length === 2 && activeLayer) {
       const a = e.touches[0];
@@ -25,24 +29,38 @@ export function useCanvasGestures({ frameRef, activeLayer }: UseCanvasGestures) 
       if (!a || !b) return;
       const dx = a.clientX - b.clientX;
       const dy = a.clientY - b.clientY;
-      pinchStart.current = { dist: Math.hypot(dx, dy), zoom: activeLayer.zoom };
+      const dist = Math.hypot(dx, dy);
+      // Fingers starting on the same point have no measurable baseline — a
+      // move would divide by zero below.
+      if (dist === 0) return;
+      pinchStart.current = { dist, zoom: activeLayer.zoom };
     }
-  };
-  const onTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (e.touches.length !== 2 || !pinchStart.current || !activeLayer) return;
-    e.preventDefault();
-    const a = e.touches[0];
-    const b = e.touches[1];
-    if (!a || !b) return;
-    const dx = a.clientX - b.clientX;
-    const dy = a.clientY - b.clientY;
-    const dist = Math.hypot(dx, dy);
-    const next = Math.min(1.5, Math.max(0.8, pinchStart.current.zoom * (dist / pinchStart.current.dist)));
-    useEditorStore.getState().setZoom(next);
   };
   const onTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
     if (e.touches.length < 2) pinchStart.current = null;
   };
+
+  // The move half of the pinch is a native non-passive listener: React
+  // registers synthetic touchmove handlers as passive, so preventDefault()
+  // inside them is a no-op and the page would scroll mid-pinch. Registered
+  // once on the window and cheap to skip when no pinch is in progress.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onTouchMove = (e: TouchEvent) => {
+      const start = pinchStart.current;
+      if (!start || e.touches.length !== 2 || !activeLayerRef.current) return;
+      const a = e.touches[0];
+      const b = e.touches[1];
+      if (!a || !b) return;
+      const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+      if (dist === 0) return;
+      e.preventDefault();
+      const next = Math.min(1.5, Math.max(0.8, start.zoom * (dist / start.dist)));
+      useEditorStore.getState().setZoom(next);
+    };
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => window.removeEventListener("touchmove", onTouchMove);
+  }, []);
 
   // Drag-to-pan the active media inside the frame, mirroring the Position
   // X/Y sliders. Pointer events cover mouse and single-finger touch; a
@@ -84,7 +102,6 @@ export function useCanvasGestures({ frameRef, activeLayer }: UseCanvasGestures) 
   return {
     canPan,
     onTouchStart,
-    onTouchMove,
     onTouchEnd,
     onPanDown,
     onPanMove,

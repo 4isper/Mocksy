@@ -123,6 +123,34 @@ describe("media persistence codec", () => {
     );
     expect(decodedKeep?.projects[0]?.scene.layers[0]?.mediaUrl).toBe(keep);
   });
+  it("does not mutate the caller's scenes while encoding", async () => {
+    const { encodeProjectsState } = await import("@/lib/state/mediaPersistence");
+    const big = makeBigDataUrl("m");
+    const frameAsset = makeBigDataUrl("n");
+    const scene = {
+      ...makeScene(big),
+      customFrame: {
+        id: "cf1",
+        asset: frameAsset,
+        name: "Custom",
+        viewBox: { w: 100, h: 200 },
+        cutout: { x: 10, y: 10, w: 80, h: 180, rx: 4 }
+      }
+    };
+    const other = makeScene(makeBigDataUrl("o"));
+    const state = {
+      projects: [makeProject(scene), { ...makeProject(other), id: "p2" }],
+      activeProjectId: "p1"
+    };
+
+    const json = await encodeProjectsState(state);
+    expect(json).toContain("@idb:");
+    // Live state (editor scene, undo history, non-active projects) shares these
+    // objects — in-place placeholder substitution would break their previews.
+    expect(scene.layers[0]!.mediaUrl).toBe(big);
+    expect(other.layers[0]!.mediaUrl).not.toContain("@idb:");
+    expect(scene.customFrame?.asset).toBe(frameAsset);
+  });
 });
 
 function makeBigDataUrl(fill: string, kb = 96): string {

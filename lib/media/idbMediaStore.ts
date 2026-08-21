@@ -49,9 +49,17 @@ async function withStore<T>(mode: IDBTransactionMode, run: (store: IDBObjectStor
   return new Promise((resolve) => {
     try {
       const tx = db.transaction(STORE, mode);
+      let result: T | null = null;
+      // Resolve on transaction completion, not on request success: a commit
+      // can still abort afterwards (quota), and reporting success then would
+      // strand data that never landed. resolve() is idempotent.
+      tx.oncomplete = () => resolve(result);
+      tx.onabort = () => resolve(null);
+      tx.onerror = () => resolve(null);
       const req = run(tx.objectStore(STORE));
-      req.onsuccess = () => resolve(req.result as T);
-      req.onerror = () => resolve(null);
+      req.onsuccess = () => {
+        result = req.result as T;
+      };
     } catch {
       resolve(null);
     }

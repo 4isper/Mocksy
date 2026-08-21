@@ -181,6 +181,19 @@ describe("editorStore", () => {
     expect(store().scene.layers[0]!.zoom).toBe(1.5);
   });
 
+  it("an edit of the same field right after undo starts a fresh history entry", () => {
+    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene }, lastHistoryKey: null, lastHistoryAt: 0 });
+    store().setZoom(1.2);
+    expect(store().past).toHaveLength(1);
+    store().undo();
+    // Same coalesce key ("zoom") within the coalescing window: without a key
+    // reset this would merge into the undone edit and leave a stale redo.
+    store().setZoom(1.3);
+    expect(store().scene.layers[0]!.zoom).toBe(1.3);
+    expect(store().past).toHaveLength(1);
+    expect(store().future).toHaveLength(0);
+  });
+
   it("setBackgroundTransparent switches mode without color", () => {
     store().setBackgroundTransparent();
     expect(store().scene.backgroundMode).toBe("transparent");

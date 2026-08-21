@@ -83,7 +83,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const tiltPrefix = useMemo(() => tiltCss(scene), [scene.tiltX, scene.tiltY]); // eslint-disable-line react-hooks/exhaustive-deps
   useFrameTransform(frameRef, activeLayer, scene.animationDurationMs, tiltPrefix);
 
-  const { canPan, onTouchStart, onTouchMove, onTouchEnd, onPanDown, onPanMove, onPanUp } = useCanvasGestures({ frameRef, activeLayer });
+  const { canPan, onTouchStart, onTouchEnd, onPanDown, onPanMove, onPanUp } = useCanvasGestures({ frameRef, activeLayer });
   const { fileInputKey, isDragging, handleDrop, handleFile, onDragEnter, onDragOver, onDragLeave } = useCanvasDrop({ scene });
 
   const isMultiFrame = scene.frameInstances.length > 0;
@@ -186,7 +186,6 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
       onDragLeave={onDragLeave}
       onDrop={handleDrop}
       onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
       <div

@@ -40,23 +40,40 @@ export function createFakeIndexedDB(): FakeIdbHandle {
   const makeDb = () => ({
     objectStoreNames: { contains: () => true },
     transaction() {
-      return {
-        objectStore() {
-          return {
-            get: (key: string) => makeRequest<Blob>(() => store.get(key)),            put: (value: Blob, key: string) =>
-              makeRequest<undefined>(() => {
-                store.set(key, value);
-                return undefined;
-              }),
-            delete: (key: string) =>
-              makeRequest<undefined>(() => {
-                store.delete(key);
-                return undefined;
-              }),
-            getAllKeys: () => makeRequest<string[]>(() => [...store.keys()])
-          };
-        }
+      // The transaction object itself carries the lifecycle callbacks callers
+      // subscribe with; returning it directly (with objectStore attached)
+      // keeps handler assignments and fires on the same instance.
+      const tx: {
+        oncomplete?: () => void;
+        onabort?: () => void;
+        onerror?: () => void;
+        objectStore: () => {
+          get: (key: string) => IDBRequestLike<Blob>;
+          put: (value: Blob, key: string) => IDBRequestLike<undefined>;
+          delete: (key: string) => IDBRequestLike<undefined>;
+          getAllKeys: () => IDBRequestLike<string[]>;
+        };
+      } = {
+        objectStore: () => ({
+          get: (key: string) => makeRequest<Blob>(() => store.get(key)),
+          put: (value: Blob, key: string) =>
+            makeRequest<undefined>(() => {
+              store.set(key, value);
+              return undefined;
+            }),
+          delete: (key: string) =>
+            makeRequest<undefined>(() => {
+              store.delete(key);
+              return undefined;
+            }),
+          getAllKeys: () => makeRequest<string[]>(() => [...store.keys()])
+        })
       };
+      // Real IDB fires tx.oncomplete only after every request's onsuccess has
+      // run; request callbacks here go through two queued microtasks, so a
+      // macrotask guarantees they've all drained first.
+      setTimeout(() => tx.oncomplete?.(), 0);
+      return tx;
     }
   });
   return {

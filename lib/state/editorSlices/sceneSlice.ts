@@ -61,6 +61,11 @@ export function createSceneSlice(set: EditorStoreSetter): SceneSlice {
           scene: previous,
           past: s.past.slice(0, -1),
           future: [s.scene, ...s.future],
+          // Reset the coalescing key so an edit of the same field right after
+          // the undo starts a fresh history entry instead of silently merging
+          // into the just-undone one.
+          lastHistoryKey: null,
+          lastHistoryAt: 0,
           videoCurrentTime: activePosterTime(previous ?? s.scene),
           activeLayerId: reconcileActiveLayerId(previous ?? s.scene, s.activeLayerId)
         };
@@ -73,6 +78,8 @@ export function createSceneSlice(set: EditorStoreSetter): SceneSlice {
           scene: next,
           past: [...s.past, s.scene],
           future: s.future.slice(1),
+          lastHistoryKey: null,
+          lastHistoryAt: 0,
           videoCurrentTime: activePosterTime(next ?? s.scene),
           activeLayerId: reconcileActiveLayerId(next ?? s.scene, s.activeLayerId)
         };

@@ -71,7 +71,19 @@ export function stateNeedsMediaOffload(state: PersistedProjectsState): boolean {
  * the scene unchanged when hashing/conversion is not possible for a field.
  */
 export async function encodeSceneMedia<T extends EditorScene>(scene: T, sink: Map<string, Blob>): Promise<T> {
-  const result = { ...scene };
+  // Clone every holder the visitor may mutate (layers, customFrame): the input
+  // shares those objects with live state — the editor scene, undo history and
+  // the other projects in the store — and replacing mediaUrl with a placeholder
+  // in place would corrupt them (broken previews until the next reload).
+  const result: T = {
+    ...scene,
+    ...(Array.isArray(scene.layers)
+      ? { layers: scene.layers.map((l) => ({ ...l })) }
+      : {}),
+    ...(scene.customFrame && typeof scene.customFrame === "object"
+      ? { customFrame: { ...scene.customFrame } }
+      : {})
+  };
   const pending: Array<Promise<void>> = [];
 
   visitSceneMedia(result, (holder, prop) => {

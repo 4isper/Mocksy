@@ -23,7 +23,10 @@ export function pushHistory(
 ): HistoryMutator {
   const now = Date.now();
   if (coalesceKey && coalesceKey === s.lastHistoryKey && now - s.lastHistoryAt < COALESCE_MS) {
-    return { ...s, scene, lastHistoryAt: now };
+    // The scene changed, so any redo entries (left by an undo immediately
+    // before this edit) are stale and must go — even though no new past
+    // entry is pushed.
+    return { ...s, scene, lastHistoryAt: now, future: [] };
   }
   const past = [...s.past, s.scene].slice(-HISTORY_LIMIT);
   return { past, future: [], scene, lastHistoryKey: coalesceKey ?? null, lastHistoryAt: now };

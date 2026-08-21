@@ -80,6 +80,14 @@ describe("useEditorShortcuts", () => {
     expect(actions.saveNow).toHaveBeenCalledTimes(1);
   });
 
+  it("matches letters by physical key, so ⌘S works on a Cyrillic layout", () => {
+    const actions = makeActions();
+    render(<Harness actions={actions} />);
+    // Russian layout: physical S produces key "ы", code stays "KeyS".
+    fireEvent.keyDown(window, { key: "ы", code: "KeyS", metaKey: true });
+    expect(actions.saveNow).toHaveBeenCalledTimes(1);
+  });
+
   it("calls onExportPng on ⌘E", () => {
     const actions = makeActions();
     render(<Harness actions={actions} />);
