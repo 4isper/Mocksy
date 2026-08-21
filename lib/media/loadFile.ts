@@ -3,6 +3,16 @@ import type { MediaType } from "@/lib/types/editor";
 const VIDEO_EXT = /\.(mp4|mov|m4v|webm|ogg|ogv|avi|mkv)$/i;
 const AUDIO_EXT = /\.(mp3|wav|ogg|aac|flac|m4a|wma)$/i;
 const SUPPORTED_IMAGE_EXT = /\.(png|jpe?g|gif|webp|avif|svg|bmp|ico)$/i;
+const HEIC_EXT = /\.(heic|heif)$/i;
+
+/** True for iPhone HEIC/HEIF photos, by mime or extension. */
+export function isHeicFile(file: File): boolean {
+  return (
+    HEIC_EXT.test(file.name) ||
+    file.type === "image/heic" ||
+    file.type === "image/heif"
+  );
+}
 
 export function detectMediaType(file: File): MediaType {
   if (file.type.startsWith("video/")) return "video";
@@ -29,10 +39,36 @@ export class UnsupportedMediaError extends Error {
   }
 }
 
-/** True when the file is a renderable image or video for the editor. */
+/** True when the file is a renderable image or video for the editor.
+ *  HEIC/HEIF counts as supported: it is converted to PNG before use. */
 export function isSupportedMedia(file: File): boolean {
+  if (isHeicFile(file)) return true;
   if (file.type.startsWith("image/") || file.type.startsWith("video/")) return true;
   return SUPPORTED_IMAGE_EXT.test(file.name) || VIDEO_EXT.test(file.name);
+}
+
+/** Converts an iPhone HEIC/HEIF photo to PNG. Browsers that can decode HEIC
+ *  natively (Safari 17+) short-circuit before the ~2MB wasm decoder is even
+ *  imported — the dynamic import keeps it out of every other user's bundle.
+ *  Throws when conversion fails; callers surface the generic upload error. */
+export async function convertHeicToPng(file: File): Promise<File> {
+  if (!isHeicFile(file)) return file;
+  if (typeof createImageBitmap === "function") {
+    try {
+      const bitmap = await createImageBitmap(file);
+      // Native decode works — keep the original bytes untouched.
+      bitmap.close();
+      return file;
+    } catch {
+      // fall through to wasm conversion
+    }
+  }
+  const { default: heic2any } = await import("heic2any");
+  const output = await heic2any({ blob: file, toType: "image/png" });
+  const blob = Array.isArray(output) ? output[0]! : output;
+  if (!(blob instanceof Blob)) throw new Error("HEIC conversion produced no data");
+  const name = file.name.replace(HEIC_EXT, ".png");
+  return new File([blob], name, { type: "image/png" });
 }
 
 /** Encodes a Blob/File as a `data:` URL using base64. Works in the
@@ -63,7 +99,8 @@ function arrayBufferToBase64(buf: ArrayBuffer): string {
 
 export async function loadMediaFromFile(file: File): Promise<LoadedMedia> {
   if (!isSupportedMedia(file)) throw new UnsupportedMediaError(file.name);
-  const fileToEncode = await compressImageIfNeeded(file);
+  const heicConverted = await convertHeicToPng(file);
+  const fileToEncode = await compressImageIfNeeded(heicConverted);
   const url = await blobToDataUrl(fileToEncode);
   return {
     url,
@@ -120,7 +157,7 @@ export async function loadMediaFromUrl(inputUrl: string): Promise<LoadedMedia> {
   }
   const mediaName = mediaNameFromUrl(trimmed);
   const file = new File([blob], mediaName, { type: blob.type });
-  const encoded = await compressImageIfNeeded(file);
+  const encoded = await compressImageIfNeeded(await convertHeicToPng(file));
   return {
     url: await blobToDataUrl(encoded),
     mediaType: detectMediaType(file),

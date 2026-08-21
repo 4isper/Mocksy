@@ -1,5 +1,13 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { compressImageIfNeeded, detectMediaType, isAudioFile, isHttpMediaUrl, isSupportedMedia, loadMediaFromFile, loadMediaFromUrl, UnsupportedMediaError, UnsupportedMediaUrlError } from "@/lib/media/loadFile";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { compressImageIfNeeded, convertHeicToPng, detectMediaType, isAudioFile, isHeicFile, isHttpMediaUrl, isSupportedMedia, loadMediaFromFile, loadMediaFromUrl, UnsupportedMediaError, UnsupportedMediaUrlError } from "@/lib/media/loadFile";
+
+// heic2any ships a wasm decoder — keep it mocked so tests never pull it in.
+const heic2anyMock = vi.hoisted(() => vi.fn(async ({ blob }: { blob: Blob }) => new Blob([blob], { type: "image/png" })));
+vi.mock("heic2any", () => ({ default: heic2anyMock }));
+
+beforeEach(() => {
+  heic2anyMock.mockClear();
+});
 
 const file = (name: string, type: string): File =>
   new File([new Uint8Array([1, 2, 3])], name, { type });
@@ -268,4 +276,42 @@ describe("loadMediaFromUrl", () => {
     expect(result.mediaName).toBe("photo.jpeg");
   });
 });
+});
+
+describe("heic import", () => {
+  const heicFile = (name = "photo.heic"): File =>
+    new File([new Uint8Array([1, 2, 3])], name, { type: "image/heic" });
+
+  it("recognizes HEIC files by extension and mime", () => {
+    expect(isHeicFile(heicFile())).toBe(true);
+    expect(isHeicFile(new File([new Uint8Array([1])], "a.heif", { type: "" }))).toBe(true);
+    expect(isHeicFile(file("a.png", "image/png"))).toBe(false);
+    expect(isSupportedMedia(heicFile())).toBe(true);
+    expect(detectMediaType(heicFile())).toBe("image");
+  });
+
+  it("converts HEIC to PNG through the lazy wasm path when native decode fails", async () => {
+    const converted = await convertHeicToPng(heicFile());
+    expect(heic2anyMock).toHaveBeenCalledTimes(1);
+    expect(converted.name).toBe("photo.png");
+    expect(converted.type).toBe("image/png");
+  });
+
+  it("skips the wasm converter when the browser decodes HEIC natively", async () => {
+    vi.stubGlobal("createImageBitmap", async () => ({ close: () => {} }));
+    const original = heicFile();
+    const result = await convertHeicToPng(original);
+    expect(heic2anyMock).not.toHaveBeenCalled();
+    expect(result).toBe(original); // original bytes kept untouched
+    vi.unstubAllGlobals();
+  });
+
+  it("loadMediaFromFile round-trips a HEIC photo as a PNG data: URL", async () => {
+    // No createImageBitmap in Node → wasm path runs.
+    const loaded = await loadMediaFromFile(heicFile("IMG_0001.heic"));
+    expect(loaded.mediaType).toBe("image");
+    expect(loaded.mediaName).toBe("IMG_0001.heic");
+    expect(loaded.url.startsWith("data:image/png;base64,")).toBe(true);
+    expect(heic2anyMock).toHaveBeenCalledTimes(1);
+  });
 });

@@ -18,6 +18,12 @@ const KNOWN = new Set([
   "GHSA-52f5-9888-hmc6", // tmp (@lhci/cli) — symlink in dir param
   "GHSA-ph9p-34f9-6g65", // tmp (@lhci/cli) — prefix/postfix traversal
   "GHSA-w5hq-g745-h8pq", // uuid (@lhci/cli) — buffer bounds check
+  // 2026-08 batch: all transitive dev/build-time tooling, none reach the
+  // client bundle. Revisit when the parents bump upstream.
+  "GHSA-xcpc-8h2w-3j85", // adm-zip (onnxruntime-node, @huggingface/transformers) — 4GB alloc
+  "GHSA-jmr9-qjv8-65gv", // extract-zip (@lhci/cli → puppeteer) — symlink traversal
+  "GHSA-5p4m-2wfm-xmqj", // js-yaml (@lhci/cli 3.x / eslint eslintrc 4.x) — !!omap CPU
+  "GHSA-2v37-7h3g-55p8", // nanoid (next → postcss) — zero-size generator loop
 ]);
 
 function parseAudit(raw) {
