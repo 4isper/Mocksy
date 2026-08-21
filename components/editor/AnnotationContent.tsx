@@ -102,6 +102,22 @@ export function AnnotationContent({
     );
   }
 
+  if (annotation.type === "blur") {
+    // Frosted-glass region: blurs whatever is painted beneath it. The canvas
+    // export mirrors this by re-drawing a blurred snapshot of the composite.
+    return (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          borderRadius: 8,
+          backdropFilter: `blur(${Math.max(1, annotation.strokeWidth)}px)`,
+          WebkitBackdropFilter: `blur(${Math.max(1, annotation.strokeWidth)}px)`
+        }}
+      />
+    );
+  }
+
   // arrow
   const bw = Math.abs(annotation.w) || 1e-4;
   const bh = Math.abs(annotation.h) || 1e-4;

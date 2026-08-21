@@ -44,7 +44,10 @@ export function computeCaptureDuration(scene: EditorScene, activeLayerId: string
   // misconfigured; never let a non-finite or empty duration collapse the
   // recording to zero frames.
   if (typeof end !== "number" || !isFinite(end) || end <= 0) return fallbackSec;
-  return Math.max(0.2, end - start);
+  // Faster playback covers the trimmed span in less wall-clock time, so the
+  // capture length follows the effective (played-back) duration.
+  const speed = Math.max(0.5, Math.min(2, active.playbackSpeed ?? 1));
+  return Math.max(0.2, (end - start) / speed);
 }
 
 /**

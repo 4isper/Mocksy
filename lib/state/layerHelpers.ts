@@ -32,6 +32,11 @@ export function makeAnnotation(type: AnnotationType): Annotation {
   if (type === "circle") {
     return { ...base, w: 0.2, h: 0.2, text: "", fontSize: 0 };
   }
+  if (type === "blur") {
+    // strokeWidth doubles as the blur radius in px; the region starts as a
+    // centered rounded rect over the screen.
+    return { ...base, w: 0.28, h: 0.18, text: "", fontSize: 0, strokeWidth: 12 };
+  }
   return { ...base, w: 0.28, h: 0.2, text: "", fontSize: 0 };
 }
 
@@ -63,7 +68,8 @@ export function makeDemoLayer(): MediaLayer {
     videoDuration: 0,
     videoTrimStart: 0,
     videoTrimEnd: 0,
-    videoQuality: "medium"
+    videoQuality: "medium",
+    playbackSpeed: 1
   };
 }
 

@@ -373,7 +373,10 @@ export function FrameInstanceGrid({
                     style={{ ...instCss.mediaStyle, objectFit: "contain", backgroundColor: "var(--panel-solid)", cursor: "grab" }}
                     onPointerDown={() => selectLayer(layer.id)}
                     onLoadedData={(e) => analyzeMedia(e.currentTarget)}
-                    onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration || 0, layer.id)}
+                    onLoadedMetadata={(e) => {
+                      setVideoDuration(e.currentTarget.duration || 0, layer.id);
+                      e.currentTarget.playbackRate = Math.max(0.5, Math.min(2, layer.playbackSpeed ?? 1));
+                    }}
                   />
                 ) : (
                   <img src={layer.mediaUrl} alt={t("editor.uploadedMediaAlt")} style={{ ...instCss.mediaStyle, cursor: "grab" }} onLoad={(e) => analyzeMedia(e.currentTarget)} onPointerDown={() => selectLayer(layer.id)} />

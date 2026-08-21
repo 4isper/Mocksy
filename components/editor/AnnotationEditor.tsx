@@ -24,6 +24,7 @@ export function AnnotationEditor({ annotation }: AnnotationEditorProps) {
   const updateAnnotation = useEditorStore((s) => s.updateAnnotation);
   const removeAnnotation = useEditorStore((s) => s.removeAnnotation);
   const isText = annotation.type === "text";
+  const isBlur = annotation.type === "blur";
 
   return (
     <div className="field-group">
@@ -33,10 +34,28 @@ export function AnnotationEditor({ annotation }: AnnotationEditorProps) {
           <textarea value={annotation.text} rows={2} onChange={(e) => updateAnnotation(annotation.id, { text: e.target.value })} />
         </label>
       ) : null}
-      <label className="field">
-        <span>{t("annotation.color")}</span>
-        <input type="color" value={annotation.color} onChange={(e) => updateAnnotation(annotation.id, { color: e.target.value })} />
-      </label>
+      {!isBlur ? (
+        <label className="field">
+          <span>{t("annotation.color")}</span>
+          <input type="color" value={annotation.color} onChange={(e) => updateAnnotation(annotation.id, { color: e.target.value })} />
+        </label>
+      ) : null}
+      {isBlur ? (
+        <label className="field">
+          <span>{t("annotation.blurStrength", { val: annotation.strokeWidth })}</span>
+          <input
+            className="range"
+            type="range"
+            min={2}
+            max={40}
+            step={1}
+            value={annotation.strokeWidth}
+            aria-label={t("annotation.blurStrength", { val: annotation.strokeWidth })}
+            aria-valuetext={`${annotation.strokeWidth} pixels`}
+            onChange={(e) => updateAnnotation(annotation.id, { strokeWidth: Number(e.target.value) })}
+          />
+        </label>
+      ) : null}
       {isText ? (
         <label className="field">
           <span>{t("annotation.font")}</span>

@@ -33,6 +33,8 @@ export type AppearanceSlice = Pick<
   | "clearAnnotations"
   | "setBackgroundAudio"
   | "clearBackgroundAudio"
+  | "setAudioFadeIn"
+  | "setAudioFadeOut"
 >;
 
 /** Background, watermark, annotation and background-audio setters. */
@@ -157,6 +159,10 @@ export function createAppearanceSlice(set: EditorStoreSetter): AppearanceSlice {
     setBackgroundAudio: (backgroundAudioUrl, backgroundAudioName) =>
       set((s) => pushHistory(s, { ...s.scene, backgroundAudioUrl, backgroundAudioName })),
     clearBackgroundAudio: () =>
-      set((s) => pushHistory(s, { ...s.scene, backgroundAudioUrl: null, backgroundAudioName: null }))
+      set((s) => pushHistory(s, { ...s.scene, backgroundAudioUrl: null, backgroundAudioName: null })),
+    setAudioFadeIn: (audioFadeIn) =>
+      set((s) => pushHistory(s, { ...s.scene, audioFadeIn: Math.max(0, Math.min(10, audioFadeIn)) }, "audioFade")),
+    setAudioFadeOut: (audioFadeOut) =>
+      set((s) => pushHistory(s, { ...s.scene, audioFadeOut: Math.max(0, Math.min(10, audioFadeOut)) }, "audioFade"))
   };
 }

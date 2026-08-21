@@ -301,7 +301,9 @@
     "distributeNeedsFrames": "Needs 3 frames",
     "distributeVertical": "Distribute vertically",
     "lockLayer": "Lock layer",
-    "unlockLayer": "Unlock layer"
+    "unlockLayer": "Unlock layer",
+    "ctxAddBlur": "Add blur",
+    "addBlur": "Add blur"
   },
   "frame": {
     "none": "কোনোটি নয়",
@@ -381,7 +383,10 @@
     "alignBottom": "Align bottom",
     "distributeH": "Distribute horizontally",
     "distributeV": "Distribute vertically",
-    "alignCenterH": "Center horizontally"
+    "alignCenterH": "Center horizontally",
+    "blur": "Blur",
+    "blurStrength": "Blur strength ({val}px)",
+    "stickers": "Stickers"
   },
   "video": {
     "options": "ভিডিও বিকল্প",
@@ -397,7 +402,10 @@
     "qualityHigh": "উচ্চ (ভালো বিবরণ)",
     "backgroundAudio": "ব্যাকগ্রাউন্ড অডিও",
     "uploadAudio": "অডিও আপলোড করুন",
-    "removeAudio": "অডিও সরান"
+    "removeAudio": "অডিও সরান",
+    "speed": "Speed ({val}×)",
+    "audioFadeIn": "Fade in ({val}s)",
+    "audioFadeOut": "Fade out ({val}s)"
   },
   "videoTrim": {
     "trim": "কাটুন",

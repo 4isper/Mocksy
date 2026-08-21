@@ -43,6 +43,8 @@ export const initialScene: EditorScene = {
   backgroundBlur: 0,
   backgroundAudioUrl: null,
   backgroundAudioName: null,
+  audioFadeIn: 0,
+  audioFadeOut: 0,
   annotations: [],
   watermarkText: "Mocksy",
   watermarkEnabled: false,

@@ -43,6 +43,8 @@ export type LayersSlice = Pick<
   | "setBlur"
   | "setGrayscale"
   | "setOpacity"
+  | "setVideoQuality"
+  | "setPlaybackSpeed"
   | "setShadowOpacity"
   | "setBorderRadius"
   | "setTiltX"
@@ -326,6 +328,12 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
           }, s.activeLayerId)
         }, "trimEnd")
       ),
-    setVideoQuality: (videoQuality) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoQuality }, s.activeLayerId) }))
+    setVideoQuality: (videoQuality) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { videoQuality }, s.activeLayerId) })),
+    setPlaybackSpeed: (playbackSpeed) =>
+      set((s) => {
+        if (locked(s)) return {};
+        const clamped = Math.max(0.5, Math.min(2, playbackSpeed));
+        return pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { playbackSpeed: clamped }, s.activeLayerId) }, "playbackSpeed");
+      })
   };
 }

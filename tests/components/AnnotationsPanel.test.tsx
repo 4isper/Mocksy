@@ -315,4 +315,25 @@ describe("AnnotationsPanel remaining controls", () => {
     render(<AnnotationsPanel />);
     expect(screen.getByRole("button", { name: "annotation.distributeH" })).toBeDisabled();
   });
+
+  it("adds a blur annotation from the palette row", async () => {
+    render(<AnnotationsPanel />);
+    await userEvent.click(screen.getByText("editor.addBlur"));
+    const ann = useEditorStore.getState().scene.annotations;
+    expect(ann).toHaveLength(1);
+    expect(ann[0]!.type).toBe("blur");
+    expect(ann[0]!.strokeWidth).toBe(12);
+  });
+
+  it("adds an emoji sticker as a large centered text annotation", async () => {
+    render(<AnnotationsPanel />);
+    await userEvent.click(screen.getByRole("button", { name: 'annotation.stickers: 🔥' }));
+    const ann = useEditorStore.getState().scene.annotations;
+    expect(ann).toHaveLength(1);
+    expect(ann[0]!.type).toBe("text");
+    expect(ann[0]!.text).toBe("🔥");
+    expect(ann[0]!.fontSize).toBe(96);
+    expect(ann[0]!.textAlign).toBe("center");
+    expect(ann[0]!.bgColor).toBeNull();
+  });
 });

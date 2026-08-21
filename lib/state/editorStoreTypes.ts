@@ -217,8 +217,14 @@ export interface EditorStoreState {
   setVideoTrimStart: (time: number) => void;
   setVideoTrimEnd: (time: number) => void;
   setVideoQuality: (quality: VideoQuality) => void;
+  /** Sets the active layer's video playback speed (clamped to 0.5–2). */
+  setPlaybackSpeed: (speed: number) => void;
   setBackgroundAudio: (url: string, name: string) => void;
   clearBackgroundAudio: () => void;
+  /** Sets the background audio fade-in length, seconds (clamped 0–10). */
+  setAudioFadeIn: (seconds: number) => void;
+  /** Sets the background audio fade-out length, seconds (clamped 0–10). */
+  setAudioFadeOut: (seconds: number) => void;
 }
 
 /** The functional-update `set` that Zustand hands to slice factories. */

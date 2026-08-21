@@ -143,6 +143,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           { id: "add-arrow", label: t("editor.ctxAddArrow"), onSelect: () => addAnnotation("arrow") },
           { id: "add-rect", label: t("editor.ctxAddRect"), onSelect: () => addAnnotation("rect") },
           { id: "add-circle", label: t("editor.ctxAddCircle"), onSelect: () => addAnnotation("circle") },
+          { id: "add-blur", label: t("editor.ctxAddBlur"), onSelect: () => addAnnotation("blur") },
           { id: "deselect", label: t("editor.ctxDeselect"), separatorBefore: true, onSelect: () => {
             selectAnnotation(null);
             selectFrameInstance(null);

@@ -301,7 +301,9 @@
     "distributeNeedsFrames": "Needs 3 frames",
     "distributeVertical": "Distribute vertically",
     "lockLayer": "Lock layer",
-    "unlockLayer": "Unlock layer"
+    "unlockLayer": "Unlock layer",
+    "ctxAddBlur": "Add blur",
+    "addBlur": "Add blur"
   },
   "frame": {
     "none": "कोई नहीं",
@@ -381,7 +383,10 @@
     "alignBottom": "Align bottom",
     "distributeH": "Distribute horizontally",
     "distributeV": "Distribute vertically",
-    "alignCenterH": "Center horizontally"
+    "alignCenterH": "Center horizontally",
+    "blur": "Blur",
+    "blurStrength": "Blur strength ({val}px)",
+    "stickers": "Stickers"
   },
   "video": {
     "options": "वीडियो विकल्प",
@@ -397,7 +402,10 @@
     "qualityHigh": "उच्च (सर्वश्रेष्ठ विवरण)",
     "backgroundAudio": "पृष्ठभूमि ऑडियो",
     "uploadAudio": "ऑडियो अपलोड करें",
-    "removeAudio": "ऑडियो हटाएं"
+    "removeAudio": "ऑडियो हटाएं",
+    "speed": "Speed ({val}×)",
+    "audioFadeIn": "Fade in ({val}s)",
+    "audioFadeOut": "Fade out ({val}s)"
   },
   "videoTrim": {
     "trim": "काटें",

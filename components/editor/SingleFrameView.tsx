@@ -63,6 +63,19 @@ export function SingleFrameView({
       }
     }
   }, [videoCurrentTime, videoRef]);
+  // Mirror the active layer's playback speed onto the preview element (the
+  // export pipeline sets it independently on its own detached <video>).
+  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
+  const playbackSpeed = Math.max(0.5, Math.min(2, activeLayer?.playbackSpeed ?? 1));
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || video.playbackRate === playbackSpeed) return;
+    try {
+      video.playbackRate = playbackSpeed;
+    } catch {
+      // Not all engines allow changing the rate before metadata; retried below.
+    }
+  }, [playbackSpeed, videoRef]);
   return (
     <div
       ref={frameRef}
@@ -106,6 +119,7 @@ export function SingleFrameView({
                   const current = Math.min(layer.videoPosterTime, duration);
                   e.currentTarget.currentTime = current;
                   setVideoCurrentTime(current);
+                  e.currentTarget.playbackRate = Math.max(0.5, Math.min(2, layer.playbackSpeed ?? 1));
                 }}
                 onTimeUpdate={(e) => {
                   const t = e.currentTarget.currentTime;

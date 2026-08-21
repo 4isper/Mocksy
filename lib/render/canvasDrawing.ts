@@ -127,6 +127,27 @@ export function drawAnnotations(
       ctx.beginPath();
       ctx.ellipse(bx + bw / 2, by + bh / 2, Math.max(0, bw / 2 - sw / 2), Math.max(0, bh / 2 - sw / 2), 0, 0, Math.PI * 2);
       ctx.stroke();
+    } else if (a.type === "blur") {
+      // Frosted region: snapshot what's already painted (background + frames +
+      // media) and redraw it blurred inside the rounded rect — the canvas
+      // equivalent of the preview's backdrop-filter.
+      const source = typeof document !== "undefined" ? (ctx.canvas as HTMLCanvasElement | undefined) : undefined;
+      if (source && bw > 0 && bh > 0) {
+        const snap = document.createElement("canvas");
+        snap.width = source.width;
+        snap.height = source.height;
+        const sctx = snap.getContext("2d");
+        if (sctx) {
+          sctx.drawImage(source, 0, 0);
+          ctx.save();
+          roundedRectPath(ctx, bx, by, bw, bh, Math.min(bw, bh) * 0.12);
+          ctx.clip();
+          // Matches CSS blur(Npx)/SVG stdDeviation N at the same strength.
+          ctx.filter = `blur(${Math.max(1, a.strokeWidth * dpiScale)}px)`;
+          ctx.drawImage(snap, 0, 0);
+          ctx.restore();
+        }
+      }
     } else {
       const startX = a.x * width;
       const startY = a.y * height;

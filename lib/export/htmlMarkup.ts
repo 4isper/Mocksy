@@ -66,8 +66,13 @@ function annotationsHtml(scene: EditorScene, arW: number, arH: number): string {
       const align = a.textAlign ?? "left";
        const bgStyle = a.bgColor ? `;background:${a.bgColor};padding:${a.bgPadding ?? 0}px;border-radius:${a.bgRadius ?? 0}px` : "";
        out += `<div class="anno anno-text" style="left:${num(bx)}%;top:${num(by)}%;width:${num(bw)}%;font-size:${num(a.fontSize)}px;color:${a.color};font-family:${a.fontFamily ?? "Inter, system-ui, sans-serif"};font-weight:${weight};font-style:${style};text-align:${align}${bgStyle}">${escapeHtml(a.text)}</div>`;
-    } else if (a.type === "rect") {
+    } else     if (a.type === "rect") {
       out += `<div class="anno" style="left:${num(bx)}%;top:${num(by)}%;width:${num(bw)}%;height:${num(bh)}%;border:${Math.max(1, a.strokeWidth)}px solid ${a.color}"></div>`;
+    } else if (a.type === "blur") {
+      // Frosted-glass region: blurs whatever the page paints beneath it —
+      // mirrors backdrop-filter in the live preview and the canvas export's
+      // self-blur pass.
+      out += `<div class="anno" style="left:${num(bx)}%;top:${num(by)}%;width:${num(bw)}%;height:${num(bh)}%;border-radius:8px;-webkit-backdrop-filter:blur(${Math.max(1, a.strokeWidth)}px);backdrop-filter:blur(${Math.max(1, a.strokeWidth)}px)"></div>`;
     } else {
       const sx = a.x * arW;
       const sy = a.y * arH;
@@ -156,6 +161,12 @@ export function buildHtmlSnippet(scene: EditorScene, opts: HtmlSnippetOptions, a
     scene.animationDurationMs / 1000,
     tiltPrefix
   );
+  // The playback-rate attribute doesn't exist in HTML; a one-liner applies the
+  // layer speed to every embedded video once the document boots.
+  const speed = Math.max(0.5, Math.min(2, activeLayer?.playbackSpeed ?? 1));
+  const playbackScript = opts.mediaType === "video" && speed !== 1
+    ? `\n<script>document.querySelectorAll("video").forEach(function(v){v.playbackRate=${speed};});</script>`
+    : "";
 
   return `<!doctype html>
 <html lang="en">
@@ -237,6 +248,7 @@ ${animationCss}
   ${annotationsHtml(scene, arW, arH)}
   ${watermark}
 </div>
+${playbackScript}
 </body>
 </html>
 `;

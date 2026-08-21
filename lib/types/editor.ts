@@ -4,16 +4,19 @@ export type GradientType = "linear" | "radial";
 
 export type PatternId = "dots" | "grid" | "diagonal" | "noise" | "plus" | "cross" | "triangle";
 
-export type AnnotationType = "text" | "arrow" | "rect" | "circle";
+export type AnnotationType = "text" | "arrow" | "rect" | "circle" | "blur";
 
 export type FontWeight = "normal" | "bold";
 export type FontStyle = "normal" | "italic";
 export type TextAlign = "left" | "center" | "right";
 
-/** A non-media overlay drawn on top of the mockup (text, arrow, rectangle).
+/** A non-media overlay drawn on top of the mockup (text, arrow, rectangle,
+ *  blur region).
  *  Position and size are fractions (0..1) of the canvas so they scale with the
  *  preview and the exported PNG/video at any pixel ratio. For arrows, (x, y) is
- *  the start point and (x + w, y + h) the end, so negative w/h flip direction. */
+ *  the start point and (x + w, y + h) the end, so negative w/h flip direction.
+ *  For "blur", `strokeWidth` is the blur radius in px and the region is a
+ *  rounded rect that pixel-blurs whatever is drawn beneath it. */
 export interface Annotation {
   id: string;
   type: AnnotationType;
@@ -183,6 +186,9 @@ export interface MediaLayer {
   videoTrimStart: number;
   videoTrimEnd: number;
   videoQuality: VideoQuality;
+  /** Playback speed of the layer's video, 0.5–2 (1 = native). Affects the
+   *  live preview, the recorded export length and the HTML embed. */
+  playbackSpeed?: number;
 }
 
 export interface EditorScene {
@@ -220,6 +226,10 @@ export interface EditorScene {
   backgroundAudioUrl: string | null;
   /** Original filename of the background audio, for display. */
   backgroundAudioName: string | null;
+  /** Linear fade-in applied to the background audio at export start, seconds 0–10. */
+  audioFadeIn: number;
+  /** Linear fade-out applied to the background audio at export end, seconds 0–10. */
+  audioFadeOut: number;
   watermarkText: string;
   watermarkEnabled: boolean;
   watermarkPosition: WatermarkPosition;

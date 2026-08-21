@@ -1,4 +1,4 @@
-import type { EditorScene } from "@/lib/types/editor";
+import type { Annotation, EditorScene } from "@/lib/types/editor";
 import { computeFrameBox, computeFrameInstances, type FrameBox } from "@/lib/render/frameGeometry";
 import { frameViewBox, getFrameSpec, DEFAULT_VIEWBOX } from "@/lib/render/frames";
 import { tiltMatrixSvg } from "@/lib/render/tilt";
@@ -13,6 +13,11 @@ import { escapeMarkup, round2 } from "@/lib/export/markupUtils";
 function num(n: number): string {
   return round2(n);
 }
+
+/** Running index of blur regions while the markup pass walks the annotations.
+ *  Reset at the start of every buildSvgMarkup call; must stay in lockstep with
+ *  the defs builder, which iterates the same annotations in the same order. */
+let blurRegionIndex = 0;
 
 export interface SvgFrameGroup {
   /** Canvas-space frame geometry (design px, computed with pixelRatio 1). */
@@ -221,6 +226,16 @@ function frameGroupInner(scene: EditorScene, group: SvgFrameGroup): string {
   return frame;
 }
 
+/** Geometry of one blur region in canvas units + its filter radius. Shared by
+ *  the defs builder and the markup pass so ids stay aligned. */
+function blurRegionGeometry(a: Annotation, width: number, height: number) {
+  const bx = Math.min(a.x, a.x + a.w) * width;
+  const by = Math.min(a.y, a.y + a.h) * height;
+  const bw = Math.abs(a.w) * width;
+  const bh = Math.abs(a.h) * height;
+  return { bx, by, bw, bh, radius: Math.max(1, a.strokeWidth) };
+}
+
 function annotationsMarkup(scene: EditorScene, width: number, height: number): string {
   if (scene.annotations.length === 0) return "";
   let out = "";
@@ -229,6 +244,14 @@ function annotationsMarkup(scene: EditorScene, width: number, height: number): s
     const by = Math.min(a.y, a.y + a.h) * height;
     const bw = Math.abs(a.w) * width;
     const bh = Math.abs(a.h) * height;
+    if (a.type === "blur") {
+      // Frosted region: replay the scene group through a Gaussian blur,
+      // clipped to the rect. The scene is emitted once as #mocksy-scene and
+      // referenced via <use>, so media data URLs are never duplicated.
+      const idx = blurRegionIndex++;
+      out += `<g clip-path="url(#anno-blur-clip-${idx})"><use href="#mocksy-scene" filter="url(#anno-blur-${idx})"/></g>`;
+      continue;
+    }
     if (a.type === "text") {
       const weight = a.fontWeight === "normal" ? "400" : "bold";
       const style = a.fontStyle === "italic" ? ' font-style="italic"' : "";
@@ -320,11 +343,23 @@ export function buildSvgMarkup(scene: EditorScene, opts: SvgExportOptions): stri
   const { width, height, groups, zoom = 1 } = opts;
   const shadowDy = num(RENDER.shadowOffsetY * zoom);
   const shadowStd = num((RENDER.shadowBlur / 2) * zoom);
+  // Blur-region ids are shared between the defs below and the markup pass —
+  // keep the counter in lockstep.
+  blurRegionIndex = 0;
 
   const defs = [
     `<filter id="frame-shadow" x="-60%" y="-250%" width="220%" height="500%"><feDropShadow dx="0" dy="${shadowDy}" stdDeviation="${shadowStd}" flood-color="#000" flood-opacity="${scene.shadowOpacity}"/></filter>`,
     `<filter id="anno-shadow" x="-50%" y="-100%" width="200%" height="300%"><feDropShadow dx="0" dy="${RENDER.annoShadowOffsetY}" stdDeviation="${RENDER.annoShadowBlur / 2}" flood-color="#000" flood-opacity="0.5"/></filter>`,
     scene.backgroundBlur > 0 ? `<filter id="bg-blur"><feGaussianBlur stdDeviation="${num(scene.backgroundBlur / 2)}"/></filter>` : "",
+    ...scene.annotations.flatMap((a) => {
+      if (a.type !== "blur") return [];
+      const idx = blurRegionIndex++;
+      const { bx, by, bw, bh, radius } = blurRegionGeometry(a, width, height);
+      return [
+        `<clipPath id="anno-blur-clip-${idx}"><rect x="${num(bx)}" y="${num(by)}" width="${num(bw)}" height="${num(bh)}" rx="${num(Math.min(bw, bh) * 0.12)}"/></clipPath>`,
+        `<filter id="anno-blur-${idx}" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${num(radius)}"/></filter>`
+      ];
+    }),
     scene.screenGlare
       ? `<linearGradient id="glare-sweep" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.32"/><stop offset="0.3" stop-color="#fff" stop-opacity="0.14"/><stop offset="0.52" stop-color="#fff" stop-opacity="0"/></linearGradient>`
       : "",
@@ -343,12 +378,20 @@ export function buildSvgMarkup(scene: EditorScene, opts: SvgExportOptions): stri
     opts.fontCss ? `<style>${opts.fontCss}</style>` : ""
   ].filter(Boolean);
 
+  // The whole pre-annotation scene becomes a reusable group so blur regions
+  // can replay it through their filters via <use>.
+  const sceneBase =
+    `<g id="mocksy-scene">` +
+    backgroundMarkup(scene, opts) +
+    (scene.floorReflection ? groups.map((g, i) => reflectionGroupMarkup(scene, g, i, groups.length)).join("") : "") +
+    groups.map((g, i) => frameGroupMarkup(scene, g, i)).join("") +
+    `</g>`;
+  blurRegionIndex = 0;
+
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${num(width)} ${num(height)}" width="${num(width)}" height="${num(height)}">`,
     `<defs>${defs.join("")}</defs>`,
-    backgroundMarkup(scene, opts),
-    ...(scene.floorReflection ? groups.map((g, i) => reflectionGroupMarkup(scene, g, i, groups.length)) : []),
-    ...groups.map((g, i) => frameGroupMarkup(scene, g, i)),
+    sceneBase,
     annotationsMarkup(scene, width, height),
     watermarkMarkup(scene, opts),
     `</svg>`

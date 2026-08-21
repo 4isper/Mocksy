@@ -73,9 +73,12 @@ export async function recordCanvasToWebm(
     throw err;
   }
 
-  // Background audio: if the user uploaded an audio track, capture it and
-  // use it instead of any video-layer audio (replaces, not mixes).
+  // Background audio: if the user uploaded an audio track, capture it through
+  // a gain node (so fade in/out can be applied) instead of any video-layer
+  // audio (replaces, not mixes).
   let bgAudioEl: HTMLAudioElement | null = null;
+  let bgAudioCtx: AudioContext | null = null;
+  let bgGain: GainNode | null = null;
   if (scene.backgroundAudioUrl) {
     try {
       bgAudioEl = document.createElement("audio");
@@ -83,11 +86,24 @@ export async function recordCanvasToWebm(
       bgAudioEl.loop = true;
       bgAudioEl.crossOrigin = "anonymous";
       await bgAudioEl.play();
-      const bgStream = (bgAudioEl as HTMLAudioElement & { captureStream: () => MediaStream }).captureStream();
-      const bgTracks = bgStream.getAudioTracks();
-      if (bgTracks.length > 0) {
-        const videoTrack = stream.getVideoTracks()[0];
-        if (videoTrack) {
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack && typeof AudioContext !== "undefined") {
+        // Route element → gain → destination so linear ramps shape the fades.
+        bgAudioCtx = new AudioContext();
+        const source = bgAudioCtx.createMediaElementSource(bgAudioEl);
+        bgGain = bgAudioCtx.createGain();
+        bgGain.gain.value = 1;
+        const dest = bgAudioCtx.createMediaStreamDestination();
+        source.connect(bgGain);
+        bgGain.connect(dest);
+        const fadeTracks = dest.stream.getAudioTracks();
+        if (fadeTracks.length > 0) {
+          stream = new MediaStream([videoTrack, ...fadeTracks]);
+        }
+      } else if (videoTrack) {
+        const bgStream = (bgAudioEl as HTMLAudioElement & { captureStream: () => MediaStream }).captureStream();
+        const bgTracks = bgStream.getAudioTracks();
+        if (bgTracks.length > 0) {
           stream = new MediaStream([videoTrack, ...bgTracks]);
         }
       }
@@ -123,12 +139,29 @@ export async function recordCanvasToWebm(
   await new Promise<void>((resolve, reject) => {
     recorder.onstop = () => resolve();
     recorder.onerror = () => reject(new Error("MediaRecorder failed"));
+    // Schedule the background-audio fades against the recording timeline:
+    // linear ramp from silence after start, and to silence before the end.
+    if (bgGain && bgAudioCtx) {
+      const t0 = bgAudioCtx.currentTime;
+      const durationSec = Math.max(0.1, duration);
+      const fadeIn = Math.max(0, Math.min(durationSec / 2, scene.audioFadeIn || 0));
+      const fadeOut = Math.max(0, Math.min(durationSec / 2, scene.audioFadeOut || 0));
+      if (fadeIn > 0) {
+        bgGain.gain.setValueAtTime(0.0001, t0);
+        bgGain.gain.linearRampToValueAtTime(1, t0 + fadeIn);
+      }
+      if (fadeOut > 0) {
+        bgGain.gain.setValueAtTime(1, t0 + Math.max(fadeIn, durationSec - fadeOut));
+        bgGain.gain.linearRampToValueAtTime(0.0001, t0 + durationSec);
+      }
+    }
     recorder.start(200);
 
     let raf = 0;
     const startedAt = performance.now();
     if (media instanceof HTMLVideoElement) {
       media.currentTime = start;
+      media.playbackRate = Math.max(0.5, Math.min(2, activeForCapture?.playbackSpeed ?? 1));
       media.muted = activeForCapture?.videoMuted !== false;
       media.play().catch(() => null);
     }
@@ -170,8 +203,15 @@ export async function recordCanvasToWebm(
 
   canvas.remove();
   // Free the capture stream's tracks so the canvas track doesn't leak between
-  // exports.
+  // exports, and tear down the audio graph.
   stream.getTracks().forEach((track) => track.stop());
+  if (bgAudioCtx) {
+    try {
+      void bgAudioCtx.close();
+    } catch {
+      // already closed
+    }
+  }
   if (bgAudioEl) {
     bgAudioEl.pause();
     bgAudioEl.remove();

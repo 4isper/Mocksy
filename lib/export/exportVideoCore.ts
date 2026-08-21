@@ -61,6 +61,7 @@ export async function captureWebm(
     sourceVideo.src = activeLayer.mediaUrl;
     sourceVideo.crossOrigin = "anonymous";
     sourceVideo.muted = activeLayer?.videoMuted !== false;
+    sourceVideo.playbackRate = Math.max(0.5, Math.min(2, activeLayer.playbackSpeed ?? 1));
     sourceVideo.playsInline = true;
     await new Promise<void>((resolve, reject) => {
       sourceVideo!.onloadedmetadata = () => {
@@ -106,6 +107,7 @@ export async function captureWebm(
             v.src = layer.mediaUrl;
             v.crossOrigin = "anonymous";
             v.muted = true;
+            v.playbackRate = Math.max(0.5, Math.min(2, layer.playbackSpeed ?? 1));
             v.playsInline = true;
             await new Promise<void>((resolve, reject) => {
               v.onloadedmetadata = () => {

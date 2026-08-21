@@ -301,7 +301,9 @@
     "distributeNeedsFrames": "Needs 3 frames",
     "distributeVertical": "Distribute vertically",
     "lockLayer": "Lock layer",
-    "unlockLayer": "Unlock layer"
+    "unlockLayer": "Unlock layer",
+    "ctxAddBlur": "Add blur",
+    "addBlur": "Add blur"
   },
   "frame": {
     "none": "없음",
@@ -381,7 +383,10 @@
     "alignBottom": "Align bottom",
     "distributeH": "Distribute horizontally",
     "distributeV": "Distribute vertically",
-    "alignCenterH": "Center horizontally"
+    "alignCenterH": "Center horizontally",
+    "blur": "Blur",
+    "blurStrength": "Blur strength ({val}px)",
+    "stickers": "Stickers"
   },
   "video": {
     "options": "비디오 옵션",
@@ -397,7 +402,10 @@
     "qualityHigh": "높음 (최고 세부 사항)",
     "backgroundAudio": "배경 오디오",
     "uploadAudio": "오디오 업로드",
-    "removeAudio": "오디오 제거"
+    "removeAudio": "오디오 제거",
+    "speed": "Speed ({val}×)",
+    "audioFadeIn": "Fade in ({val}s)",
+    "audioFadeOut": "Fade out ({val}s)"
   },
   "videoTrim": {
     "trim": "자르기",

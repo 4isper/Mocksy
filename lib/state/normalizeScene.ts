@@ -30,7 +30,7 @@ const MEDIA_TYPES: MediaType[] = ["none", "image", "video"];
 const MEDIA_FITS = ["cover", "contain"] as const;
 const ANIMATIONS = ANIMATION_PRESETS;
 const ANIMATION_EASINGS: AnimationEasing[] = ["linear", "easeInOut", "easeOut", "bounce", "spring"];
-const ANNOTATION_TYPES: AnnotationType[] = ["text", "arrow", "rect", "circle"];
+const ANNOTATION_TYPES: AnnotationType[] = ["text", "arrow", "rect", "circle", "blur"];
 const SCREEN_CHROME_STYLES: ScreenChromeStyle[] = ["lock", "home", "statusBar"];
 const SCREEN_CHROME_THEMES: ScreenChromeTheme[] = ["dark", "light"];
 
@@ -136,7 +136,8 @@ function normalizeLayer(raw: unknown, fallback: MediaLayer): MediaLayer {
     videoDuration: num(r.videoDuration, fallback.videoDuration, 0, 1e6),
     videoTrimStart: num(r.videoTrimStart, fallback.videoTrimStart, 0, 1e6),
     videoTrimEnd: num(r.videoTrimEnd, fallback.videoTrimEnd, 0, 1e6),
-    videoQuality: pick(r.videoQuality, ["low", "medium", "high"], fallback.videoQuality)
+    videoQuality: pick(r.videoQuality, ["low", "medium", "high"], fallback.videoQuality),
+    playbackSpeed: num(r.playbackSpeed, fallback.playbackSpeed ?? 1, 0.5, 2)
   };
 }
 
@@ -241,6 +242,8 @@ export function normalizeScene(raw: unknown): EditorScene {
     backgroundBlur: num(r.backgroundBlur, initialScene.backgroundBlur, 0, 40),
     backgroundAudioUrl: str(r.backgroundAudioUrl, initialScene.backgroundAudioUrl),
     backgroundAudioName: str(r.backgroundAudioName, initialScene.backgroundAudioName),
+    audioFadeIn: num(r.audioFadeIn, initialScene.audioFadeIn, 0, 10),
+    audioFadeOut: num(r.audioFadeOut, initialScene.audioFadeOut, 0, 10),
     watermarkText: str(r.watermarkText, initialScene.watermarkText) ?? initialScene.watermarkText,
     watermarkEnabled: r.watermarkEnabled === true,
     aspectRatio: str(r.aspectRatio, initialScene.aspectRatio) ?? initialScene.aspectRatio,

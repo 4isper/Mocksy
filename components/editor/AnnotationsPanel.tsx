@@ -9,13 +9,16 @@ import { alignAnnotations, distributeAnnotations, type AlignOp, type DistributeO
 import { AnnotationEditor } from "@/components/editor/AnnotationEditor";
 import { ClearAnnotationsDialog } from "@/components/editor/ClearAnnotationsDialog";
 
+const STICKER_EMOJIS = ["😀", "🔥", "💯", "👍", "🎯", "❤️", "✨", "🚀"];
+
 export function AnnotationsPanel() {
   const t = useTranslations();
   const TYPE_LABELS: Record<AnnotationType, string> = {
     text: t("annotation.text"),
     arrow: t("annotation.arrow"),
     rect: t("annotation.rect"),
-    circle: t("annotation.circle")
+    circle: t("annotation.circle"),
+    blur: t("annotation.blur")
   };
   const scene = useEditorStore((s) => s.scene);
   const selectedAnnotationId = useEditorStore((s) => s.selectedAnnotationId);
@@ -26,6 +29,16 @@ export function AnnotationsPanel() {
   const clearAnnotations = useEditorStore((s) => s.clearAnnotations);
   const [confirmClear, setConfirmClear] = useState(false);
   const clearTrapRef = useFocusTrap(confirmClear);
+
+  // Quick stickers: a text annotation pre-filled with an emoji at display
+  // size. Reuses the store synchronously right after addAnnotation selects
+  // the new annotation.
+  const addSticker = (emoji: string) => {
+    addAnnotation("text");
+    const st = useEditorStore.getState();
+    const id = st.selectedAnnotationId ?? st.scene.annotations[st.scene.annotations.length - 1]?.id;
+    if (id) st.updateAnnotation(id, { text: emoji, fontSize: 96, textAlign: "center", bgColor: null });
+  };
 
   const selected = scene.annotations.find((a) => a.id === selectedAnnotationId) ?? null;
   const multiSelected = scene.annotations.filter((a) => selectedAnnotationIds.includes(a.id));
@@ -54,6 +67,17 @@ export function AnnotationsPanel() {
         <button type="button" onClick={() => addAnnotation("circle")}>
           {t("editor.addCircle")}
         </button>
+        <button type="button" onClick={() => addAnnotation("blur")}>
+          {t("editor.addBlur")}
+        </button>
+      </div>
+
+      <div className="segmented" role="group" aria-label={t("annotation.stickers")}>
+        {STICKER_EMOJIS.map((emoji) => (
+          <button key={emoji} type="button" aria-label={`${t("annotation.stickers")}: ${emoji}`} onClick={() => addSticker(emoji)}>
+            {emoji}
+          </button>
+        ))}
       </div>
 
       {selectedAnnotationIds.length > 1 ? (

@@ -202,6 +202,8 @@
     "ctxAddArrow": "Add arrow",
     "ctxAddRect": "Add rectangle",
     "ctxAddCircle": "Add circle",
+    "ctxAddBlur": "Add blur",
+    "addBlur": "Add blur",
     "fullscreenTitle": "Full-screen preview (F)",
     "exitFullscreen": "Exit full screen (Esc)",
     "resetCancel": "Cancel",
@@ -352,6 +354,9 @@
     "arrow": "Arrow",
     "rect": "Box",
     "circle": "Circle",
+    "blur": "Blur",
+    "blurStrength": "Blur strength ({val}px)",
+    "stickers": "Stickers",
     "addAnnotation": "Add annotation",
     "addCallouts": "Add callouts, arrows or boxes to annotate the mockup. Drag them on the canvas to reposition.",
     "editHint": "Drag on the canvas to move, use the corner handle to resize, or arrow keys to nudge (Alt+arrows to resize).",
@@ -400,7 +405,10 @@
     "qualityHigh": "High (best detail)",
     "backgroundAudio": "Background audio",
     "uploadAudio": "Upload audio",
-    "removeAudio": "Remove audio"
+    "removeAudio": "Remove audio",
+    "speed": "Speed ({val}×)",
+    "audioFadeIn": "Fade in ({val}s)",
+    "audioFadeOut": "Fade out ({val}s)"
   },
   "videoTrim": {
     "trim": "Trim",

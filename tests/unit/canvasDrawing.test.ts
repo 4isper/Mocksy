@@ -114,6 +114,8 @@ function scene(overrides: Partial<EditorScene> = {}): EditorScene {
     patternId: null,
     backgroundAudioUrl: null,
     backgroundAudioName: null,
+    audioFadeIn: 0,
+    audioFadeOut: 0,
     animationDurationMs: 3000,
     screen: { enabled: false, style: "lock", theme: "dark", showStatusBar: true, showClock: true, showDate: true, showDock: true, showHomeIndicator: true, time: "9:41", date: "Tuesday, August 4" },
     ...overrides

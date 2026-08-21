@@ -19,8 +19,11 @@ export function VideoOptions() {
     setVideoPosterTime,
     setVideoCurrentTime,
     setVideoQuality,
+    setPlaybackSpeed,
     setBackgroundAudio,
-    clearBackgroundAudio
+    clearBackgroundAudio,
+    setAudioFadeIn,
+    setAudioFadeOut
   } = useEditorStore(
     useShallow((s) => ({
       scene: s.scene,
@@ -30,8 +33,11 @@ export function VideoOptions() {
       setVideoPosterTime: s.setVideoPosterTime,
       setVideoCurrentTime: s.setVideoCurrentTime,
       setVideoQuality: s.setVideoQuality,
+      setPlaybackSpeed: s.setPlaybackSpeed,
       setBackgroundAudio: s.setBackgroundAudio,
-      clearBackgroundAudio: s.clearBackgroundAudio
+      clearBackgroundAudio: s.clearBackgroundAudio,
+      setAudioFadeIn: s.setAudioFadeIn,
+      setAudioFadeOut: s.setAudioFadeOut
     }))
   );
   const videoCurrentTime = useEditorStore((s) => s.videoCurrentTime);
@@ -106,6 +112,20 @@ export function VideoOptions() {
           </label>
           <VideoTrimControl duration={activeLayer.videoDuration} />
           <label className="field">
+            <span>{t("video.speed", { val: Math.max(0.5, Math.min(2, activeLayer.playbackSpeed ?? 1)) })}</span>
+            <input
+              className="range"
+              type="range"
+              min={0.5}
+              max={2}
+              step={0.25}
+              value={Math.max(0.5, Math.min(2, activeLayer.playbackSpeed ?? 1))}
+              aria-label={t("video.speed", { val: Math.max(0.5, Math.min(2, activeLayer.playbackSpeed ?? 1)) })}
+              aria-valuetext={`${Math.max(0.5, Math.min(2, activeLayer.playbackSpeed ?? 1))}x`}
+              onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
+            />
+          </label>
+          <label className="field">
             <span>{t("video.exportQuality")}</span>
             <select
               className="select"
@@ -137,6 +157,38 @@ export function VideoOptions() {
                 />
               </label>
             )}
+            {scene.backgroundAudioUrl ? (
+              <>
+                <label className="field">
+                  <span>{t("video.audioFadeIn", { val: scene.audioFadeIn ?? 0 })}</span>
+                  <input
+                    className="range"
+                    type="range"
+                    min={0}
+                    max={10}
+                    step={0.5}
+                    value={scene.audioFadeIn ?? 0}
+                    aria-label={t("video.audioFadeIn", { val: scene.audioFadeIn ?? 0 })}
+                    aria-valuetext={`${scene.audioFadeIn ?? 0} seconds`}
+                    onChange={(e) => setAudioFadeIn(Number(e.target.value))}
+                  />
+                </label>
+                <label className="field">
+                  <span>{t("video.audioFadeOut", { val: scene.audioFadeOut ?? 0 })}</span>
+                  <input
+                    className="range"
+                    type="range"
+                    min={0}
+                    max={10}
+                    step={0.5}
+                    value={scene.audioFadeOut ?? 0}
+                    aria-label={t("video.audioFadeOut", { val: scene.audioFadeOut ?? 0 })}
+                    aria-valuetext={`${scene.audioFadeOut ?? 0} seconds`}
+                    onChange={(e) => setAudioFadeOut(Number(e.target.value))}
+                  />
+                </label>
+              </>
+            ) : null}
           </div>
         </div>
       ) : null}

@@ -301,7 +301,9 @@
     "distributeNeedsFrames": "Needs 3 frames",
     "distributeVertical": "Distribute vertically",
     "lockLayer": "Lock layer",
-    "unlockLayer": "Unlock layer"
+    "unlockLayer": "Unlock layer",
+    "ctxAddBlur": "Add blur",
+    "addBlur": "Add blur"
   },
   "frame": {
     "none": "ਕੋਈ ਨਹੀਂ",
@@ -381,7 +383,10 @@
     "alignBottom": "Align bottom",
     "distributeH": "Distribute horizontally",
     "distributeV": "Distribute vertically",
-    "alignCenterH": "Center horizontally"
+    "alignCenterH": "Center horizontally",
+    "blur": "Blur",
+    "blurStrength": "Blur strength ({val}px)",
+    "stickers": "Stickers"
   },
   "video": {
     "options": "ਵੀਡੀਓ ਵਿਕਲਪ",
@@ -397,7 +402,10 @@
     "qualityHigh": "ਉੱਚ (ਵਧੀਆ ਵਿਗਿਆਂਤ)",
     "backgroundAudio": "ਪਿੱਛੂ ਆਡੀਓ",
     "uploadAudio": "ਆਡੀਓ ਅਪਲੋਡ ਕਰੋ",
-    "removeAudio": "ਆਡੀਓ ਹਟਾਓ"
+    "removeAudio": "ਆਡੀਓ ਹਟਾਓ",
+    "speed": "Speed ({val}×)",
+    "audioFadeIn": "Fade in ({val}s)",
+    "audioFadeOut": "Fade out ({val}s)"
   },
   "videoTrim": {
     "trim": "ਕਾਟੋ",
