@@ -262,7 +262,9 @@
     "toggleVisibility": "Toggle visibility",
     "commandPaletteTitle": "Open command palette (⌘K)",
     "layoutNeedsFrames": "Add frames first",
-    "rotation": "Rotation"
+    "rotation": "Rotation",
+    "browserUrl": "Address bar URL",
+    "browserUrlPlaceholder": "example.com"
   },
   "frame": {
     "none": "无",
@@ -280,7 +282,8 @@
     "desktop": "桌面",
     "tablet": "平板",
     "watch": "手表",
-    "custom": "Custom"
+    "custom": "Custom",
+    "browser": "Browser"
   },
   "style": {
     "default": "默认",

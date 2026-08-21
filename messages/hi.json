@@ -262,7 +262,9 @@
     "toggleVisibility": "Toggle visibility",
     "commandPaletteTitle": "Open command palette (⌘K)",
     "layoutNeedsFrames": "Add frames first",
-    "rotation": "Rotation"
+    "rotation": "Rotation",
+    "browserUrl": "Address bar URL",
+    "browserUrlPlaceholder": "example.com"
   },
   "frame": {
     "none": "कोई नहीं",
@@ -280,7 +282,8 @@
     "desktop": "डेस्कटॉप",
     "tablet": "टैबलेट",
     "watch": "घड़ी",
-    "custom": "Custom"
+    "custom": "Custom",
+    "browser": "Browser"
   },
   "style": {
     "default": "डिफ़ॉल्ट",

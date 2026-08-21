@@ -246,6 +246,9 @@ export function normalizeScene(raw: unknown): EditorScene {
     watermarkImageUrl: str(r.watermarkImageUrl, initialScene.watermarkImageUrl),
     animationDurationMs: num(r.animationDurationMs, initialScene.animationDurationMs, 500, 20000),
     screen: normalizeScreenChrome(r.screen, initialScene.screen),
+    // Clamp the length so a crafted share URL can't bloat the scene with a
+    // megabyte-long "URL"; the address bar truncates visually anyway.
+    browserUrl: str(r.browserUrl, initialScene.browserUrl)?.slice(0, 200) ?? initialScene.browserUrl,
     annotations: Array.isArray(r.annotations)
       ? r.annotations.slice(0, MAX_ANNOTATIONS).map((a) =>
           normalizeAnnotation(a, {

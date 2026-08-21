@@ -344,6 +344,16 @@ describe("normalizeScene", () => {
     expect(s.screen.showHomeIndicator).toBe(false);
   });
 
+  it("normalizes browserUrl and falls back for invalid values", () => {
+    expect(normalizeScene({ browserUrl: "example.com" }).browserUrl).toBe("example.com");
+    expect(normalizeScene({}).browserUrl).toBe(initialScene.browserUrl);
+    expect(normalizeScene({ browserUrl: "" }).browserUrl).toBe(initialScene.browserUrl);
+    expect(normalizeScene({ browserUrl: 42 }).browserUrl).toBe(initialScene.browserUrl);
+    // Hostile payloads can't bloat the scene with an unbounded string.
+    const huge = normalizeScene({ browserUrl: "a".repeat(5000) });
+    expect(huge.browserUrl.length).toBe(200);
+  });
+
   it("caps oversized layers collection to avoid freezing on hostile payloads", () => {
     const huge = { layers: Array.from({ length: 5000 }, (_, i) => ({ id: `l${i}`, mediaUrl: "x" })) };
     const s = normalizeScene(huge);

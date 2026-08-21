@@ -262,7 +262,9 @@
     "toggleVisibility": "Toggle visibility",
     "commandPaletteTitle": "Open command palette (⌘K)",
     "layoutNeedsFrames": "Add frames first",
-    "rotation": "Rotation"
+    "rotation": "Rotation",
+    "browserUrl": "Address bar URL",
+    "browserUrlPlaceholder": "example.com"
   },
   "frame": {
     "none": "Yoxdur",
@@ -280,7 +282,8 @@
     "desktop": "Masaüstü",
     "tablet": "Planşet",
     "watch": "Saat",
-    "custom": "Custom"
+    "custom": "Custom",
+    "browser": "Browser"
   },
   "style": {
     "default": "Öntəyin",

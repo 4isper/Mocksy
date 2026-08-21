@@ -262,7 +262,9 @@
     "toggleVisibility": "Toggle visibility",
     "commandPaletteTitle": "Open command palette (⌘K)",
     "layoutNeedsFrames": "Add frames first",
-    "rotation": "Rotation"
+    "rotation": "Rotation",
+    "browserUrl": "Address bar URL",
+    "browserUrlPlaceholder": "example.com"
   },
   "frame": {
     "none": "Ekkert",
@@ -280,7 +282,8 @@
     "desktop": "Vettvangsskífur",
     "tablet": "Tafla",
     "watch": "Klás",
-    "custom": "Custom"
+    "custom": "Custom",
+    "browser": "Browser"
   },
   "style": {
     "default": "Sjálfgefið",

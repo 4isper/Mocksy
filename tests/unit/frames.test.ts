@@ -11,7 +11,7 @@ import {
 
 describe("FRAME_SPECS", () => {
   it("registers overlay assets for every SVG device skin", () => {
-    const overlays = ["iphone15", "iphone16pro", "pixel8pro", "galaxy24", "iphoneSE", "ipad", "galaxyTab", "macbook", "imac", "notebook"] as const;
+    const overlays = ["iphone15", "iphone16pro", "pixel8pro", "galaxy24", "iphoneSE", "ipad", "galaxyTab", "macbook", "imac", "notebook", "browser"] as const;
     for (const frame of overlays) {
       expect(FRAME_SPECS[frame].isOverlay, `${frame} should be an overlay`).toBe(true);
       expect(FRAME_SPECS[frame].asset, `${frame} should have an asset`).toMatch(/\.svg$/);
@@ -26,6 +26,7 @@ describe("FRAME_SPECS", () => {
     expect(FRAME_SPECS.macbook.asset).toMatch(/macbook\.svg$/);
     expect(FRAME_SPECS.imac.asset).toMatch(/imac\.svg$/);
     expect(FRAME_SPECS.notebook.asset).toMatch(/notebook\.svg$/);
+    expect(FRAME_SPECS.browser.asset).toMatch(/browser\.svg$/);
   });
 
   it("keeps CSS-only frames non-overlay", () => {
@@ -49,6 +50,7 @@ describe("FRAME_SPECS", () => {
     expect(FRAME_SPECS.macbook.aspectRatio).toBe("1600 / 1040");
     expect(FRAME_SPECS.imac.aspectRatio).toBe("1600 / 1420");
     expect(FRAME_SPECS.notebook.aspectRatio).toBe("1600 / 1000");
+    expect(FRAME_SPECS.browser.aspectRatio).toBe("1440 / 1000");
     expect(FRAME_SPECS.watch.aspectRatio).toBe("1 / 1");
     // "none" has no device shape, so it follows the scene aspect ratio.
     expect(FRAME_SPECS.none.aspectRatio).toBeNull();
@@ -62,6 +64,7 @@ describe("FRAME_SPECS", () => {
     expect(FRAME_SPECS.macbook.cutout).toEqual({ x: 44, y: 34, w: 1512, h: 944, rx: 6 });
     expect(FRAME_SPECS.imac.cutout).toEqual({ x: 70, y: 80, w: 1460, h: 821, rx: 10 });
     expect(FRAME_SPECS.notebook.cutout).toEqual({ x: 80, y: 40, w: 1440, h: 810, rx: 8 });
+    expect(FRAME_SPECS.browser.cutout).toEqual({ x: 0, y: 96, w: 1440, h: 904, rx: 20 });
   });
 
   it("defaults skins to the 390x844 viewBox unless overridden", () => {
@@ -73,6 +76,15 @@ describe("FRAME_SPECS", () => {
     expect(frameViewBox(FRAME_SPECS.macbook)).toEqual({ w: 1600, h: 1040 });
     expect(frameViewBox(FRAME_SPECS.imac)).toEqual({ w: 1600, h: 1420 });
     expect(frameViewBox(FRAME_SPECS.notebook)).toEqual({ w: 1600, h: 1000 });
+    expect(frameViewBox(FRAME_SPECS.browser)).toEqual({ w: 1440, h: 1000 });
+  });
+
+  it("marks the browser frame with a url bar for the renderers", () => {
+    expect(FRAME_SPECS.browser.urlBar).toBe(true);
+    for (const [frame, spec] of Object.entries(FRAME_SPECS)) {
+      if (frame === "browser") continue;
+      expect(spec.urlBar, `${frame} should not have a url bar`).toBeUndefined();
+    }
   });
 
   it("exposes every MockupFrame value through FRAME_ORDER", () => {
@@ -91,6 +103,7 @@ describe("FRAME_SPECS", () => {
       "macbook",
       "imac",
       "notebook",
+      "browser",
       "watch"
     ];
     expect(FRAME_ORDER).toEqual(expected);

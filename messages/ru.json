@@ -264,6 +264,8 @@
     "customFrameUpload": "Загрузите свой SVG-скин устройства",
     "customFrameUse": "Использовать загруженную рамку",
     "customFrameRemove": "Удалить свою рамку",
+    "browserUrl": "URL адресной строки",
+    "browserUrlPlaceholder": "example.com",
     "noLayers": "Нет слоёв.",
     "noAnnotations": "Нет аннотаций."
   },
@@ -280,6 +282,7 @@
     "macbook": "MacBook",
     "imac": "iMac",
     "notebook": "Ноутбук",
+    "browser": "Браузер",
     "desktop": "Desktop",
     "tablet": "Планшет",
     "watch": "Часы",

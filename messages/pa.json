@@ -262,7 +262,9 @@
     "toggleVisibility": "Toggle visibility",
     "commandPaletteTitle": "Open command palette (⌘K)",
     "layoutNeedsFrames": "Add frames first",
-    "rotation": "Rotation"
+    "rotation": "Rotation",
+    "browserUrl": "Address bar URL",
+    "browserUrlPlaceholder": "example.com"
   },
   "frame": {
     "none": "ਕੋਈ ਨਹੀਂ",
@@ -280,7 +282,8 @@
     "desktop": "ਡੈਸਕਟਾਪ",
     "tablet": "ਟੈਬਲੈਟ",
     "watch": "ਘੜੀਆ",
-    "custom": "Custom"
+    "custom": "Custom",
+    "browser": "Browser"
   },
   "style": {
     "default": "ਡਿਫਾਲਟ",

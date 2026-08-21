@@ -282,6 +282,13 @@ export function FrameInstanceGrid({
               {instCss.frameOverlay ? (
                 <img src={instCss.frameOverlay} alt="" aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
               ) : null}
+              {instCss.browserChrome && instCss.browserChromeStyle ? (
+                <div
+                  aria-hidden
+                  style={instCss.browserChromeStyle}
+                  dangerouslySetInnerHTML={{ __html: instCss.browserChrome }}
+                />
+              ) : null}
               {layer?.mediaUrl ? (
                 isVideoLayer(layer) ? (
                   <video

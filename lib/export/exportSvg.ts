@@ -3,6 +3,7 @@
 import type { EditorScene } from "@/lib/types/editor";
 import { computeFrameBox, computeFrameInstances, type FrameBox } from "@/lib/render/frameGeometry";
 import { getFrameSpec, frameViewBox } from "@/lib/render/frames";
+import { isBrowserFrameSpec } from "@/lib/render/browserChrome";
 import { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
 import { resolveExportTransform, waitForImage } from "@/lib/export/exportImageCore";
 import { isVideoLayer } from "@/lib/render/mediaKind";
@@ -143,6 +144,7 @@ export async function exportSvg(
           viewBox: frameViewBox(spec),
           isCircular: inst.frame === "watch",
           overlayInner,
+          browserUrl: isBrowserFrameSpec(spec) ? scene.browserUrl : null,
           mediaFit: layer?.mediaFit,
           offsetX: layer?.mediaOffsetX,
           offsetY: layer?.mediaOffsetY,
@@ -183,6 +185,7 @@ export async function exportSvg(
         viewBox: frameViewBox(spec),
         isCircular: scene.frame === "watch",
         overlayInner,
+        browserUrl: isBrowserFrameSpec(spec) ? scene.browserUrl : null,
         mediaFit: activeLayer?.mediaFit,
         offsetX: activeLayer?.mediaOffsetX,
         offsetY: activeLayer?.mediaOffsetY,

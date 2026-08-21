@@ -30,6 +30,9 @@ export interface FrameSpec {
   /** The skin's SVG viewBox size. Defaults to 390x844 (iPhone skins); must
    *  match `aspectRatio` so the overlay stretches without distortion. */
   viewBox?: { w: number; h: number };
+  /** True for the browser frame: renderers draw the scene's browserUrl text
+   *  over the skin's address pill (see lib/render/browserChrome.ts). */
+  urlBar?: boolean;
 }
 
 /** ViewBox size used to convert cutout coordinates to frame percentages. */
@@ -141,6 +144,19 @@ export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
     cutout: { x: 80, y: 40, w: 1440, h: 810, rx: 8 },
     viewBox: { w: 1600, h: 1000 }
   },
+  browser: {
+    asset: "/devices/browser.svg",
+    padding: 0,
+    screenRadius: 20,
+    isOverlay: true,
+    aspectRatio: "1440 / 1000",
+    // viewBox 1440x1000; viewport fills the window below the toolbar
+    // (y96). rx matches the window corners; the skin's toolbar fillets
+    // cover the media's rounded top corners at the seam.
+    cutout: { x: 0, y: 96, w: 1440, h: 904, rx: 20 },
+    viewBox: { w: 1440, h: 1000 },
+    urlBar: true
+  },
   watch: { asset: null, padding: 18, screenRadius: 999, isOverlay: false, aspectRatio: "1 / 1", cutout: null }
 };
 
@@ -202,6 +218,7 @@ export const FRAME_ORDER: Exclude<MockupFrame, "custom">[] = [
   "macbook",
   "imac",
   "notebook",
+  "browser",
   "watch"
 ];
 

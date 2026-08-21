@@ -5,6 +5,7 @@ import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
 import { buildLayerFilterCss } from "@/lib/render/layerFilters";
 import { resolveFrameStyle } from "@/lib/render/canvasDrawing";
 import { screenChromeSvg } from "@/lib/render/screenChrome";
+import { browserChromeSvg, isBrowserFrameSpec } from "@/lib/render/browserChrome";
 import { buildCssBackground } from "@/lib/render/sceneBackground";
 
 export interface SceneCss {
@@ -25,6 +26,11 @@ export interface SceneCss {
   screenChrome: string | null;
   /** Positions the chrome exactly over the media's screen area. */
   screenChromeStyle: CSSProperties;
+  /** SVG markup of the browser frame's address-bar URL text, or null for
+   *  non-browser frames. Rendered above the window skin overlay. */
+  browserChrome: string | null;
+  /** Stretches the URL text over the whole frame (same box as the skin). */
+  browserChromeStyle: CSSProperties | null;
   /** data: URL of an uploaded background image, or null when not in image mode. */
   backgroundImage: string | null;
   /** Blur radius (px) applied to the background image. */
@@ -208,6 +214,21 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
     // it follows the SVG outline and reacts to the Shadow control.
   };
 
+  // Browser frame: the URL text is dynamic, so it's drawn as an SVG layer
+  // stretched over the whole frame (same box as the skin overlay), just above
+  // it. The skin paints the pill; this only adds the text.
+  const isBrowser = isBrowserFrameSpec(spec);
+  const browserChrome = isBrowser ? browserChromeSvg(scene.browserUrl) : null;
+  const browserChromeStyle: CSSProperties | null = isBrowser
+    ? {
+        position: "absolute",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        pointerEvents: "none"
+      }
+    : null;
+
   return {
     container: {
       position: "relative",
@@ -225,6 +246,8 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
     emptyMediaStyle,
     screenChrome,
     screenChromeStyle,
+    browserChrome,
+    browserChromeStyle,
     backgroundImage: scene.backgroundMode === "image" ? scene.backgroundImageUrl : null,
     backgroundBlur: scene.backgroundBlur,
     backgroundSize

@@ -5,6 +5,7 @@ import { tiltMatrixSvg } from "@/lib/render/tilt";
 import { RENDER, resolveFrameStyle } from "@/lib/render/canvasDrawing";
 import { watermarkEdges } from "@/lib/render/watermark";
 import { screenChromeElements } from "@/lib/render/screenChrome";
+import { browserUrlSvg } from "@/lib/render/browserChrome";
 import { PATTERN_TILES } from "@/lib/render/sceneBackground";
 import { escapeMarkup, round2 } from "@/lib/export/markupUtils";
 
@@ -29,6 +30,8 @@ export interface SvgFrameGroup {
   isCircular?: boolean;
   /** Inner markup (children of the device SVG's <svg> root) to inline, or null. */
   overlayInner: string | null;
+  /** URL for the browser frame's address bar, drawn above the skin. */
+  browserUrl?: string | null;
   /** Per-frame media fill behavior; defaults to the layer's when omitted. */
   mediaFit?: "cover" | "contain";
   offsetX?: number;
@@ -181,7 +184,10 @@ function frameGroupInner(scene: EditorScene, group: SvgFrameGroup): string {
       const vb = group.viewBox ?? DEFAULT_VIEWBOX;
       const sx = box.width / vb.w;
       const sy = box.height / vb.h;
-      frame = `<g filter="url(#frame-shadow)"><g transform="translate(${num(box.x)} ${num(box.y)}) scale(${num(sx)} ${num(sy)})">${group.overlayInner}</g></g>`;
+      // The browser URL rides in the same translate/scale group as the skin
+      // so it tracks the frame at any size (coordinates are viewBox units).
+      const urlText = group.browserUrl ? browserUrlSvg(group.browserUrl) : "";
+      frame = `<g filter="url(#frame-shadow)"><g transform="translate(${num(box.x)} ${num(box.y)}) scale(${num(sx)} ${num(sy)})">${group.overlayInner}${urlText}</g></g>`;
     }
   } else {
     const frameStyle = resolveFrameStyle(scene.stylePreset);

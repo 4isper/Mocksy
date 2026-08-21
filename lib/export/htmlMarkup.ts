@@ -133,6 +133,9 @@ export function buildHtmlSnippet(scene: EditorScene, opts: HtmlSnippetOptions, a
         : "";
 
   const overlay = opts.overlayHref ? `<img class="overlay" src="${opts.overlayHref}" alt=""/>` : "";
+  const browserChrome = css.browserChrome && css.browserChromeStyle
+    ? `<div style="${serializeCssProperties(css.browserChromeStyle)}">${css.browserChrome}</div>`
+    : "";
   const chrome = css.screenChrome
     ? `<div class="chrome" style="${serializeCssProperties(css.screenChromeStyle)}">${css.screenChrome}</div>`
     : "";
@@ -226,6 +229,7 @@ ${animationCss}
     ${media}
     ${chrome}
     ${overlay}
+    ${browserChrome}
   </div>
   ${annotationsHtml(scene, arW, arH)}
   ${watermark}

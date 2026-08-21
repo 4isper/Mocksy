@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1000" viewBox="0 0 1440 1000" fill="none">
+  <!-- Browser window overlay: toolbar with traffic lights and an empty address
+       pill. The URL text is drawn dynamically by the renderers on top of the
+       pill (see lib/render/browserChrome.ts). The viewport below y=96 is a
+       transparent cutout (FrameSpec.cutout) so the media shows through. -->
+  <defs>
+    <linearGradient id="bw-bar" x1="0" y1="0" x2="0" y2="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f5f5f7"/>
+      <stop offset="1" stop-color="#e4e4e9"/>
+    </linearGradient>
+  </defs>
+  <!-- Near-invisible full-window silhouette so drop shadows follow the whole
+       window outline, not just the opaque toolbar strip. -->
+  <rect width="1440" height="1000" rx="20" fill="rgba(0,0,0,0.004)"/>
+  <!-- Toolbar strip with rounded top corners -->
+  <path d="M0 20 A20 20 0 0 1 20 0 H1420 A20 20 0 0 1 1440 20 V96 H0 Z" fill="url(#bw-bar)"/>
+  <!-- Corner fillets below the toolbar: fill the notches left by the media's
+       rounded top corners so the seam stays flush -->
+  <path d="M0 96 H20 A20 20 0 0 0 0 116 Z" fill="#e4e4e9"/>
+  <path d="M1440 96 H1420 A20 20 0 0 1 1440 116 Z" fill="#e4e4e9"/>
+  <!-- Toolbar bottom hairline -->
+  <rect x="0" y="95" width="1440" height="1" fill="rgba(0,0,0,0.08)"/>
+  <!-- Traffic lights -->
+  <circle cx="36" cy="48" r="7" fill="#ff5f57"/>
+  <circle cx="62" cy="48" r="7" fill="#febc2e"/>
+  <circle cx="88" cy="48" r="7" fill="#28c840"/>
+  <!-- Address pill (URL text is rendered on top by the renderers) -->
+  <rect x="124" y="20" width="1292" height="56" rx="28" fill="#ffffff" stroke="rgba(0,0,0,0.06)" stroke-width="1"/>
+</svg>

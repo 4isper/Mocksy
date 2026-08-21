@@ -40,7 +40,7 @@ export interface Annotation {
   /** Border-radius of background box, in px (default 0). */
   bgRadius?: number;
 }
-export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "pixel8pro" | "galaxy24" | "iphoneSE" | "ipad" | "galaxyTab" | "desktop" | "tablet" | "macbook" | "imac" | "notebook" | "watch" | "custom";
+export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "pixel8pro" | "galaxy24" | "iphoneSE" | "ipad" | "galaxyTab" | "desktop" | "tablet" | "macbook" | "imac" | "notebook" | "browser" | "watch" | "custom";
 export type StylePreset = "default" | "glassLight" | "glassDark" | "outline";
 export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax" | "panLeft" | "panRight" | "breathe";
 /** Easing curve applied between animation keyframes. */
@@ -205,6 +205,8 @@ export interface EditorScene {
   animationDurationMs: number;
   /** Screen decoration (status bar, lock/home chrome) drawn over the media. */
   screen: ScreenChrome;
+  /** URL shown in the browser frame's address bar (frame "browser"). */
+  browserUrl: string;
   /** Non-media overlays (text, arrows, rectangles) drawn above the mockup. */
   annotations: Annotation[];
 }

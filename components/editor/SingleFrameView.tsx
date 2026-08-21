@@ -148,6 +148,13 @@ export function SingleFrameView({
           }}
         />
       )}
+      {sceneCss.browserChrome && sceneCss.browserChromeStyle ? (
+        <div
+          aria-hidden
+          style={sceneCss.browserChromeStyle}
+          dangerouslySetInnerHTML={{ __html: sceneCss.browserChrome }}
+        />
+      ) : null}
       {isMediaLoading ? (
         <div className="media-loading" role="status" aria-busy="true" aria-label={t("editor.loadingMedia")}>
           <span className="spinner" />

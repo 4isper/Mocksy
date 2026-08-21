@@ -264,6 +264,8 @@
     "customFrameUpload": "Upload your own SVG device skin",
     "customFrameUse": "Use your uploaded frame",
     "customFrameRemove": "Remove custom frame",
+    "browserUrl": "Address bar URL",
+    "browserUrlPlaceholder": "example.com",
     "noLayers": "No layers yet.",
     "noAnnotations": "No annotations yet."
   },
@@ -280,6 +282,7 @@
     "macbook": "MacBook",
     "imac": "iMac",
     "notebook": "Notebook",
+    "browser": "Browser",
     "desktop": "Desktop",
     "tablet": "Tablet",
     "watch": "Watch",

@@ -34,6 +34,7 @@ export function FrameSection() {
     applyFrameLayout,
     setStylePreset,
     setAspectRatio,
+    setBrowserUrl,
     setCustomExportSize
   } = useEditorStore(
     useShallow((s) => ({
@@ -49,6 +50,7 @@ export function FrameSection() {
       applyFrameLayout: s.applyFrameLayout,
       setStylePreset: s.setStylePreset,
       setAspectRatio: s.setAspectRatio,
+      setBrowserUrl: s.setBrowserUrl,
       setCustomExportSize: s.setCustomExportSize
     }))
   );
@@ -59,6 +61,9 @@ export function FrameSection() {
     glassDark: t("style.glassDark"),
     outline: t("style.outline")
   };
+
+  const showBrowserUrl =
+    scene.frame === "browser" || scene.frameInstances.some((inst) => inst.frame === "browser");
 
   return (
     <Section
@@ -84,6 +89,16 @@ export function FrameSection() {
           onRemoveCustom={() => setCustomFrame(null)}
         />
         {frameError ? <span className="field-error">{frameError}</span> : null}
+        {showBrowserUrl ? (
+          <label className="field">
+            <span>{t("editor.browserUrl")}</span>
+            <input
+              value={scene.browserUrl}
+              placeholder={t("editor.browserUrlPlaceholder")}
+              onChange={(e) => setBrowserUrl(e.target.value)}
+            />
+          </label>
+        ) : null}
         <div className="field" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.frameGrid")}</span>
           <div style={{ display: "flex", gap: 4, alignItems: "center", width: "100%" }}>

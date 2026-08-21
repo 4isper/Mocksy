@@ -4,6 +4,7 @@ import { getFrameSpec } from "@/lib/render/frames";
 import { watermarkEdges } from "@/lib/render/watermark";
 import { buildLayerFilterCss } from "@/lib/render/layerFilters";
 import { drawScreenChrome } from "@/lib/render/screenChrome";
+import { drawBrowserUrl } from "@/lib/render/browserChrome";
 
 export const RENDER = {
   defaultFrameWidth: 900,
@@ -283,5 +284,12 @@ export function drawFrameAndMedia(
     ctx.shadowOffsetY = RENDER.shadowOffsetY * dpiScale * zoom;
     ctx.drawImage(overlay, x, y, frameW, frameH);
     ctx.restore();
+  }
+
+  // Browser frame: the URL text sits above the window skin (the skin paints
+  // the toolbar and pill; only the text is dynamic). Drawn without shadow so
+  // it stays crisp over the pill.
+  if (instSpec.urlBar) {
+    drawBrowserUrl(ctx, box, instSpec, scene.browserUrl);
   }
 }
