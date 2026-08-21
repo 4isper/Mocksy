@@ -50,7 +50,7 @@ function makeSceneWithInstances(overrides?: Partial<EditorScene>): EditorScene {
   };
 }
 
-function renderGrid(scene: EditorScene, snapDivisions: number | null = null) {
+function renderGrid(scene: EditorScene, snapDivisions: number | null = null, onGuides?: (guides: unknown[]) => void) {
   // Sync the global store so updateFrameInstance (which edits the store)
   // sees the same frameInstances as the rendered prop.
   useEditorStore.setState({ scene: { ...useEditorStore.getState().scene, frameInstances: scene.frameInstances } });
@@ -89,6 +89,7 @@ function renderGrid(scene: EditorScene, snapDivisions: number | null = null) {
       setVideoDuration={vi.fn()}
       canvasRef={canvasRef}
       snapDivisions={snapDivisions}
+      onGuides={onGuides}
     />
   );
 }
@@ -173,6 +174,68 @@ describe("FrameInstanceGrid drag & drop", () => {
 
     const inst = useEditorStore.getState().scene.frameInstances[0];
     expect(inst!.x).toBe(0.5); // unchanged
+  });
+});
+
+describe("FrameInstanceGrid smart guides", () => {
+  it("snaps the dragged box to the canvas centerline when the grid is off", () => {
+    const scene = makeSceneWithInstances();
+    renderGrid(scene, null);
+
+    const frame = document.querySelector(".frame-instance");
+
+    // Drag to x = 0.508 — within the 0.02 smart-guide threshold of 0.5.
+    fireEvent.pointerDown(frame!, { clientX: 500, clientY: 300, button: 0 });
+    fireEvent.pointerMove(frame!, { clientX: 508, clientY: 300 });
+    fireEvent.pointerUp(frame!);
+
+    const inst = useEditorStore.getState().scene.frameInstances[0];
+    expect(inst!.x).toBeCloseTo(0.5, 10);
+  });
+
+  it("reports guide lines while dragging and clears them on release", () => {
+    const onGuides = vi.fn();
+    const scene = makeSceneWithInstances({
+      frameInstances: [
+        { id: "fi1", frame: "iphone" as const, x: 0.25, y: 0.5, scale: 0.3, layerId: null },
+        { id: "fi2", frame: "iphone" as const, x: 0.7, y: 0.5, scale: 0.3, layerId: null }
+      ]
+    });
+    renderGrid(scene, null, onGuides);
+
+    const frames = document.querySelectorAll(".frame-instance");
+    expect(frames.length).toBe(2);
+
+    // Drag fi2 so its left edge (x - 0.15) lands near fi1's right edge (0.4):
+    // x = 0.556 -> left = 0.406, snaps onto 0.4 -> final x = 0.55.
+    fireEvent.pointerDown(frames[1]!, { clientX: 700, clientY: 300, button: 0 });
+    fireEvent.pointerMove(frames[1]!, { clientX: 556, clientY: 300 });
+
+    expect(onGuides).toHaveBeenCalled();
+    const lastCall = onGuides.mock.calls[onGuides.mock.calls.length - 1]![0] as Array<{ axis: string; pos: number }>;
+    expect(lastCall.some((g) => g.axis === "x" && Math.abs(g.pos - 0.4) < 1e-9)).toBe(true);
+
+    fireEvent.pointerUp(frames[1]!);
+    expect(onGuides).toHaveBeenLastCalledWith([]);
+
+    const inst = useEditorStore.getState().scene.frameInstances.find((i) => i.id === "fi2");
+    expect(inst!.x).toBeCloseTo(0.55, 10);
+  });
+
+  it("does not snap when Shift is held even with the grid off", () => {
+    const onGuides = vi.fn();
+    const scene = makeSceneWithInstances();
+    renderGrid(scene, null, onGuides);
+
+    const frame = document.querySelector(".frame-instance");
+
+    fireEvent.pointerDown(frame!, { clientX: 500, clientY: 300, button: 0 });
+    fireEvent.pointerMove(frame!, { clientX: 508, clientY: 300, shiftKey: true });
+    fireEvent.pointerUp(frame!);
+
+    const inst = useEditorStore.getState().scene.frameInstances[0];
+    expect(inst!.x).toBeCloseTo(0.508, 10);
+    expect(onGuides).toHaveBeenLastCalledWith([]);
   });
 });
 

@@ -144,6 +144,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             setVideoDuration={setVideoDuration}
             canvasRef={canvasRef}
             snapDivisions={showGrid ? gridDivisions : null}
+            onGuides={setGuides}
           />
         ) : (
           <SingleFrameView

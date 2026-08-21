@@ -1,4 +1,4 @@
-import type { AnimationPreset, CustomFrame, MockupFrame } from "@/lib/types/editor";
+import type { AnimationPreset, CustomFrame, FrameInstance, MockupFrame } from "@/lib/types/editor";
 import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
 
 /** Native SVG viewBox size shared by the iPhone overlay skins. The screen
@@ -197,6 +197,26 @@ export function frameInstAr(
   const ratioSrc = spec.aspectRatio ?? (frame === "none" ? sceneAspectRatio : "1 / 1");
   const { w: rW, h: rH } = parseAspectRatioOr(ratioSrc);
   return rH / rW;
+}
+
+/** Half-extents of a frame instance's box as fractions of the canvas (w along
+ *  the canvas width, h along the canvas height). The box is centered on the
+ *  instance's (x, y); its width is `scale` of the canvas width and its height
+ *  follows the frame's native ratio scaled into canvas-height fractions.
+ *  Mirrors computeFrameInstances so smart guides snap against the same box the
+ *  renderer draws. */
+export function frameInstanceHalfExtents(
+  inst: Pick<FrameInstance, "frame" | "scale">,
+  customFrame?: CustomFrame | null,
+  sceneAspectRatio = "16 / 9"
+): { w: number; h: number } {
+  const arW = parseAspectRatioOr(sceneAspectRatio).w;
+  const arH = parseAspectRatioOr(sceneAspectRatio).h;
+  const instAr = frameInstAr(inst.frame, customFrame, sceneAspectRatio) ?? 1;
+  return {
+    w: inst.scale / 2,
+    h: (inst.scale * instAr * (arW / arH)) / 2
+  };
 }
 
 /** Builds a FrameSpec from a user-uploaded SVG skin. The media fills the whole

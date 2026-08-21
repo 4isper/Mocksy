@@ -3,12 +3,13 @@
 import { useRef, useCallback, useState } from "react";
 import type { CSSProperties } from "react";
 import { useTranslations } from "next-intl";
-import type { EditorScene, MediaLayer } from "@/lib/types/editor";
-import { getFrameSpec } from "@/lib/render/frames";
+import type { EditorScene, FrameInstance, MediaLayer } from "@/lib/types/editor";
+import { frameInstanceHalfExtents, getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import type { SceneCss } from "@/lib/render/mockupRenderer";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { snapToGrid } from "@/lib/render/grid";
+import { snapCenteredBox, type GuideLine, type NormBox } from "@/lib/render/annotationAlign";
 import { tiltCss } from "@/lib/render/tilt";
 
 interface FrameInstanceGridProps {
@@ -21,6 +22,8 @@ interface FrameInstanceGridProps {
   setVideoDuration: (duration: number, layerId?: string) => void;
   canvasRef: React.RefObject<HTMLDivElement | null>;
   snapDivisions: number | null;
+  /** Smart-guide lines to draw while dragging (canvas fractions). */
+  onGuides?: (guides: GuideLine[]) => void;
 }
 
 interface DragState {
@@ -48,7 +51,8 @@ export function FrameInstanceGrid({
   analyzeMedia,
   setVideoDuration,
   canvasRef,
-  snapDivisions
+  snapDivisions,
+  onGuides
 }: FrameInstanceGridProps) {
   const t = useTranslations();
   const updateFrameInstance = useEditorStore((s) => s.updateFrameInstance);
@@ -61,6 +65,25 @@ export function FrameInstanceGrid({
   const getCanvasRect = useCallback(() => {
     return canvasRef.current?.getBoundingClientRect();
   }, [canvasRef]);
+
+  /** Normalized box of a sibling instance, in the same canvas fractions the
+   *  renderer uses (see computeFrameInstances) so guides align with what is
+   *  drawn. */
+  const instanceBox = useCallback(
+    (inst: FrameInstance): NormBox => {
+      const half = frameInstanceHalfExtents(inst, scene.customFrame, scene.aspectRatio);
+      return {
+        id: inst.id,
+        left: inst.x - half.w,
+        top: inst.y - half.h,
+        right: inst.x + half.w,
+        bottom: inst.y + half.h,
+        cx: inst.x,
+        cy: inst.y
+      };
+    },
+    [scene.customFrame, scene.aspectRatio]
+  );
 
   // ═══ Move ═════════════════════════════════════════════
   const handlePointerDown = useCallback(
@@ -121,14 +144,31 @@ export function FrameInstanceGrid({
       let nextX = Math.max(0, Math.min(1, ds.initialInstX + dx));
       let nextY = Math.max(0, Math.min(1, ds.initialInstY + dy));
 
-      if (snapDivisions && !e.shiftKey) {
+      if (e.shiftKey) {
+        // Free move: no grid snap, no smart guides.
+        onGuides?.([]);
+      } else if (snapDivisions) {
         nextX = snapToGrid(nextX, snapDivisions);
         nextY = snapToGrid(nextY, snapDivisions);
+        onGuides?.([]);
+      } else {
+        // Smart guides: snap the dragged box to the canvas edges/centerlines
+        // and to sibling instances (same precedence as annotations — the grid
+        // takes over when it is active).
+        const inst = scene.frameInstances.find((fi) => fi.id === ds.id);
+        if (inst) {
+          const half = frameInstanceHalfExtents(inst, scene.customFrame, scene.aspectRatio);
+          const others = scene.frameInstances.filter((fi) => fi.id !== ds.id).map(instanceBox);
+          const snapped = snapCenteredBox({ x: nextX, y: nextY, halfW: half.w, halfH: half.h }, others);
+          nextX = Math.max(0, Math.min(1, snapped.x));
+          nextY = Math.max(0, Math.min(1, snapped.y));
+          onGuides?.(snapped.guides);
+        }
       }
 
       updateFrameInstance(ds.id, { x: nextX, y: nextY }, true);
     },
-    [getCanvasRect, updateFrameInstance, snapDivisions]
+    [getCanvasRect, updateFrameInstance, snapDivisions, scene.frameInstances, scene.customFrame, scene.aspectRatio, instanceBox, onGuides]
   );
 
   const handlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>, instId: string) => {
@@ -137,6 +177,7 @@ export function FrameInstanceGrid({
       const didMove = ds.moved;
       dragState.current = null;
       setDraggingId((prev) => (prev === instId ? null : prev));
+      onGuides?.([]);
       if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
         (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
       }
@@ -144,7 +185,7 @@ export function FrameInstanceGrid({
         selectFrameInstance(instId);
       }
     }
-  }, [selectFrameInstance]);
+  }, [selectFrameInstance, onGuides]);
 
   // ═══ Resize ═══════════════════════════════════════════
   const handleResizeDown = useCallback(
@@ -252,7 +293,9 @@ export function FrameInstanceGrid({
               width: (inst.scale * 100) + "%",
               height: "auto",
               transform: "translate(-50%, -50%)",
-              aspectRatio: spec.aspectRatio ?? (inst.frame === "watch" ? "1 / 1" : "9 / 16"),
+              // Same ratio source as computeFrameInstances/frameInstAr so the
+              // preview box matches the export ("none" follows the scene).
+              aspectRatio: spec.aspectRatio ?? (inst.frame === "none" ? scene.aspectRatio : "1 / 1"),
               cursor: (draggingId === inst.id ? "grabbing" : "grab") as CSSProperties["cursor"],
               outline: isSelected ? "2px solid var(--accent)" : undefined,
               outlineOffset: 4,

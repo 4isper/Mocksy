@@ -5,6 +5,7 @@ import {
   DEFAULT_VIEWBOX,
   FRAME_ORDER,
   FRAME_SPECS,
+  frameInstanceHalfExtents,
   frameViewBox,
   getFrameSpec
 } from "@/lib/render/frames";
@@ -139,5 +140,31 @@ describe("ASPECT_RATIOS", () => {
 
   it("includes 16/9 as the first entry (default)", () => {
     expect(ASPECT_RATIOS[0]).toBe("16 / 9");
+  });
+});
+
+describe("frameInstanceHalfExtents", () => {
+  it("gives half the scale as the width half-extent", () => {
+    const half = frameInstanceHalfExtents({ frame: "iphone15", scale: 0.3 });
+    expect(half.w).toBeCloseTo(0.15);
+  });
+
+  it("derives height from the frame's native ratio and the canvas ratio", () => {
+    // iphone15 is 390/844 tall; on a 16/9 canvas the height fraction is
+    // scale * (844/390) * (16/9).
+    const half = frameInstanceHalfExtents({ frame: "iphone15", scale: 0.3 }, null, "16 / 9");
+    expect(half.h).toBeCloseTo((0.3 * (844 / 390) * (16 / 9)) / 2);
+  });
+
+  it("makes a square frame square on a square canvas", () => {
+    const half = frameInstanceHalfExtents({ frame: "watch", scale: 0.2 }, null, "1 / 1");
+    expect(half.w).toBeCloseTo(half.h);
+  });
+
+  it("lets frame 'none' follow the scene aspect ratio", () => {
+    const wide = frameInstanceHalfExtents({ frame: "none", scale: 0.4 }, null, "16 / 9");
+    const tall = frameInstanceHalfExtents({ frame: "none", scale: 0.4 }, null, "9 / 16");
+    expect(wide.w).toBeCloseTo(tall.w);
+    expect(wide.h).toBeLessThan(tall.h);
   });
 });

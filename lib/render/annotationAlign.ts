@@ -154,6 +154,38 @@ export interface SmartGuideResult {
   guides: GuideLine[];
 }
 
+/** Candidate snap targets shared by every dragged box: the canvas edges and
+ *  centerlines plus the edges/centers of the other boxes on that axis. */
+function axisTargets(others: NormBox[], axis: "x" | "y"): number[] {
+  if (axis === "x") return [0, 0.5, 1, ...others.flatMap((b) => [b.left, b.right, b.cx])];
+  return [0, 0.5, 1, ...others.flatMap((b) => [b.top, b.bottom, b.cy])];
+}
+
+/** Finds the closest probe/target pairing within `threshold`. Returns the
+ *  shift needed to move the probe onto its target (plus the target itself for
+ *  guide rendering), or null when nothing is close enough to snap. */
+function bestAxisSnap(
+  probes: number[],
+  targets: number[],
+  threshold: number
+): { shift: number; guide: number } | null {
+  let bestDist = Infinity;
+  let bestProbe = Infinity;
+  let bestTarget = Infinity;
+  for (const probe of probes) {
+    for (const target of targets) {
+      const dist = Math.abs(probe - target);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestProbe = probe;
+        bestTarget = target;
+      }
+    }
+  }
+  if (!Number.isFinite(bestProbe) || bestDist > threshold) return null;
+  return { shift: bestTarget - bestProbe, guide: bestTarget };
+}
+
 /**
  * Snaps a dragged annotation to the canvas centerlines and to the edges/centers
  * of the other annotations, within `threshold` canvas fractions. Returns the
@@ -166,56 +198,25 @@ export function computeSmartGuide(
   threshold = 0.02
 ): SmartGuideResult {
   const box = normBox(dragging);
-  let x = box.left;
-  let y = box.top;
-  const guides: GuideLine[] = [];
   const otherBoxes = others.map(normBox);
-
-  // Candidate X targets: canvas edges/center plus every other annotation's
-  // left/right/centerX.
-  const xTargets: number[] = [0, 0.5, 1, ...otherBoxes.flatMap((b) => [b.left, b.right, b.cx])];
-  const yTargets: number[] = [0, 0.5, 1, ...otherBoxes.flatMap((b) => [b.top, b.bottom, b.cy])];
+  const xTargets = axisTargets(otherBoxes, "x");
+  const yTargets = axisTargets(otherBoxes, "y");
 
   // The dragged box has three probe points per axis too (left/center/right).
-  const xProbes = [box.left, box.cx, box.right];
-  const yProbes = [box.top, box.cy, box.bottom];
+  const guides: GuideLine[] = [];
+  let x = box.left;
+  let y = box.top;
 
-  let bestX: number | null = null;
-  let bestXDist = Infinity;
-  let bestXGuide: number | null = null;
-  for (const probe of xProbes) {
-    for (const target of xTargets) {
-      const dist = Math.abs(probe - target);
-      if (dist < bestXDist) {
-        bestXDist = dist;
-        bestX = probe;
-        bestXGuide = target;
-      }
-    }
-  }
-  if (bestX !== null && bestXGuide !== null && bestXDist <= threshold) {
-    const shift = bestXGuide - bestX;
-    x = box.left + shift;
-    guides.push({ axis: "x", pos: bestXGuide });
+  const xSnap = bestAxisSnap([box.left, box.cx, box.right], xTargets, threshold);
+  if (xSnap) {
+    x += xSnap.shift;
+    guides.push({ axis: "x", pos: xSnap.guide });
   }
 
-  let bestY: number | null = null;
-  let bestYDist = Infinity;
-  let bestYGuide: number | null = null;
-  for (const probe of yProbes) {
-    for (const target of yTargets) {
-      const dist = Math.abs(probe - target);
-      if (dist < bestYDist) {
-        bestYDist = dist;
-        bestY = probe;
-        bestYGuide = target;
-      }
-    }
-  }
-  if (bestY !== null && bestYGuide !== null && bestYDist <= threshold) {
-    const shift = bestYGuide - bestY;
-    y = box.top + shift;
-    guides.push({ axis: "y", pos: bestYGuide });
+  const ySnap = bestAxisSnap([box.top, box.cy, box.bottom], yTargets, threshold);
+  if (ySnap) {
+    y += ySnap.shift;
+    guides.push({ axis: "y", pos: ySnap.guide });
   }
 
   // Preserve the dragged annotation's signed w/h by re-deriving origin from
@@ -223,4 +224,55 @@ export function computeSmartGuide(
   const newX = dragging.w >= 0 ? x : x + dragging.w;
   const newY = dragging.h >= 0 ? y : y + dragging.h;
   return { x: newX, y: newY, guides };
+}
+
+/** A centered box (e.g. a frame instance): center point plus half-extents,
+ *  all as fractions of the canvas. */
+export interface CenteredBox {
+  x: number;
+  y: number;
+  halfW: number;
+  halfH: number;
+}
+
+/**
+ * Snaps a centered box (frame instance drag) to the canvas edges/centerlines
+ * and to the edges/centers of sibling boxes, mirroring computeSmartGuide but
+ * for center-anchored geometry: inst.x/y is the box CENTER, so after snapping
+ * the probed left/top edges the center is re-derived instead of an origin.
+ * Pure and DOM-free for unit testing.
+ */
+export function snapCenteredBox(
+  dragging: CenteredBox,
+  others: NormBox[],
+  threshold = 0.02
+): SmartGuideResult {
+  const box: NormBox = {
+    id: "",
+    left: dragging.x - dragging.halfW,
+    top: dragging.y - dragging.halfH,
+    right: dragging.x + dragging.halfW,
+    bottom: dragging.y + dragging.halfH,
+    cx: dragging.x,
+    cy: dragging.y
+  };
+  const xTargets = axisTargets(others, "x");
+  const yTargets = axisTargets(others, "y");
+  const guides: GuideLine[] = [];
+  let x = dragging.x;
+  let y = dragging.y;
+
+  const xSnap = bestAxisSnap([box.left, box.cx, box.right], xTargets, threshold);
+  if (xSnap) {
+    x += xSnap.shift;
+    guides.push({ axis: "x", pos: xSnap.guide });
+  }
+
+  const ySnap = bestAxisSnap([box.top, box.cy, box.bottom], yTargets, threshold);
+  if (ySnap) {
+    y += ySnap.shift;
+    guides.push({ axis: "y", pos: ySnap.guide });
+  }
+
+  return { x, y, guides };
 }

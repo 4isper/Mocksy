@@ -4,7 +4,8 @@ import {
   computeSmartGuide,
   distributeAnnotations,
   normBox,
-  selectionBounds
+  selectionBounds,
+  snapCenteredBox
 } from "@/lib/render/annotationAlign";
 import type { Annotation } from "@/lib/types/editor";
 
@@ -146,5 +147,46 @@ describe("computeSmartGuide", () => {
     const r = computeSmartGuide(dragging, others, 0.02);
     expect(r.y).toBeCloseTo(0.3);
     expect(r.guides.some((g) => g.axis === "y" && g.pos === 0.3)).toBe(true);
+  });
+});
+
+describe("snapCenteredBox", () => {
+  // A centered box at (0.5, 0.5) with half-extents 0.15/0.2.
+  const half = { x: 0.5, y: 0.5, halfW: 0.15, halfH: 0.2 };
+  const sibling = { id: "s", left: 0.1, top: 0.1, right: 0.4, bottom: 0.5, cx: 0.25, cy: 0.3 };
+
+  it("snaps the box center to the canvas centerline", () => {
+    // y=0.75 keeps the vertical probes away from every Y target so only X snaps.
+    const r = snapCenteredBox({ ...half, x: 0.508, y: 0.75 }, [], 0.02);
+    expect(r.x).toBeCloseTo(0.5);
+    expect(r.y).toBeCloseTo(0.75); // untouched
+    expect(r.guides).toEqual([{ axis: "x", pos: 0.5 }]);
+  });
+
+  it("snaps the box edge to a sibling's edge and re-derives the center", () => {
+    // Dragged left edge (x - 0.15) is at 0.105 -> snaps onto sibling right (0.4)
+    // would be too far; instead put the dragged box near the sibling's left.
+    const r = snapCenteredBox({ ...half, x: 0.26, y: 0.5 }, [sibling], 0.02);
+    // left = 0.26 - 0.15 = 0.11, target sibling.left = 0.1 -> shift -0.01
+    expect(r.x).toBeCloseTo(0.25);
+    expect(r.guides.some((g) => g.axis === "x" && g.pos === 0.1)).toBe(true);
+  });
+
+  it("keeps the center fixed when nothing is within threshold", () => {
+    const r = snapCenteredBox({ ...half, x: 0.8, y: 0.9 }, [sibling], 0.02);
+    expect(r.x).toBeCloseTo(0.8);
+    expect(r.y).toBeCloseTo(0.9);
+    expect(r.guides).toHaveLength(0);
+  });
+
+  it("snaps both axes independently", () => {
+    // Center near canvas vertical centerline AND left edge near sibling left.
+    const r = snapCenteredBox({ ...half, x: 0.26, y: 0.492 }, [sibling], 0.02);
+    expect(r.x).toBeCloseTo(0.25);
+    expect(r.y).toBeCloseTo(0.5);
+    expect(r.guides.some((g) => g.axis === "x" && g.pos === 0.1)).toBe(true);
+    // The Y snap may land via the canvas centerline or the sibling's
+    // center/bottom (both sit at/near 0.5 within threshold).
+    expect(r.guides.some((g) => g.axis === "y")).toBe(true);
   });
 });
