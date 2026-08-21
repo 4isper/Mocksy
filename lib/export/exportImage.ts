@@ -6,6 +6,7 @@ import { renderMockupToCanvas } from "@/lib/render/renderMockup";
 import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { downloadBlob } from "@/lib/export/downloadBlob";
+import { encodeCanvasToBlob } from "@/lib/export/offthreadEncode";
 import { resolveExportTransform, waitForImage } from "@/lib/export/exportImageCore";
 import { loadExportAssets } from "@/lib/export/exportAssets";
 
@@ -158,7 +159,7 @@ export async function renderSceneToImageBlob(
       watermarkImage
     );
 
-    const imageBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), mimeType));
+    const imageBlob = await encodeCanvasToBlob(canvas, mimeType);
     if (!imageBlob) {
       onError?.("Failed to render image.");
       return null;

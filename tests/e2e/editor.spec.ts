@@ -19,7 +19,7 @@ async function frameIsActive(page: import("@playwright/test").Page, label: strin
 // don't also resolve the preview's "Export My mockup" button (its accessible
 // name contains "Export" too, which trips strict mode when both are present).
 async function openExportDialog(page: import("@playwright/test").Page) {
-  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await page.getByRole("button", { name: /Export PNG \/ MP4/ }).click();
   await expect(page.locator(".modal[role='dialog']")).toBeVisible();
 }
 
@@ -97,7 +97,7 @@ function previewMedia(page: import("@playwright/test").Page) {
 test("shows editor shell", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("Scene presets")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Export", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Export PNG \/ MP4/ })).toBeVisible();
 });
 
 test("selecting iphone16pro renders the device overlay", async ({ page }) => {
@@ -231,7 +231,7 @@ test("exporting an image scene triggers a PNG download", async ({ page }) => {
 
   await openExportDialog(page);
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export PNG" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export PNG" }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/mocksy-export\.png$/);
 });
@@ -274,7 +274,7 @@ test("watermark preview matches the exported image", async ({ page }) => {
   // Exporting with the watermark on must still produce a PNG download.
   await openExportDialog(page);
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export PNG" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export PNG" }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/mocksy-export\.png$/);
 });
@@ -591,7 +591,7 @@ test("panels stack and stay within the viewport on a narrow screen", async ({ pa
   await page.setViewportSize({ width: 390, height: 800 });
   await page.goto("/");
   await expect(page.getByText("Scene presets")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Export", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Export PNG \/ MP4/ })).toBeVisible();
   // No horizontal overflow on mobile.
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
   expect(overflow).toBe(true);
@@ -675,7 +675,7 @@ test("exporting an image scene triggers an MP4 download", async ({ page }) => {
   const downloadPromise = page.waitForEvent("download");
   await openExportDialog(page);
   await chooseExportFormat(page, "MP4");
-  await page.getByRole("button", { name: "Export MP4" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export MP4" }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/\.mp4$/);
 
@@ -703,7 +703,7 @@ test("exporting an overlay phone frame (16 Pro) produces an MP4", async ({ page 
   const downloadPromise = page.waitForEvent("download");
   await openExportDialog(page);
   await chooseExportFormat(page, "MP4");
-  await page.getByRole("button", { name: "Export MP4" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export MP4" }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/\.mp4$/);
   const path = await download.path();
@@ -998,7 +998,7 @@ test("exporting an image scene triggers a WebP download", async ({ page }) => {
   await openExportDialog(page);
   await chooseExportFormat(page, "WebP");
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export WebP" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export WebP" }).click();
   const { name, buffer } = await downloadBuffer(downloadPromise);
   expect(name).toMatch(/\.webp$/);
   expect(buffer.length).toBeGreaterThan(0);
@@ -1019,7 +1019,7 @@ test("exporting an image scene produces a standalone SVG with embedded media", a
   await openExportDialog(page);
   await chooseExportFormat(page, "SVG");
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export SVG" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export SVG" }).click();
   const { name, buffer } = await downloadBuffer(downloadPromise);
   expect(name).toMatch(/\.svg$/);
   const svg = buffer.toString("utf8");
@@ -1044,7 +1044,7 @@ test("exporting an image scene produces a self-contained HTML document", async (
   await openExportDialog(page);
   await chooseExportFormat(page, "HTML");
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export HTML" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export HTML" }).click();
   const { name, buffer } = await downloadBuffer(downloadPromise);
   expect(name).toMatch(/\.html$/);
   const html = buffer.toString("utf8");
@@ -1063,7 +1063,7 @@ test("exporting a video scene triggers a WebM download", async ({ page }) => {
   await openExportDialog(page);
   await chooseExportFormat(page, "WebM");
   const downloadPromise = page.waitForEvent("download", { timeout: VIDEO_EXPORT_EVENT_TIMEOUT });
-  await page.getByRole("button", { name: "Export WebM" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export WebM" }).click();
   const { name, buffer } = await downloadBuffer(downloadPromise);
   expect(name).toMatch(/\.webm$/);
   expect(buffer.length).toBeGreaterThan(0);
@@ -1084,7 +1084,7 @@ test("animated WebP export of an image scene downloads a non-empty file", async 
   await openExportDialog(page);
   await chooseExportFormat(page, "Animated WebP");
   const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
-  await page.getByRole("button", { name: "Export Animated WebP" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export Animated WebP" }).click();
   const { name, buffer } = await downloadBuffer(downloadPromise);
   expect(name).toMatch(/\.webp$/);
   expect(buffer.length).toBeGreaterThan(0);
@@ -1107,7 +1107,7 @@ test("PNG export of a video scene draws the video frame, not an empty screen", a
 
   await openExportDialog(page);
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export PNG" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export PNG" }).click();
   const { buffer } = await downloadBuffer(downloadPromise);
   const samples = await samplePngColors(page, buffer);
 
@@ -1128,7 +1128,7 @@ test("SVG export of a video scene embeds the poster frame", async ({ page }) => 
   await openExportDialog(page);
   await chooseExportFormat(page, "SVG");
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export SVG" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export SVG" }).click();
   const { buffer } = await downloadBuffer(downloadPromise);
   const svg = buffer.toString("utf8");
   // The video frame is rasterized and embedded as a PNG data URL inside <image>.
@@ -1156,7 +1156,7 @@ test("PNG export of a 2-frame video grid draws video in both frames", async ({ p
 
   await openExportDialog(page);
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export PNG" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export PNG" }).click();
   const { buffer } = await downloadBuffer(downloadPromise);
 
   // Sample the left and right halves where the two phones' screens sit.
@@ -1215,7 +1215,7 @@ test("export Size selector scales the PNG pixel dimensions", async ({ page }) =>
 
   const exportPng = async () => {
     const downloadPromise = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Export PNG" }).click();
+    await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export PNG" }).click();
     const { buffer } = await downloadBuffer(downloadPromise);
     return (await samplePngColors(page, buffer)).width;
   };
@@ -1266,7 +1266,7 @@ test("locale switcher switches the UI language end-to-end", async ({ page }) => 
     switcher.selectOption({ label: "English" }),
   ]);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await expect(page.getByRole("button", { name: "Export", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Export PNG \/ MP4/ })).toBeVisible();
 });
 
 test("Russian locale renders translated UI strings", async ({ page }) => {
@@ -1322,7 +1322,7 @@ test("GIF export of an image scene downloads a non-empty file", async ({ page })
   await openExportDialog(page);
   await chooseExportFormat(page, "GIF");
   const downloadPromise = page.waitForEvent("download", { timeout: VIDEO_EXPORT_EVENT_TIMEOUT });
-  await page.getByRole("button", { name: "Export GIF" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export GIF" }).click();
   const { name, buffer } = await downloadBuffer(downloadPromise);
   expect(name).toMatch(/\.gif$/);
   expect(buffer.length).toBeGreaterThan(0);
@@ -1337,7 +1337,7 @@ test("MP4 export of a video scene produces a non-empty file", async ({ page }) =
   await openExportDialog(page);
   await chooseExportFormat(page, "MP4");
   const downloadPromise = page.waitForEvent("download", { timeout: VIDEO_EXPORT_EVENT_TIMEOUT });
-  await page.getByRole("button", { name: "Export MP4" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export MP4" }).click();
   const { name, buffer } = await downloadBuffer(downloadPromise);
   expect(name).toMatch(/\.mp4$/);
   expect(buffer.length).toBeGreaterThan(0);
@@ -1362,7 +1362,7 @@ test("exporting with a text annotation includes the annotation in the PNG", asyn
 
   await openExportDialog(page);
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export PNG" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export PNG" }).click();
   const { buffer } = await downloadBuffer(downloadPromise);
   expect(buffer.length).toBeGreaterThan(0);
 
@@ -1390,7 +1390,7 @@ test("exporting with an arrow annotation includes the arrow in the PNG", async (
 
   await openExportDialog(page);
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export PNG" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export PNG" }).click();
   const { buffer } = await downloadBuffer(downloadPromise);
   expect(buffer.length).toBeGreaterThan(0);
 });
@@ -1413,7 +1413,7 @@ test("exporting with glassDark style preset draws the frame border", async ({ pa
 
   await openExportDialog(page);
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export PNG" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export PNG" }).click();
   const { buffer } = await downloadBuffer(downloadPromise);
   expect(buffer.length).toBeGreaterThan(0);
 });
@@ -1437,7 +1437,7 @@ test("exporting with outline style preset draws the frame border", async ({ page
 
   await openExportDialog(page);
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export PNG" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export PNG" }).click();
   const { buffer } = await downloadBuffer(downloadPromise);
   expect(buffer.length).toBeGreaterThan(0);
 });
@@ -1460,7 +1460,7 @@ test("exporting with a gradient background produces a non-empty PNG", async ({ p
 
   await openExportDialog(page);
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export PNG" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export PNG" }).click();
   const { buffer } = await downloadBuffer(downloadPromise);
   expect(buffer.length).toBeGreaterThan(0);
 });
@@ -1474,7 +1474,7 @@ test("exporting a video scene as MP4 produces a non-empty file with video conten
   await openExportDialog(page);
   await chooseExportFormat(page, "MP4");
   const downloadPromise = page.waitForEvent("download", { timeout: VIDEO_EXPORT_EVENT_TIMEOUT });
-  await page.getByRole("button", { name: "Export MP4" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export MP4" }).click();
   const { name, buffer } = await downloadBuffer(downloadPromise);
   expect(name).toMatch(/\.mp4$/);
   expect(buffer.length).toBeGreaterThan(0);
@@ -1487,7 +1487,7 @@ test("export dialog shows error when no media is uploaded", async ({ page }) => 
   // export should produce a valid (possibly empty) file — the app
   // should not crash.
   const downloadPromise = page.waitForEvent("download", { timeout: 10_000 });
-  await page.getByRole("button", { name: "Export PNG" }).click();
+  await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export PNG" }).click();
   const { name, buffer } = await downloadBuffer(downloadPromise);
   expect(name).toMatch(/mocksy-export\.png$/);
   expect(buffer.length).toBeGreaterThanOrEqual(0);

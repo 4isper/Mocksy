@@ -50,7 +50,7 @@ test("preview frame matches the PNG export (annotations + watermark)", async ({ 
 
   // Trigger the real PNG export and capture the downloaded blob.
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await page.getByRole("button", { name: /Export PNG \/ MP4/ }).click();
   await page.locator('.modal[role="dialog"]').getByRole("button", { name: /Export PNG/ }).click();
   const download = await downloadPromise;
   const exportBuf = fs.readFileSync(await download.path());
