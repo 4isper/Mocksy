@@ -55,6 +55,9 @@ export interface EditorStoreState {
   /** Full-screen preview mode: side panels and toolbar are hidden so the
    *  mockup fills the editor. Pure view state — never persisted or undone. */
   fullscreenPreview: boolean;
+  /** First-run onboarding tour visibility. Pure view state — the "already
+   *  seen" flag lives in localStorage, not in persisted scene state. */
+  onboardingOpen: boolean;
   /** Groups rapid same-field edits (e.g. slider drags) into one undo step. */
   lastHistoryKey: string | null;
   lastHistoryAt: number;
@@ -84,6 +87,8 @@ export interface EditorStoreState {
   setGridDivisions: (divisions: number) => void;
   /** Enters/exits the full-screen preview mode. */
   setFullscreenPreview: (on: boolean) => void;
+  /** Opens/closes the onboarding tour. */
+  setOnboardingOpen: (open: boolean) => void;
   resetScene: () => void;
   undo: () => void;
   redo: () => void;

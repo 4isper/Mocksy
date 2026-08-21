@@ -388,6 +388,16 @@ describe("createViewCommands", () => {
     fullscreen.action();
     expect(toggleFullscreenPreview).toHaveBeenCalledOnce();
   });
+
+  it("reopens the onboarding tour from the store", () => {
+    useEditorStore.setState({ onboardingOpen: false });
+    const cmds = createViewCommands(t, { toggleFullscreenPreview: vi.fn() });
+    const tour = cmds.find((c) => c.id === "show-onboarding")!;
+    expect(tour).toBeDefined();
+    tour.action();
+    expect(useEditorStore.getState().onboardingOpen).toBe(true);
+    useEditorStore.setState({ onboardingOpen: false });
+  });
 });
 
 describe("createProjectCommands", () => {

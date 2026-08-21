@@ -15,6 +15,7 @@ import { CommandPalette } from "@/components/editor/CommandPalette";
 import { ErrorBoundary } from "@/components/editor/ErrorBoundary";
 import { ResetConfirmDialog } from "@/components/editor/ResetConfirmDialog";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
+import { OnboardingTour, hasSeenOnboarding } from "@/components/editor/OnboardingTour";
 import { useCommands } from "@/lib/hooks/useCommands";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
@@ -142,6 +143,14 @@ export function EditorShell() {
     return initHistoryPersistence();
   }, [setScene, savedSceneRef]);
 
+  useEffect(() => {
+    // Show the guided tour once, on the first visit only.
+    if (!hasSeenOnboarding()) {
+      const t = setTimeout(() => useEditorStore.getState().setOnboardingOpen(true), 600);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
   const toastStatus = exportApi.copyStatus
     ? { msg: exportApi.copyStatus, type: "success" as const }
     : exportApi.exportError
@@ -245,6 +254,7 @@ export function EditorShell() {
         isMultiFrame={scene.frameInstances.length > 0}
       />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <OnboardingTour />
       <CommandPalette
         commands={commands}
         isOpen={commandPaletteOpen}

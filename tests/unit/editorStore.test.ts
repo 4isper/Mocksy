@@ -1311,6 +1311,20 @@ describe("fullscreen preview state", () => {
   });
 });
 
+describe("onboarding tour state", () => {
+  it("defaults to closed and toggles without touching scene/history", () => {
+    useEditorStore.setState({ scene: { ...initialScene }, past: [], future: [], onboardingOpen: false });
+    const before = useEditorStore.getState().scene;
+    expect(useEditorStore.getState().onboardingOpen).toBe(false);
+    useEditorStore.getState().setOnboardingOpen(true);
+    expect(useEditorStore.getState().onboardingOpen).toBe(true);
+    useEditorStore.getState().setOnboardingOpen(false);
+    expect(useEditorStore.getState().onboardingOpen).toBe(false);
+    expect(useEditorStore.getState().scene).toBe(before);
+    expect(useEditorStore.getState().past).toHaveLength(0);
+  });
+});
+
 describe("editorHelpers", () => {
   it("activePosterTime returns 0 when there are no layers", () => {
     expect(activePosterTime({ ...initialScene, layers: [] })).toBe(0);

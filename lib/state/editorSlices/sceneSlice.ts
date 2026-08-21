@@ -20,6 +20,7 @@ export type SceneSlice = Pick<
   | "setShowGrid"
   | "setGridDivisions"
   | "setFullscreenPreview"
+  | "setOnboardingOpen"
   | "setVideoCurrentTime"
 >;
 
@@ -95,6 +96,7 @@ export function createSceneSlice(set: EditorStoreSetter): SceneSlice {
     setShowGrid: (showGrid) => set({ showGrid }),
     setGridDivisions: (gridDivisions) => set({ gridDivisions }),
     setFullscreenPreview: (fullscreenPreview) => set({ fullscreenPreview }),
+    setOnboardingOpen: (onboardingOpen) => set({ onboardingOpen }),
     setVideoCurrentTime: (videoCurrentTime) => set({ videoCurrentTime })
   };
 }

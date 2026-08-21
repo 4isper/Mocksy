@@ -39,6 +39,7 @@ export const useEditorStore = create<EditorStoreState>()((set) => ({
   showGrid: false,
   gridDivisions: DEFAULT_GRID_DIVISIONS,
   fullscreenPreview: false,
+  onboardingOpen: false,
   ...createSceneSlice(set),
   ...createLayersSlice(set),
   ...createFramesSlice(set),
