@@ -310,7 +310,12 @@
     "stopRecordingElapsed": "Stop recording ({time})",
     "screenRecordError": "Screen recording failed. Try a different tab or window.",
     "screenRecordUnsupported": "Screen recording is not supported in this browser",
-    "previewZoom": "Preview zoom"
+    "previewZoom": "Preview zoom",
+    "groupTransform": "Group transform",
+    "nudgeUp": "Nudge up",
+    "nudgeDown": "Nudge down",
+    "nudgeLeft": "Nudge left",
+    "nudgeRight": "Nudge right"
   },
   "frame": {
     "none": "Ninguno",

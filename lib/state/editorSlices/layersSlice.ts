@@ -25,6 +25,8 @@ export type LayersSlice = Pick<
   | "duplicateLayers"
   | "toggleLayersHidden"
   | "removeLayers"
+  | "transformLayers"
+  | "nudgeLayers"
   | "reorderLayers"
   | "updateActiveLayer"
   | "renameLayer"
@@ -211,6 +213,30 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         const activeLayerId = s.activeLayerId != null && idSet.has(s.activeLayerId) ? first : s.activeLayerId;
         const selectedLayerIds = s.selectedLayerIds.filter((x) => !idSet.has(x));
         return { ...pushHistory(s, { ...s.scene, layers }), activeLayerId, selectedLayerIds };
+      }),
+    transformLayers: (ids, patch) =>
+      set((s) => {
+        if (ids.length === 0) return {};
+        const idSet = new Set(ids);
+        // Locked layers are protected from group edits, exactly like the
+        // single-layer transform setters guard with `locked(s)`.
+        const layers = s.scene.layers.map((l) => (idSet.has(l.id) && !l.locked ? { ...l, ...patch } : l));
+        const changed = layers.some((l, i) => l !== s.scene.layers[i]);
+        if (!changed) return {};
+        return pushHistory(s, { ...s.scene, layers }, "layerGroupTransform");
+      }),
+    nudgeLayers: (ids, dx, dy) =>
+      set((s) => {
+        if (ids.length === 0) return {};
+        const idSet = new Set(ids);
+        const layers = s.scene.layers.map((l) =>
+          idSet.has(l.id) && !l.locked
+            ? { ...l, mediaOffsetX: l.mediaOffsetX + dx, mediaOffsetY: l.mediaOffsetY + dy }
+            : l
+        );
+        const changed = layers.some((l, i) => l !== s.scene.layers[i]);
+        if (!changed) return {};
+        return pushHistory(s, { ...s.scene, layers }, "layerGroupNudge");
       }),
     selectLayer: (id) =>
       set((s) => {

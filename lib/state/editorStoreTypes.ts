@@ -7,6 +7,7 @@ import type {
   EditorScene,
   ExportSize,
   FrameInstance,
+  LayerTransformPatch,
   MediaLayer,
   MediaType,
   MockupFrame,
@@ -136,6 +137,11 @@ export interface EditorStoreState {
   /** Removes every layer in `ids`; keeps at least one layer in the scene and
    *  keeps the selection/active id valid afterwards. */
   removeLayers: (ids: string[]) => void;
+  /** Applies an absolute transform (zoom/offset/rotation/opacity/filters) to
+   *  every layer in `ids` at once; locked layers are skipped. */
+  transformLayers: (ids: string[], patch: LayerTransformPatch) => void;
+  /** Nudges the position of every layer in `ids` by a relative offset. */
+  nudgeLayers: (ids: string[], dx: number, dy: number) => void;
   /** Reorders layers. Pass `coalesce: true` for continuous gestures (drag) so
    *  all intermediate steps collapse into a single undo entry. */
   reorderLayers: (orderedIds: string[], coalesce?: boolean) => void;

@@ -96,6 +96,7 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 - Layer locking: locked layers reject edits and deletion; visibility/duplication stay available
 - Video playback speed per layer (0.5×–2×) — preview, exports and HTML embed stay in sync
 - Layer management: add, duplicate, hide/show, reorder, remove
+- Multi-select layers (⌘/Ctrl/Shift-click) with bulk hide/duplicate/delete and group transform (nudge, opacity, rotation, zoom applied to the whole selection)
 - AI background removal (runs fully in-browser via Transformers.js)
 - Unsupported file types rejected with inline error
 - Opens with an offline demo image

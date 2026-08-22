@@ -469,7 +469,7 @@ describe("annotations", () => {
   });
 });
 
-describe("layer management", () => {
+ describe("layer management", () => {
   function reset() {
     useEditorStore.setState({
       past: [],
@@ -482,6 +482,44 @@ describe("layer management", () => {
       lastHistoryAt: 0
     });
   }
+
+  it("transformLayers applies the patch to every selected layer and records history", () => {
+    reset();
+    store().addLayer("data:image/png;base64,second", "image", "second.png");
+    const [a, b] = store().scene.layers;
+    const pastBefore = store().past.length;
+    useEditorStore.getState().transformLayers([a!.id, b!.id], { opacity: 42, zoom: 1.5 });
+    const after = store().scene.layers;
+    expect(after.find((l) => l.id === a!.id)!.opacity).toBe(42);
+    expect(after.find((l) => l.id === b!.id)!.opacity).toBe(42);
+    expect(after.find((l) => l.id === b!.id)!.zoom).toBe(1.5);
+    expect(store().past.length).toBe(pastBefore + 1);
+  });
+
+  it("transformLayers skips locked layers", () => {
+    reset();
+    store().addLayer("data:image/png;base64,second", "image", "second.png");
+    const [a, b] = store().scene.layers;
+    useEditorStore.getState().transformLayers([a!.id, b!.id], { opacity: 42 });
+    // Lock b via the store, then re-transform: b stays at 42, a updates.
+    useEditorStore.setState((s) => ({ scene: { ...s.scene, layers: s.scene.layers.map((l) => (l.id === b!.id ? { ...l, locked: true } : l)) } }));
+    useEditorStore.getState().transformLayers([a!.id, b!.id], { opacity: 7 });
+    expect(store().scene.layers.find((l) => l.id === a!.id)!.opacity).toBe(7);
+    expect(store().scene.layers.find((l) => l.id === b!.id)!.opacity).toBe(42);
+  });
+
+  it("nudgeLayers shifts every selected layer's offset", () => {
+    reset();
+    store().addLayer("data:image/png;base64,second", "image", "second.png");
+    const [a, b] = store().scene.layers;
+    const pastBefore = store().past.length;
+    useEditorStore.getState().nudgeLayers([a!.id, b!.id], 0.1, -0.2);
+    const after = store().scene.layers;
+    expect(after.find((l) => l.id === a!.id)!.mediaOffsetX).toBeCloseTo(0.1);
+    expect(after.find((l) => l.id === b!.id)!.mediaOffsetY).toBeCloseTo(-0.2);
+    expect(store().past.length).toBe(pastBefore + 1);
+  });
+
 
   it("addLayer appends a new layer and makes it active", () => {
     reset();

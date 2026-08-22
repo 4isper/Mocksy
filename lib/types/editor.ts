@@ -144,6 +144,12 @@ export interface CustomFrame {
   cutout: { x: number; y: number; w: number; h: number; rx: number };
 }
 
+/** Subset of MediaLayer fields that can be transformed together across a
+ *  multi-selection (group transform). */
+export type LayerTransformPatch = Partial<
+  Pick<MediaLayer, "zoom" | "mediaOffsetX" | "mediaOffsetY" | "rotation" | "opacity" | "brightness" | "contrast" | "saturate" | "blur" | "grayscale">
+>;
+
 /** A single media item stacked inside the mockup frame. Each layer owns its
  *  own transform, animation and (for video) playback/trim settings. */
 export interface MediaLayer {
