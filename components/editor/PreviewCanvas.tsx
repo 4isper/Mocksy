@@ -214,11 +214,17 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         }}
       >
         {/* View-zoom layer: scales the scene content only; chips, alerts and
-            menus stay unscaled outside of it. */}
+            menus stay unscaled outside of it. Mirrors #preview-canvas's flex
+            centering — buildSceneCss sizes the frame against its parent box,
+            so without this the device sticks to the top-left corner instead
+            of centering like the canvas export does. */}
         <div
           style={{
             position: "absolute",
             inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
             transform: zoomScale ? `scale(${zoomScale})` : undefined,
             transformOrigin: "center"
           }}
