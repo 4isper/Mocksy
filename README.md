@@ -46,6 +46,7 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 - Optional grid overlay with adjustable divisions
 - Full-screen preview mode (`F` to toggle, `Esc` to exit)
 - Undo/redo history persists to localStorage — `⌘Z` survives a page reload
+- History panel: jump to any point in the undo timeline, labelled per change
 - Installable PWA: service worker caches the app shell for offline use
 - Localized into 57 languages via `next-intl`, with a locale switcher in the toolbar
 - Respects the OS `prefers-reduced-motion` setting: the live preview shows a static frame and HTML exports ship a reduced-motion fallback

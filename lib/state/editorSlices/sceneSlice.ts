@@ -11,6 +11,7 @@ export type SceneSlice = Pick<
   | "resetScene"
   | "undo"
   | "redo"
+  | "jumpToHistory"
   | "setMediaLoading"
   | "setRemovingBackground"
   | "setMediaUploadError"
@@ -82,6 +83,22 @@ export function createSceneSlice(set: EditorStoreSetter): SceneSlice {
           lastHistoryAt: 0,
           videoCurrentTime: activePosterTime(next ?? s.scene),
           activeLayerId: reconcileActiveLayerId(next ?? s.scene, s.activeLayerId)
+        };
+      }),
+    jumpToHistory: (index) =>
+      set((s) => {
+        const target = Math.max(0, Math.min(s.past.length + s.future.length, index));
+        if (target === s.past.length) return {};
+        const states = [...s.past, s.scene, ...s.future];
+        const nextScene = states[target] ?? s.scene;
+        return {
+          scene: nextScene,
+          past: states.slice(0, target),
+          future: states.slice(target + 1),
+          lastHistoryKey: null,
+          lastHistoryAt: 0,
+          videoCurrentTime: activePosterTime(nextScene),
+          activeLayerId: reconcileActiveLayerId(nextScene, s.activeLayerId)
         };
       }),
     setMediaLoading: (loading) => set({ isMediaLoading: loading }),

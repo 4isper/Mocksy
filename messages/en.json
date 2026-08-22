@@ -745,5 +745,20 @@
     "tryAgain": "Try again",
     "lastSceneSafe": "Your last saved scene is safe in this browser.",
     "shareUrlTooLarge": "Share link is too large — export the project file to share this mockup instead."
+  },
+  "history": {
+    "title": "History",
+    "initial": "Initial state",
+    "empty": "No changes yet",
+    "change": {
+      "layers": "Edited layers",
+      "annotations": "Edited annotations",
+      "frame": "Changed device frame",
+      "background": "Changed background",
+      "style": "Changed style",
+      "screen": "Changed screen chrome",
+      "watermark": "Changed watermark",
+      "canvas": "Changed canvas"
+    }
   }
 }

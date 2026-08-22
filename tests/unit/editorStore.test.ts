@@ -1378,4 +1378,51 @@ describe("editorHelpers", () => {
     expect(result.find((l) => l.id === "a")!.zoom).toBe(2);
     expect(result.find((l) => l.id === "b")!.zoom).toBe(1);
   });
+
+  describe("jumpToHistory", () => {
+    const buildTimeline = () => {
+      useEditorStore.setState({ scene: initialScene, past: [], future: [] });
+      useEditorStore.getState().setScene({ backgroundColor: "#111111" });
+      useEditorStore.getState().setScene({ backgroundColor: "#222222" });
+      useEditorStore.getState().setScene({ backgroundColor: "#333333" });
+      return store();
+    };
+
+    it("jumps back and rebuilds the redo stack", () => {
+      const s = buildTimeline();
+      expect(s.past.length).toBe(3);
+      useEditorStore.getState().jumpToHistory(0);
+      const after = store();
+      expect(after.scene.backgroundColor).toBe(initialScene.backgroundColor);
+      expect(after.past.length).toBe(0);
+      expect(after.future.length).toBe(3);
+    });
+
+    it("jumps to an earlier step and rebuilds the redo stack", () => {
+      buildTimeline();
+      // Timeline indices: 0=initial, 1=#111111, 2=#222222, 3=#333333.
+      useEditorStore.getState().jumpToHistory(2);
+      const after = store();
+      expect(after.scene.backgroundColor).toBe("#222222");
+      expect(after.past.length).toBe(2);
+      expect(after.future.length).toBe(1);
+    });
+
+    it("is a no-op when jumping to the current index", () => {
+      const s = buildTimeline();
+      const backgroundColor = s.scene.backgroundColor;
+      const pastLen = s.past.length;
+      useEditorStore.getState().jumpToHistory(s.past.length);
+      expect(store().scene.backgroundColor).toBe(backgroundColor);
+      expect(store().past.length).toBe(pastLen);
+    });
+
+    it("clamps out-of-range indices", () => {
+      buildTimeline();
+      useEditorStore.getState().jumpToHistory(999);
+      expect(store().scene.backgroundColor).toBe("#333333");
+      useEditorStore.getState().jumpToHistory(-5);
+      expect(store().scene.backgroundColor).toBe(initialScene.backgroundColor);
+    });
+  });
 });

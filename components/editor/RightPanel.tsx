@@ -6,6 +6,7 @@ import { useEditorStore } from "@/lib/state/editorStore";
 import { TemplatesPanel } from "@/components/editor/TemplatesPanel";
 import { LayersPanel } from "@/components/editor/LayersPanel";
 import { AnnotationsPanel } from "@/components/editor/AnnotationsPanel";
+import { HistoryPanel } from "@/components/editor/HistoryPanel";
 import { ProjectsPanel } from "@/components/editor/ProjectsPanel";
 
 const icons = {
@@ -29,6 +30,13 @@ const icons = {
       <path d="M3 11l-1 2 2-1 7-7a1.4 1.4 0 0 0-2-2L3 11z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
     </svg>
   ),
+  history: (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M7 2.5a4.5 4.5 0 1 1-4.3 3.2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M2.7 3v3h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 7V4.5l-1.6 1.6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
   projects: (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
       <path d="M1.5 3.5A1.5 1.5 0 0 1 3 2h2.2l1.4 1.5H11a1.5 1.5 0 0 1 1.5 1.5v5.5a1.5 1.5 0 0 1-1.5 1.5H3A1.5 1.5 0 0 1 1.5 10V3.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
@@ -40,6 +48,7 @@ const tabs = [
   { id: "templates", labelKey: "templates.title" },
   { id: "layers", labelKey: "editor.layers" },
   { id: "annotations", labelKey: "editor.annotations" },
+  { id: "history", labelKey: "history.title" },
   { id: "projects", labelKey: "projects.title" },
 ] as const;
 
@@ -107,6 +116,7 @@ export function RightPanel() {
         {activeTab === "templates" && <TemplatesPanel />}
         {activeTab === "layers" && <LayersPanel />}
         {activeTab === "annotations" && <AnnotationsPanel />}
+        {activeTab === "history" && <HistoryPanel />}
         {activeTab === "projects" && <ProjectsPanel />}
       </div>
     </div>

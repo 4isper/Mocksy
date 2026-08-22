@@ -98,6 +98,10 @@ export interface EditorStoreState {
   resetScene: () => void;
   undo: () => void;
   redo: () => void;
+  /** Jumps to an absolute position in the undo timeline. `index` 0 is the
+   *  oldest entry; `past.length` is the current scene (a no-op). Entries after
+   *  the target become the redo stack. */
+  jumpToHistory: (index: number) => void;
   /** Replaces the active layer's media (or seeds the first layer). */
   setMedia: (mediaUrl: string | null, mediaType: MediaType, mediaName?: string | null) => void;
   /** Replaces media on a specific layer id (used by the multi-frame preview,
