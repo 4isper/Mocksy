@@ -26,6 +26,20 @@ export default defineConfig({
       }
     },
     {
+      name: "chromium-mobile",
+      // Touch/coarse-viewport coverage for the stacked single-column layout
+      // (globals.css <=980px). Video-export suites stay desktop-only: they
+      // are slow and rely on desktop SwiftShader tuning.
+      testIgnore: /.*(visual|editor|preview-export[^/]*)\.spec\.ts/,
+      use: {
+        ...devices["Pixel 7"],
+        launchOptions: {
+          chromiumSandbox: false,
+          args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"]
+        }
+      }
+    },
+    {
       name: "chromium-vrt",
       testMatch: /.*visual\.spec\.ts/,
       use: {

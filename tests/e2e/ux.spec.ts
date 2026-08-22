@@ -32,6 +32,7 @@ test.describe("full-screen preview", () => {
 
 test.describe("context menus", () => {
   test("empty canvas menu adds a text annotation", async ({ page }) => {
+    test.skip(test.info().project.name === "chromium-mobile", "touch right-click re-mounts the menu mid-click; covered natively in mobile.spec.ts");
     await page.goto("/");
     await expect(page.locator("[data-annotation]")).toHaveCount(0);
 
@@ -46,6 +47,7 @@ test.describe("context menus", () => {
   });
 
   test("annotation menu deletes the annotation", async ({ page }) => {
+    test.skip(test.info().project.name === "chromium-mobile", "touch right-click re-mounts the menu mid-click; covered natively in mobile.spec.ts");
     await page.goto("/");
     await page.locator("#preview-canvas").click({ button: "right" });
     await page.getByRole("menuitem", { name: "Add text" }).click();
@@ -57,6 +59,7 @@ test.describe("context menus", () => {
   });
 
   test("layer row menu duplicates the layer", async ({ page }) => {
+    test.skip(test.info().project.name === "chromium-mobile", "touch right-click re-mounts the menu mid-click; covered natively in mobile.spec.ts");
     await page.goto("/");
     await page.getByRole("tab", { name: "Layers" }).click();
     const items = page.locator(".layer-item");
