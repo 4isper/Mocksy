@@ -343,23 +343,9 @@ export function FrameInstanceGrid({
               }}
               onPointerDown={layer?.mediaUrl ? () => selectLayer(layer.id) : undefined}
             >
-              {instCss.screenChrome ? (
-                <div
-                  aria-hidden
-                  style={instCss.screenChromeStyle}
-                  dangerouslySetInnerHTML={{ __html: instCss.screenChrome }}
-                />
-              ) : null}
-              {instCss.frameOverlay ? (
-                <img src={instCss.frameOverlay} alt="" aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
-              ) : null}
-              {instCss.browserChrome && instCss.browserChromeStyle ? (
-                <div
-                  aria-hidden
-                  style={instCss.browserChromeStyle}
-                  dangerouslySetInnerHTML={{ __html: instCss.browserChrome }}
-                />
-              ) : null}
+              {/* Paint order must mirror SingleFrameView and the canvas export
+                  (media → glare → screen chrome → device skin → browser URL),
+                  otherwise the media covers the notch and on-screen chrome. */}
               {layer?.mediaUrl ? (
                 isVideoLayer(layer) ? (
                   <video
@@ -383,6 +369,23 @@ export function FrameInstanceGrid({
                 )
               ) : null}
               {instCss.screenGlareStyle ? <div aria-hidden style={instCss.screenGlareStyle} /> : null}
+              {instCss.screenChrome ? (
+                <div
+                  aria-hidden
+                  style={instCss.screenChromeStyle}
+                  dangerouslySetInnerHTML={{ __html: instCss.screenChrome }}
+                />
+              ) : null}
+              {instCss.frameOverlay ? (
+                <img src={instCss.frameOverlay} alt="" aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
+              ) : null}
+              {instCss.browserChrome && instCss.browserChromeStyle ? (
+                <div
+                  aria-hidden
+                  style={instCss.browserChromeStyle}
+                  dangerouslySetInnerHTML={{ __html: instCss.browserChrome }}
+                />
+              ) : null}
             </div>
             </div>
 

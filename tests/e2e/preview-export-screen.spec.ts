@@ -24,6 +24,8 @@ interface ScreenCase {
   mediaUrl?: string;
   tiltX?: number;
   tiltY?: number;
+  /** When set, renders a multi-frame grid instead of the single frame view. */
+  frameInstances?: Array<Record<string, unknown>>;
 }
 
 const BASE_SCREEN = {
@@ -47,7 +49,17 @@ const cases: ScreenCase[] = [
   { name: "home screen (overlay ipad)", frame: "ipad", screen: home },
   { name: "home screen (overlay macbook)", frame: "macbook", screen: home },
   { name: "lock screen (overlay iphone15, real photo)", frame: "iphone15", screen: lock, mediaUrl: "/test-photo.png" },
-  { name: "home screen (overlay ipad, real photo)", frame: "ipad", screen: home, mediaUrl: "/test-photo.png" }
+  { name: "home screen (overlay ipad, real photo)", frame: "ipad", screen: home, mediaUrl: "/test-photo.png" },
+  // Regression: in the multi-frame grid the media must not paint above the
+  // device skin (notch) or the screen chrome — it used to, because the grid
+  // rendered the media element after them in the DOM.
+  {
+    name: "lock screen (multi-frame grid)",
+    frame: "iphone15",
+    screen: lock,
+    mediaUrl: "/test-photo.png",
+    frameInstances: [{ id: "fi1", frame: "iphone15", layerId: "l1", x: 0.5, y: 0.5, scale: 0.9 }]
+  }
 ];
 
 for (const c of cases) {
@@ -60,7 +72,8 @@ for (const c of cases) {
       layers: [{ id: "l1", mediaUrl: c.mediaUrl ?? SOLID_MEDIA, mediaType: "image" }],
       tiltX: c.tiltX ?? 0,
       tiltY: c.tiltY ?? 0,
-      screen: c.screen
+      screen: c.screen,
+      ...(c.frameInstances ? { frameInstances: c.frameInstances } : {})
     };
     const url = `/en?scene=${encodeURIComponent(JSON.stringify(scene))}`;
     await page.goto(url);
@@ -73,7 +86,7 @@ for (const c of cases) {
 
     const downloadPromise = page.waitForEvent("download");
     await page.getByRole("button", { name: /Export PNG \/ MP4/ }).click();
-    await page.getByRole("button", { name: /Export PNG/ }).click();
+    await page.locator('.modal[role="dialog"]').getByRole("button", { name: "Export PNG" }).click();
     const download = await downloadPromise;
     const exportBuf = fs.readFileSync(await download.path());
 
