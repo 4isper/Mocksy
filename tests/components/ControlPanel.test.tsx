@@ -18,9 +18,28 @@ vi.mock("@/lib/media/loadFile", () => ({
 }));
 
 describe("ControlPanel", () => {
+  // Secondary sections are collapsed by default; expand one before asserting
+  // or interacting with its controls (mirrors the real user flow).
+  async function openSection(name: string) {
+    const btn = screen.getByRole("button", { name });
+    if (btn.getAttribute("aria-expanded") === "false") {
+      await userEvent.click(btn);
+    }
+  }
+
   it("renders panel title", () => {
     render(<ControlPanel />);
     expect(screen.getByText("editor.controls")).toBeInTheDocument();
+  });
+
+  it("collapses secondary sections (animation) by default and reveals them on toggle", async () => {
+    render(<ControlPanel />);
+    const header = screen.getByRole("button", { name: "editor.animation" });
+    expect(header).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("animation.none")).not.toBeVisible();
+    await openSection("editor.animation");
+    expect(header).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("animation.none")).toBeVisible();
   });
 
   it("renders upload media trigger", () => {
@@ -49,8 +68,9 @@ describe("ControlPanel", () => {
     expect(screen.getByText("style.outline")).toBeInTheDocument();
   });
 
-  it("renders animation presets", () => {
+  it("renders animation presets", async () => {
     render(<ControlPanel />);
+    await openSection("editor.animation");
     expect(screen.getByText("animation.none")).toBeInTheDocument();
     expect(screen.getByText("animation.zoomIn")).toBeInTheDocument();
     expect(screen.getByText("animation.zoomOut")).toBeInTheDocument();
@@ -112,28 +132,32 @@ describe("ControlPanel", () => {
     expect(screen.getByText("editor.uploadBgImage")).toBeInTheDocument();
   });
 
-  it("renders watermark toggle", () => {
+  it("renders watermark toggle", async () => {
     render(<ControlPanel />);
+    await openSection("editor.watermark");
     expect(screen.getByRole("checkbox", { name: "editor.watermark" })).toBeInTheDocument();
   });
 
-  it("renders watermark text input", () => {
+  it("renders watermark text input", async () => {
     render(<ControlPanel />);
+    await openSection("editor.watermark");
     const inputs = screen.getAllByRole("textbox");
     const watermarkInput = inputs.find(i => (i as HTMLInputElement).value === "Mocksy");
     expect(watermarkInput).toBeTruthy();
   });
 
-  it("renders watermark position selector", () => {
+  it("renders watermark position selector", async () => {
     render(<ControlPanel />);
+    await openSection("editor.watermark");
     expect(screen.getByText("editor.posBottomRight")).toBeInTheDocument();
     expect(screen.getByText("editor.posBottomLeft")).toBeInTheDocument();
     expect(screen.getByText("editor.posTopRight")).toBeInTheDocument();
     expect(screen.getByText("editor.posTopLeft")).toBeInTheDocument();
   });
 
-  it("renders watermark size slider", () => {
+  it("renders watermark size slider", async () => {
     render(<ControlPanel />);
+    await openSection("editor.watermark");
     expect(screen.getByRole("slider", { name: "editor.watermarkSize" })).toBeInTheDocument();
   });
 
@@ -157,19 +181,22 @@ describe("ControlPanel", () => {
 
   it("switches animation preset on button click", async () => {
     render(<ControlPanel />);
+    await openSection("editor.animation");
     await userEvent.click(screen.getByText("animation.zoomIn"));
     expect(useEditorStore.getState().scene.layers[0]!.animationPreset).toBe("zoomIn");
   });
 
-  it("changes animation duration via slider", () => {
+  it("changes animation duration via slider", async () => {
     render(<ControlPanel />);
+    await openSection("editor.animation");
     const slider = screen.getByRole("slider", { name: "editor.animationDuration" });
     fireEvent.change(slider, { target: { value: "5" } });
     expect(useEditorStore.getState().scene.animationDurationMs).toBe(5000);
   });
 
-  it("disables the animation duration slider when no animation is set", () => {
+  it("disables the animation duration slider when no animation is set", async () => {
     render(<ControlPanel />);
+    await openSection("editor.animation");
     const slider = screen.getByRole("slider", { name: "editor.animationDuration" });
     expect(slider).toBeDisabled();
   });
@@ -197,6 +224,7 @@ describe("ControlPanel", () => {
 
   it("toggles watermark checkbox", async () => {
     render(<ControlPanel />);
+    await openSection("editor.watermark");
     const checkbox = screen.getByRole("checkbox", { name: "editor.watermark" });
     await userEvent.click(checkbox);
     expect(useEditorStore.getState().scene.watermarkEnabled).toBe(true);

@@ -13,7 +13,7 @@ import { createWatermarkCommands } from "./watermarkCommands";
 import { createExportScaleCommands } from "./exportScaleCommands";
 import { createThemeCommands } from "./themeCommands";
 import { createProjectCommands } from "./projectCommands";
-import { createViewCommands } from "./viewCommands";
+import { createViewCommands, createPanelTabCommands } from "./viewCommands";
 
 export { createFileCommands } from "./fileCommands";
 export { createEditCommands } from "./editCommands";
@@ -27,7 +27,7 @@ export { createWatermarkCommands } from "./watermarkCommands";
 export { createExportScaleCommands } from "./exportScaleCommands";
 export { createThemeCommands } from "./themeCommands";
 export { createProjectCommands } from "./projectCommands";
-export { createViewCommands } from "./viewCommands";
+export { createViewCommands, createPanelTabCommands } from "./viewCommands";
 
 export function createCommands(
   t: ReturnType<typeof useTranslations>,
@@ -91,6 +91,7 @@ export function createCommands(
     ...createExportScaleCommands(t, { setExportScale }),
     ...createThemeCommands(t, { setThemeMode }),
     ...createViewCommands(t, { toggleFullscreenPreview }),
+    ...createPanelTabCommands(t),
     ...createProjectCommands(t, projects, activeProjectId, { switchProject }),
   ];
 }

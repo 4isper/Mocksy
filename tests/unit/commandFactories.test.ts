@@ -13,6 +13,7 @@ import {
   createStyleCommands,
   createThemeCommands,
   createViewCommands,
+  createPanelTabCommands,
   createWatermarkCommands
 } from "@/lib/commands/commandFactories";
 import { FRAME_ORDER, FRAME_SPECS, ASPECT_RATIOS } from "@/lib/render/frames";
@@ -397,6 +398,19 @@ describe("createViewCommands", () => {
     tour.action();
     expect(useEditorStore.getState().onboardingOpen).toBe(true);
     useEditorStore.setState({ onboardingOpen: false });
+  });
+});
+
+describe("createPanelTabCommands", () => {
+  it("jumps to a right-panel tab and exits full-screen preview", () => {
+    useEditorStore.setState({ rightTab: "templates", fullscreenPreview: true });
+    const cmds = createPanelTabCommands(t);
+    const goLayers = cmds.find((c) => c.id === "go-layers")!;
+    expect(goLayers).toBeDefined();
+    goLayers.action();
+    expect(useEditorStore.getState().rightTab).toBe("layers");
+    expect(useEditorStore.getState().fullscreenPreview).toBe(false);
+    useEditorStore.setState({ rightTab: "templates", fullscreenPreview: false });
   });
 });
 

@@ -50,3 +50,57 @@ export function createViewCommands(
     },
   ];
 }
+
+/** Commands that jump straight to a right-panel tab (templates/layers/…).
+ *  They also leave full-screen preview so the target tab is actually visible. */
+export function createPanelTabCommands(
+  t: (key: string, values?: Record<string, string | number | Date>) => string
+): Command[] {
+  const goTo = (tab: "templates" | "layers" | "annotations" | "history" | "projects") => {
+    const st = useEditorStore.getState();
+    st.setFullscreenPreview(false);
+    st.setRightTab(tab);
+  };
+  return [
+    {
+      id: "go-templates",
+      category: "view",
+      label: t("commandPalette.goTemplates"),
+      description: t("commandPalette.goTemplatesDesc"),
+      keywords: ["templates", "presets", "right panel", "tab", "open"],
+      action: () => goTo("templates"),
+    },
+    {
+      id: "go-layers",
+      category: "view",
+      label: t("commandPalette.goLayers"),
+      description: t("commandPalette.goLayersDesc"),
+      keywords: ["layers", "right panel", "tab", "open", "select"],
+      action: () => goTo("layers"),
+    },
+    {
+      id: "go-annotations",
+      category: "view",
+      label: t("commandPalette.goAnnotations"),
+      description: t("commandPalette.goAnnotationsDesc"),
+      keywords: ["annotations", "notes", "labels", "right panel", "tab", "open"],
+      action: () => goTo("annotations"),
+    },
+    {
+      id: "go-history",
+      category: "view",
+      label: t("commandPalette.goHistory"),
+      description: t("commandPalette.goHistoryDesc"),
+      keywords: ["history", "undo", "timeline", "versions", "right panel", "tab", "open"],
+      action: () => goTo("history"),
+    },
+    {
+      id: "go-projects",
+      category: "view",
+      label: t("commandPalette.goProjects"),
+      description: t("commandPalette.goProjectsDesc"),
+      keywords: ["projects", "save", "manage", "right panel", "tab", "open"],
+      action: () => goTo("projects"),
+    },
+  ];
+}

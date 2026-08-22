@@ -74,6 +74,20 @@ export function useEditorExport(
     setGifExportProgress(0);
   }, []);
 
+  // Transient status messages auto-dismiss so a success/error toast doesn't
+  // stay pinned in the toolbar forever after a copy/export/share action.
+  useEffect(() => {
+    if (!copyStatus) return;
+    const id = setTimeout(() => setCopyStatus(null), 3200);
+    return () => clearTimeout(id);
+  }, [copyStatus]);
+
+  useEffect(() => {
+    if (!exportError) return;
+    const id = setTimeout(() => setExportError(null), 6000);
+    return () => clearTimeout(id);
+  }, [exportError]);
+
   const copyShareUrl = useCallback(async () => {
     try {
       const url = await sceneToShareUrl({ ...scene, activeLayerId });

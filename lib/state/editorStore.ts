@@ -41,6 +41,7 @@ export const useEditorStore = create<EditorStoreState>()((set) => ({
   previewZoom: "fit",
   fullscreenPreview: false,
   onboardingOpen: false,
+  rightTab: "templates",
   ...createSceneSlice(set),
   ...createLayersSlice(set),
   ...createFramesSlice(set),

@@ -16,6 +16,9 @@ import type {
   WatermarkPosition
 } from "@/lib/types/editor";
 
+/** Tabs of the right-hand panel; shared so the command palette can jump to one. */
+export type RightTabId = "templates" | "layers" | "annotations" | "history" | "projects";
+
 export interface EditorStoreState {
   scene: EditorScene;
   past: EditorScene[];
@@ -63,6 +66,10 @@ export interface EditorStoreState {
   /** First-run onboarding tour visibility. Pure view state — the "already
    *  seen" flag lives in localStorage, not in persisted scene state. */
   onboardingOpen: boolean;
+  /** Active tab of the right-hand panel (templates/layers/annotations/history/
+   *  projects). Shared so the command palette can jump straight to a tab. Pure
+   *  view state — never persisted or undone. */
+  rightTab: RightTabId;
   /** Groups rapid same-field edits (e.g. slider drags) into one undo step. */
   lastHistoryKey: string | null;
   lastHistoryAt: number;
@@ -96,6 +103,8 @@ export interface EditorStoreState {
   setFullscreenPreview: (on: boolean) => void;
   /** Opens/closes the onboarding tour. */
   setOnboardingOpen: (open: boolean) => void;
+  /** Switches the active right-panel tab (templates/layers/annotations/…). */
+  setRightTab: (tab: RightTabId) => void;
   resetScene: () => void;
   undo: () => void;
   redo: () => void;

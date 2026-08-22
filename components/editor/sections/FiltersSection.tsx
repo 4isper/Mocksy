@@ -105,6 +105,7 @@ export function FiltersSection() {
   return (
     <Section
       id="filters"
+      defaultOpen={false}
       title={t("editor.filters")}
       icon={(
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 3h8M2 6h8M2 9h8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><circle cx="4.5" cy="3" r="1.2" fill="currentColor" opacity="0.5"/><circle cx="7.5" cy="6" r="1.2" fill="currentColor" opacity="0.5"/><circle cx="5" cy="9" r="1.2" fill="currentColor" opacity="0.5"/></svg>

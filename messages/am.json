@@ -699,7 +699,17 @@
     "toggleGlareDesc": "Add or remove the light sweep on device screens",
     "toggleReflection": "Toggle floor reflection",
     "toggleReflectionDesc": "Mirror the device below its bottom edge",
-    "recordScreenDesc": "Capture your screen into a video clip in the active layer"
+    "recordScreenDesc": "Capture your screen into a video clip in the active layer",
+    "goTemplates": "Go to Templates",
+    "goTemplatesDesc": "Open the Templates tab in the right panel",
+    "goLayers": "Go to Layers",
+    "goLayersDesc": "Open the Layers tab in the right panel",
+    "goAnnotations": "Go to Annotations",
+    "goAnnotationsDesc": "Open the Annotations tab in the right panel",
+    "goHistory": "Go to History",
+    "goHistoryDesc": "Open the History tab in the right panel",
+    "goProjects": "Go to Projects",
+    "goProjectsDesc": "Open the Projects tab in the right panel"
   },
   "errors": {
     "title": "ነፃ ነው",

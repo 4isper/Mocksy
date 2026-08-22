@@ -95,6 +95,7 @@ export function ControlPanel() {
 
       <Section
         id="watermark"
+        defaultOpen={false}
         title={t("editor.watermark")}
         icon={(
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 8.5V6a4 4 0 018 0v2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><rect x="1" y="8.5" width="2.6" height="2" rx="0.8" stroke="currentColor" strokeWidth="1" /></svg>
@@ -116,6 +117,7 @@ export function ControlPanel() {
 
       <Section
         id="screen"
+        defaultOpen={false}
         title={t("editor.screen")}
         icon={(
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="2" y="3" width="8" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.2"/><path d="M2 3.5h8M2 5h8" stroke="currentColor" strokeWidth="0.8" opacity="0.45"/></svg>
