@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "काही नाही",
@@ -434,7 +435,9 @@
     "title": "दृश्य पूर्वस्थापना",
     "apply": "लागू करा {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "परते वर ते खाली सजवलेली आहेत. त्यांचा आकार, स्थान आणि इमेज विकल्प बदलण्यासाठी एक परत निवडा. परताची क्रमवारी बदलण्यासाठी परताला ढोला. सक्रिय परताचे शॉर्टकट्स: ⌘D प्रतिलिपी, ⌘↑ / ⌘↓ पुनर्व्यवस्थित करा, ⌘[ / ⌘] टॉगल करा."

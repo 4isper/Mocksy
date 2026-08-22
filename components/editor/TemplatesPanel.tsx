@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { sceneStylePresets, applySceneStylePreset, randomSceneStyle } from "@/lib/presets/presets";
 import { useEditorStore } from "@/lib/state/editorStore";
 
-export function TemplatesPanel() {
+export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Promise<void> }) {
   const t = useTranslations();
   const setScene = useEditorStore((s) => s.setScene);
 
@@ -35,6 +35,19 @@ export function TemplatesPanel() {
           <circle cx="5" cy="9" r="1" fill="currentColor"/>
         </svg>
         {t("templates.surprise")}
+      </button>
+      <button
+        type="button"
+        className="btn"
+        onClick={() => void onShareTemplate()}
+        title={t("templates.copyLinkTitle")}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, padding: "6px 10px" }}
+      >
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M5.5 8.5 8.5 5.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+          <path d="M6.2 3.6 7.4 2.4a2.4 2.4 0 0 1 3.4 0l.8.8a2.4 2.4 0 0 1 0 3.4L10.4 7.8M7.8 10.4 6.6 11.6a2.4 2.4 0 0 1-3.4 0l-.8-.8a2.4 2.4 0 0 1 0-3.4L3.6 6.2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+        </svg>
+        {t("templates.copyLink")}
       </button>
       {sceneStylePresets.map((preset) => (
           <button

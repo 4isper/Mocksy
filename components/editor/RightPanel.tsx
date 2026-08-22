@@ -55,7 +55,7 @@ const tabs = [
 
 type TabId = RightTabId;
 
-export function RightPanel() {
+export function RightPanel({ onShareTemplate }: { onShareTemplate: () => Promise<void> }) {
   const t = useTranslations();
   const rightTab = useEditorStore((s) => s.rightTab);
   const setRightTab = useEditorStore((s) => s.setRightTab);
@@ -115,7 +115,7 @@ export function RightPanel() {
         })}
       </div>
       <div className="right-panel-content" id="right-panel-content" role="tabpanel" aria-labelledby={`right-tab-${rightTab}`} data-dir={animDir} key={rightTab}>
-        {rightTab === "templates" && <TemplatesPanel />}
+        {rightTab === "templates" && <TemplatesPanel onShareTemplate={onShareTemplate} />}
         {rightTab === "layers" && <LayersPanel />}
         {rightTab === "annotations" && <AnnotationsPanel />}
         {rightTab === "history" && <HistoryPanel />}

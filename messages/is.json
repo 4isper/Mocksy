@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "Ekkert",
@@ -434,7 +435,9 @@
     "title": "Forðstillingar sýnjar",
     "apply": "Beita {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "Lögin eru yfirborðs í undirborðs röð. Veldu lag til að breyta stærð, staðsetningu og myndvali. Dragðu lagið til að breyta röðinni. Flýtilyklar laga: ⌘D tvífalda, ⌘↑ / ⌘↓ afturkalla, ⌘[ / ⌘] færa."

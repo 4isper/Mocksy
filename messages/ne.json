@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "कुनै छैन",
@@ -434,7 +435,9 @@
     "title": "दृश्यको पूर्वनिर्धारणहरू",
     "apply": "लागू गर्नुहोस् {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "परतहरू माथिबाट तलसम्म थपिएका छन्। तिनीहरूको आकार, स्थान र तस्वीर विकल्पहरू परिवर्तन गर्न एउटा परत छान्नुहोस्। परतको क्रम परिवर्तन गर्न परतलाई तान्नुहोस्। सक्रिय परतका सर्टकटहरू: ⌘D प्रतिलिपि, ⌘↑ / ⌘↓ पुनर्व्यवस्था, ⌘[ / ⌘] टोगल।"

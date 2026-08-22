@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "Nijedan",
@@ -434,7 +435,9 @@
     "title": "Predzadace scena",
     "apply": "Primijeni {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "Slojevi su složeni jedni na drugi od gore prema dolje. Odaberite sloj za promjenu veličine, pozicije i opcija slike. Povucite sloj za promjenu redoslijeda. Prečaci slojeva: ⌘D dupliciraj, ⌘↑ / ⌘↓ poništi, ⌘[ / ⌘] pomakni."

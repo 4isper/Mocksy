@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "Ingen",
@@ -434,7 +435,9 @@
     "title": "Förinställningar för scen",
     "apply": "Tillämpa {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "Lagren är staplade ovanpå varandra från topp till botten. Välj ett lager för att ändra storlek, position och bildalternativ. Dra lagret för att ändra ordningen. Laggenvägar: ⌘D dubblett, ⌘↑ / ⌘↓ ångra, ⌘[ / ⌘] flytta."

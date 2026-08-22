@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "هیچ",
@@ -434,7 +435,9 @@
     "title": "پیش‌تنظیم‌های صحنه",
     "apply": "اعمال {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "لایه‌ها از بالا به پایین چیده شده‌اند. لایه را انتخاب کنید تا اندازه، موقعیت و گزینه‌های تصویری آن را ویرایش کنید. لایه را بکشید تا ترتیب آن را تغییر دهید. میانبرهای کیبورد لایه فعال: ⌘D تکثیر، ⌘↑ / ⌘↓ بازچینی، ⌘[ / ⌘] تعویض."

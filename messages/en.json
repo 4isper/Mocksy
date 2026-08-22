@@ -321,7 +321,8 @@
     "removeBackgroundHint": "Runs locally in your browser. The first use downloads the model (~40 MB) and is cached afterwards.",
     "removeBackgroundError": "Background removal failed. Please try again.",
     "noLayers": "No layers yet.",
-    "noAnnotations": "No annotations yet."
+    "noAnnotations": "No annotations yet.",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "None",
@@ -453,7 +454,9 @@
     "title": "Scene presets",
     "apply": "Apply {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "Layers stack top to bottom. Select a layer to edit its zoom, position and video options. Drag a layer to reorder. Shortcuts for the active layer: ⌘D duplicate, ⌘↑ / ⌘↓ reorder, ⌘[ / ⌘] switch."

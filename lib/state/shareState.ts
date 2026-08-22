@@ -1,5 +1,6 @@
 import type { EditorScene } from "@/lib/types/editor";
 import { normalizeScene } from "@/lib/state/normalizeScene";
+import { stripSceneMedia } from "@/lib/state/templateFile";
 import { DEMO_MEDIA_NAME, DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
 
 /** Above this length the URL becomes impractical to share (some browsers cap
@@ -184,9 +185,57 @@ function restoreDemoMedia(scene: EditorScene): EditorScene {
  *  consumed, so reloads load the persisted project list instead of re-importing
  *  the same share scene (and stacking duplicate projects). */
 export function clearSceneFromUrl(): void {
+  clearQueryParam("scene");
+}
+
+/** Removes the `template` query param after it has been applied, so a reload
+ *  doesn't keep re-importing the template over the user's edits. */
+export function clearTemplateFromUrl(): void {
+  clearQueryParam("template");
+}
+
+function clearQueryParam(name: string): void {
   if (typeof window === "undefined" || !window.history) return;
   const url = new URL(window.location.href);
-  if (!url.searchParams.has("scene")) return;
-  url.searchParams.delete("scene");
+  if (!url.searchParams.has(name)) return;
+  url.searchParams.delete(name);
   window.history.replaceState({}, "", url.toString());
+}
+
+/**
+ * Serializes a media-free template of the scene into a shareable `?template=`
+ * URL — same codec as share links, but every media payload is stripped first
+ * (the reader opens an empty canvas with the scene's appearance). Throws
+ * ShareUrlTooLarge when the link exceeds the practical URL budget.
+ */
+export async function sceneToTemplateUrl(scene: EditorScene): Promise<string> {
+  const serialized = JSON.stringify(stripSceneMedia(scene));
+  const url = new URL(window.location.href);
+  const compressed = await deflateJson(serialized);
+  url.searchParams.set("template", compressed ? COMPRESSED_PREFIX + bytesToBase64Url(compressed) : serialized);
+  if (url.toString().length > MAX_SHARE_URL_LENGTH) {
+    throw new ShareUrlTooLarge();
+  }
+  return url.toString();
+}
+
+/** Reads and normalizes the `?template=` payload. Unlike share links, no demo
+ *  media is restored: templates are appearance-only by definition. The result
+ *  is stripped again defensively so hand-edited links can't smuggle media. */
+export async function readTemplateFromUrl(): Promise<EditorScene | null> {
+  const raw = new URL(window.location.href).searchParams.get("template");
+  if (!raw) return null;
+
+  let scene: EditorScene | null;
+  if (raw.startsWith(COMPRESSED_PREFIX)) {
+    try {
+      const json = await inflateJson(base64UrlToBytes(raw.slice(COMPRESSED_PREFIX.length)));
+      scene = json ? normalizeScene(JSON.parse(json)) : null;
+    } catch {
+      return null;
+    }
+  } else {
+    scene = parseLegacyShareScene(raw);
+  }
+  return scene ? stripSceneMedia(scene) : null;
 }

@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "ಯಾವುದೂ ಇಲ್ಲ",
@@ -434,7 +435,9 @@
     "title": "ದೃಶ್ಯ ಪೂರ್ವನಿಯೋಗಗಳು",
     "apply": "ಅಪ್ಲೈ ಮಾಡಿ {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "ಪದರಗಳು ಮೇಲಿಂದ ಕೆಳಗೆ ಪಂಚಿಸಲ್ಪಟ್ಟಿವೆ. ಅವನ್ನು ಗಾತ್ರ, ಸ್ಥಾನ ಮತ್ತು ಚಿತ್ರ ಆಯ್ಕೆಗಳನ್ನು ಬದಲಿಸಲು ಒಂದು ಪದರವನ್ನು ಆಯ್ಕೆ ಮಾಡಿ. ಅವನ್ನು ಪಂಚಿಕೆ ಬದಲಿಸಲು ಪದರವನ್ನು ಹಿಡಿಯಿಡಿ. ಸಕ್ರಿಯ ಪದರದ ಶಾರ್ಟ್‌ಕಟ್ಸ್: ⌘D ನಕಲು, ⌘↑ / ⌘↓ ಪುನಃವ್ಯವಸ್ಥಿಸಿ, ⌘[ / ⌘] ಟಾಗಲ್ ಮಾಡಿ."

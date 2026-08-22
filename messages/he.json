@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "אף אחד",
@@ -434,7 +435,9 @@
     "title": "תבניות סצנה",
     "apply": "החל {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "השכבות מונחות מלמעלה למטה. בחר שכבה כדי לערוך את הzoom, מיקום ואפשרויות וידאו. גרור שכבה כדי לסדר מחדש. קיצורי מקלדת לשכבה הפעילה: ⌘D שכפול, ⌘↑ / ⌘↓ סדר, ⌘[ / ⌘] מעבר."

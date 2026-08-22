@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "Ingen",
@@ -434,7 +435,9 @@
     "title": "Forhåndsindstillinger af scene",
     "apply": "Anvend {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "Lagene er stablet ovenpå hinanden fra top til bund. Vælg et lag for at ændre størrelse, position og billedindstillinger. Træk laget for at ændre rækkefølgen. Lag-tastaturgenveje: ⌘D dubler, ⌘↑ / ⌘↓ fortryd, ⌘[ / ⌘] flyt."

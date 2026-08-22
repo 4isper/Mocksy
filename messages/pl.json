@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "Żaden",
@@ -434,7 +435,9 @@
     "title": "Wstępne ustawienia sceny",
     "apply": "Zastosuj {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "Warstwy są ułożone jedna na drugiej od góry do dołu. Wybierz warstwę, aby zmienić rozmiar, pozycję i opcje obrazu. Przeciągnij warstwę, aby zmienić kolejność. Skróty warstw: ⌘D duplikuj, ⌘↑ / ⌘↓ cofnij, ⌘[ / ⌘] przesuń."

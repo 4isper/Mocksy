@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "无",
@@ -434,7 +435,9 @@
     "title": "场景预设",
     "apply": "应用 {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "图层从上到下堆叠。选择图层以编辑其缩放、位置和视频选项。 拖动图层以重新排序。 活动图层的快捷键：⌘D 复制，⌘↑ / ⌘↓ 重新排序，⌘[ / ⌘] 切换。"

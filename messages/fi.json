@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "Ei yhtään",
@@ -434,7 +435,9 @@
     "title": "Esiasetukset näkymälle",
     "apply": "Käytä {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "Kerrokset on pinottu toistensa päälle ylhäältä alas. Valitse kerros muuttaaksesi kokoa, sijaintia ja kuvan valintoja. Vedä kerrosta muuttaaksesi järjestystä. Kerroksen pikanäppäimet: ⌘D monista, ⌘↑ / ⌘↓ kumoa, ⌘[ / ⌘] siirtää."

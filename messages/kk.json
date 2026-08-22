@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "Ешқандай",
@@ -434,7 +435,9 @@
     "title": "Көрініс басқашалары",
     "apply": "Қолдану {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "Қабаттар жоғарыдан төмен қатарлас. Өлшемін, орналасуын және сурет параметрлерін өзгерту үшін қабатты таңдаңыз. Қабатты қатарды өзгерту үшін тартыңыз. Қабат тез клавишалары: ⌘D көшіру, ⌘↑ / ⌘↓ қайту, ⌘[ / ⌘] жылжыту."

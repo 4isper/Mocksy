@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "Nekur",
@@ -434,7 +435,9 @@
     "title": "Iepriekšējās skata konfigurācijas",
     "apply": "Piemērot {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "Slāņi ir vienā otra virsā no augšas uz leju. Izvēlieties slāni, lai mainītu izmēru, novietojumu un attēla iestatījumus. Veliet slāni, lai mainītu kārtību. Slāņu īslaidi: ⌘D dublēt, ⌘↑ / ⌘↓ atcelt, ⌘[ / ⌘] pārvietot."

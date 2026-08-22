@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "ਕੋਈ ਨਹੀਂ",
@@ -434,7 +435,9 @@
     "title": "ਦ੍ਰਿਸ਼ ਪੂਰਵ-ਨਿਰਧਾਰਨ",
     "apply": "ਲਾਗੂ ਕਰੋ {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "ਲੇਅਰਾਂ ਉੱਪਰ ਤੋਂ ਨੀਚੇ ਪਾਂਚੀਆਂ ਹਨ। ਉਹਨਾਂ ਦਾ ਸਾਈਜ਼, ਸਥਾਨ ਅਤੇ ਚਿੱਤਰ ਵਿਕਲਪ ਬਦਲਣ ਲਈ ਇੱਕ ਲੇਅਰ ਚੁਣੋ। ਉਹਨਾਂ ਦੀ ਕਰਮ-ਵਾਰੀ ਬਦਲਣ ਲਈ ਲੇਅਰ ਨੂੰ ਖਿੰਚੋ। ਸਕਿਰਤ ਲੇਅਰ ਦੇ ਸ਼ਾਰਟਕੱਟ: ⌘D ਡੁਪਲੀਕੇਟ, ⌘↑ / ⌘↓ ਪੁਨਰਵਿਆਵਸਥਾ, ⌘[ / ⌘] ਟੋਗਲ।"

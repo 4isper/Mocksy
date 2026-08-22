@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "なし",
@@ -434,7 +435,9 @@
     "title": "シーンプリセット",
     "apply": "{name} を適用",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "レイヤーは上から下にスタックされています。アクティブレイヤーのズーム、位置、ビデオオプションを編集します。 レイヤーをドラッグして並べ替えます。 アクティブレイヤーのショートカット：⌘D で複製、⌘↑ / ⌘↓ で並べ替え、⌘[ / ⌘] で切り替え。"

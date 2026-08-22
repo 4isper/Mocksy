@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "কোনোটি নয়",
@@ -434,7 +435,9 @@
     "title": "দৃশ্যের পূর্বনির্ধারিত",
     "apply": "প্রয়োগ করুন {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "স্তরগুলি উপর থেকে নিচে সাজানো আছে। স্তরের আকার, অবস্থান এবং ছবি বিকল্প পরিবর্তন করতে একটি স্তর নির্বাচন করুন। স্তরের ক্রম পরিবর্তন করতে স্তরটি টেনে নিন। সক্রিয় স্তরের শর্টকাট: ⌘D প্রতিলিপি, ⌘↑ / ⌘↓ পুনর্বিন্যাস, ⌘[ / ⌘] টোগল।"

@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "ไม่มี",
@@ -434,7 +435,9 @@
     "title": "พรีเซ็ตฉาก",
     "apply": "ใช้ {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "เลเยอร์ซ้อนกันจากบนลงล่าง เลือกเลเยอร์เพื่อแก้ไข zoom ตำแหน่ง และตัวเลือกวิดีโอ ลากเลเยอร์เพื่อจัดเรียงใหม่ ปุ่มลัดสำหรับเลเยอร์ที่ใช้งานอยู่: ⌘D ทำซ้ำ ⌘↑ / ⌘↓ จัดเรียงใหม่ ⌘[ / ⌘] สลับ"

@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "Aon cheann",
@@ -434,7 +435,9 @@
     "title": "Réamhshocruithe radharc",
     "apply": "Cuir i bhfeidhm {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "Tá na sruthanna le chéile ó uachtar go íochtar. Roghnaigh sruth chun a mhéid, a suímh agus a roghanna pictiúr a athrú. Tarraing an sruth chun a chéim a athrú. Gairrthochtanna sruth gníomhach: ⌘D dhéanamh, ⌘↑ / ⌘↓ athshocrú, ⌘[ / ⌘] aistriú."

@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "Wala",
@@ -434,7 +435,9 @@
     "title": "Mga preset ng tanawin",
     "apply": "I-apply ang {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "Ang mga layer ay nakatapat sa isa sa iba mula sa itaas pababa. Pumili ng layer upang baguhin ang laki, posisyon, at mga opsyon ng larawan. I-drag ang layer upang baguhin ang pagkakasunod-sunod. Mga shortcut ng layer: ⌘D i-double, ⌘↑ / ⌘↓ i-undo, ⌘[ / ⌘] i-lipat."

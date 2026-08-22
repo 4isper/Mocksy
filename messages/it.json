@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "Nessuno",
@@ -434,7 +435,9 @@
     "title": "Preimpostazioni della scena",
     "apply": "Applica {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "I livelli sono impilati uno sull'altro dall'alto verso il basso. Seleziona un livello per modificare dimensione, posizione e opzioni immagine. Trascina il livello per cambiare l'ordine. Scorciatoie livelli: ⌘D duplica, ⌘↑ / ⌘↓ annulla, ⌘[ / ⌘] sposta."

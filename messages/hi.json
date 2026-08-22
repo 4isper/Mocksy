@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "कोई नहीं",
@@ -434,7 +435,9 @@
     "title": "दृश्य पूर्वसेट",
     "apply": "{name} लागू करें",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "परतें ऊपर से नीचे की ओर जमा हैं। ज़ूम, स्थान और वीडियो विकल्प संपादित करने के लिए परत चुनें। पुनर्व्यवस्थित करने के लिए परत को खींचें। सक्रिय परत के लिए शॉर्टकट: ⌘D दोहराएं, ⌘↑ / ⌘↓ पुनर्व्यवस्थित करें, ⌘[ / ⌘] बदलें।"

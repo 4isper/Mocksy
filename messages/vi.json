@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "Không",
@@ -434,7 +435,9 @@
     "title": "Cài đặt trước cảnh",
     "apply": "Áp dụng {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "Các lớp được xếp chồng lên nhau từ trên xuống dưới. Chọn một lớp để thay đổi kích thước, vị trí và tùy chọn hình ảnh. Kéo lớp để thay đổi thứ tự. Phím tắt lớp: ⌘D nhân đôi, ⌘↑ / ⌘↓ hoàn tác, ⌘[ / ⌘] di chuyển."

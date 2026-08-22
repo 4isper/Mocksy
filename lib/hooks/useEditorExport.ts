@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 import { exportImage, copyPngToClipboard, exportWebp } from "@/lib/export/exportImage";
 import { exportPdf } from "@/lib/export/exportPdf";
 import type { ExportFormat } from "@/components/editor/ExportDialog";
-import { sceneToShareUrl, ShareUrlTooLarge } from "@/lib/state/shareState";
+import { sceneToShareUrl, sceneToTemplateUrl, ShareUrlTooLarge } from "@/lib/state/shareState";
 import type { EditorScene, ExportSize } from "@/lib/types/editor";
 
 export interface EditorExportApi {
@@ -28,6 +28,7 @@ export interface EditorExportApi {
   handleExportWebpAnim: () => void;
   handleExportGif: () => void;
   handleCopyPng: () => Promise<void>;
+  copyTemplateUrl: () => Promise<void>;
   cancelExport: () => void;
 }
 
@@ -93,6 +94,22 @@ export function useEditorExport(
       const url = await sceneToShareUrl({ ...scene, activeLayerId });
       await navigator.clipboard.writeText(url);
       setCopyStatus(t("editor.shareLinkCopied"));
+    } catch (err) {
+      if (err instanceof ShareUrlTooLarge) {
+        setExportError(t("errors.shareUrlTooLarge"));
+      } else {
+        setExportError(err instanceof Error ? err.message : t("export.shareLinkFailed"));
+      }
+    }
+  }, [scene, activeLayerId, t]);
+
+  // Template links carry the scene's appearance without any media payloads,
+  // so they stay small and never leak uploaded screenshots.
+  const copyTemplateUrl = useCallback(async () => {
+    try {
+      const url = await sceneToTemplateUrl({ ...scene, activeLayerId });
+      await navigator.clipboard.writeText(url);
+      setCopyStatus(t("editor.templateLinkCopied"));
     } catch (err) {
       if (err instanceof ShareUrlTooLarge) {
         setExportError(t("errors.shareUrlTooLarge"));
@@ -311,6 +328,7 @@ export function useEditorExport(
     copyStatus,
     isExporting: videoExportStatus !== null || gifExportStatus !== null,
     copyShareUrl,
+    copyTemplateUrl,
     handleExport,
     handleCopyFromDialog,
     handleExportPng,

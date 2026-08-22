@@ -13,7 +13,7 @@ afterEach(() => {
 
 describe("RightPanel", () => {
   it("renders tabs", () => {
-    render(<RightPanel />);
+    render(<RightPanel onShareTemplate={async () => {}} />);
     expect(screen.getByText("templates.title")).toBeInTheDocument();
     expect(screen.getByText("editor.layers")).toBeInTheDocument();
     expect(screen.getByText("editor.annotations")).toBeInTheDocument();
@@ -21,12 +21,12 @@ describe("RightPanel", () => {
   });
 
   it("defaults to templates tab", () => {
-    render(<RightPanel />);
+    render(<RightPanel onShareTemplate={async () => {}} />);
     expect(screen.getByRole("tab", { name: /templates/i })).toHaveAttribute("aria-selected", "true");
   });
 
   it("switches tab on click", async () => {
-    render(<RightPanel />);
+    render(<RightPanel onShareTemplate={async () => {}} />);
     await userEvent.click(screen.getByText("templates.title"));
     expect(screen.getByRole("tab", { name: /templates/i })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: /layers/i })).toHaveAttribute("aria-selected", "false");
@@ -43,7 +43,7 @@ describe("RightPanel", () => {
         ]
       }
     });
-    render(<RightPanel />);
+    render(<RightPanel onShareTemplate={async () => {}} />);
     const layersTab = screen.getByRole("tab", { name: /layers/i });
     expect(layersTab.querySelector(".tab-badge")).toHaveTextContent("3");
   });
@@ -58,19 +58,19 @@ describe("RightPanel", () => {
         ]
       }
     });
-    render(<RightPanel />);
+    render(<RightPanel onShareTemplate={async () => {}} />);
     const annoTab = screen.getByRole("tab", { name: /annotations/i });
     expect(annoTab.querySelector(".tab-badge")).toHaveTextContent("2");
   });
 
   it("hides badge when count is 0", () => {
-    render(<RightPanel />);
+    render(<RightPanel onShareTemplate={async () => {}} />);
     const annoTab = screen.getByRole("tab", { name: /annotations/i });
     expect(annoTab.querySelector(".tab-badge")).toBeNull();
   });
 
   it("wires tablist ARIA (controls/labelledby, roving tabindex)", () => {
-    render(<RightPanel />);
+    render(<RightPanel onShareTemplate={async () => {}} />);
     const templatesTab = screen.getByRole("tab", { name: /templates/i });
     expect(templatesTab).toHaveAttribute("aria-controls", "right-panel-content");
     expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", "right-tab-templates");
@@ -81,7 +81,7 @@ describe("RightPanel", () => {
 
   it("navigates tabs with arrow keys and moves focus", async () => {
     const user = userEvent.setup();
-    render(<RightPanel />);
+    render(<RightPanel onShareTemplate={async () => {}} />);
     const templatesTab = screen.getByRole("tab", { name: /templates/i });
     const layersTab = screen.getByRole("tab", { name: /layers/i });
     templatesTab.focus();
@@ -95,7 +95,7 @@ describe("RightPanel", () => {
 
   it("jumps to ends with Home/End", async () => {
     const user = userEvent.setup();
-    render(<RightPanel />);
+    render(<RightPanel onShareTemplate={async () => {}} />);
     const templatesTab = screen.getByRole("tab", { name: /templates/i });
     const projectsTab = screen.getByRole("tab", { name: /projects/i });
     const layersTab = screen.getByRole("tab", { name: /layers/i });

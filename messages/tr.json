@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "Yok",
@@ -434,7 +435,9 @@
     "title": "Sahne ön ayarları",
     "apply": "Uygula {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "Katmanlar üst üste yukarıdan aşağıya dizilmiştir. Boyutu, konumu ve görüntü seçeneklerini değiştirmek için katmanı seçin. Sırayı değiştirmek için katmanı sürükleyin. Katman kısayolları: ⌘D çoğalt, ⌘↑ / ⌘↓ geri al, ⌘[ / ⌘] taşı."

@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "Hakuna",
@@ -434,7 +435,9 @@
     "title": "Mipangilio ya upande wa kuangalia",
     "apply": "Tumia {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "Vipande vimezungukwa juu ya kila mmoja kutoka juu hadi chini. Chagua kipande kubadilisha ukubwa, nafiri na chaguo za picha. Kanda kipande kubadilisha mpangilio. Mfumo wa kufungua kwa kasi wa vipande: ⌘D rudia, ⌘↑ / ⌘↓ rudisha, ⌘[ / ⌘] sukuma."

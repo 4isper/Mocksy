@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "ஏதுமில்லை",
@@ -434,7 +435,9 @@
     "title": "காட்சி முன்னிருப்புகள்",
     "apply": "செயல்படுத்து {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "அட்டைகள் மேலிருந்து கீழாக அமைந்துள்ளன. அவற்றின் அளவு, நிலையிடம் மற்றும் பட விருப்பங்களை மாற்ற ஒரு அட்டையைத் தேர்ந்தெடுக்கவும். அவற்றின் வரிசையை மாற்ற அட்டையை இழுக்கவும். செயல்படும் அட்டையின் விரைவுக் குறியீடுகள்: ⌘D நகல், ⌘↑ / ⌘↓ வரிசை மாற்று, ⌘[ / ⌘] மாற்று."

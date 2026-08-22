@@ -318,7 +318,8 @@
     "nudgeRight": "Nudge right",
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
-    "browserThemeDark": "Dark"
+    "browserThemeDark": "Dark",
+    "templateLinkCopied": "Template link copied"
   },
   "frame": {
     "none": "Няма",
@@ -434,7 +435,9 @@
     "title": "Предварителни настройки на сцената",
     "apply": "Прилагане на {name}",
     "surprise": "Surprise me",
-    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched"
+    "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
+    "copyLink": "Copy template link",
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
   },
   "help": {
     "layersStack": "Слоевете са подредени от горе надолу. Изберете слой за редактиране на zoom, позиция и видео опции. Плъзнете слой, за да го пренаредите. Бързи пътища за активния слой: ⌘D дуплициране, ⌘↑ / ⌘↓ преоразмеряване, ⌘[ / ⌘] превключване."

@@ -13,14 +13,14 @@ afterEach(() => {
 
 describe("TemplatesPanel", () => {
   it("renders all scene style presets", () => {
-    render(<TemplatesPanel />);
+    render(<TemplatesPanel onShareTemplate={async () => {}} />);
     for (const preset of sceneStylePresets) {
       expect(screen.getByText(`preset.${preset.id}`)).toBeInTheDocument();
     }
   });
 
   it("applies preset on click", async () => {
-    render(<TemplatesPanel />);
+    render(<TemplatesPanel onShareTemplate={async () => {}} />);
     const preset = sceneStylePresets[0]!;
     await userEvent.click(screen.getByText(`preset.${preset.id}`));
     const scene = useEditorStore.getState().scene;
@@ -29,13 +29,13 @@ describe("TemplatesPanel", () => {
   });
 
   it("each preset card has template-card class", () => {
-    render(<TemplatesPanel />);
+    render(<TemplatesPanel onShareTemplate={async () => {}} />);
     const cards = document.querySelectorAll(".template-card");
     expect(cards.length).toBe(sceneStylePresets.length);
   });
 
   it("surprise button applies a valid random style in one undo step", async () => {
-    render(<TemplatesPanel />);
+    render(<TemplatesPanel onShareTemplate={async () => {}} />);
     await userEvent.click(screen.getByText("templates.surprise"));
     const state = useEditorStore.getState();
     expect(["solid", "gradient", "pattern"]).toContain(state.scene.backgroundMode);
