@@ -17,6 +17,7 @@ import { ErrorBoundary } from "@/components/editor/ErrorBoundary";
 import { ResetConfirmDialog } from "@/components/editor/ResetConfirmDialog";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { OnboardingTour, hasSeenOnboarding } from "@/components/editor/OnboardingTour";
+import { ShareQrDialog } from "@/components/editor/ShareQrDialog";
 import { useCommands } from "@/lib/hooks/useCommands";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
@@ -287,6 +288,7 @@ export function EditorShell() {
       />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <OnboardingTour />
+      <ShareQrDialog url={exportApi.shareQrUrl} onClose={exportApi.closeShareQr} />
       <CommandPalette
         commands={commands}
         isOpen={commandPaletteOpen}

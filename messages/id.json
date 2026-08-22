@@ -319,7 +319,10 @@
     "browserTheme": "Browser theme",
     "browserThemeLight": "Light",
     "browserThemeDark": "Dark",
-    "templateLinkCopied": "Template link copied"
+    "templateLinkCopied": "Template link copied",
+    "qrTitle": "Scan to open this mockup",
+    "qrCopiedHint": "Link copied to clipboard — scan it on your phone.",
+    "qrClose": "Close"
   },
   "frame": {
     "none": "Tidak ada",

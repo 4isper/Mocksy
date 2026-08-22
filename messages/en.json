@@ -322,7 +322,10 @@
     "removeBackgroundError": "Background removal failed. Please try again.",
     "noLayers": "No layers yet.",
     "noAnnotations": "No annotations yet.",
-    "templateLinkCopied": "Template link copied"
+    "templateLinkCopied": "Template link copied",
+    "qrTitle": "Scan to open this mockup",
+    "qrCopiedHint": "Link copied to clipboard — scan it on your phone.",
+    "qrClose": "Close"
   },
   "frame": {
     "none": "None",

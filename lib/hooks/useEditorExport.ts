@@ -29,6 +29,9 @@ export interface EditorExportApi {
   handleExportGif: () => void;
   handleCopyPng: () => Promise<void>;
   copyTemplateUrl: () => Promise<void>;
+  /** URL currently shown in the share-QR dialog, or null when closed. */
+  shareQrUrl: string | null;
+  closeShareQr: () => void;
   cancelExport: () => void;
 }
 
@@ -55,6 +58,7 @@ export function useEditorExport(
   const [gifExportProgress, setGifExportProgress] = useState(0);
   const [exportError, setExportError] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [shareQrUrl, setShareQrUrl] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const cancelExport = useCallback(() => {
@@ -94,6 +98,7 @@ export function useEditorExport(
       const url = await sceneToShareUrl({ ...scene, activeLayerId });
       await navigator.clipboard.writeText(url);
       setCopyStatus(t("editor.shareLinkCopied"));
+      setShareQrUrl(url);
     } catch (err) {
       if (err instanceof ShareUrlTooLarge) {
         setExportError(t("errors.shareUrlTooLarge"));
@@ -110,6 +115,7 @@ export function useEditorExport(
       const url = await sceneToTemplateUrl({ ...scene, activeLayerId });
       await navigator.clipboard.writeText(url);
       setCopyStatus(t("editor.templateLinkCopied"));
+      setShareQrUrl(url);
     } catch (err) {
       if (err instanceof ShareUrlTooLarge) {
         setExportError(t("errors.shareUrlTooLarge"));
@@ -329,6 +335,8 @@ export function useEditorExport(
     isExporting: videoExportStatus !== null || gifExportStatus !== null,
     copyShareUrl,
     copyTemplateUrl,
+    shareQrUrl,
+    closeShareQr: () => setShareQrUrl(null),
     handleExport,
     handleCopyFromDialog,
     handleExportPng,
