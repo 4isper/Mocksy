@@ -200,6 +200,14 @@ export function AnnotationEditor({ annotation }: AnnotationEditorProps) {
           />
         </label>
       )}
+      <label className="field field-inline">
+        <input
+          type="checkbox"
+          checked={!!annotation.animated}
+          onChange={(e) => updateAnnotation(annotation.id, { animated: e.target.checked })}
+        />
+        <span>{t("annotation.animate")}</span>
+      </label>
       <button type="button" className="btn btn-sm" onClick={() => removeAnnotation(annotation.id)}>
         {t("annotation.delete")}
       </button>

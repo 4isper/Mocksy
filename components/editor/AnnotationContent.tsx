@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import type { Annotation } from "@/lib/types/editor";
 import { computeArrowGeometry } from "@/lib/render/annotationArrow";
+import { annotationPreviewAnimation } from "@/lib/render/annotationAnimation";
 
 interface AnnotationContentProps {
   annotation: Annotation;
@@ -68,7 +69,7 @@ export function AnnotationContent({
         {annotation.text}
       </div>
     ) : (
-      <div style={textStyle} onDoubleClick={onStartEditing}>
+      <div className={annotationPreviewAnimation(annotation)?.className} style={textStyle} onDoubleClick={onStartEditing}>
         {annotation.text}
       </div>
     );
@@ -77,6 +78,7 @@ export function AnnotationContent({
   if (annotation.type === "rect") {
     return (
       <div
+        className={annotationPreviewAnimation(annotation)?.className}
         style={{
           width: "100%",
           height: "100%",
@@ -91,6 +93,7 @@ export function AnnotationContent({
   if (annotation.type === "circle") {
     return (
       <div
+        className={annotationPreviewAnimation(annotation)?.className}
         style={{
           width: "100%",
           height: "100%",
@@ -107,6 +110,7 @@ export function AnnotationContent({
     // export mirrors this by re-drawing a blurred snapshot of the composite.
     return (
       <div
+        className={annotationPreviewAnimation(annotation)?.className}
         style={{
           width: "100%",
           height: "100%",
@@ -123,8 +127,8 @@ export function AnnotationContent({
   const bh = Math.abs(annotation.h) || 1e-4;
   const { startX, startY, endX, endY, points } = computeArrowGeometry(annotation, size.w, size.h, bx, by);
   return (
-    <svg width={bw * (size.w || 1)} height={bh * (size.h || 1)} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-      <line x1={startX} y1={startY} x2={endX} y2={endY} stroke={annotation.color} strokeWidth={annotation.strokeWidth} strokeLinecap="round" />
+    <svg className={annotationPreviewAnimation(annotation)?.className} width={bw * (size.w || 1)} height={bh * (size.h || 1)} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
+      <line pathLength={1} x1={startX} y1={startY} x2={endX} y2={endY} stroke={annotation.color} strokeWidth={annotation.strokeWidth} strokeLinecap="round" />
       <polygon points={points} fill={annotation.color} />
     </svg>
   );

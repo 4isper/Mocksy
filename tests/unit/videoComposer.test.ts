@@ -87,6 +87,26 @@ describe("buildVideoTimeline", () => {
     expect(timeline[0]?.x).toBe(0);
     expect(timeline[1]?.x).toBe(0);
   });
+
+  it("returns a vertical float timeline (y oscillates, slight zoom pulse)", () => {
+    const floatLayer = { ...layer, animationPreset: "float" as const };
+    const timeline = buildVideoTimeline(floatLayer);
+    expect(timeline.length).toBe(3);
+    expect(timeline[0]?.y).toBe(-6);
+    expect(timeline[1]?.y).toBe(6);
+    expect(timeline[2]?.y).toBe(-6);
+    expect(timeline[1]?.zoom).toBeGreaterThan(1);
+  });
+
+  it("returns a horizontal sway timeline (x oscillates)", () => {
+    const swayLayer = { ...layer, animationPreset: "sway" as const };
+    const timeline = buildVideoTimeline(swayLayer);
+    expect(timeline.length).toBe(3);
+    expect(timeline[0]?.x).toBe(-12);
+    expect(timeline[1]?.x).toBe(12);
+    expect(timeline[2]?.x).toBe(-12);
+    expect(timeline[0]?.y).toBe(0);
+  });
 });
 
 describe("sampleVideoTransform", () => {

@@ -350,6 +350,8 @@
     "panLeft": "Влево",
     "panRight": "Вправо",
     "breathe": "Дыхание",
+    "float": "Парение",
+    "sway": "Покачивание",
     "easingLinear": "Линейно",
     "easingEaseInOut": "Плавно",
     "easingEaseOut": "С ускорением",
@@ -395,6 +397,7 @@
     "clearAllConfirm_confirm": "Очистить всё",
     "bgColor": "Фон",
     "bgClear": "Убрать",
+    "animate": "Анимировать в превью",
     "bgPadding": "Отступ ({val} пкс)",
     "bgRadius": "Радиус ({val} пкс)"
   },

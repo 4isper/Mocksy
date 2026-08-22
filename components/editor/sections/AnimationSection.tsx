@@ -35,7 +35,9 @@ export function AnimationSection() {
     parallax: t("animation.parallax"),
     panLeft: t("animation.panLeft"),
     panRight: t("animation.panRight"),
-    breathe: t("animation.breathe")
+    breathe: t("animation.breathe"),
+    float: t("animation.float"),
+    sway: t("animation.sway")
   };
   const easingLabels: Record<AnimationEasing, string> = {
     linear: t("animation.easingLinear"),

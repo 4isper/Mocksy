@@ -350,6 +350,8 @@
     "panLeft": "Pan left",
     "panRight": "Pan right",
     "breathe": "Breathe",
+    "float": "Float",
+    "sway": "Sway",
     "easingLinear": "Linear",
     "easingEaseInOut": "Ease in-out",
     "easingEaseOut": "Ease out",
@@ -395,6 +397,7 @@
     "clearAllConfirm_confirm": "Clear all",
     "bgColor": "Background",
     "bgClear": "Clear",
+    "animate": "Animate on preview",
     "bgPadding": "Padding ({val}px)",
     "bgRadius": "Radius ({val}px)"
   },

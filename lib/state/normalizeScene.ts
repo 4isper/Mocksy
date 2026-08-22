@@ -96,7 +96,8 @@ function normalizeAnnotation(raw: unknown, fallback: Annotation): Annotation {
     textAlign: pick(r.textAlign, ["left", "center", "right"] as const, fallback.textAlign ?? "left"),
     bgColor: str(r.bgColor, null),
     bgPadding: num(r.bgPadding, fallback.bgPadding ?? 0, 0, 100),
-    bgRadius: num(r.bgRadius, fallback.bgRadius ?? 0, 0, 200)
+    bgRadius: num(r.bgRadius, fallback.bgRadius ?? 0, 0, 200),
+    animated: r.animated === true
   };
 }
 

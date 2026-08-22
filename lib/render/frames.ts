@@ -277,7 +277,7 @@ export const FRAME_ORDER: Exclude<MockupFrame, "custom">[] = [
   "watch"
 ];
 
-export const ANIMATION_PRESETS: AnimationPreset[] = ["none", "zoomIn", "zoomOut", "parallax", "panLeft", "panRight", "breathe"];
+export const ANIMATION_PRESETS: AnimationPreset[] = ["none", "zoomIn", "zoomOut", "parallax", "panLeft", "panRight", "breathe", "float", "sway"];
 
 /** Aspect ratios selectable for the scene canvas. Kept here so the ControlPanel
  *  select and any preset/normalization code share a single source of truth. */

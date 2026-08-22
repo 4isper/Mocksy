@@ -102,7 +102,7 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 
 ### Animations
 
-- Presets: zoom in/out, parallax, pan left/right, breathe
+- Presets: zoom in/out, parallax, pan left/right, breathe, float, sway
 - Easing curves between keyframes: linear, ease-in-out, ease-out, bounce, spring
 - Adjustable loop duration
 - Applied consistently in the live preview, video exports and HTML export

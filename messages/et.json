@@ -351,7 +351,9 @@
     "easingEaseInOut": "Ease in-out",
     "easingEaseOut": "Ease out",
     "easingBounce": "Bounce",
-    "easingSpring": "Spring"
+    "easingSpring": "Spring",
+    "float": "Float",
+    "sway": "Sway"
   },
   "annotation": {
     "text": "Tekst",
@@ -393,7 +395,8 @@
     "alignCenterH": "Center horizontally",
     "blur": "Blur",
     "blurStrength": "Blur strength ({val}px)",
-    "stickers": "Stickers"
+    "stickers": "Stickers",
+    "animate": "Animate on preview"
   },
   "video": {
     "options": "Video seaded",

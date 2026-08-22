@@ -42,10 +42,14 @@ export interface Annotation {
   bgPadding?: number;
   /** Border-radius of background box, in px (default 0). */
   bgRadius?: number;
+  /** When true, the annotation plays an entrance animation (draw-on for
+   *  shapes/arrows, typewriter for text) in the live preview. Export renders
+   *  the final state regardless. */
+  animated?: boolean;
 }
 export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "pixel8pro" | "galaxy24" | "iphoneSE" | "ipad" | "galaxyTab" | "desktop" | "tablet" | "macbook" | "imac" | "notebook" | "browser" | "tv" | "watchUltra" | "watch" | "custom";
 export type StylePreset = "default" | "glassLight" | "glassDark" | "outline";
-export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax" | "panLeft" | "panRight" | "breathe";
+export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax" | "panLeft" | "panRight" | "breathe" | "float" | "sway";
 /** Easing curve applied between animation keyframes. */
 export type AnimationEasing = "linear" | "easeInOut" | "easeOut" | "bounce" | "spring";
 /** Screen decoration style rendered over the media (lock screen, home screen). */

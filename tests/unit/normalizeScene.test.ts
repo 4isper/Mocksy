@@ -114,6 +114,17 @@ describe("normalizeScene", () => {
     expect(s.annotations[1]!.strokeWidth).toBe(40);
   });
 
+  it("normalizes the annotation animated flag to a boolean", () => {
+    const s = normalizeScene({
+      annotations: [
+        { type: "text", x: 0.1, y: 0.1, w: 0.2, h: 0, text: "Hi", color: "#fff", fontSize: 40, strokeWidth: 2, animated: true },
+        { type: "rect", x: 0.1, y: 0.1, w: 0.2, h: 0.2, color: "#fff", strokeWidth: 2, animated: "yes" }
+      ]
+    });
+    expect(s.annotations[0]!.animated).toBe(true);
+    expect(s.annotations[1]!.animated).toBe(false);
+  });
+
   it("returns an empty annotations list for malformed input", () => {
     const s = normalizeScene({ annotations: "nope" });
     expect(s.annotations).toEqual([]);

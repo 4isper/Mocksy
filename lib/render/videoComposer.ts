@@ -55,6 +55,18 @@ export function buildVideoTimeline(layer: MediaLayer): VideoKeyframe[] {
         { at: 0.5, zoom: 1.06, x: 0, y: 0 },
         { at: 1, zoom: 1, x: 0, y: 0 }
       ]);
+    case "float":
+      return staticTimeline("float", () => [
+        { at: 0, zoom: 1, x: 0, y: -6 },
+        { at: 0.5, zoom: 1.03, x: 0, y: 6 },
+        { at: 1, zoom: 1, x: 0, y: -6 }
+      ]);
+    case "sway":
+      return staticTimeline("sway", () => [
+        { at: 0, zoom: 1, x: -12, y: 0 },
+        { at: 0.5, zoom: 1, x: 12, y: 0 },
+        { at: 1, zoom: 1, x: -12, y: 0 }
+      ]);
     default:
       return [{ at: 0, zoom: layer.zoom, x: 0, y: 0 }];
   }
