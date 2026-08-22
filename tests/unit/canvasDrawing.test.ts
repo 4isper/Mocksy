@@ -85,6 +85,7 @@ function scene(overrides: Partial<EditorScene> = {}): EditorScene {
     frame: "none",
     aspectRatio: "16 / 9",
     stylePreset: "default",
+    browserChromeTheme: "light",
     borderRadius: 12,
     tiltX: 0,
     tiltY: 0,

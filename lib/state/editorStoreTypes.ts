@@ -208,6 +208,7 @@ export interface EditorStoreState {
   setFloorReflection: (on: boolean) => void;
   /** Sets the URL shown in the browser frame's address bar. */
   setBrowserUrl: (url: string) => void;
+  setBrowserChromeTheme: (theme: "light" | "dark") => void;
   setAspectRatio: (aspectRatio: string) => void;
   addAnnotation: (type: AnnotationType) => void;
   updateAnnotation: (id: string, patch: Partial<Annotation>) => void;

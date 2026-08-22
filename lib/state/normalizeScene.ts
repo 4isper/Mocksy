@@ -258,6 +258,7 @@ export function normalizeScene(raw: unknown): EditorScene {
     screenGlare: r.screenGlare === true,
     floorReflection: r.floorReflection === true,
     browserUrl: str(r.browserUrl, initialScene.browserUrl)?.slice(0, 200) ?? initialScene.browserUrl,
+    browserChromeTheme: r.browserChromeTheme === "dark" ? "dark" : "light",
     annotations: Array.isArray(r.annotations)
       ? r.annotations.slice(0, MAX_ANNOTATIONS).map((a) =>
           normalizeAnnotation(a, {

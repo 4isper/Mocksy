@@ -21,6 +21,7 @@ export type AppearanceSlice = Pick<
   | "setScreenGlare"
   | "setFloorReflection"
   | "setBrowserUrl"
+  | "setBrowserChromeTheme"
   | "setAspectRatio"
   | "addAnnotation"
   | "updateAnnotation"
@@ -66,6 +67,7 @@ export function createAppearanceSlice(set: EditorStoreSetter): AppearanceSlice {
     setScreenGlare: (screenGlare) => set((s) => pushHistory(s, { ...s.scene, screenGlare })),
     setFloorReflection: (floorReflection) => set((s) => pushHistory(s, { ...s.scene, floorReflection })),
     setBrowserUrl: (browserUrl) => set((s) => pushHistory(s, { ...s.scene, browserUrl }, "browserUrl")),
+    setBrowserChromeTheme: (theme) => set((s) => pushHistory(s, { ...s.scene, browserChromeTheme: theme }, "browserChromeTheme")),
     setAspectRatio: (aspectRatio) => set((s) => pushHistory(s, { ...s.scene, aspectRatio })),
     addAnnotation: (type) =>
       set((s) => {

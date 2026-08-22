@@ -67,6 +67,11 @@ describe("browserUrlSvg", () => {
     expect(out).toContain("…");
     expect(out).not.toContain("a".repeat(300));
   });
+
+  it("uses a light URL color by default and a light-on-dark color in dark theme", () => {
+    expect(browserUrlSvg("mocksy.app")).toContain('fill="#5f6368"');
+    expect(browserUrlSvg("mocksy.app", "dark")).toContain('fill="#e8eaed"');
+  });
 });
 
 describe("browserChromeSvg", () => {
@@ -76,6 +81,13 @@ describe("browserChromeSvg", () => {
     expect(out).toContain('width="100%"');
     expect(out).toContain('height="100%"');
     expect(out).toContain("<text ");
+  });
+
+  it("paints a dark toolbar bar behind the URL in dark theme", () => {
+    const out = browserChromeSvg("mocksy.app", "dark");
+    expect(out).toContain('fill="#202124"');
+    expect(out).toContain("<path ");
+    expect(out).toContain('fill="#e8eaed"');
   });
 });
 
@@ -94,7 +106,15 @@ describe("drawBrowserUrl", () => {
       restore: vi.fn(),
       translate: vi.fn(),
       scale: vi.fn(),
-      fillText: vi.fn()
+      fillText: vi.fn(),
+      fillRect: vi.fn(),
+      beginPath: vi.fn(),
+      closePath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      quadraticCurveTo: vi.fn(),
+      fill: vi.fn(),
+      fillStyle: ""
     };
   }
 
@@ -118,5 +138,14 @@ describe("drawBrowserUrl", () => {
     );
     const drawn = ctx.fillText.mock.calls[0]![0] as string;
     expect(drawn.endsWith("…")).toBe(true);
+  });
+
+  it("draws a dark toolbar and light URL text in dark theme", () => {
+    const ctx = mockCtx();
+    drawBrowserUrl(ctx as unknown as CanvasRenderingContext2D, BOX, FRAME_SPECS.browser, "mocksy.app", "dark");
+    expect(ctx.beginPath).toHaveBeenCalled();
+    expect(ctx.fill).toHaveBeenCalled();
+    expect(ctx.fillStyle).toBe("#e8eaed");
+    expect(ctx.fillText).toHaveBeenCalledWith("mocksy.app", BROWSER_PILL.x + 24, BROWSER_PILL.y + BROWSER_PILL.h / 2);
   });
 });

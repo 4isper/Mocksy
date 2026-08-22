@@ -45,9 +45,10 @@ export function FrameSection() {
     alignFrameInstances,
     distributeFrameInstances,
     setStylePreset,
-    setAspectRatio,
-    setBrowserUrl,
-    setCustomExportSize
+      setAspectRatio,
+      setBrowserUrl,
+      setBrowserChromeTheme,
+      setCustomExportSize
   } = useEditorStore(
     useShallow((s) => ({
       scene: s.scene,
@@ -65,6 +66,7 @@ export function FrameSection() {
       setStylePreset: s.setStylePreset,
       setAspectRatio: s.setAspectRatio,
       setBrowserUrl: s.setBrowserUrl,
+      setBrowserChromeTheme: s.setBrowserChromeTheme,
       setCustomExportSize: s.setCustomExportSize
     }))
   );
@@ -112,6 +114,17 @@ export function FrameSection() {
               onChange={(e) => setBrowserUrl(e.target.value)}
             />
           </label>
+        ) : null}
+        {showBrowserUrl ? (
+          <Segmented
+            label={t("editor.browserTheme")}
+            value={scene.browserChromeTheme}
+            options={[
+              { value: "light", label: t("editor.browserThemeLight") },
+              { value: "dark", label: t("editor.browserThemeDark") }
+            ]}
+            onChange={setBrowserChromeTheme}
+          />
         ) : null}
         <div className="field" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.frameGrid")}</span>

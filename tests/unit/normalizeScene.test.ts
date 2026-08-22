@@ -388,6 +388,12 @@ describe("normalizeScene", () => {
     expect(huge.browserUrl.length).toBe(200);
   });
 
+  it("defaults browserChromeTheme to light and accepts dark", () => {
+    expect(normalizeScene({}).browserChromeTheme).toBe("light");
+    expect(normalizeScene({ browserChromeTheme: "dark" }).browserChromeTheme).toBe("dark");
+    expect(normalizeScene({ browserChromeTheme: "bogus" }).browserChromeTheme).toBe("light");
+  });
+
   it("caps oversized layers collection to avoid freezing on hostile payloads", () => {
     const huge = { layers: Array.from({ length: 5000 }, (_, i) => ({ id: `l${i}`, mediaUrl: "x" })) };
     const s = normalizeScene(huge);

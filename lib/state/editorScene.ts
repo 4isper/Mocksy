@@ -56,7 +56,8 @@ export const initialScene: EditorScene = {
   screen: DEFAULT_SCREEN_CHROME,
   screenGlare: false,
   floorReflection: false,
-  browserUrl: DEFAULT_BROWSER_URL
+  browserUrl: DEFAULT_BROWSER_URL,
+  browserChromeTheme: "light"
 };
 // The first layer is the active one by default.
 initialScene.activeLayerId = initialScene.layers[0]?.id ?? null;

@@ -69,7 +69,7 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 | `macbook` | Overlay | MacBook Pro skin, landscape |
 | `imac` | Overlay | iMac skin with stand |
 | `notebook` | Overlay | Notebook skin, landscape |
-| `browser` | Overlay | Browser window with editable URL in the address bar |
+| `browser` | Overlay | Browser window with editable URL in the address bar (light/dark toolbar theme) |
 | `tv` | Overlay | TV skin, 16:9 |
 | `watchUltra` | Overlay | Watch Ultra skin, native ratio |
 | `watch` | CSS | Circular face |

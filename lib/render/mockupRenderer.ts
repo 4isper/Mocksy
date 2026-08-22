@@ -229,7 +229,7 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
   // stretched over the whole frame (same box as the skin overlay), just above
   // it. The skin paints the pill; this only adds the text.
   const isBrowser = isBrowserFrameSpec(spec);
-  const browserChrome = isBrowser ? browserChromeSvg(scene.browserUrl) : null;
+  const browserChrome = isBrowser ? browserChromeSvg(scene.browserUrl, scene.browserChromeTheme) : null;
   const browserChromeStyle: CSSProperties | null = isBrowser
     ? {
         position: "absolute",

@@ -212,7 +212,7 @@ function frameGroupInner(scene: EditorScene, group: SvgFrameGroup): string {
       const sy = box.height / vb.h;
       // The browser URL rides in the same translate/scale group as the skin
       // so it tracks the frame at any size (coordinates are viewBox units).
-      const urlText = group.browserUrl ? browserUrlSvg(group.browserUrl) : "";
+      const urlText = group.browserUrl ? browserUrlSvg(group.browserUrl, scene.browserChromeTheme) : "";
       frame = `<g filter="url(#frame-shadow)"><g transform="translate(${num(box.x)} ${num(box.y)}) scale(${num(sx)} ${num(sy)})">${group.overlayInner}${urlText}</g></g>`;
     }
   } else {

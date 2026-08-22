@@ -332,6 +332,6 @@ export function drawFrameAndMedia(
   // the toolbar and pill; only the text is dynamic). Drawn without shadow so
   // it stays crisp over the pill.
   if (instSpec.urlBar) {
-    drawBrowserUrl(ctx, box, instSpec, scene.browserUrl);
+    drawBrowserUrl(ctx, box, instSpec, scene.browserUrl, scene.browserChromeTheme);
   }
 }

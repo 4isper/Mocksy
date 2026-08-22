@@ -258,6 +258,8 @@ export interface EditorScene {
   floorReflection: boolean;
   /** URL shown in the browser frame's address bar (frame "browser"). */
   browserUrl: string;
+  /** Toolbar theme for the browser frame's address bar. */
+  browserChromeTheme: "light" | "dark";
   /** Non-media overlays (text, arrows, rectangles) drawn above the mockup. */
   annotations: Annotation[];
 }

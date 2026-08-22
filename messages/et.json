@@ -315,7 +315,10 @@
     "nudgeUp": "Nudge up",
     "nudgeDown": "Nudge down",
     "nudgeLeft": "Nudge left",
-    "nudgeRight": "Nudge right"
+    "nudgeRight": "Nudge right",
+    "browserTheme": "Browser theme",
+    "browserThemeLight": "Light",
+    "browserThemeDark": "Dark"
   },
   "frame": {
     "none": "Mitte ükski",

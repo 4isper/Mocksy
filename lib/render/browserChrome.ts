@@ -19,7 +19,12 @@ export const BROWSER_PILL = { x: 124, y: 20, w: 1292, h: 56 };
 
 export const BROWSER_URL_FONT_SIZE = 26;
 export const BROWSER_URL_COLOR = "#5f6368";
+export const BROWSER_URL_COLOR_DARK = "#e8eaed";
+export const BROWSER_TOOLBAR_DARK = "#202124";
 export const BROWSER_URL_FONT = "system-ui, -apple-system, 'Segoe UI', sans-serif";
+/** Corner radius of the dark toolbar overlay (viewBox units), matched to the
+ *  browser skin's window radius so the dark bar tracks the rounded corners. */
+export const BROWSER_TOOLBAR_RADIUS = 24;
 /** Horizontal gap between the pill edge and the text, per side. */
 export const BROWSER_URL_PADDING = 24;
 /** Rough average glyph width factor for system sans at a given font size;
@@ -46,16 +51,29 @@ function pillCenterY(): number {
 
 /** SVG `<text>` markup for the URL, in skin viewBox units. Callers place it
  *  inside the same translate/scale group as the skin so it tracks the frame. */
-export function browserUrlSvg(url: string): string {
+export function browserUrlSvg(url: string, theme: "light" | "dark" = "light"): string {
   const x = BROWSER_PILL.x + BROWSER_URL_PADDING;
-  return `<text x="${x}" y="${pillCenterY()}" font-size="${BROWSER_URL_FONT_SIZE}" fill="${BROWSER_URL_COLOR}" font-family="${BROWSER_URL_FONT}" dominant-baseline="central">${escapeMarkup(fitBrowserUrl(url))}</text>`;
+  const color = theme === "dark" ? BROWSER_URL_COLOR_DARK : BROWSER_URL_COLOR;
+  return `<text x="${x}" y="${pillCenterY()}" font-size="${BROWSER_URL_FONT_SIZE}" fill="${color}" font-family="${BROWSER_URL_FONT}" dominant-baseline="central">${escapeMarkup(fitBrowserUrl(url))}</text>`;
+}
+
+/** Rounded-top toolbar background for the dark browser theme, drawn over the
+ *  skin's toolbar area so the URL text stays legible on a dark bar. */
+function darkToolbarSvg(): string {
+  const w = BROWSER_VIEWBOX.w;
+  const h = BROWSER_TOOLBAR_H;
+  const r = BROWSER_TOOLBAR_RADIUS;
+  const path = `M0 ${r} Q0 0 ${r} 0 H${w - r} Q${w} 0 ${w} ${r} V${h} H0 Z`;
+  return `<path d="${path}" fill="${BROWSER_TOOLBAR_DARK}"/>`;
 }
 
 /** Full standalone SVG document for the URL text, sized to the skin's
  *  viewBox. Used by the CSS preview and the HTML export; stretched over the
- *  whole frame so it tracks the skin exactly. */
-export function browserChromeSvg(url: string): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BROWSER_VIEWBOX.w} ${BROWSER_VIEWBOX.h}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">${browserUrlSvg(url)}</svg>`;
+ *  whole frame so it tracks the skin exactly. When `theme` is "dark" a dark
+ *  toolbar bar is painted behind the address pill. */
+export function browserChromeSvg(url: string, theme: "light" | "dark" = "light"): string {
+  const inner = theme === "dark" ? `${darkToolbarSvg()}${browserUrlSvg(url, theme)}` : browserUrlSvg(url);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BROWSER_VIEWBOX.w} ${BROWSER_VIEWBOX.h}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">${inner}</svg>`;
 }
 
 /** Paints the URL into the frame box on a 2D canvas. Applies the same
@@ -65,7 +83,8 @@ export function drawBrowserUrl(
   ctx: CanvasRenderingContext2D,
   box: FrameBox,
   spec: FrameSpec,
-  url: string
+  url: string,
+  theme: "light" | "dark" = "light"
 ): void {
   const vb = frameViewBox(spec);
   const sx = box.width / vb.w;
@@ -73,7 +92,22 @@ export function drawBrowserUrl(
   ctx.save();
   ctx.translate(box.x, box.y);
   ctx.scale(sx, sy);
-  ctx.fillStyle = BROWSER_URL_COLOR;
+  if (theme === "dark") {
+    ctx.fillStyle = BROWSER_TOOLBAR_DARK;
+    const w = vb.w;
+    const h = BROWSER_TOOLBAR_H;
+    const r = BROWSER_TOOLBAR_RADIUS;
+    ctx.beginPath();
+    ctx.moveTo(0, r);
+    ctx.quadraticCurveTo(0, 0, r, 0);
+    ctx.lineTo(w - r, 0);
+    ctx.quadraticCurveTo(w, 0, w, r);
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.fillStyle = theme === "dark" ? BROWSER_URL_COLOR_DARK : BROWSER_URL_COLOR;
   ctx.font = `400 ${BROWSER_URL_FONT_SIZE}px ${BROWSER_URL_FONT}`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
