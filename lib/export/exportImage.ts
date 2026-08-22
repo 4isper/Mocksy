@@ -7,6 +7,11 @@ import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { downloadBlob } from "@/lib/export/downloadBlob";
 import { encodeCanvasToBlob } from "@/lib/export/offthreadEncode";
+import { renderSceneInWorker } from "@/lib/export/offthreadRender";
+import {
+  buildRenderWorkerPayload,
+  canRenderSceneInWorker
+} from "@/lib/render/renderWorkerProtocol";
 import { resolveExportTransform, waitForImage } from "@/lib/export/exportImageCore";
 import { loadExportAssets } from "@/lib/export/exportAssets";
 
@@ -92,15 +97,39 @@ export async function renderSceneToImageBlob(
         : Math.max(2, window.devicePixelRatio || 1);
 
     const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(hasCustomSize ? customSize.width : containerWidth * pixelRatio));
-    canvas.height = Math.max(1, Math.round(hasCustomSize ? customSize.height : containerHeight * pixelRatio));
+    const canvasWidth = Math.max(1, Math.round(hasCustomSize ? customSize.width : containerWidth * pixelRatio));
+    const canvasHeight = Math.max(1, Math.round(hasCustomSize ? customSize.height : containerHeight * pixelRatio));
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
 
     const frameWidth = baseFrameWidth ? Math.max(1, Math.round(baseFrameWidth * pixelRatio)) : undefined;
     const frameHeight = baseFrameHeight ? Math.max(1, Math.round(baseFrameHeight * pixelRatio)) : undefined;
 
-    const { overlay, backgroundImage, watermarkImage } = await loadExportAssets(scene);
-
     const transform = resolveExportTransform(scene, activeLayerId);
+
+    // Fast path: render the whole composite inside a worker so big exports
+    // don't block input. Video layers can't decode off-thread and any worker
+    // hiccup resolves null, both falling through to the synchronous path.
+    if (canRenderSceneInWorker(scene, activeLayerId)) {
+      const payload = buildRenderWorkerPayload({
+        id: 0,
+        scene,
+        activeLayerId,
+        width: canvasWidth,
+        height: canvasHeight,
+        pixelRatio,
+        mimeType,
+        transform,
+        frameWidth,
+        frameHeight
+      });
+      if (payload) {
+        const blob = await renderSceneInWorker(payload);
+        if (blob) return blob;
+      }
+    }
+
+    const { overlay, backgroundImage, watermarkImage } = await loadExportAssets(scene);
 
     // For multi-frame mode, load media for each frame's layer
     let layerMedias: Map<string, CanvasImageSource | null> | undefined;

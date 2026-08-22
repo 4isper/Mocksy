@@ -4,6 +4,7 @@ import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 import { frameViewBox, getFrameSpec } from "@/lib/render/frames";
 import { RENDER, drawAnnotations, drawFrameAndMedia, drawWatermark } from "@/lib/render/canvasDrawing";
 import { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
+import { createLayerCanvas, layerContext } from "@/lib/render/canvasFactory";
 import type { FrameBox, RenderTransform } from "@/lib/render/frameGeometry";
 import { computeFrameBox, computeFrameInstances } from "@/lib/render/frameGeometry";
 import { TILT_PERSPECTIVE, drawTiltedQuad, hasTilt, projectTiltedRect } from "@/lib/render/tilt";
@@ -30,10 +31,8 @@ function drawTiltedFrame(
   const padY = (RENDER.shadowBlur + RENDER.shadowOffsetY) * dpiScale * zoom + 4;
   const w = Math.ceil(box.width + padX * 2);
   const h = Math.ceil(box.height + padY * 2);
-  const off = document.createElement("canvas");
-  off.width = w;
-  off.height = h;
-  const octx = off.getContext("2d");
+  const off = createLayerCanvas(w, h);
+  const octx = layerContext(off);
   if (!octx) return;
 
   // box.x/y (and innerX/innerY) are absolute coordinates on the full export
@@ -78,10 +77,8 @@ function paintFloorReflection(
   height: number,
   opacity = 0.28
 ): void {
-  const layer = document.createElement("canvas");
-  layer.width = Math.max(1, width);
-  layer.height = Math.max(1, height);
-  const lctx = layer.getContext("2d");
+  const layer = createLayerCanvas(width, height);
+  const lctx = layerContext(layer);
   if (!lctx) return;
 
   for (const box of boxes) {
@@ -105,11 +102,11 @@ function paintFloorReflection(
     lctx.restore();
   }
 
-  ctx.drawImage(layer, 0, 0);
+  ctx.drawImage(layer as CanvasImageSource, 0, 0);
 }
 
 export function renderMockupToCanvas(
-  canvas: HTMLCanvasElement,
+  canvas: HTMLCanvasElement | OffscreenCanvas,
   scene: EditorScene,
   media: CanvasImageSource | null,
   frameX?: number,
@@ -126,7 +123,7 @@ export function renderMockupToCanvas(
   activeLayerId: string | null = scene.activeLayerId,
   watermarkImage?: CanvasImageSource | null
 ) {
-  const ctx = canvas.getContext("2d");
+  const ctx = layerContext(canvas);
   if (!ctx) return;
 
   const spec = getFrameSpec(scene.frame, scene.customFrame);

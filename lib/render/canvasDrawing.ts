@@ -1,6 +1,7 @@
 import type { Annotation, EditorScene, MediaLayer, StylePreset } from "@/lib/types/editor";
 import type { FrameBox } from "./frameGeometry";
 import { getFrameSpec } from "@/lib/render/frames";
+import { createLayerCanvas, layerContext } from "@/lib/render/canvasFactory";
 import { watermarkEdges } from "@/lib/render/watermark";
 import { buildLayerFilterCss } from "@/lib/render/layerFilters";
 import { drawScreenChrome } from "@/lib/render/screenChrome";
@@ -131,14 +132,12 @@ export function drawAnnotations(
       // Frosted region: snapshot what's already painted (background + frames +
       // media) and redraw it blurred inside the rounded rect — the canvas
       // equivalent of the preview's backdrop-filter.
-      const source = typeof document !== "undefined" ? (ctx.canvas as HTMLCanvasElement | undefined) : undefined;
+      const source = ctx.canvas as HTMLCanvasElement | OffscreenCanvas | undefined;
       if (source && bw > 0 && bh > 0) {
-        const snap = document.createElement("canvas");
-        snap.width = source.width;
-        snap.height = source.height;
-        const sctx = snap.getContext("2d");
+        const snap = createLayerCanvas(source.width, source.height);
+        const sctx = layerContext(snap);
         if (sctx) {
-          sctx.drawImage(source, 0, 0);
+          sctx.drawImage(source as CanvasImageSource, 0, 0);
           ctx.save();
           roundedRectPath(ctx, bx, by, bw, bh, Math.min(bw, bh) * 0.12);
           ctx.clip();
