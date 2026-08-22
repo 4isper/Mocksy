@@ -1,13 +1,13 @@
 /**
  * Mocksy PWA Service Worker — template.
- * scripts/generate-sw.mjs stamps mt2xd1jc into a build-time cache version
+ * scripts/generate-sw.mjs stamps mt4ekne1 into a build-time cache version
  * and writes the result to public/sw.js. Do not edit public/sw.js directly;
  * edit this template and run `npm run build` (or `node scripts/generate-sw.mjs`).
  * Strategy: navigation = network-first, Next.js chunks = network-first + background cache update,
  * immutable static assets = stale-while-revalidate.
  * Using a versioned cache name so activate purges stale chunks on every deploy.
  */
-const CACHE = "mocksy-sw-mt2xd1jc";
+const CACHE = "mocksy-sw-mt4ekne1";
 
 const PRECACHE_URLS = [
   "/",

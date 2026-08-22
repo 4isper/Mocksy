@@ -8,6 +8,7 @@ import { SkipLink } from "@/components/editor/SkipLink";
 import { ErrorBoundary } from "@/components/editor/ErrorBoundary";
 import { isRtlLocale } from "@/i18n/request";
 import { isValidLocale } from "@/i18n/locales";
+import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH } from "@/lib/state/ogScene";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -15,9 +16,25 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const messages = await getMessages({ locale: resolvedLocale });
   const t = messages.metadata;
   const errors = messages.errors;
+  const title = t?.title ?? "Mocksy — Free mockup editor";
+  const description = t?.description ?? "Create mockups, animations and exports without subscriptions.";
   return {
-    title: t?.title ?? "Mocksy — Free mockup editor",
-    description: t?.description ?? "Create mockups, animations and exports without subscriptions.",
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      siteName: "Mocksy",
+      type: "website",
+      images: [{ url: "/og-image.png", width: OG_IMAGE_WIDTH, height: OG_IMAGE_HEIGHT, alt: title }]
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/og-image.png"]
+    },
     manifest: "/manifest.json",
     icons: [
       { rel: "icon", url: "/icon.svg", type: "image/svg+xml" },

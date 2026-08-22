@@ -16,6 +16,7 @@
     "test:vrt:update": "playwright test --project=chromium-vrt --update-snapshots",
     "test:lhci": "lhci autorun",
     "i18n:sync": "node scripts/i18n-sync.mjs",
+    "og": "node scripts/generate-og.mjs",
     "audit": "node scripts/audit-check.mjs"
   },
   "overrides": {
