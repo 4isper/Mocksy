@@ -7,6 +7,7 @@ import type { SceneCss } from "@/lib/render/mockupRenderer";
 import type { CSSProperties } from "react";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
+import { FrameContent } from "@/components/editor/FrameContent";
 
 interface SingleFrameViewProps {
   scene: EditorScene;
@@ -96,11 +97,14 @@ export function SingleFrameView({
       onPointerUp={onPanUp}
       onPointerCancel={onPanUp}
     >
-      {scene.layers
-        .filter((layer) => !layer.hidden)
-        .map((layer) =>
-        layer.mediaUrl ? (
-          isVideoLayer(layer) ? (
+      <FrameContent
+        css={sceneCss}
+        media={
+          scene.layers
+            .filter((layer) => !layer.hidden)
+            .map((layer) =>
+            layer.mediaUrl ? (
+            isVideoLayer(layer) ? (
               <video
                 key={layer.id}
                 ref={videoRef}
@@ -143,44 +147,18 @@ export function SingleFrameView({
                 }}
               />
             )
+            ) : null
+          )
+        }
+        emptyMedia={
+          scene.layers.every((l) => !l.mediaUrl) ? (
+            <label style={sceneCss.emptyMediaStyle}>
+              <span>{t("editor.dropToStart")}</span>
+              <input type="file" accept="image/*,video/*" onChange={handleCanvasFile} key={canvasFileInputKey} style={{ display: "none" }} />
+            </label>
           ) : null
-        )}
-      {sceneCss.screenGlareStyle ? <div aria-hidden style={sceneCss.screenGlareStyle} /> : null}
-      {scene.layers.every((l) => !l.mediaUrl) ? (
-        <label style={sceneCss.emptyMediaStyle}>
-          <span>{t("editor.dropToStart")}</span>
-          <input type="file" accept="image/*,video/*" onChange={handleCanvasFile} key={canvasFileInputKey} style={{ display: "none" }} />
-        </label>
-      ) : null}
-      {sceneCss.screenChrome ? (
-        <div
-          aria-hidden
-          style={sceneCss.screenChromeStyle}
-          dangerouslySetInnerHTML={{ __html: sceneCss.screenChrome }}
-        />
-      ) : null}
-      {sceneCss.frameOverlay && (
-        <img
-          src={sceneCss.frameOverlay}
-          alt=""
-          aria-hidden
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            pointerEvents: "none",
-            ...sceneCss.overlayStyle
-          }}
-        />
-      )}
-      {sceneCss.browserChrome && sceneCss.browserChromeStyle ? (
-        <div
-          aria-hidden
-          style={sceneCss.browserChromeStyle}
-          dangerouslySetInnerHTML={{ __html: sceneCss.browserChrome }}
-        />
-      ) : null}
+        }
+      />
       {isMediaLoading ? (
         <div className="media-loading" role="status" aria-busy="true" aria-label={t("editor.loadingMedia")}>
           <span className="spinner" />

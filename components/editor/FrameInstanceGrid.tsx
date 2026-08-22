@@ -11,6 +11,7 @@ import { useEditorStore } from "@/lib/state/editorStore";
 import { snapToGrid } from "@/lib/render/grid";
 import { snapCenteredBox, type GuideLine, type NormBox } from "@/lib/render/annotationAlign";
 import { tiltCss } from "@/lib/render/tilt";
+import { FrameContent } from "@/components/editor/FrameContent";
 
 interface FrameInstanceGridProps {
   scene: EditorScene;
@@ -343,49 +344,33 @@ export function FrameInstanceGrid({
               }}
               onPointerDown={layer?.mediaUrl ? () => selectLayer(layer.id) : undefined}
             >
-              {/* Paint order must mirror SingleFrameView and the canvas export
-                  (media → glare → screen chrome → device skin → browser URL),
-                  otherwise the media covers the notch and on-screen chrome. */}
-              {layer?.mediaUrl ? (
-                isVideoLayer(layer) ? (
-                  <video
-                    src={layer.mediaUrl}
-                    muted
-                    playsInline
-                    controls
-                    loop={layer.videoLoop}
-                    autoPlay={layer.videoAutoplay}
-                    crossOrigin="anonymous"
-                    style={{ ...instCss.mediaStyle, objectFit: "contain", backgroundColor: "var(--panel-solid)", cursor: "grab" }}
-                    onPointerDown={() => selectLayer(layer.id)}
-                    onLoadedData={(e) => analyzeMedia(e.currentTarget)}
-                    onLoadedMetadata={(e) => {
-                      setVideoDuration(e.currentTarget.duration || 0, layer.id);
-                      e.currentTarget.playbackRate = Math.max(0.5, Math.min(2, layer.playbackSpeed ?? 1));
-                    }}
-                  />
-                ) : (
-                  <img src={layer.mediaUrl} alt={t("editor.uploadedMediaAlt")} style={{ ...instCss.mediaStyle, cursor: "grab" }} onLoad={(e) => analyzeMedia(e.currentTarget)} onPointerDown={() => selectLayer(layer.id)} />
-                )
-              ) : null}
-              {instCss.screenGlareStyle ? <div aria-hidden style={instCss.screenGlareStyle} /> : null}
-              {instCss.screenChrome ? (
-                <div
-                  aria-hidden
-                  style={instCss.screenChromeStyle}
-                  dangerouslySetInnerHTML={{ __html: instCss.screenChrome }}
-                />
-              ) : null}
-              {instCss.frameOverlay ? (
-                <img src={instCss.frameOverlay} alt="" aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
-              ) : null}
-              {instCss.browserChrome && instCss.browserChromeStyle ? (
-                <div
-                  aria-hidden
-                  style={instCss.browserChromeStyle}
-                  dangerouslySetInnerHTML={{ __html: instCss.browserChrome }}
-                />
-              ) : null}
+              <FrameContent
+                css={instCss}
+                media={
+                  layer?.mediaUrl ? (
+                    isVideoLayer(layer) ? (
+                      <video
+                        src={layer.mediaUrl}
+                        muted
+                        playsInline
+                        controls
+                        loop={layer.videoLoop}
+                        autoPlay={layer.videoAutoplay}
+                        crossOrigin="anonymous"
+                        style={{ ...instCss.mediaStyle, objectFit: "contain", backgroundColor: "var(--panel-solid)", cursor: "grab" }}
+                        onPointerDown={() => selectLayer(layer.id)}
+                        onLoadedData={(e) => analyzeMedia(e.currentTarget)}
+                        onLoadedMetadata={(e) => {
+                          setVideoDuration(e.currentTarget.duration || 0, layer.id);
+                          e.currentTarget.playbackRate = Math.max(0.5, Math.min(2, layer.playbackSpeed ?? 1));
+                        }}
+                      />
+                    ) : (
+                      <img src={layer.mediaUrl} alt={t("editor.uploadedMediaAlt")} style={{ ...instCss.mediaStyle, cursor: "grab" }} onLoad={(e) => analyzeMedia(e.currentTarget)} onPointerDown={() => selectLayer(layer.id)} />
+                    )
+                  ) : null
+                }
+              />
             </div>
             </div>
 

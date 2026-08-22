@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import type { CSSProperties } from "react";
 import { DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
 import { buildOgScene } from "@/lib/state/ogScene";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
 import { frameInstAr } from "@/lib/render/frames";
+import { FrameContent } from "@/components/editor/FrameContent";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false }
@@ -49,14 +49,10 @@ export default function OgImagePage() {
               }}
             >
               <div style={{ ...css.frame, width: "100%", height: "100%", position: "relative" }}>
-                <img src={layer?.mediaUrl ?? DEMO_MEDIA_URL} alt="" style={css.mediaStyle} />
-                {css.screenGlareStyle ? <div aria-hidden style={css.screenGlareStyle as CSSProperties} /> : null}
-                {css.screenChrome ? (
-                  <div aria-hidden style={css.screenChromeStyle} dangerouslySetInnerHTML={{ __html: css.screenChrome }} />
-                ) : null}
-                {css.frameOverlay ? (
-                  <img src={css.frameOverlay} alt="" aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
-                ) : null}
+                <FrameContent
+                  css={css}
+                  media={<img src={layer?.mediaUrl ?? DEMO_MEDIA_URL} alt="" style={css.mediaStyle} />}
+                />
               </div>
             </div>
           );
