@@ -248,7 +248,8 @@ test("watermark preview matches the exported image", async ({ page }) => {
   });
   await expect(previewMedia(page)).toBeVisible();
 
-  // Enable the watermark toggle.
+  // Open the (collapsed-by-default) watermark section, then enable the toggle.
+  await page.locator('button.section-header[aria-controls="section-watermark-body"]').click();
   await page.locator('label.toggle:has-text("Watermark")').click();
   await expect(page.locator(".preview-watermark")).toBeVisible();
 

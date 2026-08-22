@@ -91,8 +91,16 @@ export function useScreenRecording(): {
 
   const cancel = useCallback(() => cancelScreenRecording(), []);
 
+  // Feature detection must not run during the first (server-matched) render:
+  // navigator exists only on the client, and an eager check makes the SSR
+  // HTML disagree with hydration. Start disabled, flip once mounted.
+  const [supported, setSupported] = useState(false);
+  useEffect(() => {
+    setSupported(isScreenRecordingSupported());
+  }, []);
+
   return {
-    supported: isScreenRecordingSupported(),
+    supported,
     recording,
     elapsed,
     start,

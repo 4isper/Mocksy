@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 const STORAGE_KEY = "mocksy.controlPanel.sections";
 
@@ -23,7 +23,12 @@ interface SectionProps {
 }
 
 export function Section({ id, title, icon, defaultOpen = true, children }: SectionProps) {
-  const [prefs, setPrefs] = useState<Record<string, boolean>>(() => readPrefs());
+  // Persisted open/closed prefs load after mount: reading localStorage during
+  // the first render makes the client tree disagree with the SSR HTML.
+  const [prefs, setPrefs] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    setPrefs(readPrefs());
+  }, []);
   const open = prefs[id] ?? defaultOpen;
 
   const toggle = useCallback(() => {
