@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
@@ -53,8 +53,45 @@ export function OnboardingTour() {
   const setOpen = useEditorStore((s) => s.setOnboardingOpen);
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  // Final card position, resolved after the card is measured. Provisional
+  // placement guesses height from text length, which breaks on narrow
+  // viewports (wrapped body text) and for targets scrolled out of view in the
+  // stacked mobile layout (rect.top beyond the viewport makes a bottom-anchored
+  // card land outside it). Measuring the real box lets every case clamp into
+  // the viewport explicitly with top/left anchors only.
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [finalPos, setFinalPos] = useState<{ left: number; top: number } | null>(null);
 
   const step = STEPS[stepIndex]!;
+
+  useLayoutEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const PAD = 8;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    // Recompute locally from step/rect: the shared `measured` helper lives
+    // below the early return, so closure over it would be a TDZ violation.
+    const target = step.target && rect ? rect : null;
+    let left: number;
+    let top: number;
+    if (!target) {
+      left = (vw - w) / 2;
+      top = (vh - h) / 2;
+    } else {
+      const belowRoom = vh - PAD - (target.top + target.height);
+      const aboveRoom = target.top - PAD;
+      if (belowRoom >= h + PAD + 16) top = target.top + target.height + PAD + 16;
+      else if (aboveRoom >= h + PAD + 16) top = target.top - PAD - 16 - h;
+      else top = (vh - h) / 2;
+      left = target.left;
+    }
+    left = Math.max(PAD, Math.min(left, vw - w - PAD));
+    top = Math.max(PAD, Math.min(top, vh - h - PAD));
+    setFinalPos((prev) => (prev && prev.left === left && prev.top === top ? prev : { left, top }));
+  }, [step.target, rect, open]);
 
   // Restart from the welcome card whenever the tour transitions closed→open.
   // Adjusting during render (not in an effect) avoids cascading renders.
@@ -122,24 +159,34 @@ export function OnboardingTour() {
     : null;
 
   // Card placement: below the spotlight, flipped above when there is no room;
-  // centered for steps without a target.
+  // centered for steps without a target. Narrow viewports may have room for
+  // neither (targets near the top of the stacked layout), so fall back to a
+  // centered card there too — otherwise controls land outside the viewport.
   let cardStyle: CSSProperties;
+  const cardWidth = Math.min(320, window.innerWidth - 32);
+  const centeredCard: CSSProperties = {
+    position: "fixed",
+    left: "50%",
+    top: "50%",
+    transform: "translate(-50%, -50%)",
+    width: cardWidth
+  };
   if (!measured) {
-    cardStyle = {
-      position: "fixed",
-      left: "50%",
-      top: "50%",
-      transform: "translate(-50%, -50%)"
-    };
+    cardStyle = centeredCard;
   } else {
-    const below = measured.top + measured.height + pad + 16 + 180 < window.innerHeight;
-    cardStyle = {
-      position: "fixed",
-      left: Math.max(16, Math.min(measured.left, window.innerWidth - 340 - 16)),
-      top: below ? measured.top + measured.height + pad + 16 : undefined,
-      bottom: below ? undefined : `calc(100% - ${measured.top - pad - 16}px)`,
-      width: 320
-    };
+    const fitsBelow = measured.top + measured.height + pad + 16 + 180 < window.innerHeight;
+    const fitsAbove = measured.top - pad - 16 >= 200;
+    if (!fitsBelow && !fitsAbove) {
+      cardStyle = centeredCard;
+    } else {
+      cardStyle = {
+        position: "fixed",
+        left: Math.max(16, Math.min(measured.left, window.innerWidth - cardWidth - 16)),
+        top: fitsBelow ? measured.top + measured.height + pad + 16 : undefined,
+        bottom: fitsBelow ? undefined : `calc(100% - ${measured.top - pad - 16}px)`,
+        width: cardWidth
+      };
+    }
   }
 
   return (
@@ -156,11 +203,23 @@ export function OnboardingTour() {
         />
       )}
       <div
+        ref={cardRef}
         role="dialog"
         aria-modal="false"
         aria-label={t(step.titleKey)}
         className="panel"
-        style={{ ...cardStyle, zIndex: 1100, padding: 16, display: "grid", gap: 10 }}
+        style={{
+          ...cardStyle,
+          zIndex: 1100,
+          padding: 16,
+          display: "grid",
+          gap: 10,
+          // Measured position wins over the provisional branch and drops the
+          // bottom anchor, which can resolve outside the viewport.
+          ...(finalPos ? { left: finalPos.left, top: finalPos.top, bottom: undefined } : {}),
+          maxHeight: "calc(100dvh - 16px)",
+          overflowY: "auto"
+        }}
       >
         <h3 style={{ margin: 0, fontSize: 15 }}>{t(step.titleKey)}</h3>
         <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>{t(step.bodyKey)}</p>
