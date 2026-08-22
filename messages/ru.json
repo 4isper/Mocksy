@@ -492,7 +492,19 @@
     "presets": "Пресеты",
     "savePreset": "Сохранить текущие",
     "applyPreset": "Применить пресет: {label}",
-    "deletePreset": "Удалить пресет: {label}"
+    "deletePreset": "Удалить пресет: {label}",
+    "platformPresets": "Размеры платформ",
+    "platformHint": "{label} — {width} × {height}",
+    "platform": {
+      "appStorePhone": "App Store 6,7\"",
+      "appStoreIpad": "App Store iPad",
+      "dribbbleShot": "Шот Dribbble",
+      "xPost": "Пост X",
+      "ogImage": "Превью для соцсетей",
+      "instagramSquare": "Instagram 1:1",
+      "instagramPortrait": "Instagram 4:5",
+      "story": "Сторис / Reels"
+    }
   },
   "shortcuts": {
     "title": "Сочетания клавиш",

@@ -42,6 +42,7 @@ export function EditorShell() {
   const setExportScale = useEditorStore((s) => s.setExportScale);
   const customExportSize = useEditorStore((s) => s.customExportSize);
   const setCustomExportSize = useEditorStore((s) => s.setCustomExportSize);
+  const setAspectRatio = useEditorStore((s) => s.setAspectRatio);
   const saveError = useProjectsStore((s) => s.saveError);
   const fullscreenPreview = useEditorStore((s) => s.fullscreenPreview);
   const setFullscreenPreview = useEditorStore((s) => s.setFullscreenPreview);
@@ -269,6 +270,7 @@ export function EditorShell() {
         onScaleChange={setExportScale}
         customSize={customExportSize}
         onCustomSizeChange={setCustomExportSize}
+        onAspectRatioChange={setAspectRatio}
         onExport={exportApi.handleExport}
         onCopy={exportApi.handleCopyFromDialog}
         busy={exportApi.isExporting}

@@ -492,7 +492,19 @@
     "presets": "Presets",
     "savePreset": "Save current",
     "applyPreset": "Apply preset: {label}",
-    "deletePreset": "Delete preset: {label}"
+    "deletePreset": "Delete preset: {label}",
+    "platformPresets": "Platform sizes",
+    "platformHint": "{label} — {width} × {height}",
+    "platform": {
+      "appStorePhone": "App Store 6.7\"",
+      "appStoreIpad": "App Store iPad",
+      "dribbbleShot": "Dribbble shot",
+      "xPost": "X post",
+      "ogImage": "Social preview",
+      "instagramSquare": "Instagram 1:1",
+      "instagramPortrait": "Instagram 4:5",
+      "story": "Story / Reels"
+    }
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",

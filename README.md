@@ -156,6 +156,7 @@ Open [http://localhost:3000](http://localhost:3000) and start editing.
 | ZIP | — | Batch export: every frame instance of a multi-frame scene rendered as its own PNG |
 
 - Reusable export presets (format + scale/size) stored in localStorage
+- Platform size presets (App Store, Dribbble, X, Open Graph, Instagram, Story) — set the exact pixel size and switch the scene to the closest aspect ratio so nothing is letterboxed
 - Animated exports run for a visible 3s (zoom/parallax) instead of a blink
 - MP4 attaches the canvas to the DOM during recording for reliable frame capture in background tabs
 

@@ -161,4 +161,45 @@ describe("ExportDialog", () => {
     fireEvent.change(screen.getByRole("spinbutton", { name: "export.width" }), { target: { value: "0" } });
     expect(onCustomSizeChange).toHaveBeenLastCalledWith({ width: 1, height: 720 });
   });
+
+  it("renders platform size presets for raster formats", () => {
+    render(<ExportDialog {...baseProps} />);
+    expect(screen.getByText("export.platform.appStorePhone")).toBeInTheDocument();
+    expect(screen.getByText("export.platform.dribbbleShot")).toBeInTheDocument();
+    expect(screen.getByText("export.platform.story")).toBeInTheDocument();
+  });
+
+  it("hides platform size presets for vector formats", async () => {
+    render(<ExportDialog {...baseProps} />);
+    await userEvent.click(screen.getByText("export.svg"));
+    expect(screen.queryByText("export.platform.dribbbleShot")).not.toBeInTheDocument();
+  });
+
+  it("applies a platform preset as exact size plus nearest aspect ratio", async () => {
+    const onCustomSizeChange = vi.fn();
+    const onAspectRatioChange = vi.fn();
+    render(
+      <ExportDialog
+        {...baseProps}
+        onCustomSizeChange={onCustomSizeChange}
+        onAspectRatioChange={onAspectRatioChange}
+      />
+    );
+    await userEvent.click(screen.getByText("export.platform.dribbbleShot"));
+    expect(onCustomSizeChange).toHaveBeenCalledWith({ width: 1600, height: 1200 });
+    expect(onAspectRatioChange).toHaveBeenCalledWith("4 / 3");
+  });
+
+  it("applies the nearest ratio when a preset has no exact match", async () => {
+    const onAspectRatioChange = vi.fn();
+    render(<ExportDialog {...baseProps} onAspectRatioChange={onAspectRatioChange} />);
+    await userEvent.click(screen.getByText("export.platform.appStorePhone"));
+    expect(onAspectRatioChange).toHaveBeenCalledWith("9 / 16");
+  });
+
+  it("marks the active platform preset", () => {
+    render(<ExportDialog {...baseProps} customSize={{ width: 1600, height: 1200 }} />);
+    expect(screen.getByText("export.platform.dribbbleShot")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("export.platform.story")).toHaveAttribute("aria-pressed", "false");
+  });
 });

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import type { ExportSize } from "@/lib/types/editor";
 import { useExportPresetsStore } from "@/lib/state/exportPresetsStore";
+import { PLATFORM_PRESETS, closestAspectRatio } from "@/lib/export/platformPresets";
 
 export type { ExportFormat } from "@/lib/types/editor";
 import type { ExportFormat } from "@/lib/types/editor";
@@ -28,7 +29,8 @@ export function ExportDialog({
   onCopy,
   busy,
   onCancel,
-  isMultiFrame = false
+  isMultiFrame = false,
+  onAspectRatioChange
 }: {
   open: boolean;
   onClose: () => void;
@@ -42,6 +44,8 @@ export function ExportDialog({
   onCancel?: () => void;
   /** When true (multi-frame mode), offers the per-frame ZIP batch export. */
   isMultiFrame?: boolean;
+  /** Applies the scene aspect ratio closest to a platform preset's proportion. */
+  onAspectRatioChange?: (aspectRatio: string) => void;
 }) {
   const t = useTranslations();
   const IMAGE_FORMATS: { value: ExportFormat; label: string }[] = [
@@ -227,6 +231,26 @@ export function ExportDialog({
                   />
                 </div>
               ) : null}
+              <div className="segmented" role="group" aria-label={t("export.platformPresets")}>
+                {PLATFORM_PRESETS.map((p) => {
+                  const active = isCustom && size.width === p.width && size.height === p.height;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      aria-pressed={active}
+                      className={active ? "is-active" : undefined}
+                      title={t("export.platformHint", { label: t(`export.platform.${p.id}`), width: p.width, height: p.height })}
+                      onClick={() => {
+                        onCustomSizeChange({ width: p.width, height: p.height });
+                        onAspectRatioChange?.(closestAspectRatio(p.width, p.height));
+                      }}
+                    >
+                      {t(`export.platform.${p.id}`)}
+                    </button>
+                  );
+                })}
+              </div>
             </label>
           ) : null}
         </div>
