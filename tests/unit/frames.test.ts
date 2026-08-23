@@ -73,7 +73,7 @@ describe("FRAME_SPECS", () => {
     expect(FRAME_SPECS.imac.cutout).toEqual({ x: 70, y: 80, w: 1460, h: 821, rx: 18 });
     expect(FRAME_SPECS.notebook.cutout).toEqual({ x: 80, y: 40, w: 1440, h: 810, rx: 8 });
     expect(FRAME_SPECS.browser.cutout).toEqual({ x: 0, y: 96, w: 1440, h: 904, rx: 20 });
-    expect(FRAME_SPECS.tv.cutout).toEqual({ x: 40, y: 24, w: 1520, h: 855, rx: 12 });
+    expect(FRAME_SPECS.tv.cutout).toEqual({ x: 40, y: 40, w: 1520, h: 855, rx: 6 });
     expect(FRAME_SPECS.watchUltra.cutout).toEqual({ x: 20, y: 24, w: 370, h: 454, rx: 82 });
   });
 

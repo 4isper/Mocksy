@@ -167,7 +167,7 @@ export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
     isOverlay: true,
     aspectRatio: "1600 / 1000",
     // viewBox 1600x1000; screen rect x40 y24 w1520 h855 rx12 (16/9)
-    cutout: { x: 40, y: 24, w: 1520, h: 855, rx: 12 },
+    cutout: { x: 40, y: 40, w: 1520, h: 855, rx: 6 },
     viewBox: { w: 1600, h: 1000 }
   },
   watchUltra: {

@@ -23,8 +23,9 @@
   <!-- Notch (camera housing) sitting above the display cutout -->
   <rect x="758" y="34" width="84" height="10" rx="5" ry="5" fill="#0a0a0a"/>
   <circle cx="800" cy="39" r="2" fill="#1c1c1e"/>
-  <!-- Bottom base (chin) with the hinge seam -->
-  <rect x="40" y="1016" width="1520" height="58" rx="12" ry="12" fill="url(#mb-base)"/>
-  <rect x="40" y="1015" width="1520" height="2" fill="rgba(255,255,255,0.08)"/>
+  <!-- Bottom base (keyboard deck) with the hinge seam -->
+  <rect x="40" y="1016" width="1520" height="58" rx="18" ry="18" fill="url(#mb-base)"/>
+  <rect x="40" y="1015" width="1520" height="2" fill="rgba(255,255,255,0.10)"/>
+  <rect x="120" y="1040" width="1360" height="10" rx="5" fill="rgba(255,255,255,0.05)"/>
   <circle cx="800" cy="1045" r="9" fill="rgba(255,255,255,0.07)"/>
 </svg>
