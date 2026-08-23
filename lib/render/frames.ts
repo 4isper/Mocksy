@@ -60,18 +60,20 @@ export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
     padding: 14,
     screenRadius: 48,
     isOverlay: true,
-    aspectRatio: "390 / 844",
-    // viewBox 390x844; screen rect x14 y14 w362 h816 rx48
-    cutout: { x: 14, y: 14, w: 362, h: 816, rx: 48 }
+    aspectRatio: "402 / 874",
+    // viewBox 402x874 (real logical size); screen rect x14 y14 w374 h846 rx48
+    cutout: { x: 14, y: 14, w: 374, h: 846, rx: 48 },
+    viewBox: { w: 402, h: 874 }
   },
   pixel8pro: {
     asset: "/devices/pixel8pro.svg",
     padding: 14,
     screenRadius: 44,
     isOverlay: true,
-    aspectRatio: "390 / 844",
-    // viewBox 390x844; screen rect x14 y14 w362 h816 rx44
-    cutout: { x: 14, y: 14, w: 362, h: 816, rx: 44 }
+    aspectRatio: "448 / 996",
+    // viewBox 448x996 (real logical size); screen rect x14 y14 w420 h968 rx44
+    cutout: { x: 14, y: 14, w: 420, h: 968, rx: 44 },
+    viewBox: { w: 448, h: 996 }
   },
   galaxy24: {
     asset: "/devices/galaxy24.svg",
@@ -119,10 +121,10 @@ export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
     padding: 40,
     screenRadius: 6,
     isOverlay: true,
-    aspectRatio: "1600 / 1040",
-    // viewBox 1600x1040; screen rect x44 y34 w1512 h944 rx6
-    cutout: { x: 44, y: 34, w: 1512, h: 944, rx: 6 },
-    viewBox: { w: 1600, h: 1040 }
+    aspectRatio: "1600 / 1074",
+    // viewBox 1600x1074; screen rect x44 y34 w1512 h982 rx6 (14" MBP display)
+    cutout: { x: 44, y: 34, w: 1512, h: 982, rx: 6 },
+    viewBox: { w: 1600, h: 1074 }
   },
   imac: {
     asset: "/devices/imac.svg",

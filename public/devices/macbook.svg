@@ -1,29 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1040" viewBox="0 0 1600 1040" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1074" viewBox="0 0 1600 1074" fill="none">
   <!-- MacBook Pro frame-only overlay: the display is a real transparent cutout
-       (via mask) so the media behind shows through. -->
+       (via mask) so the media behind shows through. Display area matches a
+       14-inch MacBook Pro's 1512x982 logical screen. -->
   <defs>
-    <linearGradient id="mb-lid" x1="0" y1="0" x2="0" y2="1040" gradientUnits="userSpaceOnUse">
+    <linearGradient id="mb-lid" x1="0" y1="0" x2="0" y2="1074" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#333337"/>
       <stop offset="1" stop-color="#1e1e21"/>
     </linearGradient>
-    <linearGradient id="mb-base" x1="0" y1="0" x2="0" y2="1040" gradientUnits="userSpaceOnUse">
+    <linearGradient id="mb-base" x1="0" y1="0" x2="0" y2="1074" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#2a2a2e"/>
       <stop offset="1" stop-color="#161618"/>
     </linearGradient>
     <mask id="mb-screen">
-      <rect x="0" y="0" width="1600" height="1040" fill="white"/>
-      <rect x="44" y="34" width="1512" height="944" rx="6" ry="6" fill="black"/>
+      <rect x="0" y="0" width="1600" height="1074" fill="white"/>
+      <rect x="44" y="34" width="1512" height="982" rx="6" ry="6" fill="black"/>
     </mask>
   </defs>
   <!-- Lid: the whole front slab with the display masked out. -->
-  <rect x="40" y="30" width="1520" height="952" rx="18" ry="18" fill="url(#mb-lid)" stroke="#0a0a0a" stroke-width="2" mask="url(#mb-screen)"/>
+  <rect x="40" y="30" width="1520" height="990" rx="18" ry="18" fill="url(#mb-lid)" stroke="#0a0a0a" stroke-width="2" mask="url(#mb-screen)"/>
   <!-- Display edge highlight -->
-  <rect x="44" y="34" width="1512" height="944" rx="6" ry="6" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+  <rect x="44" y="34" width="1512" height="982" rx="6" ry="6" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
   <!-- Notch (camera housing) sitting above the display cutout -->
   <rect x="758" y="34" width="84" height="10" rx="5" ry="5" fill="#0a0a0a"/>
   <circle cx="800" cy="39" r="2" fill="#1c1c1e"/>
   <!-- Bottom base (chin) with the hinge seam -->
-  <rect x="40" y="982" width="1520" height="58" rx="12" ry="12" fill="url(#mb-base)"/>
-  <rect x="40" y="981" width="1520" height="2" fill="rgba(255,255,255,0.08)"/>
-  <circle cx="800" cy="1011" r="9" fill="rgba(255,255,255,0.07)"/>
+  <rect x="40" y="1016" width="1520" height="58" rx="12" ry="12" fill="url(#mb-base)"/>
+  <rect x="40" y="1015" width="1520" height="2" fill="rgba(255,255,255,0.08)"/>
+  <circle cx="800" cy="1045" r="9" fill="rgba(255,255,255,0.07)"/>
 </svg>

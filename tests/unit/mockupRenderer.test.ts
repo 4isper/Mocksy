@@ -115,11 +115,11 @@ describe("buildSceneCss", () => {
 
   it("converts cutout percentages off each skin's own viewBox", () => {
     const macbook = buildSceneCss(base({ frame: "macbook" }));
-    expect(macbook.frame.aspectRatio).toBe("1600 / 1040");
+    expect(macbook.frame.aspectRatio).toBe("1600 / 1074");
     expect(macbook.mediaStyle.left).toBe(`${(44 / 1600) * 100}%`);
-    expect(macbook.mediaStyle.top).toBe(`${(34 / 1040) * 100}%`);
+    expect(macbook.mediaStyle.top).toBe(`${(34 / 1074) * 100}%`);
     expect(macbook.mediaStyle.width).toBe(`${(1512 / 1600) * 100}%`);
-    expect(macbook.mediaStyle.height).toBe(`${(944 / 1040) * 100}%`);
+    expect(macbook.mediaStyle.height).toBe(`${(982 / 1074) * 100}%`);
     const imac = buildSceneCss(base({ frame: "imac" }));
     expect(imac.frame.aspectRatio).toBe("1600 / 1420");
     expect(imac.mediaStyle.left).toBe(`${(70 / 1600) * 100}%`);
