@@ -1,5 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="448" height="996" viewBox="0 0 448 996" fill="none">
-  <!-- Pixel 8 Pro overlay at its real logical size (448x996 dp). -->
+  <!-- Pixel 8 Pro overlay at its real logical size (448x996 dp). Screen corner
+       radius follows the device (~60pt), uniform thin bezel, centered
+       punch-hole front camera. -->
   <defs>
     <linearGradient id="bezelPixel" x1="0" y1="0" x2="448" y2="996" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#787880"/>
@@ -8,16 +10,19 @@
     </linearGradient>
     <mask id="screenPixel">
       <rect x="0" y="0" width="448" height="996" fill="white"/>
-      <rect x="14" y="14" width="420" height="968" rx="44" ry="44" fill="black"/>
+      <rect x="14" y="14" width="420" height="968" rx="60" ry="60" fill="black"/>
     </mask>
   </defs>
   <!-- Outer body with the screen masked out to transparency. -->
-  <rect x="6" y="6" width="436" height="984" rx="56" ry="56" fill="url(#bezelPixel)" stroke="#0a0a0a" stroke-width="2" mask="url(#screenPixel)"/>
+  <rect x="6" y="6" width="436" height="984" rx="74" ry="74" fill="url(#bezelPixel)" stroke="#0a0a0a" stroke-width="2" mask="url(#screenPixel)"/>
   <!-- Screen edge highlight -->
-  <rect x="14" y="14" width="420" height="968" rx="44" ry="44" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+  <rect x="14" y="14" width="420" height="968" rx="60" ry="60" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+  <!-- Earpiece slit (top center) -->
+  <rect x="200" y="9" width="48" height="4" rx="2" fill="#0a0a0a"/>
   <!-- Centered punch-hole camera -->
   <circle cx="224" cy="34" r="7" fill="#0a0a0a"/>
   <circle cx="224" cy="34" r="4" fill="#1c1c1e"/>
+  <circle cx="224" cy="34" r="1.6" fill="#0a0a0a"/>
   <!-- Power button (right) -->
   <rect x="442" y="230" width="6" height="52" rx="3" fill="#5c5c62"/>
   <!-- Volume buttons (left) -->

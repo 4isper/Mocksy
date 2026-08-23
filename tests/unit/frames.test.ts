@@ -46,10 +46,10 @@ describe("FRAME_SPECS", () => {
     // Real logical sizes: iPhone 16 Pro is 402x874, Pixel 8 Pro is 448x996.
     expect(FRAME_SPECS.iphone16pro.aspectRatio).toBe("402 / 874");
     expect(FRAME_SPECS.pixel8pro.aspectRatio).toBe("448 / 996");
-    expect(FRAME_SPECS.galaxy24.aspectRatio).toBe("390 / 844");
+    expect(FRAME_SPECS.galaxy24.aspectRatio).toBe("360 / 780");
     expect(FRAME_SPECS.iphoneSE.aspectRatio).toBe("375 / 667");
     expect(FRAME_SPECS.iphone.aspectRatio).toBe("390 / 844");
-    expect(FRAME_SPECS.ipad.aspectRatio).toBe("862 / 1140");
+    expect(FRAME_SPECS.ipad.aspectRatio).toBe("834 / 1194");
     expect(FRAME_SPECS.galaxyTab.aspectRatio).toBe("800 / 1280");
     expect(FRAME_SPECS.desktop.aspectRatio).toBe("16 / 10");
     expect(FRAME_SPECS.tablet.aspectRatio).toBe("4 / 3");
@@ -65,9 +65,9 @@ describe("FRAME_SPECS", () => {
   });
 
   it("defines a screen cutout for every overlay skin", () => {
-    expect(FRAME_SPECS.iphone15.cutout).toEqual({ x: 14, y: 14, w: 362, h: 816, rx: 46 });
+    expect(FRAME_SPECS.iphone15.cutout).toEqual({ x: 14, y: 14, w: 362, h: 816, rx: 55 });
     expect(FRAME_SPECS.iphoneSE.cutout).toEqual({ x: 10, y: 34, w: 355, h: 577, rx: 10 });
-    expect(FRAME_SPECS.ipad.cutout).toEqual({ x: 14, y: 14, w: 834, h: 1112, rx: 12 });
+    expect(FRAME_SPECS.ipad.cutout).toEqual({ x: 14, y: 14, w: 806, h: 1166, rx: 25 });
     expect(FRAME_SPECS.galaxyTab.cutout).toEqual({ x: 18, y: 18, w: 764, h: 1244, rx: 24 });
     expect(FRAME_SPECS.macbook.cutout).toEqual({ x: 44, y: 34, w: 1512, h: 982, rx: 6 });
     expect(FRAME_SPECS.imac.cutout).toEqual({ x: 70, y: 80, w: 1460, h: 821, rx: 10 });
@@ -81,7 +81,7 @@ describe("FRAME_SPECS", () => {
     expect(FRAME_SPECS.iphone15.viewBox).toBeUndefined();
     expect(frameViewBox(FRAME_SPECS.iphone15)).toEqual(DEFAULT_VIEWBOX);
     expect(frameViewBox(FRAME_SPECS.iphoneSE)).toEqual({ w: 375, h: 667 });
-    expect(frameViewBox(FRAME_SPECS.ipad)).toEqual({ w: 862, h: 1140 });
+    expect(frameViewBox(FRAME_SPECS.ipad)).toEqual({ w: 834, h: 1194 });
     expect(frameViewBox(FRAME_SPECS.galaxyTab)).toEqual({ w: 800, h: 1280 });
     expect(frameViewBox(FRAME_SPECS.macbook)).toEqual({ w: 1600, h: 1074 });
     expect(frameViewBox(FRAME_SPECS.imac)).toEqual({ w: 1600, h: 1420 });

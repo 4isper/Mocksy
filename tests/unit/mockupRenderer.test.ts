@@ -139,7 +139,7 @@ describe("buildSceneCss", () => {
 
   it("exposes the spec screen radius", () => {
     const { screenRadius } = buildSceneCss(base({ frame: "iphone16pro" }));
-    expect(screenRadius).toBe(48);
+    expect(screenRadius).toBe(55);
   });
 
   it("pans media via object-position from mediaOffset fields", () => {
