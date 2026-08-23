@@ -172,14 +172,23 @@ export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
   watchUltra: {
     asset: "/devices/watchUltra.svg",
     padding: 22,
-    screenRadius: 76,
+    screenRadius: 82,
     isOverlay: true,
-    aspectRatio: "430 / 520",
-    // viewBox 430x520; screen rect x37 y32 w356 h456 rx76
-    cutout: { x: 37, y: 32, w: 356, h: 456, rx: 76 },
-    viewBox: { w: 430, h: 520 }
+    aspectRatio: "410 / 502",
+    // viewBox 410x502; screen rect x20 y24 w370 h454 rx82 (real 410x502 display)
+    cutout: { x: 20, y: 24, w: 370, h: 454, rx: 82 },
+    viewBox: { w: 410, h: 502 }
   },
-  watch: { asset: null, padding: 18, screenRadius: 999, isOverlay: false, aspectRatio: "1 / 1", cutout: null }
+  watch: {
+    asset: "/devices/watch.svg",
+    padding: 0,
+    screenRadius: 90,
+    isOverlay: true,
+    aspectRatio: "396 / 484",
+    // viewBox 396x484; screen rect x22 y27 w352 h430 rx90 (rounded rect, not a circle)
+    cutout: { x: 22, y: 27, w: 352, h: 430, rx: 90 },
+    viewBox: { w: 396, h: 484 }
+  }
 };
 
 export function getFrameSpec(frame: MockupFrame, customFrame?: CustomFrame | null): FrameSpec {
@@ -284,3 +293,25 @@ export const ANIMATION_PRESETS: AnimationPreset[] = ["none", "zoomIn", "zoomOut"
 /** Aspect ratios selectable for the scene canvas. Kept here so the ControlPanel
  *  select and any preset/normalization code share a single source of truth. */
 export const ASPECT_RATIOS = ["16 / 9", "4 / 3", "3 / 2", "1 / 1", "4 / 5", "2 / 3", "9 / 16"];
+
+/** Operating system family a frame belongs to. Drives the on-screen chrome
+ *  (status bar, home indicator, dock) so an Android phone doesn't get the iOS
+ *  home indicator and a desktop frame doesn't get a mobile status bar. */
+export type DeviceOS = "ios" | "android" | "desktop";
+
+/** Maps a frame to its OS family for chrome rendering. */
+export function frameOs(frame: MockupFrame | undefined): DeviceOS {
+  switch (frame) {
+    case "pixel8pro":
+    case "galaxy24":
+      return "android";
+    case "desktop":
+    case "tablet":
+    case "notebook":
+    case "browser":
+    case "tv":
+      return "desktop";
+    default:
+      return "ios";
+  }
+}

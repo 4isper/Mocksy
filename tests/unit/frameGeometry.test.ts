@@ -39,9 +39,11 @@ describe("computeFrameBox", () => {
     expect(box.innerY).toBeGreaterThan(box.y);
   });
 
-  it("watch frame has equal inner dimensions (circular)", () => {
+  it("watch frame is a rounded rectangle (non-circular overlay)", () => {
     const box = computeFrameBox(scene({ frame: "watch" }), 1000, 1000, 2, 400, 400);
-    expect(box.innerW).toBeCloseTo(box.innerH, 5);
+    // Overlay skins define the shape via the SVG; inner dims are not equal.
+    expect(box.innerW).not.toBeCloseTo(box.innerH, 5);
+    expect(box.outerRadius).toBeGreaterThan(0);
   });
 
   it("none frame has non-zero outerRadius from borderRadius + padding", () => {
@@ -67,9 +69,9 @@ describe("computeFrameBox", () => {
     expect(box.width).toBeGreaterThan(0);
   });
 
-  it("clips the watch frame to a full circle (outerRadius = half of min dimension)", () => {
+  it("clips the watch frame as an overlay with a non-zero outerRadius", () => {
     const box = computeFrameBox(scene({ frame: "watch" }), 1000, 1000, 2, 400, 400);
-    expect(box.outerRadius).toBeCloseTo(200, 3);
+    expect(box.outerRadius).toBeGreaterThan(0);
   });
 
   it("innerRadius is greater than zero for the watch frame", () => {
@@ -286,14 +288,14 @@ describe("computeFrameInstances", () => {
     expect(result[0]!.outerRadius).toBeGreaterThan(0);
   });
 
-  it("watch frame instances have circular outerRadius", () => {
+  it("watch frame instances are overlays with zero outerRadius", () => {
     const s = scene({
       frameInstances: [
         { id: "i1", frame: "watch", x: 0.5, y: 0.5, scale: 0.5, layerId: null }
       ]
     });
     const result = computeFrameInstances(s, 1200, 1200, 2);
-    expect(result[0]!.outerRadius).toBeCloseTo(Math.min(result[0]!.width, result[0]!.height) / 2 * 2, 3);
+    expect(result[0]!.outerRadius).toBe(0);
   });
 });
 describe("computeFrameInstances landscape orientation", () => {

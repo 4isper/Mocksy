@@ -1,6 +1,6 @@
 import type { Annotation, EditorScene, MediaLayer, StylePreset } from "@/lib/types/editor";
 import type { FrameBox } from "./frameGeometry";
-import { getFrameSpec } from "@/lib/render/frames";
+import { getFrameSpec, frameOs } from "@/lib/render/frames";
 import { createLayerCanvas, layerContext } from "@/lib/render/canvasFactory";
 import { watermarkEdges } from "@/lib/render/watermark";
 import { buildLayerFilterCss } from "@/lib/render/layerFilters";
@@ -297,7 +297,7 @@ export function drawFrameAndMedia(
     ctx.save();
     roundedRectPath(ctx, innerX, innerY, innerW, innerH, innerRadius);
     ctx.clip();
-    drawScreenChrome(ctx, scene.screen, innerX, innerY, innerW, innerH);
+    drawScreenChrome(ctx, { ...scene.screen, os: frameOs(box.frame) }, innerX, innerY, innerW, innerH);
     ctx.restore();
   }
 

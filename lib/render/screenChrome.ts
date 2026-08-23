@@ -1,5 +1,6 @@
 import type { ScreenChrome } from "@/lib/types/editor";
 import { escapeMarkup } from "@/lib/export/markupUtils";
+import { frameOs } from "@/lib/render/frames";
 
 /**
  * Screen decoration (status bar, lock-screen clock/date, home dock, home
@@ -42,6 +43,8 @@ export const SCREEN_CHROME_DOCK_COLORS = ["#30d158", "#0a84ff", "#ff9f0a", "#ff3
  *  `uid` disambiguates gradient ids when the chrome appears multiple times. */
 export function screenChromeElements(chrome: ScreenChrome, w: number, h: number, uid = "sc"): string {
   const { fg, fgDim, topFrom, dockBg, indicator, circleBg, circleRing } = chromePalette(chrome);
+  const os = chrome.os ?? "ios";
+  if (os === "desktop") return "";
   const parts: string[] = [];
 
   parts.push(
@@ -51,7 +54,7 @@ export function screenChromeElements(chrome: ScreenChrome, w: number, h: number,
     `<rect x="0" y="0" width="${n(w)}" height="${n(h * 0.3)}" fill="url(#${uid}-top)"/>`
   );
 
-  if (chrome.style === "lock") {
+  if (chrome.style === "lock" && os === "ios") {
     // Flashlight / camera shortcut circles above the home indicator.
     const d = h * 0.095;
     const gap = w * 0.14;
@@ -66,7 +69,7 @@ export function screenChromeElements(chrome: ScreenChrome, w: number, h: number,
     }
   }
 
-  if (chrome.style === "home" && chrome.showDock) {
+  if (chrome.style === "home" && chrome.showDock && os === "ios") {
     const dockW = w * 0.92;
     const dockH = h * 0.115;
     const dockX = (w - dockW) / 2;
@@ -137,7 +140,7 @@ export function screenChromeElements(chrome: ScreenChrome, w: number, h: number,
     }
   }
 
-  if (chrome.showHomeIndicator) {
+  if (chrome.showHomeIndicator && os === "ios") {
     const iw = w * 0.36;
     const ih = h * 0.009;
     parts.push(
@@ -168,6 +171,8 @@ export function drawScreenChrome(
   h: number
 ): void {
   const { fg, fgDim, topFrom, dockBg, indicator, circleBg, circleRing } = chromePalette(chrome);
+  const os = chrome.os ?? "ios";
+  if (os === "desktop") return;
   const font = `${SCREEN_CHROME_FONT}`;
   const baseline = "hanging" as const;
 
@@ -181,7 +186,7 @@ export function drawScreenChrome(
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, w, h * 0.3);
 
-  if (chrome.style === "lock") {
+  if (chrome.style === "lock" && os === "ios") {
     const d = h * 0.095;
     const gap = w * 0.14;
     const cy = h - d - h * 0.05;
@@ -202,7 +207,7 @@ export function drawScreenChrome(
     }
   }
 
-  if (chrome.style === "home" && chrome.showDock) {
+  if (chrome.style === "home" && chrome.showDock && os === "ios") {
     const dockW = w * 0.92;
     const dockH = h * 0.115;
     const dockX = (w - dockW) / 2;
@@ -286,7 +291,7 @@ export function drawScreenChrome(
     }
   }
 
-  if (chrome.showHomeIndicator) {
+  if (chrome.showHomeIndicator && os === "ios") {
     const iw = w * 0.36;
     const ih = h * 0.009;
     roundRect(ctx, w / 2 - iw / 2, h - ih - h * 0.016, iw, ih, ih / 2);

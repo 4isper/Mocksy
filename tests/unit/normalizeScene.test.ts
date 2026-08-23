@@ -367,8 +367,9 @@ describe("normalizeScene", () => {
     expect(bad.screen.theme).toBe(initialScene.screen.theme);
     expect(bad.screen.time).toBe(initialScene.screen.time);
     expect(bad.screen.date).toBe(initialScene.screen.date);
-    // non-object screen falls back entirely
-    expect(normalizeScene({ screen: "nope" }).screen).toEqual(initialScene.screen);
+    // non-object screen falls back entirely (with an os derived from the frame)
+    expect(normalizeScene({ screen: "nope" }).screen).toMatchObject(initialScene.screen);
+    expect(normalizeScene({ screen: "nope" }).screen.os).toBe("ios");
   });
 
   it("honors explicit false screen flags", () => {
@@ -376,6 +377,16 @@ describe("normalizeScene", () => {
     expect(s.screen.showStatusBar).toBe(false);
     expect(s.screen.showClock).toBe(false);
     expect(s.screen.showHomeIndicator).toBe(false);
+  });
+
+  it("derives the chrome os from the frame", () => {
+    expect(normalizeScene({ frame: "pixel8pro" }).screen.os).toBe("android");
+    expect(normalizeScene({ frame: "desktop" }).screen.os).toBe("desktop");
+    expect(normalizeScene({ frame: "iphone16pro" }).screen.os).toBe("ios");
+  });
+
+  it("respects an explicit chrome os over the frame default", () => {
+    expect(normalizeScene({ frame: "pixel8pro", screen: { os: "ios" } }).screen.os).toBe("ios");
   });
 
   it("normalizes browserUrl and falls back for invalid values", () => {

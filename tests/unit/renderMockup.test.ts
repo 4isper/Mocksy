@@ -83,10 +83,13 @@ describe("computeFrameBox geometry", () => {
     expect(box.height).toBeCloseTo(box.width * (9 / 16), 5);
   });
 
-  it("clips the watch frame to a full circle", () => {
+  it("clips the watch frame to a rounded rectangle (overlay, not a circle)", () => {
     const box = computeFrameBox(scene({ frame: "watch" }), 1000, 1000, 2, 400, 400);
-    expect(box.outerRadius).toBeCloseTo(200, 3);
-    expect(box.innerRadius).toBeCloseTo((400 - 2 * (18 * 2)) / 2, 3);
+    // Overlay skins use the SVG body shape; outer radius is the skin's corner.
+    expect(box.outerRadius).toBeGreaterThan(0);
+    // The screen cutout is a rounded rectangle, so inner dimensions differ.
+    expect(box.innerW).not.toBeCloseTo(box.innerH, 3);
+    expect(box.innerRadius).toBeGreaterThan(0);
   });
 
   it("keeps the explicit frame ratio instead of the 10/16 default fallback", () => {

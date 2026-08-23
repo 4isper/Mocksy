@@ -1,6 +1,6 @@
-import type { Annotation, EditorScene } from "@/lib/types/editor";
+import type { Annotation, EditorScene, MockupFrame } from "@/lib/types/editor";
 import { computeFrameBox, computeFrameInstances, type FrameBox } from "@/lib/render/frameGeometry";
-import { frameViewBox, getFrameSpec, DEFAULT_VIEWBOX } from "@/lib/render/frames";
+import { frameViewBox, frameOs, getFrameSpec, DEFAULT_VIEWBOX } from "@/lib/render/frames";
 import { tiltMatrixSvg } from "@/lib/render/tilt";
 import { RENDER, resolveFrameStyle } from "@/lib/render/canvasDrawing";
 import { watermarkEdges } from "@/lib/render/watermark";
@@ -49,6 +49,8 @@ export interface SvgFrameGroup {
   /** Whole-group rotation for landscape instances (90). The box already
    *  carries swapped dimensions; this turns skin+media+chrome together. */
   orientation?: number;
+  /** The frame this group represents, so chrome can be OS-specific. */
+  frame?: MockupFrame;
 }
 
 export interface SvgExportOptions {
@@ -177,7 +179,7 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
   // the clip group so it stays under the device bezel and follows the radius.
   const chromeMarkup =
     scene.screen.enabled
-      ? `<g transform="translate(${num(box.innerX)} ${num(box.innerY)})">${screenChromeElements(scene.screen, box.innerW, box.innerH, `sc-${index}`)}</g>`
+      ? `<g transform="translate(${num(box.innerX)} ${num(box.innerY)})">${screenChromeElements({ ...scene.screen, os: frameOs(group.frame) }, box.innerW, box.innerH, `sc-${index}`)}</g>`
       : "";
 
   // SVG has no perspective, so a tilted scene uses the affine best-fit matrix.

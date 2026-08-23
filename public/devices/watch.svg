@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="396" height="484" viewBox="0 0 396 484" fill="none">
+  <!-- Apple Watch frame-only overlay: aluminium case with a real transparent
+       screen cutout (via mask) so the media shows through. Rounded rectangle,
+       not a circle (matches the real device). -->
+  <defs>
+    <linearGradient id="watch-case" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e6e6eb"/>
+      <stop offset="0.5" stop-color="#b9b9c0"/>
+      <stop offset="1" stop-color="#d2d2d8"/>
+    </linearGradient>
+    <mask id="watch-screen">
+      <rect x="0" y="0" width="396" height="484" fill="white"/>
+      <rect x="22" y="27" width="352" height="430" rx="90" ry="90" fill="black"/>
+    </mask>
+  </defs>
+  <!-- Aluminium case with the screen masked out to transparency -->
+  <rect x="10" y="8" width="376" height="468" rx="110" ry="110" fill="url(#watch-case)" stroke="#0a0a0a" stroke-width="2" mask="url(#watch-screen)"/>
+  <!-- Screen edge highlight (visible rim only) -->
+  <rect x="22" y="27" width="352" height="430" rx="90" ry="90" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+  <!-- Digital Crown -->
+  <rect x="380" y="150" width="12" height="60" rx="0" fill="#9a9aa2"/>
+  <rect x="380" y="150" width="12" height="12" rx="3" fill="#7d7d85"/>
+  <!-- Side button -->
+  <rect x="382" y="232" width="8" height="82" rx="4" fill="#9a9aa2"/>
+  <!-- Speaker grille (left side) -->
+  <rect x="8" y="210" width="5" height="70" rx="2.5" fill="#a6a6ad"/>
+</svg>

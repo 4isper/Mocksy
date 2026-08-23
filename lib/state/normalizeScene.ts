@@ -16,7 +16,7 @@ import type {
   ScreenChromeTheme,
   StylePreset
 } from "@/lib/types/editor";
-import { ALL_FRAMES, ANIMATION_PRESETS } from "@/lib/render/frames";
+import { ALL_FRAMES, ANIMATION_PRESETS, frameOs } from "@/lib/render/frames";
 import { LAYER_FILTER_DEFAULTS } from "@/lib/render/layerFilters";
 import { initialScene } from "@/lib/state/editorStore";
 import { nextAnnotationId, nextFrameInstanceId, nextLayerId } from "@/lib/state/ids";
@@ -42,8 +42,8 @@ const MAX_ANNOTATIONS = 500;
 const MAX_FRAME_INSTANCES = 100;
 
 /** Normalizes the on-screen decoration, falling back to defaults per flag. */
-export function normalizeScreenChrome(raw: unknown, fallback: ScreenChrome = initialScene.screen): ScreenChrome {
-  if (!raw || typeof raw !== "object") return fallback;
+export function normalizeScreenChrome(raw: unknown, fallback: ScreenChrome = initialScene.screen, frame: MockupFrame = initialScene.frame): ScreenChrome {
+  if (!raw || typeof raw !== "object") return { ...fallback, os: frameOs(frame) };
   const r = raw as Record<string, unknown>;
   return {
     enabled: r.enabled === true,
@@ -55,7 +55,8 @@ export function normalizeScreenChrome(raw: unknown, fallback: ScreenChrome = ini
     showDock: r.showDock !== false,
     showHomeIndicator: r.showHomeIndicator !== false,
     time: str(r.time, fallback.time) ?? fallback.time,
-    date: str(r.date, fallback.date) ?? fallback.date
+    date: str(r.date, fallback.date) ?? fallback.date,
+    os: pick(r.os, ["ios", "android", "desktop"] as const, frameOs(frame))
   };
 }
 
@@ -252,7 +253,7 @@ export function normalizeScene(raw: unknown): EditorScene {
     watermarkSize: num(r.watermarkSize, initialScene.watermarkSize, 8, 64),
     watermarkImageUrl: str(r.watermarkImageUrl, initialScene.watermarkImageUrl),
     animationDurationMs: num(r.animationDurationMs, initialScene.animationDurationMs, 500, 20000),
-    screen: normalizeScreenChrome(r.screen, initialScene.screen),
+    screen: normalizeScreenChrome(r.screen, initialScene.screen, frame),
     // Clamp the length so a crafted share URL can't bloat the scene with a
     // megabyte-long "URL"; the address bar truncates visually anyway.
     screenGlare: r.screenGlare === true,

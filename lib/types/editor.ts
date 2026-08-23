@@ -79,6 +79,10 @@ export interface ScreenChrome {
   time: string;
   /** Date text under the clock, e.g. "Tuesday, August 4". */
   date: string;
+  /** OS family the chrome belongs to; gates iOS-only decoration (home
+   *  indicator, dock) and the mobile status bar so Android/desktop frames
+   *  don't get iOS UI. Defaults to "ios" when not specified. */
+  os?: "ios" | "android" | "desktop";
 }
 export type MediaType = "none" | "image" | "video";
 export type VideoQuality = "low" | "medium" | "high";

@@ -1,4 +1,4 @@
-import type { EditorScene } from "@/lib/types/editor";
+import type { EditorScene, MockupFrame } from "@/lib/types/editor";
 import { frameInstanceSize, getFrameSpec, frameViewBox } from "@/lib/render/frames";
 import { RENDER } from "@/lib/render/canvasDrawing";
 import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
@@ -18,6 +18,8 @@ export interface FrameBox {
    *  above already carries the swapped dimensions; rotation is applied around
    *  the box center by the canvas renderer. */
   rotation?: number;
+  /** The frame this box represents, so renderers can derive OS-specific chrome. */
+  frame?: MockupFrame;
 }
 
 export interface RenderTransform {
@@ -69,20 +71,15 @@ export function computeFrameBox(
   const vb = frameViewBox(spec);
   const padX = cutout ? (cutout.x / vb.w) * frameW : spec.padding * dpiScale * actualZoom;
   const padY = cutout ? (cutout.y / vb.h) * frameH : spec.padding * dpiScale * actualZoom;
-  const isCircular = scene.frame === "watch";
-  const outerRadius = isCircular
-    ? Math.min(frameW, frameH) / 2
-    : (spec.isOverlay ? spec.screenRadius : scene.borderRadius + spec.padding) * dpiScale * actualZoom;
+  const outerRadius = (spec.isOverlay ? spec.screenRadius : scene.borderRadius + spec.padding) * dpiScale * actualZoom;
   const innerX = x + padX;
   const innerY = y + padY;
   const innerW = cutout ? (cutout.w / vb.w) * frameW : frameW - padX * 2;
   const innerH = cutout ? (cutout.h / vb.h) * frameH : frameH - padY * 2;
-  const innerRadius = isCircular
-    ? Math.min(innerW, innerH) / 2
-    : cutout
-      ? Math.max(0, (cutout.rx / cutout.w) * innerW, (cutout.rx / cutout.h) * innerH)
-      : Math.max(0, spec.screenRadius * dpiScale * actualZoom);
-  return { x, y, width: frameW, height: frameH, outerRadius, innerX, innerY, innerW, innerH, innerRadius };
+  const innerRadius = cutout
+    ? Math.max(0, (cutout.rx / cutout.w) * innerW, (cutout.rx / cutout.h) * innerH)
+    : Math.max(0, spec.screenRadius * dpiScale * actualZoom);
+  return { x, y, width: frameW, height: frameH,     outerRadius, innerX, innerY, innerW, innerH, innerRadius, frame: scene.frame };
 }
 
 export function computeFrameInstances(
@@ -141,7 +138,7 @@ export function computeFrameInstances(
     const dy = cy - drawH / 2;
     const padX = cutout ? (cutout.x / vb.w) * drawW : spec.padding * dpiScale * instZoom;
     const padY = cutout ? (cutout.y / vb.h) * drawH : spec.padding * dpiScale * instZoom;
-    const outerRadius = spec.isOverlay ? 0 : (inst.frame === "watch" ? Math.min(drawW, drawH) / 2 : scene.borderRadius + spec.padding) * dpiScale * instZoom;
+    const outerRadius = spec.isOverlay ? 0 : (scene.borderRadius + spec.padding) * dpiScale * instZoom;
 
     return {
       x,
@@ -156,7 +153,8 @@ export function computeFrameInstances(
       innerH: cutout ? (cutout.h / vb.h) * drawH : drawH - padY * 2,
       innerRadius: cutout
         ? Math.max(0, (cutout.rx / cutout.w) * (drawW - padX * 2), (cutout.rx / cutout.h) * (drawH - padY * 2))
-        : spec.screenRadius * dpiScale * instZoom
+        : spec.screenRadius * dpiScale * instZoom,
+      frame: inst.frame
     };
   });
 }

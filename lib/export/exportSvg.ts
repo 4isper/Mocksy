@@ -142,7 +142,7 @@ export async function exportSvg(
           mediaHeight: media?.height ?? box.innerH,
           isOverlay: spec.isOverlay,
           viewBox: frameViewBox(spec),
-          isCircular: inst.frame === "watch",
+          isCircular: false,
           overlayInner,
           browserUrl: isBrowserFrameSpec(spec) ? scene.browserUrl : null,
           mediaFit: layer?.mediaFit,
@@ -150,7 +150,8 @@ export async function exportSvg(
           offsetY: layer?.mediaOffsetY,
           rotation: layer?.rotation ?? 0,
           opacity: layer?.opacity,
-          orientation: box.rotation ? (box.rotation * 180) / Math.PI : undefined
+          orientation: box.rotation ? (box.rotation * 180) / Math.PI : undefined,
+          frame: inst.frame
         });
       }
     } else {
@@ -185,13 +186,14 @@ export async function exportSvg(
         mediaHeight: media?.height ?? box.innerH,
         isOverlay: spec.isOverlay,
         viewBox: frameViewBox(spec),
-        isCircular: scene.frame === "watch",
+        isCircular: false,
         overlayInner,
         browserUrl: isBrowserFrameSpec(spec) ? scene.browserUrl : null,
         mediaFit: activeLayer?.mediaFit,
         offsetX: activeLayer?.mediaOffsetX,
         offsetY: activeLayer?.mediaOffsetY,
         rotation: activeLayer?.rotation ?? 0,
+        frame: scene.frame,
         opacity: activeLayer?.opacity
       });
     }

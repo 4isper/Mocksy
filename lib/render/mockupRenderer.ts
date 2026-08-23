@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import type { EditorScene } from "@/lib/types/editor";
-import { frameViewBox, getFrameSpec, type FrameSpec } from "@/lib/render/frames";
+import { frameViewBox, frameOs, getFrameSpec, type FrameSpec } from "@/lib/render/frames";
 import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
 import { buildLayerFilterCss, LAYER_FILTER_DEFAULTS } from "@/lib/render/layerFilters";
 import { resolveFrameStyle } from "@/lib/render/canvasDrawing";
@@ -84,7 +84,7 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
     // canvas (whose shape is the scene aspect ratio) and stay centered.
     maxWidth: "100%",
     maxHeight: "100%",
-    borderRadius: spec.isOverlay ? 0 : scene.frame === "watch" ? "50%" : scene.borderRadius + framePadding,
+    borderRadius: spec.isOverlay ? 0 : scene.borderRadius + framePadding,
     border: spec.isOverlay ? "none" : frameBorder,
     // The SVG skin already paints the bezel; a CSS box-shadow/border on the
     // rectangular frame div would draw a second, mismatched rectangle around
@@ -194,7 +194,7 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
   // box, so stretch the fixed viewBox onto it ("none") to mirror it precisely.
   const chromePar = spec.isOverlay && spec.cutout ? "xMidYMid meet" : "none";
   const screenChrome = scene.screen.enabled
-    ? screenChromeSvg(scene.screen, chromeW, chromeH, `screen-chrome-${String(scene.frame).replace(/[^a-z0-9]/gi, "")}`, chromePar)
+    ? screenChromeSvg({ ...scene.screen, os: frameOs(scene.frame) }, chromeW, chromeH, `screen-chrome-${String(scene.frame).replace(/[^a-z0-9]/gi, "")}`, chromePar)
     : null;
   const screenChromeStyle: CSSProperties = spec.isOverlay && spec.cutout
     ? {

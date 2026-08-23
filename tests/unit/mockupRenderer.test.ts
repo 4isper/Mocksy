@@ -157,9 +157,10 @@ describe("buildSceneCss", () => {
     expect(none.mediaStyle.transform).toBeUndefined();
   });
 
-  it("renders the watch frame as a full circle", () => {
+  it("renders the watch frame as a rounded rectangle (not a circle)", () => {
     const { frame } = buildSceneCss(base({ frame: "watch" }));
-    expect(frame.borderRadius).toBe("50%");
+    // Overlay skins use the SVG body shape, so the CSS box has no border radius.
+    expect(frame.borderRadius).toBe(0);
   });
 
   it("exposes the background image url and blur for image mode", () => {
