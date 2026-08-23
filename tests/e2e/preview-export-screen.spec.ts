@@ -52,13 +52,28 @@ const cases: ScreenCase[] = [
   { name: "home screen (overlay ipad, real photo)", frame: "ipad", screen: home, mediaUrl: "/test-photo.png" },
   // Regression: in the multi-frame grid the media must not paint above the
   // device skin (notch) or the screen chrome — it used to, because the grid
-  // rendered the media element after them in the DOM.
+  // rendered the media element after them in the DOM. Photo media makes the
+  // whole device body visible so a paint-order drift shows up as a large diff.
   {
     name: "lock screen (multi-frame grid)",
     frame: "iphone15",
     screen: lock,
     mediaUrl: "/test-photo.png",
     frameInstances: [{ id: "fi1", frame: "iphone15", layerId: "l1", x: 0.5, y: 0.5, scale: 0.9 }]
+  },
+  {
+    name: "home screen (multi-frame grid)",
+    frame: "iphone15",
+    screen: home,
+    mediaUrl: "/test-photo.png",
+    frameInstances: [{ id: "fi1", frame: "iphone15", layerId: "l1", x: 0.5, y: 0.5, scale: 0.9 }]
+  },
+  {
+    name: "status bar only (multi-frame grid)",
+    frame: "ipad",
+    screen: statusBar,
+    mediaUrl: "/test-photo.png",
+    frameInstances: [{ id: "fi1", frame: "ipad", layerId: "l1", x: 0.5, y: 0.5, scale: 0.9 }]
   }
 ];
 

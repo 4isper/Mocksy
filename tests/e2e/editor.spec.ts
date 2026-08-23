@@ -394,6 +394,46 @@ test("duplicating a layer clones it with the same media", async ({ page }) => {
   await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(2);
 });
 
+test("uploading media in the frame grid clears the loading state", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("tab", { name: /Layers/ }).click();
+  await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
+    name: "sample.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+      "base64"
+    )
+  });
+  await expect(previewMedia(page)).toBeVisible();
+  // Regression: grid uploads used to leave isMediaLoading set forever, keeping
+  // a phantom loading row in the layers panel.
+  await expect(page.locator('.layer-item[aria-busy="true"]')).toHaveCount(0);
+});
+
+test("video in the frame grid paints below the skin and chrome", async ({ page }) => {
+  const scene = {
+    frame: "iphone15",
+    aspectRatio: "9 / 16",
+    backgroundMode: "solid",
+    backgroundColor: "#15151c",
+    layers: [{ id: "l1", mediaUrl: "/sample-video.mp4", mediaType: "video" }],
+    screen: {
+      enabled: true, theme: "dark", time: "9:41", date: "x",
+      style: "home", showStatusBar: true, showClock: false, showDate: false, showDock: true, showHomeIndicator: true
+    },
+    frameInstances: [{ id: "fi1", frame: "iphone15", layerId: "l1", x: 0.5, y: 0.5, scale: 0.9 }]
+  };
+  await page.goto(`/en?scene=${encodeURIComponent(JSON.stringify(scene))}`);
+  const frame = page.locator("[data-mockup-frame]").first();
+  await expect(frame.locator("video")).toHaveCount(1);
+  // Paint order mirrors the canvas export (media → chrome → skin): the video
+  // must come before the chrome host and the device-skin overlay image.
+  const tags = await frame.evaluate((el) => Array.from(el.children).map((c) => c.tagName));
+  expect(tags.indexOf("VIDEO")).toBeGreaterThanOrEqual(0);
+  expect(tags.indexOf("VIDEO")).toBeLessThan(tags.lastIndexOf("IMG"));
+});
+
 test("Control panel clears the active layer's media", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
