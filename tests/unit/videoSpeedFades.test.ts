@@ -135,9 +135,9 @@ describe("blur annotation", () => {
     drawAnnotations(
       mock,
       [{ ...makeAnnotation("blur"), x: 0.1, y: 0.1, w: 0.3, h: 0.2 }],
-      200,
-      200,
-      1
+      // Reference width → artboard scale 1 → the stroke passes through 1:1.
+      800,
+      600
     );
     expect(draws.filter((d) => d === "image").length).toBe(1); // snapshot write happens on sctx
     expect(mock.drawImage).toHaveBeenCalledTimes(1);

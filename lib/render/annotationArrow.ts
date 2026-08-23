@@ -14,13 +14,16 @@ export interface ArrowGeometry {
  * exported PNG exactly. `bx`/`by` are the box's top-left in fraction space
  * (already normalized so the arrow points in the right direction regardless of
  * the sign of w/h), and `canvasW`/`canvasH` are the laid-out canvas size.
+ * `headScale` multiplies the head size so it tracks the overlay chrome scale
+ * (keep in sync with RENDER.arrowHead × artboard scale in the exporters).
  */
 export function computeArrowGeometry(
   annotation: Annotation,
   canvasW: number,
   canvasH: number,
   bx: number,
-  by: number
+  by: number,
+  headScale = 1
 ): ArrowGeometry {
   const cw = canvasW || 1;
   const ch = canvasH || 1;
@@ -29,7 +32,7 @@ export function computeArrowGeometry(
   const endX = startX + annotation.w * cw;
   const endY = startY + annotation.h * ch;
   const angle = Math.atan2(endY - startY, endX - startX);
-  const head = 14;
+  const head = 14 * headScale;
   const a1 = angle + Math.PI - 0.45;
   const a2 = angle + Math.PI + 0.45;
   const points = `${endX},${endY} ${endX + head * Math.cos(a1)},${endY + head * Math.sin(a1)} ${endX + head * Math.cos(a2)},${endY + head * Math.sin(a2)}`;

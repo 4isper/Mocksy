@@ -9,6 +9,10 @@ import { annotationPreviewAnimation } from "@/lib/render/annotationAnimation";
 interface AnnotationContentProps {
   annotation: Annotation;
   size: { w: number; h: number };
+  /** Overlay chrome scale (artboard width / reference width): multiplies every
+   *  px-authored value below so annotations keep their proportions relative
+   *  to the mockup at any canvas size, matching the exports. */
+  scale: number;
   bx: number;
   by: number;
   editing: boolean;
@@ -24,6 +28,7 @@ interface AnnotationContentProps {
 export function AnnotationContent({
   annotation,
   size,
+  scale,
   bx,
   by,
   editing,
@@ -34,7 +39,7 @@ export function AnnotationContent({
 }: AnnotationContentProps): ReactNode {
   if (annotation.type === "text") {
     const textStyle: CSSProperties = {
-      fontSize: annotation.fontSize,
+      fontSize: annotation.fontSize * scale,
       color: annotation.color,
       lineHeight: 1.2,
       fontWeight: annotation.fontWeight ?? "bold",
@@ -44,8 +49,8 @@ export function AnnotationContent({
       whiteSpace: "pre-wrap",
       textShadow: "0 1px 3px rgba(0,0,0,0.5)",
       background: annotation.bgColor ?? undefined,
-      padding: annotation.bgColor ? (annotation.bgPadding ?? 0) : 0,
-      borderRadius: annotation.bgColor ? (annotation.bgRadius ?? 0) : 0,
+      padding: annotation.bgColor ? (annotation.bgPadding ?? 0) * scale : 0,
+      borderRadius: annotation.bgColor ? (annotation.bgRadius ?? 0) * scale : 0,
       display: "inline-block"
     };
     // Double-click edits the text in place: the label becomes contentEditable
@@ -82,7 +87,7 @@ export function AnnotationContent({
         style={{
           width: "100%",
           height: "100%",
-          border: `${annotation.strokeWidth}px solid ${annotation.color}`,
+          border: `${Math.max(1, annotation.strokeWidth * scale)}px solid ${annotation.color}`,
           borderRadius: 4,
           boxSizing: "border-box"
         }}
@@ -97,7 +102,7 @@ export function AnnotationContent({
         style={{
           width: "100%",
           height: "100%",
-          border: `${annotation.strokeWidth}px solid ${annotation.color}`,
+          border: `${Math.max(1, annotation.strokeWidth * scale)}px solid ${annotation.color}`,
           borderRadius: "50%",
           boxSizing: "border-box"
         }}
@@ -115,8 +120,8 @@ export function AnnotationContent({
           width: "100%",
           height: "100%",
           borderRadius: 8,
-          backdropFilter: `blur(${Math.max(1, annotation.strokeWidth)}px)`,
-          WebkitBackdropFilter: `blur(${Math.max(1, annotation.strokeWidth)}px)`
+          backdropFilter: `blur(${Math.max(1, annotation.strokeWidth * scale)}px)`,
+          WebkitBackdropFilter: `blur(${Math.max(1, annotation.strokeWidth * scale)}px)`
         }}
       />
     );
@@ -125,10 +130,10 @@ export function AnnotationContent({
   // arrow
   const bw = Math.abs(annotation.w) || 1e-4;
   const bh = Math.abs(annotation.h) || 1e-4;
-  const { startX, startY, endX, endY, points } = computeArrowGeometry(annotation, size.w, size.h, bx, by);
+  const { startX, startY, endX, endY, points } = computeArrowGeometry(annotation, size.w, size.h, bx, by, scale);
   return (
     <svg className={annotationPreviewAnimation(annotation)?.className} width={bw * (size.w || 1)} height={bh * (size.h || 1)} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-      <line pathLength={1} x1={startX} y1={startY} x2={endX} y2={endY} stroke={annotation.color} strokeWidth={annotation.strokeWidth} strokeLinecap="round" />
+      <line pathLength={1} x1={startX} y1={startY} x2={endX} y2={endY} stroke={annotation.color} strokeWidth={Math.max(0.5, annotation.strokeWidth * scale)} strokeLinecap="round" />
       <polygon points={points} fill={annotation.color} />
     </svg>
   );

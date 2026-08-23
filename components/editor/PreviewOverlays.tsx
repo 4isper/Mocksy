@@ -2,7 +2,9 @@
 
 import type { EditorScene } from "@/lib/types/editor";
 import { watermarkEdges } from "@/lib/render/watermark";
+import { overlayScaleFor } from "@/lib/render/overlayMetrics";
 import type { GuideLine } from "@/lib/render/annotationAlign";
+import { useElementSize } from "@/lib/hooks/useElementSize";
 import { AnnotationItem } from "@/components/editor/AnnotationItem";
 
 /** The letterboxed overlay that hosts percentage-positioned annotations and the
@@ -34,6 +36,12 @@ export function PreviewOverlays({
   onSelectMany: (ids: string[]) => void;
   onGuides: (guides: GuideLine[]) => void;
 }) {
+  // Live canvas box drives the overlay chrome scale, so the watermark (and
+  // annotation fonts/strokes inside AnnotationItem) keep their proportions
+  // relative to the artboard when the window or panels resize.
+  const { w } = useElementSize(canvasRef);
+  const overlayScale = overlayScaleFor(w);
+
   return (
     <div
       style={{
@@ -82,18 +90,18 @@ export function PreviewOverlays({
             src={scene.watermarkImageUrl}
             alt=""
             style={{
-              ...(watermarkEdges(scene.watermarkPosition).onLeft ? { left: 16 } : { right: 16 }),
-              ...(watermarkEdges(scene.watermarkPosition).onTop ? { top: 16 } : { bottom: 16 }),
-              height: scene.watermarkSize
+              ...(watermarkEdges(scene.watermarkPosition).onLeft ? { left: 16 * overlayScale } : { right: 16 * overlayScale }),
+              ...(watermarkEdges(scene.watermarkPosition).onTop ? { top: 16 * overlayScale } : { bottom: 16 * overlayScale }),
+              height: scene.watermarkSize * overlayScale
             }}
           />
         ) : (
           <span
             className="preview-watermark"
             style={{
-              ...(watermarkEdges(scene.watermarkPosition).onLeft ? { left: 16 } : { right: 16 }),
-              ...(watermarkEdges(scene.watermarkPosition).onTop ? { top: 16 } : { bottom: 16 }),
-              fontSize: scene.watermarkSize
+              ...(watermarkEdges(scene.watermarkPosition).onLeft ? { left: 16 * overlayScale } : { right: 16 * overlayScale }),
+              ...(watermarkEdges(scene.watermarkPosition).onTop ? { top: 16 * overlayScale } : { bottom: 16 * overlayScale }),
+              fontSize: scene.watermarkSize * overlayScale
             }}
           >
             {scene.watermarkText}

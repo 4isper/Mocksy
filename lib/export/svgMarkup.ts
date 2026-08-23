@@ -4,6 +4,7 @@ import { frameViewBox, frameOs, getFrameSpec, DEFAULT_VIEWBOX } from "@/lib/rend
 import { tiltMatrixSvg } from "@/lib/render/tilt";
 import { RENDER, resolveFrameStyle } from "@/lib/render/canvasDrawing";
 import { watermarkEdges } from "@/lib/render/watermark";
+import { overlayScaleFor } from "@/lib/render/overlayMetrics";
 import { screenChromeElements } from "@/lib/render/screenChrome";
 import { browserUrlSvg } from "@/lib/render/browserChrome";
 import { PATTERN_TILES } from "@/lib/render/sceneBackground";
@@ -245,11 +246,14 @@ function blurRegionGeometry(a: Annotation, width: number, height: number) {
   const by = Math.min(a.y, a.y + a.h) * height;
   const bw = Math.abs(a.w) * width;
   const bh = Math.abs(a.h) * height;
-  return { bx, by, bw, bh, radius: Math.max(1, a.strokeWidth) };
+  return { bx, by, bw, bh, radius: Math.max(1, a.strokeWidth * overlayScaleFor(width)) };
 }
 
 function annotationsMarkup(scene: EditorScene, width: number, height: number): string {
   if (scene.annotations.length === 0) return "";
+  // Overlay chrome scales with the artboard reference width (overlayMetrics),
+  // matching the canvas export and the live preview.
+  const s = overlayScaleFor(width);
   let out = "";
   for (const a of scene.annotations) {
     const bx = Math.min(a.x, a.x + a.w) * width;
@@ -269,39 +273,39 @@ function annotationsMarkup(scene: EditorScene, width: number, height: number): s
       const style = a.fontStyle === "italic" ? ' font-style="italic"' : "";
       const anchor = a.textAlign === "center" ? "middle" : a.textAlign === "right" ? "end" : "start";
        const textX = anchor === "start" ? bx : anchor === "end" ? bx + bw : bx + bw / 2;
-       const lineHeight = a.fontSize * RENDER.lineHeightMultiplier;
+       const lineHeight = a.fontSize * s * RENDER.lineHeightMultiplier;
        const tspans = a.text
           .split("\n")
           .map((line, i) => `<tspan x="${num(textX)}" dy="${i === 0 ? 0 : num(lineHeight)}">${escapeMarkup(line)}</tspan>`)
           .join("");
        let bg = "";
        if (a.bgColor && a.text.trim()) {
-         const approxWidth = a.text.split("\n").reduce((max, l) => Math.max(max, l.length * a.fontSize * 0.6), 0);
-         const padding = a.bgPadding ?? 0;
+         const approxWidth = a.text.split("\n").reduce((max, l) => Math.max(max, l.length * a.fontSize * s * 0.6), 0);
+         const padding = (a.bgPadding ?? 0) * s;
          const boxX = anchor === "middle" ? textX - approxWidth / 2 - padding : anchor === "end" ? textX - approxWidth - padding : textX - padding;
          const boxY = by - padding;
          const boxW = approxWidth + padding * 2;
          const boxH = a.text.split("\n").length * lineHeight + padding * 2;
-         const radius = a.bgRadius ?? 0;
+         const radius = (a.bgRadius ?? 0) * s;
          bg = `<rect x="${num(boxX)}" y="${num(boxY)}" width="${num(boxW)}" height="${num(boxH)}" rx="${num(radius)}" fill="${a.bgColor}"/>`;
        }
-       out += `${bg}<text x="${num(textX)}" y="${num(by)}" font-size="${num(a.fontSize)}" font-weight="${weight}" fill="${a.color}" font-family="${a.fontFamily ?? "Inter, system-ui, sans-serif"}" text-anchor="${anchor}" dominant-baseline="hanging"${style} filter="url(#anno-shadow)">${tspans}</text>`;
+       out += `${bg}<text x="${num(textX)}" y="${num(by)}" font-size="${num(a.fontSize * s)}" font-weight="${weight}" fill="${a.color}" font-family="${a.fontFamily ?? "Inter, system-ui, sans-serif"}" text-anchor="${anchor}" dominant-baseline="hanging"${style} filter="url(#anno-shadow)">${tspans}</text>`;
     } else if (a.type === "rect") {
-      out += `<rect x="${num(bx)}" y="${num(by)}" width="${num(bw)}" height="${num(bh)}" fill="none" stroke="${a.color}" stroke-width="${Math.max(1, a.strokeWidth)}"/>`;
+      out += `<rect x="${num(bx)}" y="${num(by)}" width="${num(bw)}" height="${num(bh)}" fill="none" stroke="${a.color}" stroke-width="${Math.max(1, a.strokeWidth * s)}"/>`;
     } else {
       const startX = a.x * width;
       const startY = a.y * height;
       const endX = (a.x + a.w) * width;
       const endY = (a.y + a.h) * height;
       const angle = Math.atan2(endY - startY, endX - startX);
-       const head = RENDER.arrowHead;
+       const head = RENDER.arrowHead * s;
       const a1 = angle + Math.PI - 0.45;
       const a2 = angle + Math.PI + 0.45;
       const p1x = num(endX + head * Math.cos(a1));
       const p1y = num(endY + head * Math.sin(a1));
       const p2x = num(endX + head * Math.cos(a2));
       const p2y = num(endY + head * Math.sin(a2));
-      out += `<line x1="${num(startX)}" y1="${num(startY)}" x2="${num(endX)}" y2="${num(endY)}" stroke="${a.color}" stroke-width="${Math.max(1, a.strokeWidth)}" stroke-linecap="round"/>`;
+      out += `<line x1="${num(startX)}" y1="${num(startY)}" x2="${num(endX)}" y2="${num(endY)}" stroke="${a.color}" stroke-width="${Math.max(1, a.strokeWidth * s)}" stroke-linecap="round"/>`;
       out += `<polygon points="${num(endX)},${num(endY)} ${p1x},${p1y} ${p2x},${p2y}" fill="${a.color}"/>`;
     }
   }
@@ -311,14 +315,15 @@ function annotationsMarkup(scene: EditorScene, width: number, height: number): s
 function watermarkMarkup(scene: EditorScene, opts: SvgExportOptions): string {
   if (!scene.watermarkEnabled) return "";
   const { width, height } = opts;
-  const inset = RENDER.watermarkInset;
+  const s = overlayScaleFor(width);
+  const inset = RENDER.watermarkInset * s;
   const { onLeft, onTop } = watermarkEdges(scene.watermarkPosition);
 
   if (scene.watermarkImageUrl && opts.watermarkHref) {
     const iw = opts.watermarkWidth ?? 1;
     const ih = opts.watermarkHeight ?? 1;
     const aspect = iw / ih;
-    let drawW = scene.watermarkSize * aspect;
+    let drawW = scene.watermarkSize * s * aspect;
     const maxW = width * 0.45;
     if (drawW > maxW) drawW = maxW;
     const drawH = drawW / aspect;
@@ -329,9 +334,9 @@ function watermarkMarkup(scene: EditorScene, opts: SvgExportOptions): string {
 
   if (!scene.watermarkText) return "";
   const textX = onLeft ? inset : width - inset;
-  const textY = onTop ? inset + scene.watermarkSize : height - inset;
+  const textY = onTop ? inset + scene.watermarkSize * s : height - inset;
   const baseline = onTop ? ' dominant-baseline="hanging"' : "";
-  return `<text x="${num(textX)}" y="${num(textY)}" font-size="${num(scene.watermarkSize)}" font-weight="500" fill="rgba(255,255,255,0.85)" font-family="Inter, system-ui, sans-serif" text-anchor="${onLeft ? "start" : "end"}"${baseline} filter="url(#anno-shadow)">${escapeMarkup(scene.watermarkText)}</text>`;
+  return `<text x="${num(textX)}" y="${num(textY)}" font-size="${num(scene.watermarkSize * s)}" font-weight="500" fill="rgba(255,255,255,0.85)" font-family="Inter, system-ui, sans-serif" text-anchor="${onLeft ? "start" : "end"}"${baseline} filter="url(#anno-shadow)">${escapeMarkup(scene.watermarkText)}</text>`;
 }
 
 /**

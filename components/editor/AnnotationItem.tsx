@@ -6,8 +6,10 @@ import type { Annotation } from "@/lib/types/editor";
 import { useTranslations } from "next-intl";
 import { snapToGrid } from "@/lib/render/grid";
 import { computeSmartGuide, type GuideLine } from "@/lib/render/annotationAlign";
+import { overlayScaleFor } from "@/lib/render/overlayMetrics";
 import { resolveZoomScale } from "@/lib/render/previewViewport";
 import { useEditorStore } from "@/lib/state/editorStore";
+import { useElementSize } from "@/lib/hooks/useElementSize";
 import { AnnotationContent } from "@/components/editor/AnnotationContent";
 
 interface AnnotationItemProps {
@@ -40,14 +42,14 @@ export function AnnotationItem({ annotation, selected, others, canvasRef, snapDi
   const resizeRef = useRef<{ x: number; y: number; aw: number; ah: number; viewScale: number } | null>(null);
   const editRef = useRef<HTMLDivElement | null>(null);
   const [editing, setEditing] = useState(false);
-  // Measured canvas size, captured after layout so the arrow renders at the
-  // correct pixel scale on first paint (the ref is null during the initial
-  // render, before the canvas has been laid out).
-  const [size, setSize] = useState({ w: 0, h: 0 });
-  useLayoutEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas) setSize({ w: canvas.clientWidth, h: canvas.clientHeight });
-  }, [canvasRef, annotation.x, annotation.y, annotation.w, annotation.h, annotation.type]);
+  // Measured canvas size, kept live via ResizeObserver so arrow geometry and
+  // the overlay chrome scale (see `overlayScale`) follow window/panel resizes
+  // immediately instead of waiting for the next annotation edit.
+  const { w: measuredW, h: measuredH } = useElementSize(canvasRef);
+  const size = { w: measuredW, h: measuredH };
+  // Overlay chrome (fonts, strokes) is authored against a reference artboard
+  // width and scales with the canvas, so proportions hold at any panel size.
+  const overlayScale = overlayScaleFor(measuredW);
 
   // Focus the in-place editor when it mounts and place the caret at the end so
   // typing appends instead of inserting at the start.
@@ -194,6 +196,7 @@ export function AnnotationItem({ annotation, selected, others, canvasRef, snapDi
       <AnnotationContent
         annotation={annotation}
         size={size}
+        scale={overlayScale}
         bx={bx}
         by={by}
         editing={editing}

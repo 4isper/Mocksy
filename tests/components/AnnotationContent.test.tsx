@@ -25,6 +25,7 @@ function make(overrides: Partial<Annotation> = {}): Annotation {
 const props = (annotation: Annotation) => ({
   annotation,
   size: { w: 800, h: 600 },
+  scale: 1,
   bx: annotation.x,
   by: annotation.y,
   editing: false,

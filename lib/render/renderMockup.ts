@@ -191,8 +191,8 @@ export function renderMockupToCanvas(
       if (!box || !inst) continue;
       renderInstance(ctx, box, inst);
     }
-    drawWatermark(ctx, scene, width, height, dpiScale, watermarkImage);
-    if (scene.annotations.length > 0) drawAnnotations(ctx, scene.annotations, width, height, dpiScale);
+    drawWatermark(ctx, scene, width, height, watermarkImage);
+    if (scene.annotations.length > 0) drawAnnotations(ctx, scene.annotations, width, height);
     return;
   }
 
@@ -227,10 +227,10 @@ export function renderMockupToCanvas(
   }
 
   if (scene.watermarkEnabled && (scene.watermarkText || scene.watermarkImageUrl)) {
-    drawWatermark(ctx, scene, width, height, dpiScale, watermarkImage);
+    drawWatermark(ctx, scene, width, height, watermarkImage);
   }
 
   if (scene.annotations.length > 0) {
-    drawAnnotations(ctx, scene.annotations, width, height, dpiScale);
+    drawAnnotations(ctx, scene.annotations, width, height);
   }
 }

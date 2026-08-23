@@ -7,6 +7,7 @@ import { buildLayerFilterCss } from "@/lib/render/layerFilters";
 import { drawScreenChrome } from "@/lib/render/screenChrome";
 import { drawBrowserUrl } from "@/lib/render/browserChrome";
 import { CORNER_POWER_CIRCLE, traceSquirclePath } from "@/lib/render/squircle";
+import { overlayScaleFor } from "@/lib/render/overlayMetrics";
 
 export const RENDER = {
   defaultFrameWidth: 900,
@@ -70,9 +71,12 @@ export function drawAnnotations(
   ctx: CanvasRenderingContext2D,
   annotations: Annotation[],
   width: number,
-  height: number,
-  dpiScale: number
+  height: number
 ) {
+  // Overlay chrome scales with the artboard (reference width), not with the
+  // export DPI — see overlayMetrics.ts. This keeps exports deterministic no
+  // matter the window size at export time.
+  const s = overlayScaleFor(width);
   for (const a of annotations) {
     const bx = Math.min(a.x, a.x + a.w) * width;
     const by = Math.min(a.y, a.y + a.h) * height;
@@ -80,7 +84,7 @@ export function drawAnnotations(
     const bh = Math.abs(a.h) * height;
     ctx.save();
     if (a.type === "text") {
-      const fontSize = a.fontSize * dpiScale;
+      const fontSize = a.fontSize * s;
        const weight = a.fontWeight === "normal" ? "400" : "bold";
       const style = a.fontStyle === "italic" ? "italic " : "";
       ctx.font = `${style}${weight} ${fontSize}px ${a.fontFamily ?? "Inter, system-ui, sans-serif"}`;
@@ -92,9 +96,9 @@ export function drawAnnotations(
       const lineHeight = fontSize * RENDER.lineHeightMultiplier;
       const textHeight = lines.length * lineHeight;
       const textWidth = Math.max(...lines.map((line) => ctx.measureText(line).width), 0);
-      const padding = (a.bgPadding ?? 0) * dpiScale;
+      const padding = (a.bgPadding ?? 0) * s;
       if (a.bgColor && textWidth > 0) {
-        const radius = (a.bgRadius ?? 0) * dpiScale;
+        const radius = (a.bgRadius ?? 0) * s;
         const boxX = align === "center" ? textX - textWidth / 2 - padding : align === "right" ? textX - textWidth - padding : textX - padding;
         const boxY = by;
         const boxW = textWidth + padding * 2;
@@ -107,16 +111,16 @@ export function drawAnnotations(
       }
       ctx.fillStyle = a.color;
       ctx.shadowColor = "rgba(0,0,0,0.5)";
-      ctx.shadowBlur = RENDER.annoShadowBlur * dpiScale;
+      ctx.shadowBlur = RENDER.annoShadowBlur * s;
       ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = RENDER.annoShadowOffsetY * dpiScale;
+      ctx.shadowOffsetY = RENDER.annoShadowOffsetY * s;
       // With a background, the preview insets the text by `bgPadding`, so the
       // text starts at `by + padding`; keep the export in step.
       const textTop = by + (a.bgColor ? padding : 0);
       lines.forEach((line, i) => ctx.fillText(line, textX, textTop + i * lineHeight));
     } else if (a.type === "rect") {
       ctx.strokeStyle = a.color;
-      const sw = Math.max(1, a.strokeWidth * dpiScale);
+      const sw = Math.max(1, a.strokeWidth * s);
       ctx.lineWidth = sw;
       // Match the preview's `border-box`: the outer edge of the stroke sits on
       // the box edge (CSS centers the border on the box edge), so inset by half
@@ -124,7 +128,7 @@ export function drawAnnotations(
       ctx.strokeRect(bx + sw / 2, by + sw / 2, Math.max(0, bw - sw), Math.max(0, bh - sw));
     } else if (a.type === "circle") {
       ctx.strokeStyle = a.color;
-      const sw = Math.max(1, a.strokeWidth * dpiScale);
+      const sw = Math.max(1, a.strokeWidth * s);
       ctx.lineWidth = sw;
       ctx.beginPath();
       ctx.ellipse(bx + bw / 2, by + bh / 2, Math.max(0, bw / 2 - sw / 2), Math.max(0, bh / 2 - sw / 2), 0, 0, Math.PI * 2);
@@ -143,7 +147,7 @@ export function drawAnnotations(
           roundedRectPath(ctx, bx, by, bw, bh, Math.min(bw, bh) * 0.12);
           ctx.clip();
           // Matches CSS blur(Npx)/SVG stdDeviation N at the same strength.
-          ctx.filter = `blur(${Math.max(1, a.strokeWidth * dpiScale)}px)`;
+          ctx.filter = `blur(${Math.max(1, a.strokeWidth * s)}px)`;
           ctx.drawImage(snap, 0, 0);
           ctx.restore();
         }
@@ -154,7 +158,7 @@ export function drawAnnotations(
       const endX = (a.x + a.w) * width;
       const endY = (a.y + a.h) * height;
       const angle = Math.atan2(endY - startY, endX - startX);
-      const head = RENDER.arrowHead * dpiScale;
+      const head = RENDER.arrowHead * s;
       const a1 = angle + Math.PI - 0.45;
       const a2 = angle + Math.PI + 0.45;
       ctx.beginPath();
@@ -177,21 +181,21 @@ export function drawWatermark(
   scene: EditorScene,
   width: number,
   height: number,
-  dpiScale: number,
   watermarkImage?: CanvasImageSource | null
 ) {
   if (!scene.watermarkEnabled) return;
   const hasImage = scene.watermarkImageUrl != null;
   if (!hasImage && !scene.watermarkText) return;
-  const watermarkSize = scene.watermarkSize * dpiScale;
-  const inset = RENDER.watermarkInset * dpiScale;
+  const s = overlayScaleFor(width);
+  const watermarkSize = scene.watermarkSize * s;
+  const inset = RENDER.watermarkInset * s;
   const { onLeft, onTop } = watermarkEdges(scene.watermarkPosition);
 
   ctx.save();
   ctx.shadowColor = "rgba(0,0,0,0.6)";
-  ctx.shadowBlur = RENDER.annoShadowBlur * dpiScale;
+  ctx.shadowBlur = RENDER.annoShadowBlur * s;
   ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = RENDER.annoShadowOffsetY * dpiScale;
+  ctx.shadowOffsetY = RENDER.annoShadowOffsetY * s;
 
   if (hasImage && watermarkImage) {
     const m = watermarkImage as { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number };

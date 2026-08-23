@@ -927,14 +927,14 @@ describe("drawWatermark", () => {
   it("returns early when watermark is disabled", async () => {
     const { drawWatermark } = await import("@/lib/render/canvasDrawing");
     const ctx = mockCtx();
-    drawWatermark(ctx, { watermarkEnabled: false, watermarkText: "Test" } as any, 800, 600, 2);
+    drawWatermark(ctx, { watermarkEnabled: false, watermarkText: "Test" } as any, 800, 600);
     expect(ctx.fillText).not.toHaveBeenCalled();
   });
 
   it("returns early when watermark text is empty", async () => {
     const { drawWatermark } = await import("@/lib/render/canvasDrawing");
     const ctx = mockCtx();
-    drawWatermark(ctx, { watermarkEnabled: true, watermarkText: "" } as any, 800, 600, 2);
+    drawWatermark(ctx, { watermarkEnabled: true, watermarkText: "" } as any, 800, 600);
     expect(ctx.fillText).not.toHaveBeenCalled();
   });
 
@@ -942,7 +942,7 @@ describe("drawWatermark", () => {
     const { drawWatermark } = await import("@/lib/render/canvasDrawing");
     for (const pos of ["bottom-right", "bottom-left", "top-right", "top-left"] as const) {
       const ctx = mockCtx();
-      drawWatermark(ctx, { watermarkEnabled: true, watermarkText: "Brand", watermarkPosition: pos, watermarkSize: 16 } as any, 800, 600, 2);
+      drawWatermark(ctx, { watermarkEnabled: true, watermarkText: "Brand", watermarkPosition: pos, watermarkSize: 16 } as any, 800, 600);
       expect(ctx.fillText).toHaveBeenCalledWith("Brand", expect.any(Number), expect.any(Number));
     }
   });
@@ -951,19 +951,20 @@ describe("drawWatermark", () => {
     const { drawWatermark } = await import("@/lib/render/canvasDrawing");
     const ctx = mockCtx();
     const logo = { naturalWidth: 200, naturalHeight: 100 } as unknown as HTMLImageElement;
-    drawWatermark(ctx, { watermarkEnabled: true, watermarkImageUrl: "data:image/png;base64,x", watermarkSize: 16 } as any, 800, 600, 2, logo);
-    // height = 16*2 = 32, width = 32 * (200/100) = 64, anchored to bottom-right.
-    expect(ctx.drawImage).toHaveBeenCalledWith(logo, 800 - 16 * 2 - 64, 600 - 16 * 2 - 32, 64, 32);
+    drawWatermark(ctx, { watermarkEnabled: true, watermarkImageUrl: "data:image/png;base64,x", watermarkSize: 16 } as any, 800, 600, logo);
+    // At the reference width the scale is 1: height = 16, width = 32, bottom-right inset 16.
+    expect(ctx.drawImage).toHaveBeenCalledWith(logo, 800 - 16 - 32, 600 - 16 - 16, 32, 16);
     expect(ctx.fillText).not.toHaveBeenCalled();
   });
 
    it("caps wide logos at 45% of the canvas width", async () => {
      const { drawWatermark } = await import("@/lib/render/canvasDrawing");
      const ctx = mockCtx();
-     const logo = { naturalWidth: 400, naturalHeight: 40 } as unknown as HTMLImageElement;
-     drawWatermark(ctx, { watermarkEnabled: true, watermarkImageUrl: "data:image/png;base64,x", watermarkSize: 16 } as any, 200, 200, 1, logo);
+     // Aspect 24 at the reference width: 16 × 24 = 384px wide, past the cap.
+     const logo = { naturalWidth: 480, naturalHeight: 20 } as unknown as HTMLImageElement;
+     drawWatermark(ctx, { watermarkEnabled: true, watermarkImageUrl: "data:image/png;base64,x", watermarkSize: 16 } as any, 800, 600, logo);
      const [,, , dw] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0]! as [unknown, number, number, number, number];
-     expect(dw).toBe(90); // 45% of 200
+     expect(dw).toBe(360); // 45% of 800
    });
 
   it("draws watermark in multi-frame mode", async () => {
