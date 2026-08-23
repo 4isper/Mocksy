@@ -28,6 +28,28 @@ export interface RenderTransform {
   offsetY: number;
 }
 
+/**
+ * Pure mirror of the single-frame CSS layout (mockupRenderer's contain logic):
+ * the frame keeps its own aspect ratio and is contained inside the canvas box.
+ * Exporters use this instead of measuring the live DOM element, so output size
+ * no longer depends on the window. "none" frames share the scene aspect and
+ * fill the canvas exactly, like `width/height: 100%` does in the preview.
+ */
+export function singleFrameCssSize(
+  scene: EditorScene,
+  canvasWidth: number,
+  canvasHeight: number
+): { w: number; h: number } {
+  const spec = getFrameSpec(scene.frame, scene.customFrame);
+  const ratioSrc = spec.aspectRatio ?? (scene.frame === "none" ? scene.aspectRatio : "1 / 1");
+  const { w: rw, h: rh } = parseAspectRatioOr(ratioSrc);
+  const { w: cw, h: ch } = parseAspectRatioOr(scene.aspectRatio);
+  const frameAr = rw / rh;
+  const canvasAr = cw / ch;
+  if (frameAr <= canvasAr) return { w: canvasHeight * frameAr, h: canvasHeight };
+  return { w: canvasWidth, h: canvasWidth / frameAr };
+}
+
 /** Animation pan keyframes store small offsets (e.g. ±20). The live preview
  *  displaces the frame by that many units × this factor (CSS px), so the
  *  canvas export must shift the frame box by the same factor × pixelRatio to

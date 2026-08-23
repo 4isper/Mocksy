@@ -221,8 +221,8 @@ describe("renderSceneToPngBlob", () => {
     const { renderSceneToPngBlob } = await import("@/lib/export/exportImage");
     const blob = await renderSceneToPngBlob(initialScene, "preview", undefined, 2, { width: 0, height: 720 });
     expect(blob).toBeInstanceOf(Blob);
-    expect(canvas.width).toBe(1600); // 800 * 2
-    expect(canvas.height).toBe(1200); // 600 * 2
+    expect(canvas.width).toBe(1600); // intrinsic 800 × scale 2
+    expect(canvas.height).toBe(900); // 16/9 scene → intrinsic height 450 × 2
   });
 
   it("returns null when canvas cannot produce blob", async () => {

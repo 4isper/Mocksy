@@ -6,6 +6,8 @@ import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { recordCanvasToWebm } from "@/lib/export/videoRecorder";
 import { QUALITY, resolvePixelRatio } from "@/lib/export/videoExportHelpers";
+import { fitRatioForCustomSize, intrinsicExportSize } from "@/lib/export/exportSize";
+import { singleFrameCssSize } from "@/lib/render/frameGeometry";
 
 // Barrel for the video-export pipeline. The pieces live in focused modules:
 //   - ffmpegLoader.ts          FFmpeg singleton lifecycle + temp-file cleanup
@@ -41,12 +43,15 @@ export async function captureWebm(
   // Custom resolutions record the canvas at exactly that size and scale the
   // frame by the uniform fit ratio (aspect-preserving, letterboxed), matching
   // the PNG export. Otherwise the quality tier and export scale drive the size.
+  // Both anchor to the scene's intrinsic artboard (exportSize.ts), so output
+  // size never depends on the preview's on-screen dimensions.
+  const base = intrinsicExportSize(scene, 1);
   const pixelRatio = hasCustomSize
-    ? Math.min(customSize.width / previewNode.clientWidth, customSize.height / previewNode.clientHeight)
+    ? fitRatioForCustomSize(scene, customSize)
     : resolvePixelRatio(exportQuality) * (typeof scale === "number" && scale > 0 ? scale / 2 : 1);
   const canvas = document.createElement("canvas");
-  canvas.width = Math.max(hasCustomSize ? 1 : 640, Math.round(hasCustomSize ? customSize.width : previewNode.clientWidth * pixelRatio));
-  canvas.height = Math.max(hasCustomSize ? 1 : 360, Math.round(hasCustomSize ? customSize.height : previewNode.clientHeight * pixelRatio));
+  canvas.width = Math.max(hasCustomSize ? 1 : 640, Math.round(hasCustomSize ? customSize.width : base.width * pixelRatio));
+  canvas.height = Math.max(hasCustomSize ? 1 : 360, Math.round(hasCustomSize ? customSize.height : base.height * pixelRatio));
 
   const videoInPreview = previewNode.querySelector("video");
   const imageInPreview = previewNode.querySelector("img");
@@ -83,9 +88,10 @@ export async function captureWebm(
   }
 
   const isMultiFrame = scene.frameInstances.length > 0;
-  const frameElement = previewNode.querySelector<HTMLElement>("[data-mockup-frame]");
-  const frameWidth = isMultiFrame ? undefined : frameElement ? Math.max(1, Math.round(frameElement.offsetWidth * pixelRatio)) : undefined;
-  const frameHeight = isMultiFrame ? undefined : frameElement ? Math.max(1, Math.round(frameElement.offsetHeight * pixelRatio)) : undefined;
+  // Frame box from the same pure math as the CSS layout — no DOM measuring.
+  const frameCss = isMultiFrame ? undefined : singleFrameCssSize(scene, base.width, base.height);
+  const frameWidth = frameCss ? Math.max(1, Math.round(frameCss.w * pixelRatio)) : undefined;
+  const frameHeight = frameCss ? Math.max(1, Math.round(frameCss.h * pixelRatio)) : undefined;
 
   // For multi-frame mode, load media for each frame's layer and per-instance overlays
   let layerMedias: Map<string, CanvasImageSource | null> | undefined;
@@ -145,7 +151,7 @@ export async function captureWebm(
 
   let webmBlob: Blob | null = null;
   try {
-    webmBlob = await recordCanvasToWebm(scene, canvas, media, frameElement, pixelRatio, onStatus, onProgress, layerMedias, frameOverlays, activeLayerId);
+    webmBlob = await recordCanvasToWebm(scene, canvas, media, frameWidth, frameHeight, pixelRatio, onStatus, onProgress, layerMedias, frameOverlays, activeLayerId);
   } finally {
     if (sourceVideo) {
       sourceVideo.pause();

@@ -531,12 +531,4 @@ describe("exportSvg", () => {
     expect(onError).toHaveBeenCalledWith("Preview area not found.");
   });
 
-  it("reports an error when the preview has no measurable size", async () => {
-    const scene = sceneWith({ frame: "none" });
-    const node = { clientWidth: 0, clientHeight: 0, querySelector: () => null } as unknown as HTMLElement;
-    vi.stubGlobal("document", { getElementById: () => node });
-    const onError = vi.fn();
-    await exportSvg(scene, "preview", "out", onError);
-    expect(onError).toHaveBeenCalledWith("Preview has no measurable size.");
-  });
 });

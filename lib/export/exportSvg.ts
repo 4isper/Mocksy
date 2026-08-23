@@ -1,7 +1,8 @@
 "use client";
 
 import type { EditorScene } from "@/lib/types/editor";
-import { computeFrameBox, computeFrameInstances, type FrameBox } from "@/lib/render/frameGeometry";
+import { computeFrameBox, computeFrameInstances, singleFrameCssSize, type FrameBox } from "@/lib/render/frameGeometry";
+import { intrinsicExportSize } from "@/lib/export/exportSize";
 import { getFrameSpec, frameViewBox } from "@/lib/render/frames";
 import { isBrowserFrameSpec } from "@/lib/render/browserChrome";
 import { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
@@ -91,15 +92,16 @@ export async function exportSvg(
       onError?.("Preview area not found.");
       return;
     }
-    const frameElement = node.querySelector<HTMLElement>("[data-mockup-frame]");
     const video = node.querySelector("video");
     const img = node.querySelector("img");
-    const width = node.clientWidth;
-    const height = node.clientHeight;
-    if (!width || !height) {
-      onError?.("Preview has no measurable size.");
-      return;
-    }
+    // Anchor the SVG canvas to the scene's intrinsic artboard (exportSize.ts)
+    // so vector output matches the raster exports and never depends on the
+    // preview's on-screen size.
+    const base = intrinsicExportSize(scene, 1);
+    const width = base.width;
+    const height = base.height;
+    // Single-frame box from pure scene math (mirrors the CSS contain logic).
+    const frameCss = scene.frameInstances.length > 0 ? undefined : singleFrameCssSize(scene, width, height);
 
     let background: { href: string; width: number; height: number } | null = null;
     if (scene.backgroundMode === "image" && scene.backgroundImageUrl) {
@@ -178,7 +180,7 @@ export async function exportSvg(
           };
         }
       }
-      const box = computeFrameBox(scene, width, height, 1, frameElement?.offsetWidth, frameElement?.offsetHeight, transform, undefined, undefined, activeLayerId);
+      const box = computeFrameBox(scene, width, height, 1, frameCss?.w, frameCss?.h, transform, undefined, undefined, activeLayerId);
       const overlayInner = spec.isOverlay && spec.asset ? await inlineSvgAsset(spec.asset) : null;
       groups.push({
         box,

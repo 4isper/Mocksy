@@ -13,13 +13,16 @@ import {
   canRenderSceneInWorker
 } from "@/lib/render/renderWorkerProtocol";
 import { resolveExportTransform, waitForImage } from "@/lib/export/exportImageCore";
+import { fitRatioForCustomSize, intrinsicExportSize } from "@/lib/export/exportSize";
+import { singleFrameCssSize } from "@/lib/render/frameGeometry";
 import { loadExportAssets } from "@/lib/export/exportAssets";
 
 /**
- * Renders the current scene to a raster `Blob` (PNG or WebP) at the preview's
- * pixel ratio, reusing the exact geometry the preview uses (frame box,
- * zoom/animation transform, overlay skin, transparent background). Returns null
- * (and routes the reason through `onError`) when the preview can't be measured
+ * Renders the current scene to a raster `Blob` (PNG or WebP) at an intrinsic,
+ * viewport-independent resolution (see exportSize.ts), reusing the exact
+ * geometry the preview uses (frame box, zoom/animation transform, overlay
+ * skin, transparent background). Returns null
+ * (and routes the reason through `onError`) when the scene can't be rendered
  * or the canvas can't be read. Shared by `exportImage`, `exportWebp` and
  * `copyPngToClipboard`.
  */
@@ -47,7 +50,6 @@ export async function renderSceneToImageBlob(
 
     const video = node.querySelector("video");
     const img = node.querySelector("img");
-    const frameElement = node.querySelector<HTMLElement>("[data-mockup-frame]");
     const isMultiFrame = scene.frameInstances.length > 0;
     const active = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
     let media: CanvasImageSource | null = null;
@@ -72,38 +74,29 @@ export async function renderSceneToImageBlob(
       }
     }
 
-    const baseFrameWidth = isMultiFrame ? undefined : frameElement?.offsetWidth;
-    const baseFrameHeight = isMultiFrame ? undefined : frameElement?.offsetHeight;
-    if (!isMultiFrame && (!baseFrameWidth || !baseFrameHeight)) {
-      onError?.("Frame has no measurable size.");
-      return null;
-    }
-
-    const containerWidth = node.clientWidth;
-    const containerHeight = node.clientHeight;
-    if (!containerWidth || !containerHeight) {
-      onError?.("Preview has no measurable size.");
-      return null;
-    }
-
     const hasCustomSize = customSize !== null && customSize !== undefined && customSize.width > 0 && customSize.height > 0;
-    // A custom resolution is rendered at exactly that canvas size; the frame is
-    // scaled by the fit ratio (uniform, aspect-preserving) so it keeps its
-    // on-screen proportion and is letterboxed when the aspect ratios differ.
+    // Exports anchor to the scene's intrinsic artboard (exportSize.ts), not to
+    // the live preview's CSS box — so the output is identical regardless of
+    // window size, browser page zoom or devicePixelRatio. The scale argument
+    // is a pure quality multiplier on top of that base.
+    const base = intrinsicExportSize(scene, 1);
     const pixelRatio = hasCustomSize
-      ? Math.min(customSize.width / containerWidth, customSize.height / containerHeight)
+      ? fitRatioForCustomSize(scene, customSize)
       : typeof scale === "number" && scale > 0
         ? scale
-        : Math.max(2, window.devicePixelRatio || 1);
+        : 2;
 
     const canvas = document.createElement("canvas");
-    const canvasWidth = Math.max(1, Math.round(hasCustomSize ? customSize.width : containerWidth * pixelRatio));
-    const canvasHeight = Math.max(1, Math.round(hasCustomSize ? customSize.height : containerHeight * pixelRatio));
+    const canvasWidth = Math.max(1, Math.round(hasCustomSize ? customSize.width : base.width * pixelRatio));
+    const canvasHeight = Math.max(1, Math.round(hasCustomSize ? customSize.height : base.height * pixelRatio));
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
 
-    const frameWidth = baseFrameWidth ? Math.max(1, Math.round(baseFrameWidth * pixelRatio)) : undefined;
-    const frameHeight = baseFrameHeight ? Math.max(1, Math.round(baseFrameHeight * pixelRatio)) : undefined;
+    // Frame box comes from the same pure math as the CSS layout instead of a
+    // DOM measurement, keeping exports deterministic (and correct in tests).
+    const frameCss = isMultiFrame ? undefined : singleFrameCssSize(scene, base.width, base.height);
+    const frameWidth = frameCss ? Math.max(1, Math.round(frameCss.w * pixelRatio)) : undefined;
+    const frameHeight = frameCss ? Math.max(1, Math.round(frameCss.h * pixelRatio)) : undefined;
 
     const transform = resolveExportTransform(scene, activeLayerId);
 

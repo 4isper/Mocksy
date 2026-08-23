@@ -411,10 +411,13 @@ describe("exportVideo orchestration", () => {
     installDom(preview, canvas);
     installMediaRecorder();
 
-    // medium quality, dpr 2 → resolvePixelRatio = max(2,2)*0.75 = 1.5
-    await exportWebm(sceneWithLayer({ mediaUrl: null, mediaType: "none" }));
+    // medium quality, dpr 2 → resolvePixelRatio = max(2,2)*0.75 = 1.5.
+    // Size anchors to the scene's intrinsic artboard, not the preview box:
+    // the demo scene is 16/9, so the base height is 450 (800×9/16).
+    const scene = sceneWithLayer({ mediaUrl: null, mediaType: "none" });
+    await exportWebm(scene);
     expect(canvas.width).toBe(Math.max(640, Math.round(800 * 1.5)));
-    expect(canvas.height).toBe(Math.max(360, Math.round(600 * 1.5)));
+    expect(canvas.height).toBe(Math.max(360, Math.round((800 * 9 / 16) * 1.5)));
   });
 
   it("transcodes an animated WebP through FFmpeg", async () => {

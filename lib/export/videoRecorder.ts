@@ -11,7 +11,8 @@ export async function recordCanvasToWebm(
   scene: EditorScene,
   canvas: HTMLCanvasElement,
   media: HTMLVideoElement | HTMLImageElement | null,
-  frameElement: HTMLElement | null,
+  frameWidth: number | undefined,
+  frameHeight: number | undefined,
   pixelRatio: number,
   onStatus?: (message: string) => void,
   onProgress?: (progress: number) => void,
@@ -23,14 +24,12 @@ export async function recordCanvasToWebm(
   // must be preloaded and passed in (the canvas renderer is synchronous).
   const { overlay, backgroundImage, watermarkImage } = await loadExportAssets(scene);
 
-  // Match the PNG export: size the frame from its on-screen box so overlay
-  // skins (iphone15/16pro) keep their native aspect ratio instead of being
-  // distorted by an incorrect fallback.
+  // Match the PNG export: the caller passes the frame box derived from pure
+  // scene math so overlay skins (iphone15/16pro) keep their native aspect
+  // ratio and output size never depends on the preview's on-screen layout.
   // MP4 (mpeg4) can't carry an alpha channel, so a transparent scene is
   // composited onto black for the video export (PNG keeps real transparency).
   const backgroundFill = scene.backgroundMode === "transparent" ? "#000000" : undefined;
-  const frameWidth = frameElement ? Math.max(1, Math.round(frameElement.offsetWidth * pixelRatio)) : undefined;
-  const frameHeight = frameElement ? Math.max(1, Math.round(frameElement.offsetHeight * pixelRatio)) : undefined;
 
   const fps = 30;
   // Attach the canvas to the DOM (off-screen) before capturing: some browsers
