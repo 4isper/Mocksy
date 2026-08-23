@@ -45,7 +45,16 @@ export function frameViewBox(spec: FrameSpec): { w: number; h: number } {
  *  has no entry here. */
 export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
   none: { asset: null, padding: 0, screenRadius: 20, isOverlay: false, aspectRatio: null, cutout: null },
-  iphone: { asset: null, padding: 18, screenRadius: 55, isOverlay: false, aspectRatio: "390 / 844", cutout: null },
+  iphone: {
+    asset: "/devices/iphone.svg",
+    padding: 0,
+    screenRadius: 55,
+    isOverlay: true,
+    aspectRatio: "390 / 844",
+    viewBox: { w: 390, h: 844 },
+    // viewBox 390x844; screen rect x14 y14 w362 h816 rx55 (55pt corner radius)
+    cutout: { x: 14, y: 14, w: 362, h: 816, rx: 55 }
+  },
   iphone15: {
     asset: "/devices/iphone15.svg",
     padding: 14,
@@ -115,8 +124,26 @@ export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
     cutout: { x: 18, y: 18, w: 764, h: 1244, rx: 24 },
     viewBox: { w: 800, h: 1280 }
   },
-  desktop: { asset: null, padding: 10, screenRadius: 8, isOverlay: false, aspectRatio: "16 / 10", cutout: null },
-  tablet: { asset: null, padding: 14, screenRadius: 24, isOverlay: false, aspectRatio: "4 / 3", cutout: null },
+  desktop: {
+    asset: "/devices/desktop.svg",
+    padding: 0,
+    screenRadius: 8,
+    isOverlay: true,
+    aspectRatio: "16 / 10",
+    viewBox: { w: 1600, h: 1000 },
+    // viewBox 1600x1000; screen rect x40 y40 w1520 h840 rx8
+    cutout: { x: 40, y: 40, w: 1520, h: 840, rx: 8 }
+  },
+  tablet: {
+    asset: "/devices/tablet.svg",
+    padding: 0,
+    screenRadius: 24,
+    isOverlay: true,
+    aspectRatio: "4 / 3",
+    viewBox: { w: 1200, h: 900 },
+    // viewBox 1200x900; screen rect x40 y30 w1120 h840 rx24
+    cutout: { x: 40, y: 30, w: 1120, h: 840, rx: 24 }
+  },
   macbook: {
     asset: "/devices/macbook.svg",
     padding: 40,

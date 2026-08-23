@@ -52,8 +52,8 @@ describe("computeFrameBox", () => {
   });
 
   it("borderRadius affects outerRadius for CSS-only frames", () => {
-    const s1 = scene({ frame: "iphone", borderRadius: 10 });
-    const s2 = scene({ frame: "iphone", borderRadius: 30 });
+    const s1 = scene({ frame: "none", borderRadius: 10 });
+    const s2 = scene({ frame: "none", borderRadius: 30 });
     const box1 = computeFrameBox(s1, 1200, 1200, 2);
     const box2 = computeFrameBox(s2, 1200, 1200, 2);
     expect(box2.outerRadius).toBeGreaterThan(box1.outerRadius);
@@ -281,7 +281,7 @@ describe("computeFrameInstances", () => {
     const s = scene({
       borderRadius: 10,
       frameInstances: [
-        { id: "i1", frame: "iphone", x: 0.5, y: 0.5, scale: 0.5, layerId: null }
+        { id: "i1", frame: "none", x: 0.5, y: 0.5, scale: 0.5, layerId: null }
       ]
     });
     const result = computeFrameInstances(s, 1200, 1200, 2);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
+import { FRAME_SPECS } from "@/lib/render/frames";
 import { initialScene } from "@/lib/state/editorStore";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 
@@ -55,7 +56,7 @@ describe("buildSceneCss", () => {
 
   it("drops the rectangular CSS shadow for overlay frames (skin carries its own)", () => {
     const overlay = buildSceneCss(base({ frame: "iphone15" }));
-    const cssOnly = buildSceneCss(base({ frame: "iphone" }));
+    const cssOnly = buildSceneCss(base({ frame: "none" }));
     expect(overlay.frame.boxShadow).toBe("none");
     expect(overlay.frame.borderRadius).toBe(0);
     expect(cssOnly.frame.boxShadow).toContain("70px");
@@ -102,7 +103,7 @@ describe("buildSceneCss", () => {
 
   it("insets media to the SVG cutout for overlay frames (frame padding drops to 0)", () => {
     const overlay = buildSceneCss(base({ frame: "iphone15" }));
-    const cssOnly = buildSceneCss(base({ frame: "iphone" })).frame;
+    const cssOnly = buildSceneCss(base({ frame: "none" })).frame;
     expect(overlay.frame.padding).toBe(0);
     expect(overlay.mediaStyle.position).toBe("absolute");
     // Percent-based inset matching the viewBox cutout (14/390, 14/844).
@@ -110,7 +111,7 @@ describe("buildSceneCss", () => {
     expect(overlay.mediaStyle.top).toBe(`${(14 / 844) * 100}%`);
     expect(overlay.mediaStyle.width).toBe(`${(362 / 390) * 100}%`);
     expect(overlay.mediaStyle.height).toBe(`${(816 / 844) * 100}%`);
-    expect(cssOnly.padding).toBe(18);
+    expect(cssOnly.padding).toBe(FRAME_SPECS.none.padding);
   });
 
   it("converts cutout percentages off each skin's own viewBox", () => {
@@ -133,7 +134,7 @@ describe("buildSceneCss", () => {
   });
 
   it("applies blur backdrop for glass styles on non-overlay frames", () => {
-    const { frame } = buildSceneCss(base({ frame: "iphone", stylePreset: "glassLight" }));
+    const { frame } = buildSceneCss(base({ frame: "none", stylePreset: "glassLight" }));
     expect(frame.backdropFilter).toBe("blur(10px)");
   });
 
@@ -248,13 +249,14 @@ describe("buildSceneCss", () => {
     expect(css.screenChrome).toContain("<svg");
     expect(css.screenChrome).toContain("9:41");
     expect(css.screenChromeStyle.position).toBe("absolute");
-    // The chrome must sit on the screen (the frame's content box), not over
-    // the device bezel — matching where the media and canvas exports draw it.
-    expect(css.screenChromeStyle.inset).toBe(18);
+    // The chrome must sit on the screen (the frame's cutout), not over the
+    // device bezel — matching where the media and canvas exports draw it.
+    expect(css.screenChromeStyle.left).toBe(`${(14 / 390) * 100}%`);
+    expect(css.screenChromeStyle.top).toBe(`${(14 / 844) * 100}%`);
     expect(css.screenChromeStyle.pointerEvents).toBe("none");
-    // CSS-only frames have no cutout; the chrome stretches onto the screen
-    // box so positions match the fraction-based canvas export.
-    expect(css.screenChrome).toContain('preserveAspectRatio="none"');
+    // Overlay skins define the screen via a cutout, so the chrome viewBox
+    // matches the cutout aspect and is centered ("meet").
+    expect(css.screenChrome).toContain('preserveAspectRatio="xMidYMid meet"');
   });
 
   it("emits the screen chrome over the cutout for overlay frames", () => {

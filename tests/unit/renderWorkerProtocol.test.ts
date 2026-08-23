@@ -58,8 +58,8 @@ describe("buildRenderWorkerPayload", () => {
     expect(payload).not.toBeNull();
     expect(payload!.id).toBe(7);
     expect(payload!.images).toEqual([{ key: ACTIVE_MEDIA_KEY, url: "data:image/png;base64,AAA" }]);
-    // The default iphone frame is CSS-only and ships no skin.
-    expect(payload!.overlayUrl).toBeNull();
+    // The default iphone frame is now an overlay skin.
+    expect(payload!.overlayUrl).toBe("/devices/iphone.svg");
     expect(payload!.backgroundImageUrl).toBeNull();
     expect(payload!.watermarkImageUrl).toBeNull();
   });
@@ -115,8 +115,8 @@ describe("buildRenderWorkerPayload", () => {
     const s = baseScene();
     const payload = buildRenderWorkerPayload({ id: 1, scene: s, width: 10, height: 10, pixelRatio: 1, mimeType: "image/png" });
     expect(payload!.activeLayerId).toBe("l1");
-    // The default iphone frame is CSS-only (no skin asset).
-    const cssOnly = { ...s, frame: "iphone" as const };
+    // The null frame is CSS-only (no skin asset).
+    const cssOnly = { ...s, frame: "none" as const };
     expect(
       buildRenderWorkerPayload({ id: 1, scene: cssOnly, width: 10, height: 10, pixelRatio: 1, mimeType: "image/png" })!
         .overlayUrl

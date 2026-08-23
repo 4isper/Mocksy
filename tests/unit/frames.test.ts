@@ -13,7 +13,7 @@ import {
 
 describe("FRAME_SPECS", () => {
   it("registers overlay assets for every SVG device skin", () => {
-    const overlays = ["iphone15", "iphone16pro", "pixel8pro", "galaxy24", "iphoneSE", "ipad", "galaxyTab", "macbook", "imac", "notebook", "browser", "tv", "watchUltra", "watch"] as const;
+    const overlays = ["iphone", "iphone15", "iphone16pro", "pixel8pro", "galaxy24", "iphoneSE", "ipad", "galaxyTab", "desktop", "tablet", "macbook", "imac", "notebook", "browser", "tv", "watchUltra", "watch"] as const;
     for (const frame of overlays) {
       expect(FRAME_SPECS[frame].isOverlay, `${frame} should be an overlay`).toBe(true);
       expect(FRAME_SPECS[frame].asset, `${frame} should have an asset`).toMatch(/\.svg$/);
@@ -32,13 +32,13 @@ describe("FRAME_SPECS", () => {
     expect(FRAME_SPECS.tv.asset).toMatch(/tv\.svg$/);
     expect(FRAME_SPECS.watchUltra.asset).toMatch(/watchUltra\.svg$/);
     expect(FRAME_SPECS.watch.asset).toMatch(/watch\.svg$/);
+    expect(FRAME_SPECS.iphone.asset).toMatch(/iphone\.svg$/);
+    expect(FRAME_SPECS.desktop.asset).toMatch(/desktop\.svg$/);
+    expect(FRAME_SPECS.tablet.asset).toMatch(/tablet\.svg$/);
   });
 
-  it("keeps CSS-only frames non-overlay", () => {
+  it("keeps only the null frame non-overlay", () => {
     expect(FRAME_SPECS.none.isOverlay).toBe(false);
-    expect(FRAME_SPECS.iphone.isOverlay).toBe(false);
-    expect(FRAME_SPECS.desktop.isOverlay).toBe(false);
-    expect(FRAME_SPECS.tablet.isOverlay).toBe(false);
   });
 
   it("gives each device frame its own native aspect ratio", () => {
@@ -75,6 +75,9 @@ describe("FRAME_SPECS", () => {
     expect(FRAME_SPECS.browser.cutout).toEqual({ x: 0, y: 96, w: 1440, h: 904, rx: 20 });
     expect(FRAME_SPECS.tv.cutout).toEqual({ x: 40, y: 40, w: 1520, h: 855, rx: 6 });
     expect(FRAME_SPECS.watchUltra.cutout).toEqual({ x: 20, y: 24, w: 370, h: 454, rx: 82 });
+    expect(FRAME_SPECS.iphone.cutout).toEqual({ x: 14, y: 14, w: 362, h: 816, rx: 55 });
+    expect(FRAME_SPECS.desktop.cutout).toEqual({ x: 40, y: 40, w: 1520, h: 840, rx: 8 });
+    expect(FRAME_SPECS.tablet.cutout).toEqual({ x: 40, y: 30, w: 1120, h: 840, rx: 24 });
   });
 
   it("defaults skins to the 390x844 viewBox unless overridden", () => {
@@ -90,6 +93,9 @@ describe("FRAME_SPECS", () => {
     expect(frameViewBox(FRAME_SPECS.tv)).toEqual({ w: 1600, h: 1000 });
     expect(frameViewBox(FRAME_SPECS.watchUltra)).toEqual({ w: 410, h: 502 });
     expect(frameViewBox(FRAME_SPECS.watch)).toEqual({ w: 396, h: 484 });
+    expect(frameViewBox(FRAME_SPECS.iphone)).toEqual({ w: 390, h: 844 });
+    expect(frameViewBox(FRAME_SPECS.desktop)).toEqual({ w: 1600, h: 1000 });
+    expect(frameViewBox(FRAME_SPECS.tablet)).toEqual({ w: 1200, h: 900 });
   });
 
   it("marks the browser frame with a url bar for the renderers", () => {

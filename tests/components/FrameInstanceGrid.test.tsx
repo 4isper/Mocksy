@@ -350,7 +350,7 @@ describe("FrameInstanceGrid media rendering", () => {
     });
     renderGrid(scene);
 
-    const img = document.querySelector("img[alt]");
+    const img = document.querySelector('img:not([alt=""])');
     expect(img).toBeInTheDocument();
     expect(img!.getAttribute("src")).toBe("https://example.com/image.png");
   });
@@ -368,7 +368,9 @@ describe("FrameInstanceGrid media rendering", () => {
     renderGrid(scene);
 
     expect(document.querySelector("video")).not.toBeInTheDocument();
-    expect(document.querySelector("img[alt]")).not.toBeInTheDocument();
+    // The overlay skin renders an <img alt="">; only the media image has a
+    // non-empty alt, so exclude the empty one.
+    expect(document.querySelector('img:not([alt=""])')).not.toBeInTheDocument();
   });
 });
 

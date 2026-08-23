@@ -53,10 +53,10 @@ describe("computeFrameBox geometry", () => {
     expect(box.innerH / box.height).toBeCloseTo(spec.cutout!.h / vbH, 5);
   });
 
-  it("matches the CSS preview inset ratio for a CSS-only frame", () => {
+  it("has no inset for the null frame (no bezel)", () => {
     const cssWidth = 640;
-    const spec = getFrameSpec("iphone");
-    const box = computeFrameBox(scene({ frame: "iphone" }), 1280, 1280, 2, cssWidth * 2, cssWidth * 2 * (10 / 16));
+    const spec = getFrameSpec("none");
+    const box = computeFrameBox(scene({ frame: "none" }), 1280, 1280, 2, cssWidth * 2, cssWidth * 2 * (10 / 16));
     expect(insetRatio(box)).toBeCloseTo(spec.padding / cssWidth, 5);
   });
 
@@ -651,7 +651,7 @@ describe("renderMockupToCanvas style presets", () => {
       set lineWidth(_v: unknown) {}
     };
     const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
-    renderMockupToCanvas(canvas, { ...initialScene, stylePreset: "outline", layers: [] }, null, undefined, undefined, 400, 300, 2);
+    renderMockupToCanvas(canvas, { ...initialScene, frame: "none", stylePreset: "outline", layers: [] }, null, undefined, undefined, 400, 300, 2);
     expect(strokeCalls).toBeGreaterThan(0);
   });
 
@@ -683,7 +683,7 @@ describe("renderMockupToCanvas style presets", () => {
       set lineWidth(_v: unknown) {}
     };
     const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
-    renderMockupToCanvas(canvas, { ...initialScene, stylePreset: "glassDark", layers: [] }, null, undefined, undefined, 400, 300, 2);
+    renderMockupToCanvas(canvas, { ...initialScene, frame: "none", stylePreset: "glassDark", layers: [] }, null, undefined, undefined, 400, 300, 2);
     expect(strokeCalls).toBeGreaterThan(0);
     expect(fillStyle).toContain("rgba");
   });
@@ -1148,7 +1148,7 @@ describe("renderMockupToCanvas multi-frame mode", () => {
       set lineWidth(_v: unknown) {}
     };
     const canvas = { width: 1000, height: 800, getContext: () => ctx } as unknown as HTMLCanvasElement;
-    renderMockupToCanvas(canvas, { ...initialScene, stylePreset: "outline", frameInstances: [{ id: "f1", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }] }, null);
+    renderMockupToCanvas(canvas, { ...initialScene, stylePreset: "outline", frameInstances: [{ id: "f1", frame: "none" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }] }, null);
     expect(strokeCalls).toBeGreaterThan(0);
   });
 
@@ -1245,7 +1245,7 @@ describe("renderMockupToCanvas multi-frame mode", () => {
       set lineWidth(_v: unknown) {}
     };
     const canvas = { width: 1000, height: 800, getContext: () => ctx } as unknown as HTMLCanvasElement;
-    renderMockupToCanvas(canvas, { ...initialScene, stylePreset: "glassDark", frameInstances: [{ id: "f1", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }] }, null);
+    renderMockupToCanvas(canvas, { ...initialScene, stylePreset: "glassDark", frameInstances: [{ id: "f1", frame: "none" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }] }, null);
     expect(strokeCalls).toBeGreaterThan(0);
     expect(fillStyle).toContain("rgba");
   });

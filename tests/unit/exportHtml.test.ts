@@ -106,9 +106,9 @@ describe("buildHtmlSnippet", () => {
   });
 
   it("applies the frame geometry and static transform", () => {
-    const scene = sceneWith();
+    const scene = sceneWith({ frame: "none" });
     const html = buildHtmlSnippet(scene, { mediaHref: MEDIA, mediaType: "image", backgroundHref: null, overlayHref: null });
-    expect(html).toContain("border-radius: 38px;");
+    expect(html).toContain("border-radius: 20px;");
     expect(html).toContain("object-fit: cover;");
     expect(html).toContain("transform: scale(1) translate(0px, 0px);");
   });
