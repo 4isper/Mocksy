@@ -199,6 +199,15 @@ describe("OS-specific chrome (frameOs / os flag)", () => {
     expect(indicator).not.toContain('fill="rgba(255,255,255,0.92)"');
   });
 
+  it("android status bar uses a triangular signal instead of iOS bars", () => {
+    const android = screenChromeElements(chrome({ showStatusBar: true, os: "android" }), W, H, "t");
+    const ios = screenChromeElements(chrome({ showStatusBar: true, os: "ios" }), W, H, "t");
+    // Android draws a single filled right-triangle (M L L Z); iOS uses 4 bars.
+    const triangle = /<path d="M [\d.]+ [\d.]+ L [\d.]+ [\d.]+ L [\d.]+ [\d.]+ Z"/;
+    expect(android).toMatch(triangle);
+    expect(ios).not.toMatch(triangle);
+  });
+
   it("desktop renders no mobile chrome at all", () => {
     expect(screenChromeElements(chrome({ os: "desktop" }), W, H, "t")).toBe("");
     expect(screenChromeElements(chrome({ style: "lock", os: "desktop" }), W, H, "t")).toBe("");

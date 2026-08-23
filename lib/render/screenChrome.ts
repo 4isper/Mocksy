@@ -113,14 +113,24 @@ export function screenChromeElements(chrome: ScreenChrome, w: number, h: number,
     }
     parts.push(`<circle cx="${n(wx)}" cy="${n(cy + h * 0.0016)}" r="1.2" fill="${fg}"/>`);
 
-    // Signal bars, centered left of the Wi-Fi.
+    // Signal icon, centered left of the Wi-Fi.
     const sx = wx - w * 0.036;
-    const barW = w * 0.0075;
-    const barGap = barW + w * 0.0022;
-    for (let i = 0; i < 4; i++) {
-      const bhBar = glyphH * (0.24 + i * 0.24);
-      const barX = sx + i * barGap;
-      parts.push(`<rect x="${n(barX)}" y="${n(cy + glyphH / 2 - bhBar)}" width="${n(barW)}" height="${n(bhBar)}" rx="${n(barW / 2)}" fill="${fg}"/>`);
+    if (os === "android") {
+      // Android-style cellular signal: a filled right triangle.
+      const triW = w * 0.028;
+      const triH = glyphH * 0.8;
+      parts.push(
+        `<path d="M ${n(sx)} ${n(cy + glyphH / 2)} L ${n(sx + triW)} ${n(cy + glyphH / 2)} L ${n(sx + triW)} ${n(cy + glyphH / 2 - triH)} Z" fill="${fg}"/>`
+      );
+    } else {
+      // iOS 4-bar signal.
+      const barW = w * 0.0075;
+      const barGap = barW + w * 0.0022;
+      for (let i = 0; i < 4; i++) {
+        const bhBar = glyphH * (0.24 + i * 0.24);
+        const barX = sx + i * barGap;
+        parts.push(`<rect x="${n(barX)}" y="${n(cy + glyphH / 2 - bhBar)}" width="${n(barW)}" height="${n(bhBar)}" rx="${n(barW / 2)}" fill="${fg}"/>`);
+      }
     }
   }
 
@@ -265,12 +275,25 @@ export function drawScreenChrome(
     ctx.fill();
 
     const sx = wx - w * 0.036;
-    const barW = w * 0.0075;
-    const barGap = barW + w * 0.0022;
     ctx.fillStyle = fg;
-    for (let i = 0; i < 4; i++) {
-      const bhBar = glyphH * (0.24 + i * 0.24);
-      ctx.fillRect(sx + i * barGap, cy + glyphH / 2 - bhBar, barW, bhBar);
+    if (os === "android") {
+      // Android-style cellular signal: a filled right triangle.
+      const triW = w * 0.028;
+      const triH = glyphH * 0.8;
+      ctx.beginPath();
+      ctx.moveTo(sx, cy + glyphH / 2);
+      ctx.lineTo(sx + triW, cy + glyphH / 2);
+      ctx.lineTo(sx + triW, cy + glyphH / 2 - triH);
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      // iOS 4-bar signal.
+      const barW = w * 0.0075;
+      const barGap = barW + w * 0.0022;
+      for (let i = 0; i < 4; i++) {
+        const bhBar = glyphH * (0.24 + i * 0.24);
+        ctx.fillRect(sx + i * barGap, cy + glyphH / 2 - bhBar, barW, bhBar);
+      }
     }
   }
 

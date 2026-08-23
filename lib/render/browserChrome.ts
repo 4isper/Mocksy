@@ -14,8 +14,9 @@ import { escapeMarkup } from "@/lib/export/markupUtils";
 /** Must match the browser.svg viewBox and FRAME_SPECS.browser geometry. */
 export const BROWSER_VIEWBOX = { w: 1440, h: 1000 };
 export const BROWSER_TOOLBAR_H = 96;
-/** Address pill rect in viewBox units (where the URL text is drawn). */
-export const BROWSER_PILL = { x: 124, y: 20, w: 1292, h: 56 };
+/** Address pill rect in viewBox units (where the URL text is drawn). Sits to
+ *  the right of the tab strip. */
+export const BROWSER_PILL = { x: 460, y: 20, w: 960, h: 56 };
 
 export const BROWSER_URL_FONT_SIZE = 26;
 export const BROWSER_URL_COLOR = "#5f6368";

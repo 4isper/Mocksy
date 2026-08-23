@@ -67,7 +67,7 @@ describe("FRAME_SPECS", () => {
   it("defines a screen cutout for every overlay skin", () => {
     expect(FRAME_SPECS.iphone15.cutout).toEqual({ x: 14, y: 14, w: 362, h: 816, rx: 55 });
     expect(FRAME_SPECS.iphoneSE.cutout).toEqual({ x: 10, y: 34, w: 355, h: 577, rx: 10 });
-    expect(FRAME_SPECS.ipad.cutout).toEqual({ x: 14, y: 14, w: 806, h: 1166, rx: 25 });
+    expect(FRAME_SPECS.ipad.cutout).toEqual({ x: 14, y: 14, w: 806, h: 1166, rx: 16 });
     expect(FRAME_SPECS.galaxyTab.cutout).toEqual({ x: 18, y: 18, w: 764, h: 1244, rx: 24 });
     expect(FRAME_SPECS.macbook.cutout).toEqual({ x: 44, y: 34, w: 1512, h: 982, rx: 6 });
     expect(FRAME_SPECS.imac.cutout).toEqual({ x: 70, y: 80, w: 1460, h: 821, rx: 18 });

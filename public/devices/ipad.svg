@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="834" height="1194" viewBox="0 0 834 1194" fill="none">
   <!-- iPad Pro (11") frame-only overlay at its real logical size (834x1194).
-       Thin uniform bezel and a centered front camera. -->
+       Thin uniform bezel, squarish screen corners (~16pt) and a centered front
+       camera. -->
   <defs>
     <linearGradient id="ipad-bezel" x1="0" y1="0" x2="834" y2="1194" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#4a4a4e"/>
@@ -9,13 +10,13 @@
     </linearGradient>
     <mask id="ipad-screen">
       <rect x="0" y="0" width="834" height="1194" fill="white"/>
-      <rect x="14" y="14" width="806" height="1166" rx="25" ry="25" fill="black"/>
+      <rect x="14" y="14" width="806" height="1166" rx="16" ry="16" fill="black"/>
     </mask>
   </defs>
   <!-- Outer body with the screen masked out to transparency. -->
-  <rect x="4" y="4" width="826" height="1186" rx="50" ry="50" fill="url(#ipad-bezel)" stroke="#0a0a0a" stroke-width="2" mask="url(#ipad-screen)"/>
+  <rect x="4" y="4" width="826" height="1186" rx="34" ry="34" fill="url(#ipad-bezel)" stroke="#0a0a0a" stroke-width="2" mask="url(#ipad-screen)"/>
   <!-- Screen edge highlight (only the visible rim, not the cutout interior). -->
-  <rect x="14" y="14" width="806" height="1166" rx="25" ry="25" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+  <rect x="14" y="14" width="806" height="1166" rx="16" ry="16" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
   <!-- Front camera (top bezel, centered) -->
   <circle cx="417" cy="9" r="3.2" fill="#0a0a0a"/>
   <circle cx="417" cy="9" r="1.6" fill="#1c1c1e"/>

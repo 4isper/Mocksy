@@ -77,22 +77,24 @@ export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
   pixel8pro: {
     asset: "/devices/pixel8pro.svg",
     padding: 14,
-    screenRadius: 60,
+    screenRadius: 34,
     isOverlay: true,
     aspectRatio: "448 / 996",
-    // viewBox 448x996 (real logical size); screen rect x14 y14 w420 h968 rx60
-    cutout: { x: 14, y: 14, w: 420, h: 968, rx: 60 },
-    viewBox: { w: 448, h: 996 }
+    viewBox: { w: 448, h: 996 },
+    // viewBox 448x996; screen rect x14 y14 w420 h968 rx34 (Pixel corners are
+    // tighter than the iPhone's — ~34pt rather than 55pt)
+    cutout: { x: 14, y: 14, w: 420, h: 968, rx: 34 }
   },
   galaxy24: {
     asset: "/devices/galaxy24.svg",
     padding: 12,
-    screenRadius: 40,
+    screenRadius: 22,
     isOverlay: true,
     aspectRatio: "360 / 780",
-    // viewBox 360x780 (real logical size); screen rect x12 y12 w336 h756 rx40
-    cutout: { x: 12, y: 12, w: 336, h: 756, rx: 40 },
-    viewBox: { w: 360, h: 780 }
+    viewBox: { w: 360, h: 780 },
+    // viewBox 360x780; screen rect x12 y12 w336 h756 rx22 (Galaxy corners are
+    // tighter than the iPhone's — ~22pt rather than 55pt)
+    cutout: { x: 12, y: 12, w: 336, h: 756, rx: 22 }
   },
   iphoneSE: {
     asset: "/devices/iphoneSE.svg",
@@ -107,12 +109,13 @@ export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
   ipad: {
     asset: "/devices/ipad.svg",
     padding: 14,
-    screenRadius: 25,
+    screenRadius: 16,
     isOverlay: true,
     aspectRatio: "834 / 1194",
-    // viewBox 834x1194 (11" iPad Pro); screen rect x14 y14 w806 h1166 rx25
-    cutout: { x: 14, y: 14, w: 806, h: 1166, rx: 25 },
-    viewBox: { w: 834, h: 1194 }
+    viewBox: { w: 834, h: 1194 },
+    // viewBox 834x1194; screen rect x14 y14 w806 h1166 rx16 (iPad corners are
+    // squarish rather than the iPhone's 55pt radius)
+    cutout: { x: 14, y: 14, w: 806, h: 1166, rx: 16 }
   },
   galaxyTab: {
     asset: "/devices/galaxyTab.svg",
