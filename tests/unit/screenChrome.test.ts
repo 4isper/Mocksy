@@ -20,18 +20,69 @@ describe("screenChromeElements", () => {
     expect(out).toContain("fill=\"url(#t-top)\"");
   });
 
-  it("lock style draws status bar time, clock, date, flashlight circles and home indicator", () => {
+  it("omits the top scrim when nothing is drawn in the top area", () => {
+    const homeOnly = screenChromeElements(chrome({ style: "home", showStatusBar: false }), W, H, "t");
+    expect(homeOnly).not.toContain("<defs>");
+    const lockFlagsOff = screenChromeElements(chrome({ showStatusBar: false, showClock: false, showDate: false }), W, H, "t");
+    expect(lockFlagsOff).not.toContain("<defs>");
+  });
+
+  it("keeps the scrim when only the clock is visible (status bar off)", () => {
+    const out = screenChromeElements(chrome({ showStatusBar: false }), W, H, "t");
+    expect(out).toContain("<defs>");
+  });
+
+  it("places the lock date above the big clock like iOS", () => {
+    const out = screenChromeElements(chrome(), W, H, "t");
+    const texts = [...out.matchAll(/<text [^>]*y="([\d.]+)"[^>]*>([^<]+)<\/text>/g)].map((m) => ({
+      y: Number(m[1]),
+      content: m[2]
+    }));
+    const sorted = [...texts].sort((a, b) => a.y - b.y);
+    expect(sorted).toHaveLength(3);
+    const statusBar = sorted[0]!;
+    const date = sorted[1]!;
+    const clock = sorted[2]!;
+    expect(statusBar.content).toBe("9:41");
+    expect(statusBar.y).toBeLessThan(H * 0.05);
+    expect(date.content).toBe("Tuesday, August 4");
+    expect(date.y).toBeGreaterThan(statusBar.y);
+    expect(date.y).toBeLessThan(clock.y);
+    expect(clock.content).toBe("9:41");
+    expect(clock.y).toBeGreaterThan(H * 0.12);
+  });
+
+  it("lock style draws status bar time, clock, date, shortcut buttons and home indicator", () => {
     const out = screenChromeElements(chrome(), W, H, "t");
     // status bar time + lock clock + lock date
     expect(out.match(/<text /g)).toHaveLength(3);
     expect(out).toContain("9:41");
     expect(out).toContain("Tuesday, August 4");
-    // two flashlight buttons (ring + dot each) + the wi-fi dot
-    expect(out.match(/<circle /g)).toHaveLength(5);
-    // three wi-fi arcs + the battery outline
-    expect(out.match(/fill="none"/g)).toHaveLength(4);
+    // two shortcut rings + camera lens + the wi-fi dot
+    expect(out.match(/<circle /g)).toHaveLength(4);
+    // three wi-fi arcs + battery outline + camera lens
+    expect(out.match(/fill="none"/g)).toHaveLength(5);
     // home indicator pill
     expect(out).toContain('fill="rgba(255,255,255,0.92)"');
+  });
+
+  it("draws flashlight and camera glyphs near the screen edges", () => {
+    const out = screenChromeElements(chrome(), W, H, "t");
+    // shortcut circles sit at ±0.346w from center (iOS-like edge placement)
+    expect(out).toContain('cx="60.1"');
+    expect(out).toContain('cx="329.9"');
+    // real glyphs instead of placeholder dots: camera body is a g-wide rect
+    expect(out).toContain('width="22.3"');
+    expect(out).not.toContain('r="12.8"'); // old inner placeholder dot
+  });
+
+  it("home dock uses an iOS-like corner radius and 60pt-scale icons", () => {
+    const out = screenChromeElements(chrome({ style: "home" }), W, H, "t");
+    const dockH = H * 0.112;
+    const dockRx = Math.round(dockH * 0.4 * 10) / 10;
+    expect(out).toContain(`rx="${dockRx}"`); // rounded rect, not a capsule
+    expect(out).toContain(`width="${W * 0.15}"`); // ~60pt icons
+    expect(out).not.toContain(`rx="${dockH / 2}"`);
   });
 
   it("home style draws the dock icons instead of the clock", () => {
@@ -52,8 +103,42 @@ describe("screenChromeElements", () => {
 
   it("respects the showStatusBar flag", () => {
     const out = screenChromeElements(chrome({ showStatusBar: false }), W, H, "t");
-    // no battery outline when the status bar is hidden
-    expect(out).not.toContain('fill="none"');
+    // no battery body when the status bar is hidden
+    expect(out).not.toContain('width="11.1"');
+    const bare = screenChromeElements(chrome({ style: "statusBar", showStatusBar: false, showHomeIndicator: false }), W, H, "t");
+    expect(bare).not.toContain('fill="none"');
+  });
+
+  it("keeps signal bars below the battery height", () => {
+    const out = screenChromeElements(chrome({ style: "statusBar" }), W, H, "t");
+    const batteryH = H * 0.015;
+    const barHeights = [...out.matchAll(/width="2\.9" height="([\d.]+)"/g)].map((m) => Number(m[1]));
+    expect(barHeights).toHaveLength(4);
+    for (const bh of barHeights) {
+      expect(bh).toBeLessThan(batteryH);
+    }
+    expect(Math.max(...barHeights)).toBeGreaterThan(batteryH * 0.3);
+  });
+
+  it("sizes the status bar time like iOS and separates the signal bars", () => {
+    const out = screenChromeElements(chrome({ style: "statusBar" }), W, H, "t");
+    // ~17.7px at 390×844, matching the real ~17pt status bar font
+    expect(out).toContain('font-size="17.7"');
+    const xs = [...out.matchAll(/<rect x="([\d.]+)" y="[\d.]+" width="2\.9"/g)].map((m) => Number(m[1]));
+    expect(xs).toHaveLength(4);
+    const sorted = [...xs].sort((a, b) => a - b);
+    // pitch must exceed the bar width so bars never touch
+    expect(sorted[1]! - sorted[0]!).toBeGreaterThan(3.5);
+    expect(sorted[2]! - sorted[1]!).toBeGreaterThan(3.5);
+    expect(sorted[3]! - sorted[2]!).toBeGreaterThan(3.5);
+  });
+
+  it("keeps the android triangle within the battery height", () => {
+    const out = screenChromeElements(chrome({ showStatusBar: true, os: "android" }), W, H, "t");
+    const tri = out.match(/<path d="M ([\d.]+) ([\d.]+) L ([\d.]+) ([\d.]+) L ([\d.]+) ([\d.]+) Z"/)!;
+    const baseY = Number(tri[2]);
+    const topY = Number(tri[6]);
+    expect(baseY - topY).toBeLessThan(H * 0.015);
   });
 
   it("respects the showHomeIndicator flag", () => {
@@ -106,6 +191,7 @@ describe("drawScreenChrome", () => {
       translate: (...a: unknown[]) => calls.translate.push(a),
       beginPath: vi.fn(),
       moveTo: vi.fn(),
+      lineTo: vi.fn(),
       arc: vi.fn(),
       arcTo: vi.fn(),
       closePath: vi.fn(),
@@ -141,6 +227,19 @@ describe("drawScreenChrome", () => {
     const fillTexts = (c as unknown as { _calls: { fillText: unknown[][] } })._calls.fillText;
     expect(fillTexts.some((args) => args[0] === "9:41")).toBe(true);
   });
+
+  it("paints nothing when every element is hidden", () => {
+    const c = ctx();
+    drawScreenChrome(
+      c as never,
+      chrome({ style: "statusBar", showStatusBar: false, showHomeIndicator: false }),
+      0,
+      0,
+      W,
+      H
+    );
+    expect((c as unknown as { _calls: { fillRect: unknown[][] } })._calls.fillRect).toHaveLength(0);
+  });
 });
 
 describe("OS-specific chrome (frameOs / os flag)", () => {
@@ -153,6 +252,7 @@ describe("OS-specific chrome (frameOs / os flag)", () => {
       translate: (...a: unknown[]) => calls.translate.push(a),
       beginPath: vi.fn(),
       moveTo: vi.fn(),
+      lineTo: vi.fn(),
       arc: vi.fn(),
       arcTo: vi.fn(),
       closePath: vi.fn(),
