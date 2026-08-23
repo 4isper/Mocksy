@@ -1,6 +1,17 @@
 import { useEffect, useRef } from "react";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { getCopiedObject, setCopiedObject } from "@/lib/state/editorClipboard";
+import { resolveZoomScale, stepZoomDirection, zoomAroundCenter } from "@/lib/render/previewViewport";
+
+/** Steps the preview view zoom by one stop around the viewport center. */
+function zoomPreview(direction: 1 | -1): void {
+  const st = useEditorStore.getState();
+  const factor = stepZoomDirection(resolveZoomScale(st.previewZoom), direction) / resolveZoomScale(st.previewZoom);
+  if (factor === 1) return;
+  const next = zoomAroundCenter(st.previewZoom, factor, st.previewPan);
+  st.setPreviewPan(next.pan);
+  st.setPreviewZoom(next.zoom);
+}
 
 export interface EditorShortcutActions {
   saveNow: () => void;
@@ -83,6 +94,24 @@ export function useEditorShortcuts(actions: EditorShortcutActions): void {
       if (modifier && letter === "k") {
         event.preventDefault();
         a.onOpenCommandPalette();
+        return;
+      }
+      // Preview view zoom: ⌘+/⌘− step around the viewport center, ⌘0 resets
+      // to fit. Physical codes first (Equal/Minus/Digit0) so numpad and
+      // layout variants match; these shadow the browser's page zoom.
+      if (modifier && !typing && !event.shiftKey && (event.code === "Equal" || event.key === "=" || event.key === "+")) {
+        event.preventDefault();
+        zoomPreview(1);
+        return;
+      }
+      if (modifier && !typing && (event.code === "Minus" || event.key === "-")) {
+        event.preventDefault();
+        zoomPreview(-1);
+        return;
+      }
+      if (modifier && !typing && (event.code === "Digit0" || event.key === "0")) {
+        event.preventDefault();
+        useEditorStore.getState().resetPreviewView();
         return;
       }
       if (modifier && letter === "z") {

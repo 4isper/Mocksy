@@ -8,6 +8,7 @@ import { frameInstanceHalfExtents, frameInstAr, getFrameSpec } from "@/lib/rende
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import type { SceneCss } from "@/lib/render/mockupRenderer";
 import { useEditorStore } from "@/lib/state/editorStore";
+import { resolveZoomScale } from "@/lib/render/previewViewport";
 import { snapToGrid } from "@/lib/render/grid";
 import { snapCenteredBox, type GuideLine, type NormBox } from "@/lib/render/annotationAlign";
 import { tiltCss } from "@/lib/render/tilt";
@@ -37,6 +38,10 @@ interface DragState {
   startY: number;
   initialInstX: number;
   initialInstY: number;
+  /** View zoom captured at drag start: pointer deltas arrive in screen
+   *  pixels, which the zoom layer scales, so they must be divided back down
+   *  to canvas pixels for the fraction math below. */
+  viewScale: number;
   moved: boolean;
 }
 
@@ -45,6 +50,8 @@ interface ResizeState {
   startX: number;
   startY: number;
   initialScale: number;
+  /** Same screen↔canvas compensation as DragState.viewScale. */
+  viewScale: number;
 }
 
 export function FrameInstanceGrid({
@@ -117,6 +124,7 @@ export function FrameInstanceGrid({
         startY: e.clientY,
         initialInstX: inst.x,
         initialInstY: inst.y,
+        viewScale: resolveZoomScale(useEditorStore.getState().previewZoom),
         moved: false
       };
       selectFrameInstance(instId);
@@ -144,8 +152,8 @@ export function FrameInstanceGrid({
 
       if (!ds.moved) return;
 
-      const dx = dxPx / canvasRect.width;
-      const dy = dyPx / canvasRect.height;
+      const dx = dxPx / canvasRect.width / ds.viewScale;
+      const dy = dyPx / canvasRect.height / ds.viewScale;
 
       let nextX = Math.max(0, Math.min(1, ds.initialInstX + dx));
       let nextY = Math.max(0, Math.min(1, ds.initialInstY + dy));
@@ -206,7 +214,8 @@ export function FrameInstanceGrid({
         id: instId,
         startX: e.clientX,
         startY: e.clientY,
-        initialScale: inst.scale
+        initialScale: inst.scale,
+        viewScale: resolveZoomScale(useEditorStore.getState().previewZoom)
       };
       setResizingId(instId);
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -224,7 +233,7 @@ export function FrameInstanceGrid({
 
       const dxPx = e.clientX - rs.startX;
       const factor = 2;
-      const nextScale = Math.max(0.05, Math.min(1.0, rs.initialScale + (dxPx / canvasRect.width) * factor));
+      const nextScale = Math.max(0.05, Math.min(1.0, rs.initialScale + ((dxPx / canvasRect.width) * factor) / rs.viewScale));
 
       updateFrameInstance(instId, { scale: nextScale }, true);
     },

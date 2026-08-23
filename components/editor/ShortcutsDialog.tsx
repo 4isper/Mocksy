@@ -56,6 +56,16 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
         { keys: ["F"], label: t("shortcuts.fullscreenPreview") },
         { keys: ["↑", "↓", "←", "→"], label: t("shortcuts.nudgeFrame") }
       ]
+    },
+    {
+      title: t("shortcuts.view"),
+      items: [
+        { keys: ["⌘", "+"], label: t("shortcuts.zoomIn") },
+        { keys: ["⌘", "−"], label: t("shortcuts.zoomOut") },
+        { keys: ["⌘", "0"], label: t("shortcuts.zoomFit") },
+        { keys: ["Space", "drag"], label: t("shortcuts.panCanvas") },
+        { keys: ["Scroll"], label: t("shortcuts.zoomCursor") }
+      ]
     }
   ];
 

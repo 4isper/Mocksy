@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 import { useEditorStore } from "@/lib/state/editorStore";
+import { resolveZoomScale } from "@/lib/render/previewViewport";
 
 interface UseCanvasGestures {
   frameRef: React.RefObject<HTMLDivElement | null>;
@@ -24,6 +25,10 @@ export function useCanvasGestures({ frameRef, activeLayer }: UseCanvasGestures) 
   });
   const onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     if (e.touches.length === 2 && activeLayer) {
+      // Only claim the pinch when it starts on the mockup frame itself —
+      // gestures on the empty canvas belong to useCanvasViewport's view zoom.
+      const target = e.target as HTMLElement | null;
+      if (!target || typeof target.closest !== "function" || !target.closest("[data-mockup-frame], [data-frame-instance-id]")) return;
       const a = e.touches[0];
       const b = e.touches[1];
       if (!a || !b) return;
@@ -67,7 +72,9 @@ export function useCanvasGestures({ frameRef, activeLayer }: UseCanvasGestures) 
   // two-finger touch is claimed by the pinch-zoom handler instead. The
   // frame's offsetWidth is its untransformed layout size, so the delta
   // maps cleanly onto the CSS object-position basis the sliders drive.
-  const panState = useRef<{ x: number; y: number; offX: number; offY: number } | null>(null);
+  // The preview view zoom (if any) scales what the user sees, so it's
+  // captured at gesture start and divided out to keep drag-under-cursor.
+  const panState = useRef<{ x: number; y: number; offX: number; offY: number; viewScale: number } | null>(null);
   const canPan = !!activeLayer?.mediaUrl;
   const onPanDown = (e: React.PointerEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
@@ -78,7 +85,8 @@ export function useCanvasGestures({ frameRef, activeLayer }: UseCanvasGestures) 
       x: e.clientX,
       y: e.clientY,
       offX: activeLayer.mediaOffsetX,
-      offY: activeLayer.mediaOffsetY
+      offY: activeLayer.mediaOffsetY,
+      viewScale: resolveZoomScale(useEditorStore.getState().previewZoom)
     };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
@@ -88,8 +96,8 @@ export function useCanvasGestures({ frameRef, activeLayer }: UseCanvasGestures) 
     if (!s || !el) return;
     const w = el.offsetWidth || 1;
     const h = el.offsetHeight || 1;
-    const nx = Math.max(-1, Math.min(1, s.offX + ((e.clientX - s.x) / w) * 2));
-    const ny = Math.max(-1, Math.min(1, s.offY + ((e.clientY - s.y) / h) * 2));
+    const nx = Math.max(-1, Math.min(1, s.offX + ((e.clientX - s.x) / w / s.viewScale) * 2));
+    const ny = Math.max(-1, Math.min(1, s.offY + ((e.clientY - s.y) / h / s.viewScale) * 2));
     const st = useEditorStore.getState();
     st.setMediaOffsetX(nx);
     st.setMediaOffsetY(ny);

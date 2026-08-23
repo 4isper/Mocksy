@@ -6,6 +6,8 @@ import type { Annotation } from "@/lib/types/editor";
 import { useTranslations } from "next-intl";
 import { snapToGrid } from "@/lib/render/grid";
 import { computeSmartGuide, type GuideLine } from "@/lib/render/annotationAlign";
+import { resolveZoomScale } from "@/lib/render/previewViewport";
+import { useEditorStore } from "@/lib/state/editorStore";
 import { AnnotationContent } from "@/components/editor/AnnotationContent";
 
 interface AnnotationItemProps {
@@ -31,8 +33,11 @@ interface AnnotationItemProps {
  */
 export function AnnotationItem({ annotation, selected, others, canvasRef, snapDivisions = null, onSelect, onSelectMany, onUpdate, onGuides }: AnnotationItemProps) {
   const t = useTranslations();
-  const moveRef = useRef<{ x: number; y: number; ax: number; ay: number } | null>(null);
-  const resizeRef = useRef<{ x: number; y: number; aw: number; ah: number } | null>(null);
+  // View zoom is captured when a gesture starts: pointer deltas are screen
+  // pixels while the canvas fractions below assume unscaled canvas pixels,
+  // so the deltas are divided back down by this factor in the move handlers.
+  const moveRef = useRef<{ x: number; y: number; ax: number; ay: number; viewScale: number } | null>(null);
+  const resizeRef = useRef<{ x: number; y: number; aw: number; ah: number; viewScale: number } | null>(null);
   const editRef = useRef<HTMLDivElement | null>(null);
   const [editing, setEditing] = useState(false);
   // Measured canvas size, captured after layout so the arrow renders at the
@@ -66,7 +71,7 @@ export function AnnotationItem({ annotation, selected, others, canvasRef, snapDi
     onSelect(annotation.id, e.shiftKey);
     const canvas = canvasRef.current;
     if (!canvas) return;
-    moveRef.current = { x: e.clientX, y: e.clientY, ax: annotation.x, ay: annotation.y };
+    moveRef.current = { x: e.clientX, y: e.clientY, ax: annotation.x, ay: annotation.y, viewScale: resolveZoomScale(useEditorStore.getState().previewZoom) };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const onBodyMove = (e: React.PointerEvent) => {
@@ -75,8 +80,8 @@ export function AnnotationItem({ annotation, selected, others, canvasRef, snapDi
     if (!m || !canvas) return;
     const w = canvas.clientWidth || 1;
     const h = canvas.clientHeight || 1;
-    let nx = Math.max(-1, Math.min(2, m.ax + (e.clientX - m.x) / w));
-    let ny = Math.max(-1, Math.min(2, m.ay + (e.clientY - m.y) / h));
+    let nx = Math.max(-1, Math.min(2, m.ax + (e.clientX - m.x) / w / m.viewScale));
+    let ny = Math.max(-1, Math.min(2, m.ay + (e.clientY - m.y) / h / m.viewScale));
     if (snapDivisions) {
       nx = snapToGrid(nx, snapDivisions);
       ny = snapToGrid(ny, snapDivisions);
@@ -101,7 +106,7 @@ export function AnnotationItem({ annotation, selected, others, canvasRef, snapDi
     e.stopPropagation();
     const canvas = canvasRef.current;
     if (!canvas) return;
-    resizeRef.current = { x: e.clientX, y: e.clientY, aw: annotation.w, ah: annotation.h };
+    resizeRef.current = { x: e.clientX, y: e.clientY, aw: annotation.w, ah: annotation.h, viewScale: resolveZoomScale(useEditorStore.getState().previewZoom) };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const onResizeMove = (e: React.PointerEvent) => {
@@ -110,8 +115,8 @@ export function AnnotationItem({ annotation, selected, others, canvasRef, snapDi
     if (!r || !canvas) return;
     const w = canvas.clientWidth || 1;
     const h = canvas.clientHeight || 1;
-    let nw = Math.max(-2, Math.min(2, r.aw + (e.clientX - r.x) / w));
-    let nh = Math.max(-2, Math.min(2, r.ah + (e.clientY - r.y) / h));
+    let nw = Math.max(-2, Math.min(2, r.aw + ((e.clientX - r.x) / w) / r.viewScale));
+    let nh = Math.max(-2, Math.min(2, r.ah + ((e.clientY - r.y) / h) / r.viewScale));
     if (snapDivisions) {
       nw = snapToGrid(nw, snapDivisions);
       nh = snapToGrid(nh, snapDivisions);

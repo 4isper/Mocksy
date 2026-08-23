@@ -7,12 +7,14 @@ import { collectOverlayClipDefs } from "@/lib/render/squircle";
 import type { GuideLine } from "@/lib/render/annotationAlign";
 import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
 import { tiltCss } from "@/lib/render/tilt";
+import { resolveZoomScale } from "@/lib/render/previewViewport";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { useTranslations } from "next-intl";
 import { useFrameTransform } from "@/lib/hooks/useFrameTransform";
 import { useScenePalette } from "@/lib/hooks/useScenePalette";
 import { useCanvasGestures } from "@/lib/hooks/useCanvasGestures";
 import { useCanvasDrop } from "@/lib/hooks/useCanvasDrop";
+import { useCanvasViewport } from "@/lib/hooks/useCanvasViewport";
 import { ContextMenu, type ContextMenuItem } from "@/components/editor/ContextMenu";
 import { AnnotationItem } from "@/components/editor/AnnotationItem";
 import { FrameInstanceGrid } from "@/components/editor/FrameInstanceGrid";
@@ -29,6 +31,9 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const t = useTranslations();
   const activeLayerId = useEditorStore((s) => s.activeLayerId);
   const sceneCss = useMemo(() => buildSceneCss(scene, activeLayerId), [scene, activeLayerId]);
+  // The scene background moves into the zoom layer (see JSX below); the rest
+  // of the container style stays on the canvas box itself.
+  const { background: sceneBackground, backgroundSize: sceneBackgroundSize, ...containerStyle } = sceneCss.container;
   const isMediaLoading = useEditorStore((s) => s.isMediaLoading);
   const mediaUploadError = useEditorStore((s) => s.mediaUploadError);
   const selectedAnnotationId = useEditorStore((s) => s.selectedAnnotationId);
@@ -42,11 +47,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const selectLayer = useEditorStore((s) => s.selectLayer);
   const showGrid = useEditorStore((s) => s.showGrid);
   const gridDivisions = useEditorStore((s) => s.gridDivisions);
-  // View-only zoom of the scene layer: fit (default) or 0.5/1/2. Layout size
-  // is untouched, so exports and pointer math keep working; >fit crops from
-  // the canvas center via the parent's overflow:hidden.
-  const previewZoom = useEditorStore((s) => s.previewZoom);
-  const zoomScale = previewZoom === "fit" ? undefined : previewZoom;
+  // View zoom/pan state is consumed inside <PreviewZoomLayer> so continuous
+  // panning re-renders only that wrapper instead of the whole scene subtree.
   const setShowGrid = useEditorStore((s) => s.setShowGrid);
   const setGridDivisions = useEditorStore((s) => s.setGridDivisions);
   const setVideoDuration = useEditorStore((s) => s.setVideoDuration);
@@ -86,6 +88,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
 
   const { canPan, onTouchStart, onTouchEnd, onPanDown, onPanMove, onPanUp } = useCanvasGestures({ frameRef, activeLayer });
   const { fileInputKey, isDragging, handleDrop, handleFile, onDragEnter, onDragOver, onDragLeave } = useCanvasDrop({ scene });
+  const view = useCanvasViewport({ canvasRef });
 
   const isMultiFrame = scene.frameInstances.length > 0;
   const selectedInst = scene.frameInstances.find((i) => i.id === activeFrameInstanceId);
@@ -200,6 +203,11 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           if (target.closest("[data-annotation]") || target.closest(".preview-watermark")) return;
           selectAnnotation(null);
         }}
+        onPointerDownCapture={view.onPointerDownCapture}
+        onPointerMove={view.onPointerMove}
+        onPointerUp={view.onPointerUp}
+        onPointerCancel={view.onPointerCancel}
+        onDoubleClick={view.onDoubleClickReset}
         onContextMenu={openContextMenu}
         style={{
           // Contain inside the size container: take the larger of the two
@@ -211,25 +219,34 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           position: "relative",
           borderRadius: 12,
           overflow: "hidden",
-          ...sceneCss.container
+          cursor: view.viewCursor,
+          ...containerStyle
         }}
       >
-        {/* View-zoom layer: scales the scene content only; chips, alerts and
-            menus stay unscaled outside of it. Mirrors #preview-canvas's flex
-            centering — buildSceneCss sizes the frame against its parent box,
-            so without this the device sticks to the top-left corner instead
-            of centering like the canvas export does. */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transform: zoomScale ? `scale(${zoomScale})` : undefined,
-            transformOrigin: "center"
-          }}
-        >
+        {/* View-zoom/pan layer: transforms scene content only; chips, alerts
+            and menus stay unscaled outside of it. Isolated subscriber so pan
+            gestures don't re-render the whole subtree — children keep their
+            element identity across zoom updates. Mirrors #preview-canvas's
+            flex centering — buildSceneCss sizes the frame against its parent
+            box, so without this the device sticks to the top-left corner
+            instead of centering like the canvas export does. */}
+        <PreviewZoomLayer>
+        {/* The scene background paints inside the zoom layer so zooming
+            magnifies the whole artboard (background included), matching what
+            an export looks like up close. UI chrome stays outside. */}
+        {sceneBackground ? (
+          <div
+            data-scene-bg
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: sceneBackground,
+              ...(sceneBackgroundSize ? { backgroundSize: sceneBackgroundSize } : {}),
+              pointerEvents: "none"
+            }}
+          />
+        ) : null}
         <PreviewBackground sceneCss={sceneCss} showGrid={showGrid} gridDivisions={gridDivisions} />
         <svg aria-hidden width="0" height="0" style={{ position: "absolute" }}>
           <defs>
@@ -274,6 +291,23 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             selectLayer={selectLayer}
           />
         )}
+        <PreviewOverlays
+          scene={scene}
+          canvasRef={canvasRef}
+          selectedAnnotationId={selectedAnnotationId}
+          selectedAnnotationIds={selectedAnnotationIds}
+          showGrid={showGrid}
+          gridDivisions={gridDivisions}
+          guides={guides}
+          onSelectAnnotation={selectAnnotation}
+          onUpdateAnnotation={updateAnnotation}
+          onSelectMany={selectAnnotations}
+          onGuides={setGuides}
+        />
+        </PreviewZoomLayer>
+        {/* Upload/Clear chips and the empty-canvas hint are UI chrome: they
+            live outside the zoom layer so they stay fixed-size and readable
+            at any zoom level. */}
         {isMultiFrame ? (
           <PreviewChips
             isMultiFrame
@@ -309,20 +343,6 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             <span>{t("editor.dropToStart")}</span>
           </div>
         ) : null}
-        <PreviewOverlays
-          scene={scene}
-          canvasRef={canvasRef}
-          selectedAnnotationId={selectedAnnotationId}
-          selectedAnnotationIds={selectedAnnotationIds}
-          showGrid={showGrid}
-          gridDivisions={gridDivisions}
-          guides={guides}
-          onSelectAnnotation={selectAnnotation}
-          onUpdateAnnotation={updateAnnotation}
-          onSelectMany={selectAnnotations}
-          onGuides={setGuides}
-        />
-        </div>
         <PreviewGridToggle
           showGrid={showGrid}
           gridDivisions={gridDivisions}
@@ -344,6 +364,32 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           />
         ) : null}
       </div>
+    </div>
+  );
+}
+
+/** Isolated subscriber for the view zoom/pan state: re-renders only this
+ *  transform wrapper when the user pans or zooms, while `children` keep their
+ *  element identity so the scene subtree bails out of reconciliation.
+ *  Transform order matters — translate is applied in canvas pixels, then the
+ *  content scales around the center (screen = pan + scale·content). */
+function PreviewZoomLayer({ children }: { children: React.ReactNode }) {
+  const previewZoom = useEditorStore((s) => s.previewZoom);
+  const previewPan = useEditorStore((s) => s.previewPan);
+  const scale = resolveZoomScale(previewZoom);
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        transform: `translate(${previewPan.x}px, ${previewPan.y}px) scale(${scale})`,
+        transformOrigin: "center"
+      }}
+    >
+      {children}
     </div>
   );
 }

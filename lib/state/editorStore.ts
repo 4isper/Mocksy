@@ -39,6 +39,7 @@ export const useEditorStore = create<EditorStoreState>()((set) => ({
   showGrid: false,
   gridDivisions: DEFAULT_GRID_DIVISIONS,
   previewZoom: "fit",
+  previewPan: { x: 0, y: 0 },
   fullscreenPreview: false,
   onboardingOpen: false,
   rightTab: "templates",

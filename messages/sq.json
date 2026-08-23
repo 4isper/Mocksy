@@ -330,7 +330,10 @@
       "white": "White"
     },
     "exportTab": "Export",
-    "resizePanel": "Resize panel. Drag, double-click to reset, or use arrow keys"
+    "resizePanel": "Resize panel. Drag, double-click to reset, or use arrow keys",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "zoomReset": "Reset to 100%"
   },
   "frame": {
     "none": "Asnjë",
@@ -551,7 +554,13 @@
     "fullscreenPreview": "Toggle full-screen preview",
     "pasteMedia": "Paste media from clipboard",
     "copyObject": "Copy selected annotation / frame",
-    "pasteObject": "Paste copy of annotation / frame"
+    "pasteObject": "Paste copy of annotation / frame",
+    "view": "View",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "zoomFit": "Fit preview",
+    "panCanvas": "Pan canvas",
+    "zoomCursor": "Zoom at cursor (scroll)"
   },
   "projects": {
     "title": "Projekte",

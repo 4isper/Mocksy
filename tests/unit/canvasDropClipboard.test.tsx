@@ -5,7 +5,7 @@ import { getCopiedObject, setCopiedObject, type CopiedObject } from "@/lib/state
 import { useEditorStore, initialScene } from "@/lib/state/editorStore";
 
 beforeEach(() => {
-  useEditorStore.setState({ scene: initialScene, past: [], future: [], previewZoom: "fit" });
+  useEditorStore.setState({ scene: initialScene, past: [], future: [], previewZoom: "fit", previewPan: { x: 0, y: 0 } });
 });
 
 afterEach(() => {
@@ -41,6 +41,22 @@ describe("preview zoom state", () => {
     expect(useEditorStore.getState().past.length).toBe(0);
     useEditorStore.getState().setPreviewZoom("fit");
     expect(useEditorStore.getState().previewZoom).toBe("fit");
+  });
+
+  it("stores a pan offset without touching history", () => {
+    useEditorStore.getState().setPreviewPan({ x: 42, y: -7 });
+    expect(useEditorStore.getState().previewPan).toEqual({ x: 42, y: -7 });
+    expect(useEditorStore.getState().past.length).toBe(0);
+  });
+
+  it("resetPreviewView restores fit, centered pan and keeps history clean", () => {
+    useEditorStore.getState().setPreviewZoom(1.5);
+    useEditorStore.getState().setPreviewPan({ x: 30, y: 10 });
+    useEditorStore.getState().resetPreviewView();
+    const st = useEditorStore.getState();
+    expect(st.previewZoom).toBe("fit");
+    expect(st.previewPan).toEqual({ x: 0, y: 0 });
+    expect(st.past.length).toBe(0);
   });
 });
 

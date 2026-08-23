@@ -21,6 +21,8 @@ export type SceneSlice = Pick<
   | "setShowGrid"
   | "setGridDivisions"
   | "setPreviewZoom"
+  | "setPreviewPan"
+  | "resetPreviewView"
   | "setFullscreenPreview"
   | "setOnboardingOpen"
   | "setRightTab"
@@ -123,6 +125,8 @@ export function createSceneSlice(set: EditorStoreSetter): SceneSlice {
     setShowGrid: (showGrid) => set({ showGrid }),
     setGridDivisions: (gridDivisions) => set({ gridDivisions }),
     setPreviewZoom: (previewZoom) => set({ previewZoom }),
+    setPreviewPan: (previewPan) => set({ previewPan }),
+    resetPreviewView: () => set({ previewZoom: "fit", previewPan: { x: 0, y: 0 } }),
     setFullscreenPreview: (fullscreenPreview) => set({ fullscreenPreview }),
     setOnboardingOpen: (onboardingOpen) => set({ onboardingOpen }),
     setRightTab: (rightTab) => set({ rightTab }),

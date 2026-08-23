@@ -56,10 +56,15 @@ export interface EditorStoreState {
   showGrid: boolean;
   /** Number of grid lines on each axis while the overlay is visible. */
   gridDivisions: number;
-  /** Preview zoom level: "fit" (default) or a scale multiplier (0.5/1/2).
+  /** Preview zoom level: "fit" (default) or a scale multiplier (0.25–4).
    *  Pure view state — never persisted, never undone. Values >1 crop into
    *  the canvas from its center; <1 letterbox it inside the panel. */
   previewZoom: number | "fit";
+  /** Preview pan offset in canvas pixels, applied to the zoom layer before
+   *  scaling (so `screen = pan + scale·content` around the canvas center).
+   *  Kept at {0,0} whenever the zoom is "fit". Pure view state like
+   *  `previewZoom` — never persisted, never undone. */
+  previewPan: { x: number; y: number };
   /** Full-screen preview mode: side panels and toolbar are hidden so the
    *  mockup fills the editor. Pure view state — never persisted or undone. */
   fullscreenPreview: boolean;
@@ -102,8 +107,12 @@ export interface EditorStoreState {
   setCustomExportSize: (size: ExportSize | null) => void;
   setShowGrid: (show: boolean) => void;
   setGridDivisions: (divisions: number) => void;
-  /** Sets the preview zoom level ("fit" or 0.5/1/2). */
+  /** Sets the preview zoom level ("fit" or 0.25–4). */
   setPreviewZoom: (zoom: number | "fit") => void;
+  /** Sets the preview pan offset (canvas pixels, zoom-layer space). */
+  setPreviewPan: (pan: { x: number; y: number }) => void;
+  /** Resets the preview view to its default: fit zoom, centered content. */
+  resetPreviewView: () => void;
   /** Enters/exits the full-screen preview mode. */
   setFullscreenPreview: (on: boolean) => void;
   /** Opens/closes the onboarding tour. */

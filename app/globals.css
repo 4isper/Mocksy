@@ -1542,6 +1542,67 @@ body.panel-resizing {
   pointer-events: auto;
 }
 
+/* ---- View zoom bar (− slider + % Fit) ---- */
+.preview-zoom-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 6px;
+  border-radius: 9px;
+  border: 1px solid var(--panel-border);
+  background: rgba(10, 10, 14, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  /* The chip stack disables pointer events (and the property inherits), so
+     re-enable them here for the whole bar — otherwise −/+/slider stay dead. */
+  pointer-events: auto;
+}
+
+.preview-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.preview-zoom-btn:hover {
+  background: var(--hover);
+}
+
+.preview-zoom-slider {
+  width: 84px;
+  height: 22px;
+  margin: 0 4px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.preview-zoom-value,
+.preview-zoom-fit {
+  position: static;
+  pointer-events: auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.preview-zoom-value {
+  min-width: 46px;
+  text-align: center;
+  padding: 5px 6px;
+}
+
+.preview-zoom-fit.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .preview-watermark {
   position: absolute;
   z-index: 3;
@@ -1951,6 +2012,16 @@ body.panel-resizing {
   /* Overlay chips on the canvas (upload/grid/watermark controls). */
   .preview-chip {
     padding: 9px 14px;
+  }
+
+  /* View zoom bar: larger targets for touch. */
+  .preview-zoom-btn {
+    width: 32px;
+    height: 32px;
+  }
+  .preview-zoom-slider {
+    width: 104px;
+    height: 32px;
   }
 
   /* Range sliders outside the video trimmer. */

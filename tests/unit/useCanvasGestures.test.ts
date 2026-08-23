@@ -57,11 +57,14 @@ describe("useCanvasGestures", () => {
     expect(useEditorStore.getState().scene.layers[0]?.mediaOffsetX).toBeCloseTo(0.2);
   });
 
-  it("pinch-zooms and clamps zoom to [0.8, 1.5]", () => {
+  it("pinch-zooms and clamps zoom to [0.8, 1.5] when it starts on the frame", () => {
     const layer = activeLayerWith("data:img", 1);
     const frameRef = { current: null } as React.RefObject<HTMLDivElement | null>;
     const { result } = renderHook(() => useCanvasGestures({ frameRef, activeLayer: layer }));
-    result.current.onTouchStart({ touches: [{ clientX: 0, clientY: 0 }, { clientX: 100, clientY: 0 }] } as unknown as React.TouchEvent<HTMLDivElement>);
+    result.current.onTouchStart({
+      target: { closest: (selector: string) => (selector.includes("data-mockup-frame") ? {} : null) },
+      touches: [{ clientX: 0, clientY: 0 }, { clientX: 100, clientY: 0 }]
+    } as unknown as React.TouchEvent<HTMLDivElement>);
     // The move half is a native non-passive window listener (React registers
     // synthetic touchmove passively, so its preventDefault is a no-op).
     const touchMove = new Event("touchmove", { cancelable: true });
@@ -73,11 +76,31 @@ describe("useCanvasGestures", () => {
     expect(useEditorStore.getState().scene.layers[0]?.zoom).toBe(1.5);
   });
 
+  it("leaves layer zoom alone when a pinch starts off the frame", () => {
+    const layer = activeLayerWith("data:img", 1);
+    const frameRef = { current: null } as React.RefObject<HTMLDivElement | null>;
+    const { result } = renderHook(() => useCanvasGestures({ frameRef, activeLayer: layer }));
+    result.current.onTouchStart({
+      target: { closest: () => null },
+      touches: [{ clientX: 0, clientY: 0 }, { clientX: 100, clientY: 0 }]
+    } as unknown as React.TouchEvent<HTMLDivElement>);
+    const touchMove = new Event("touchmove", { cancelable: true });
+    Object.defineProperty(touchMove, "touches", {
+      value: [{ clientX: 0, clientY: 0 }, { clientX: 200, clientY: 0 }]
+    });
+    window.dispatchEvent(touchMove);
+    expect(touchMove.defaultPrevented).toBe(false);
+    expect(useEditorStore.getState().scene.layers[0]?.zoom).toBe(1);
+  });
+
   it("ignores a pinch whose fingers start on the same point", () => {
     const layer = activeLayerWith("data:img", 1);
     const frameRef = { current: null } as React.RefObject<HTMLDivElement | null>;
     const { result } = renderHook(() => useCanvasGestures({ frameRef, activeLayer: layer }));
-    result.current.onTouchStart({ touches: [{ clientX: 50, clientY: 50 }, { clientX: 50, clientY: 50 }] } as unknown as React.TouchEvent<HTMLDivElement>);
+    result.current.onTouchStart({
+      target: { closest: (selector: string) => (selector.includes("data-mockup-frame") ? {} : null) },
+      touches: [{ clientX: 50, clientY: 50 }, { clientX: 50, clientY: 50 }]
+    } as unknown as React.TouchEvent<HTMLDivElement>);
     const touchMove = new Event("touchmove", { cancelable: true });
     Object.defineProperty(touchMove, "touches", {
       value: [{ clientX: 0, clientY: 0 }, { clientX: 200, clientY: 0 }]

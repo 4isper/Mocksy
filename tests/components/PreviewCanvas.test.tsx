@@ -242,14 +242,27 @@ describe("PreviewCanvas grid divisions", () => {
 });
 
 describe("PreviewCanvas gestures", () => {
-  it("zooms via two-finger pinch", () => {
+  it("zooms the layer media via two-finger pinch starting on the frame", () => {
     renderScene();
-    const panel = document.querySelector(".panel") as HTMLElement;
+    const frame = document.querySelector("[data-mockup-frame]") as HTMLElement;
     const touch = (x: number, y: number) => ({ clientX: x, clientY: y });
-    fireEvent.touchStart(panel, { touches: [touch(0, 0), touch(100, 0)] });
-    fireEvent.touchMove(panel, { touches: [touch(0, 0), touch(150, 0)] });
+    fireEvent.touchStart(frame, { touches: [touch(0, 0), touch(100, 0)] });
+    fireEvent.touchMove(frame, { touches: [touch(0, 0), touch(150, 0)] });
     expect(useEditorStore.getState().scene.layers[0]?.zoom).toBeCloseTo(1.5);
-    fireEvent.touchEnd(panel, { touches: [touch(0, 0)] });
+    fireEvent.touchEnd(frame, { touches: [touch(0, 0)] });
+  });
+
+  it("pinch on empty canvas changes the view zoom instead of the layer", () => {
+    renderScene();
+    const canvas = document.querySelector("#preview-canvas") as HTMLElement;
+    const touch = (x: number, y: number) => ({ clientX: x, clientY: y });
+    // Native listeners are attached directly to the canvas element.
+    fireEvent.touchStart(canvas, { touches: [touch(10, 10), touch(110, 10)] });
+    fireEvent.touchMove(canvas, { touches: [touch(10, 10), touch(160, 10)] });
+    // Layer media zoom is untouched…
+    expect(useEditorStore.getState().scene.layers[0]?.zoom).toBeCloseTo(1);
+    // …and the view zoomed in from fit to a numeric scale.
+    expect(useEditorStore.getState().previewZoom).not.toBe("fit");
   });
 
   it("pans the media on pointer drag", () => {
