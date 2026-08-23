@@ -3,9 +3,13 @@
        mask) so the media behind shows through. -->
   <defs>
     <linearGradient id="imac-slab" x1="0" y1="0" x2="0" y2="1420" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#f2f2f6"/>
-      <stop offset="0.75" stop-color="#d7d7dd"/>
-      <stop offset="1" stop-color="#e6e6eb"/>
+      <stop offset="0" stop-color="#f4f4f8"/>
+      <stop offset="1" stop-color="#ceced4"/>
+    </linearGradient>
+    <linearGradient id="edgeHi" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgba(255,255,255,0.42)"/>
+      <stop offset="0.45" stop-color="rgba(255,255,255,0.06)"/>
+      <stop offset="1" stop-color="rgba(0,0,0,0.20)"/>
     </linearGradient>
     <linearGradient id="imac-neck" x1="0" y1="0" x2="0" y2="1420" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#c7c7cd"/>
@@ -24,7 +28,7 @@
   <rect x="30" y="30" width="1540" height="1210" rx="36" ry="36" fill="url(#imac-slab)" stroke="#0a0a0a" stroke-width="2" mask="url(#imac-screen)"/>
   <!-- Thin black border around the transparent display -->
   <rect x="70" y="80" width="1460" height="821" rx="18" ry="18" fill="none" stroke="#0a0a0a" stroke-width="1.5"/>
-  <rect x="73" y="83" width="1454" height="815" rx="15" ry="15" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>
+  <rect x="73" y="83" width="1454" height="815" rx="15" ry="15" fill="none" stroke="url(#edgeHi)" stroke-width="1"/>
   <!-- Camera notch (houses the FaceTime camera at the top of the display) -->
   <rect x="768" y="80" width="64" height="13" rx="6.5" fill="#0a0a0a"/>
   <circle cx="800" cy="86.5" r="3" fill="#15151a"/>

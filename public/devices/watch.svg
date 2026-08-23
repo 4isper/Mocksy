@@ -8,6 +8,11 @@
       <stop offset="0.5" stop-color="#b9b9c0"/>
       <stop offset="1" stop-color="#d2d2d8"/>
     </linearGradient>
+    <linearGradient id="edgeHi" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgba(255,255,255,0.55)"/>
+      <stop offset="0.45" stop-color="rgba(255,255,255,0.10)"/>
+      <stop offset="1" stop-color="rgba(0,0,0,0.30)"/>
+    </linearGradient>
     <mask id="watch-screen">
       <rect x="0" y="0" width="396" height="484" fill="white"/>
       <rect x="22" y="27" width="352" height="430" rx="90" ry="90" fill="black"/>
@@ -15,8 +20,8 @@
   </defs>
   <!-- Aluminium case with the screen masked out to transparency -->
   <rect x="10" y="8" width="376" height="468" rx="110" ry="110" fill="url(#watch-case)" stroke="#0a0a0a" stroke-width="2" mask="url(#watch-screen)"/>
-  <!-- Screen edge highlight (visible rim only) -->
-  <rect x="22" y="27" width="352" height="430" rx="90" ry="90" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+  <!-- Screen edge rim: bright top / dark bottom -->
+  <rect x="22" y="27" width="352" height="430" rx="90" ry="90" fill="none" stroke="url(#edgeHi)" stroke-width="1.5"/>
   <!-- Digital Crown with the cellular red ring -->
   <rect x="378" y="148" width="16" height="64" rx="8" fill="none" stroke="#ff3b30" stroke-width="2"/>
   <rect x="380" y="150" width="12" height="60" rx="0" fill="#9a9aa2"/>

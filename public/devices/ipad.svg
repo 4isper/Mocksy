@@ -3,10 +3,14 @@
        Thin uniform bezel, squarish screen corners (~16pt) and a centered front
        camera. -->
   <defs>
-    <linearGradient id="ipad-bezel" x1="0" y1="0" x2="834" y2="1194" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#4a4a4e"/>
-      <stop offset="0.5" stop-color="#2c2c2f"/>
-      <stop offset="1" stop-color="#3d3d41"/>
+    <linearGradient id="ipad-bezel" x1="0" y1="0" x2="0" y2="1194" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#56565c"/>
+      <stop offset="1" stop-color="#202023"/>
+    </linearGradient>
+    <linearGradient id="edgeHi" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgba(255,255,255,0.32)"/>
+      <stop offset="0.45" stop-color="rgba(255,255,255,0.04)"/>
+      <stop offset="1" stop-color="rgba(0,0,0,0.26)"/>
     </linearGradient>
     <mask id="ipad-screen">
       <rect x="0" y="0" width="834" height="1194" fill="white"/>
@@ -15,8 +19,8 @@
   </defs>
   <!-- Outer body with the screen masked out to transparency. -->
   <rect x="4" y="4" width="826" height="1186" rx="34" ry="34" fill="url(#ipad-bezel)" stroke="#0a0a0a" stroke-width="2" mask="url(#ipad-screen)"/>
-  <!-- Screen edge highlight (only the visible rim, not the cutout interior). -->
-  <rect x="14" y="14" width="806" height="1166" rx="16" ry="16" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+  <!-- Screen edge rim: bright top / dark bottom -->
+  <rect x="14" y="14" width="806" height="1166" rx="16" ry="16" fill="none" stroke="url(#edgeHi)" stroke-width="1.5"/>
   <!-- Front camera (top bezel, centered) -->
   <circle cx="417" cy="9" r="3.2" fill="#0a0a0a"/>
   <circle cx="417" cy="9" r="1.6" fill="#1c1c1e"/>

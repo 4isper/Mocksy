@@ -11,6 +11,11 @@
       <stop offset="0" stop-color="#2a2a2e"/>
       <stop offset="1" stop-color="#161618"/>
     </linearGradient>
+    <linearGradient id="edgeHi" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgba(255,255,255,0.30)"/>
+      <stop offset="0.45" stop-color="rgba(255,255,255,0.04)"/>
+      <stop offset="1" stop-color="rgba(0,0,0,0.24)"/>
+    </linearGradient>
     <mask id="mb-screen">
       <rect x="0" y="0" width="1600" height="1074" fill="white"/>
       <rect x="44" y="34" width="1512" height="982" rx="6" ry="6" fill="black"/>
@@ -18,13 +23,15 @@
   </defs>
   <!-- Lid: the whole front slab with the display masked out. -->
   <rect x="40" y="30" width="1520" height="990" rx="18" ry="18" fill="url(#mb-lid)" stroke="#0a0a0a" stroke-width="2" mask="url(#mb-screen)"/>
-  <!-- Display edge highlight -->
-  <rect x="44" y="34" width="1512" height="982" rx="6" ry="6" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+  <!-- Display edge rim: bright top / dark bottom -->
+  <rect x="44" y="34" width="1512" height="982" rx="6" ry="6" fill="none" stroke="url(#edgeHi)" stroke-width="1.5"/>
   <!-- Notch (camera housing) sitting above the display cutout -->
   <rect x="758" y="34" width="84" height="10" rx="5" ry="5" fill="#0a0a0a"/>
   <circle cx="800" cy="39" r="2" fill="#1c1c1e"/>
   <!-- Bottom base (keyboard deck) with the hinge seam -->
   <rect x="40" y="1016" width="1520" height="58" rx="18" ry="18" fill="url(#mb-base)"/>
+  <!-- Self-shadow: the lid casts a soft shadow onto the top of the deck -->
+  <rect x="40" y="1017" width="1520" height="10" fill="rgba(0,0,0,0.22)"/>
   <rect x="40" y="1015" width="1520" height="2" fill="rgba(255,255,255,0.10)"/>
   <rect x="120" y="1040" width="1360" height="10" rx="5" fill="rgba(255,255,255,0.05)"/>
   <circle cx="800" cy="1045" r="9" fill="rgba(255,255,255,0.07)"/>

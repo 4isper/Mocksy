@@ -3,10 +3,14 @@
        bezel, centered punch-hole front camera, tighter screen corners (~22pt)
        with the still-somewhat-squared body corners characteristic of Galaxy. -->
   <defs>
-    <linearGradient id="bezelGalaxy" x1="0" y1="0" x2="360" y2="780" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#6b6b70"/>
-      <stop offset="0.5" stop-color="#2a2a2d"/>
-      <stop offset="1" stop-color="#4a4a4f"/>
+    <linearGradient id="bezelGalaxy" x1="0" y1="0" x2="0" y2="780" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#707076"/>
+      <stop offset="1" stop-color="#202023"/>
+    </linearGradient>
+    <linearGradient id="edgeHi" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgba(255,255,255,0.36)"/>
+      <stop offset="0.45" stop-color="rgba(255,255,255,0.05)"/>
+      <stop offset="1" stop-color="rgba(0,0,0,0.28)"/>
     </linearGradient>
     <mask id="screenGalaxy">
       <rect x="0" y="0" width="360" height="780" fill="white"/>
@@ -15,8 +19,8 @@
   </defs>
   <!-- Outer body (squared corners distinctive to Galaxy) -->
   <rect x="4" y="4" width="352" height="772" rx="26" ry="26" fill="url(#bezelGalaxy)" stroke="#0a0a0a" stroke-width="2" mask="url(#screenGalaxy)"/>
-  <!-- Screen edge highlight -->
-  <rect x="12" y="12" width="336" height="756" rx="22" ry="22" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
+  <!-- Screen edge rim: bright top / dark bottom -->
+  <rect x="12" y="12" width="336" height="756" rx="22" ry="22" fill="none" stroke="url(#edgeHi)" stroke-width="1.5"/>
   <!-- Earpiece slit (top center) -->
   <rect x="156" y="7" width="48" height="4" rx="2" fill="#0a0a0a"/>
   <!-- Centered punch-hole camera -->

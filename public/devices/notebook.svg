@@ -10,6 +10,11 @@
       <stop offset="0" stop-color="#3c3c42"/>
       <stop offset="1" stop-color="#1e1e24"/>
     </linearGradient>
+    <linearGradient id="edgeHi" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgba(255,255,255,0.30)"/>
+      <stop offset="0.45" stop-color="rgba(255,255,255,0.04)"/>
+      <stop offset="1" stop-color="rgba(0,0,0,0.24)"/>
+    </linearGradient>
     <mask id="nb-screen">
       <rect x="0" y="0" width="1600" height="1000" fill="white"/>
       <rect x="80" y="40" width="1440" height="810" rx="8" ry="8" fill="black"/>
@@ -17,12 +22,14 @@
   </defs>
   <!-- Lid: the front slab with the display masked out. -->
   <rect x="40" y="20" width="1520" height="870" rx="24" ry="24" fill="url(#nb-lid)" stroke="#0a0a0a" stroke-width="2" mask="url(#nb-screen)"/>
-  <!-- Display edge highlight -->
-  <rect x="80" y="40" width="1440" height="810" rx="8" ry="8" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+  <!-- Display edge rim: bright top / dark bottom -->
+  <rect x="80" y="40" width="1440" height="810" rx="8" ry="8" fill="none" stroke="url(#edgeHi)" stroke-width="1.5"/>
   <!-- Camera above the display cutout -->
   <circle cx="800" cy="30" r="2.5" fill="#0a0a0a"/>
   <!-- Bottom base (keyboard deck) with the hinge seam -->
   <rect x="40" y="890" width="1520" height="104" rx="18" ry="18" fill="url(#nb-base)"/>
+  <!-- Self-shadow: lid casts onto the top of the deck -->
+  <rect x="40" y="891" width="1520" height="12" fill="rgba(0,0,0,0.22)"/>
   <rect x="40" y="888" width="1520" height="3" fill="rgba(255,255,255,0.08)"/>
   <!-- Keyboard deck hint -->
   <rect x="220" y="900" width="1160" height="50" rx="8" fill="rgba(255,255,255,0.05)"/>
