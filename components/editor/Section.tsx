@@ -1,17 +1,37 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useSyncExternalStore, type ReactNode } from "react";
 
 const STORAGE_KEY = "mocksy.controlPanel.sections";
 
+// Section open/closed prefs live in localStorage, which has no change events.
+// A tiny module-level store (cached snapshot + listener set) lets every
+// Section instance subscribe via useSyncExternalStore: the server render and
+// the first client render both see the empty default (no hydration mismatch),
+// the cached client snapshot flips in without a setState-in-effect cascade,
+// and toggling one section keeps every mounted instance with the same id in
+// sync instead of only updating after a reload.
+const EMPTY_PREFS: Record<string, boolean> = {};
+let cachedPrefs: Record<string, boolean> | null = null;
+const listeners = new Set<() => void>();
+
 function readPrefs(): Record<string, boolean> {
-  if (typeof window === "undefined") return {};
+  if (cachedPrefs) return cachedPrefs;
+  if (typeof window === "undefined") return EMPTY_PREFS;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+    cachedPrefs = raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
   } catch {
-    return {};
+    cachedPrefs = {};
   }
+  return cachedPrefs;
+}
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 interface SectionProps {
@@ -23,24 +43,18 @@ interface SectionProps {
 }
 
 export function Section({ id, title, icon, defaultOpen = true, children }: SectionProps) {
-  // Persisted open/closed prefs load after mount: reading localStorage during
-  // the first render makes the client tree disagree with the SSR HTML.
-  const [prefs, setPrefs] = useState<Record<string, boolean>>({});
-  useEffect(() => {
-    setPrefs(readPrefs());
-  }, []);
+  const prefs = useSyncExternalStore(subscribe, readPrefs, () => EMPTY_PREFS);
   const open = prefs[id] ?? defaultOpen;
 
   const toggle = useCallback(() => {
-    setPrefs((prev) => {
-      const next = { ...prev, [id]: !(prev[id] ?? defaultOpen) };
-      try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      } catch {
-        /* storage unavailable */
-      }
-      return next;
-    });
+    const next = { ...readPrefs(), [id]: !(readPrefs()[id] ?? defaultOpen) };
+    cachedPrefs = next;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      /* storage unavailable */
+    }
+    listeners.forEach((l) => l());
   }, [id, defaultOpen]);
 
   return (

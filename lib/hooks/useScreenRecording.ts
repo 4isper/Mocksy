@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import {
   cancelScreenRecording,
@@ -12,6 +12,10 @@ import {
 } from "@/lib/media/screenRecording";
 import { loadMediaFromFile } from "@/lib/media/loadFile";
 import { useEditorStore } from "@/lib/state/editorStore";
+
+/** Static subscribe/no-op and server snapshot for never-changing client flags. */
+const noSubscribe = () => () => {};
+const isServerUnsupported = () => false;
 
 /** Elapsed-seconds ticker for the active recording. */
 function useElapsed(active: boolean): number {
@@ -93,11 +97,14 @@ export function useScreenRecording(): {
 
   // Feature detection must not run during the first (server-matched) render:
   // navigator exists only on the client, and an eager check makes the SSR
-  // HTML disagree with hydration. Start disabled, flip once mounted.
-  const [supported, setSupported] = useState(false);
-  useEffect(() => {
-    setSupported(isScreenRecordingSupported());
-  }, []);
+  // HTML disagree with hydration. useSyncExternalStore serves `false` on the
+  // server and the real check on the client without a setState-in-effect
+  // cascade; support never changes mid-session, so no subscription is needed.
+  const supported = useSyncExternalStore(
+    noSubscribe,
+    isScreenRecordingSupported,
+    isServerUnsupported
+  );
 
   return {
     supported,

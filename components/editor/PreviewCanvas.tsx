@@ -239,6 +239,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             selectFrameInstance={selectFrameInstance}
             analyzeMedia={analyzeMedia}
             setVideoDuration={setVideoDuration}
+            setMediaLoading={setMediaLoading}
             canvasRef={canvasRef}
             snapDivisions={showGrid ? gridDivisions : null}
             onGuides={setGuides}

@@ -87,6 +87,7 @@ function renderGrid(scene: EditorScene, snapDivisions: number | null = null, onG
       selectFrameInstance={vi.fn()}
       analyzeMedia={vi.fn()}
       setVideoDuration={vi.fn()}
+      setMediaLoading={vi.fn()}
       canvasRef={canvasRef}
       snapDivisions={snapDivisions}
       onGuides={onGuides}

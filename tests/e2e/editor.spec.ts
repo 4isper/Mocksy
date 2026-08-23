@@ -360,6 +360,9 @@ test("Layers panel clears media of the active layer", async ({ page }) => {
   });
   await expect(previewMedia(page)).toBeVisible();
 
+  // The layers panel lives on the "Layers" tab (Scene presets is the default).
+  await page.getByRole("tab", { name: /Layers/ }).click();
+
   // The layers panel exposes a Clear button for the selected layer, mirroring
   // the one in the preview. It empties the active layer's media rather than
   // deleting the layer itself. Scope to the layers panel title so we don't
@@ -379,6 +382,7 @@ test("duplicating a layer clones it with the same media", async ({ page }) => {
     )
   });
   await expect(previewMedia(page)).toBeVisible();
+  await page.getByRole("tab", { name: /Layers/ }).click();
   // The default demo is a 2-frame grid, so two layers to start.
   await expect(page.locator(".layer-item")).toHaveCount(2);
 
@@ -419,6 +423,7 @@ test("keyboard duplicates and reorders the active layer", async ({ page }) => {
     )
   });
   await expect(previewMedia(page)).toBeVisible();
+  await page.getByRole("tab", { name: /Layers/ }).click();
   await expect(page.locator(".layer-item")).toHaveCount(2);
 
   // ⌘D duplicates the active layer; the clone is appended and becomes active.
@@ -443,6 +448,7 @@ test("keyboard duplicates and reorders the active layer", async ({ page }) => {
 
 test("drag-and-drop reorders layers", async ({ page }) => {
   await page.goto("/");
+  await page.getByRole("tab", { name: /Layers/ }).click();
   // The default demo is a 2-frame grid, so two layers to start.
   await expect(page.locator(".layer-item")).toHaveCount(2);
 
@@ -478,6 +484,7 @@ test("grid overlay toggles from the preview chip", async ({ page }) => {
 
 test("keyboard switches between layers", async ({ page }) => {
   await page.goto("/");
+  await page.getByRole("tab", { name: /Layers/ }).click();
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
     name: "sample.png",
     mimeType: "image/png",
@@ -511,6 +518,7 @@ test("keyboard switches between layers", async ({ page }) => {
 
 test("toggling layer visibility hides and shows it in the preview", async ({ page }) => {
   await page.goto("/");
+  await page.getByRole("tab", { name: /Layers/ }).click();
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
     name: "sample.png",
     mimeType: "image/png",
@@ -652,7 +660,7 @@ test("rejects unsupported file types with an inline error", async ({ page }) => 
     mimeType: "application/pdf",
     buffer: Buffer.from("%PDF-1.4 fake")
   });
-  await expect(page.getByText(/is not a supported image or video/)).toBeVisible();
+  await expect(page.getByText(/is not a supported image or video/).first()).toBeVisible();
   // The default demo media stays put; the rejected PDF is not loaded.
   const media = page.locator('img[alt="Uploaded media"]');
   await expect(media).toHaveCount(2);
@@ -974,13 +982,16 @@ test("export dialog lists every image and video format", async ({ page }) => {
     ).toBeVisible();
   }
   // Every format has a matching Export action button: the dialog's single
-  // action button relabels itself to the currently selected format.
+  // action button relabels itself to the currently selected format. Scope to
+  // the dialog so the toolbar's "Export PNG / MP4 / GIF" doesn't collide.
   for (const label of ["PNG", "SVG", "HTML", "WebM", "Animated WebP"]) {
     await page
       .locator('.segmented[role="group"] button', { hasText: new RegExp(`^${label}$`) })
       .first()
       .click();
-    await expect(page.getByRole("button", { name: `Export ${label}` })).toBeVisible();
+    await expect(
+      page.locator(".modal[role='dialog']").getByRole("button", { name: `Export ${label}`, exact: true })
+    ).toBeVisible();
   }
 });
 
@@ -1103,6 +1114,8 @@ test("PNG export of a video scene draws the video frame, not an empty screen", a
 
   // Solid near-black background: an empty frame would export as black, so the
   // colorful screen region below proves the video content was painted.
+  // Solid presets only render in solid background mode (default is gradient).
+  await page.getByRole("button", { name: "Solid", exact: true }).click();
   await page.getByRole("button", { name: "Zinc", exact: true }).click();
   await page.waitForTimeout(300);
 
@@ -1151,6 +1164,8 @@ test("PNG export of a 2-frame video grid draws video in both frames", async ({ p
   await page.goto("/");
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles("public/sample-video.mp4");
   await expect(page.locator("#preview-canvas video")).toHaveCount(1);
+  // The editor starts in gradient mode; solid presets only render in solid mode.
+  await page.getByRole("button", { name: "Solid", exact: true }).click();
   await page.getByRole("button", { name: "Zinc", exact: true }).click();
   await page.getByRole("button", { name: "2", exact: true }).first().click();
   await page.waitForTimeout(600);
@@ -1258,7 +1273,7 @@ test("locale switcher switches the UI language end-to-end", async ({ page }) => 
     switcher.selectOption({ label: "Русский" }),
   ]);
   await expect(page.locator("html")).toHaveAttribute("lang", "ru");
-  await expect(page.getByRole("button", { name: "Экспорт", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Экспорт PNG \/ MP4/ })).toBeVisible();
   await expect(page.getByLabel("Сетка")).toBeVisible();
 
   await page.waitForTimeout(1000);
@@ -1274,7 +1289,7 @@ test("Russian locale renders translated UI strings", async ({ page }) => {
   await page.goto("/ru");
   await expect(page.locator("html")).toHaveAttribute("lang", "ru");
   await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
-  await expect(page.getByRole("button", { name: "Экспорт", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Экспорт PNG \/ MP4/ })).toBeVisible();
   await expect(page.getByLabel("Сетка")).toBeVisible();
 });
 
@@ -1431,8 +1446,8 @@ test("exporting with outline style preset draws the frame border", async ({ page
   });
   await expect(previewMedia(page)).toBeVisible();
 
-  // Apply the outline style preset.
-  await page.getByRole("button", { name: "Style" }).click();
+  // Apply the outline style preset. The style presets render as a segmented
+  // row inside the Frame section (Scene presets tab) — no collapsible header.
   await page.getByRole("button", { name: "Outline" }).click();
   await page.waitForTimeout(200);
 

@@ -21,6 +21,10 @@ interface FrameInstanceGridProps {
   selectFrameInstance: (id: string | null) => void;
   analyzeMedia: (el: HTMLImageElement | HTMLVideoElement) => void;
   setVideoDuration: (duration: number, layerId?: string) => void;
+  /** Clears the store's media-loading flag once uploaded media decodes; the
+   *  grid renders uploads just like SingleFrameView, so it must reset the
+   *  flag the same way or the layers panel keeps its loading skeleton. */
+  setMediaLoading: (loading: boolean) => void;
   canvasRef: React.RefObject<HTMLDivElement | null>;
   snapDivisions: number | null;
   /** Smart-guide lines to draw while dragging (canvas fractions). */
@@ -51,6 +55,7 @@ export function FrameInstanceGrid({
   selectFrameInstance,
   analyzeMedia,
   setVideoDuration,
+  setMediaLoading,
   canvasRef,
   snapDivisions,
   onGuides
@@ -359,14 +364,26 @@ export function FrameInstanceGrid({
                         crossOrigin="anonymous"
                         style={{ ...instCss.mediaStyle, objectFit: "contain", backgroundColor: "var(--panel-solid)", cursor: "grab" }}
                         onPointerDown={() => selectLayer(layer.id)}
-                        onLoadedData={(e) => analyzeMedia(e.currentTarget)}
+                        onLoadedData={(e) => {
+                          setMediaLoading(false);
+                          analyzeMedia(e.currentTarget);
+                        }}
                         onLoadedMetadata={(e) => {
                           setVideoDuration(e.currentTarget.duration || 0, layer.id);
                           e.currentTarget.playbackRate = Math.max(0.5, Math.min(2, layer.playbackSpeed ?? 1));
                         }}
                       />
                     ) : (
-                      <img src={layer.mediaUrl} alt={t("editor.uploadedMediaAlt")} style={{ ...instCss.mediaStyle, cursor: "grab" }} onLoad={(e) => analyzeMedia(e.currentTarget)} onPointerDown={() => selectLayer(layer.id)} />
+                      <img
+                        src={layer.mediaUrl}
+                        alt={t("editor.uploadedMediaAlt")}
+                        style={{ ...instCss.mediaStyle, cursor: "grab" }}
+                        onLoad={(e) => {
+                          setMediaLoading(false);
+                          analyzeMedia(e.currentTarget);
+                        }}
+                        onPointerDown={() => selectLayer(layer.id)}
+                      />
                     )
                   ) : null
                 }

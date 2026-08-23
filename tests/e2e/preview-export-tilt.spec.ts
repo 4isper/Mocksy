@@ -88,7 +88,7 @@ for (const c of cases) {
 
     const downloadPromise = page.waitForEvent("download");
     await page.getByRole("button", { name: /Export PNG \/ MP4/ }).click();
-    await page.getByRole("button", { name: /Export PNG/ }).click();
+    await page.locator('.modal[role="dialog"]').getByRole("button", { name: "Export PNG" }).click();
     const download = await downloadPromise;
     const exportBuf = fs.readFileSync(await download.path());
 

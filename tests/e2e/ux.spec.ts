@@ -144,6 +144,8 @@ test.describe("onboarding tour", () => {
 
   test("Escape dismisses the tour", async ({ page }) => {
     await page.goto("/");
+    // Wait for hydration so the ⌘K handler is attached before pressing it.
+    await expect(page.getByRole("dialog")).toHaveCount(0); // not auto-opened under automation
     await page.keyboard.press("ControlOrMeta+K");
     await page.getByPlaceholder("Type a command…").fill("intro");
     await page.getByRole("option", { name: "Show the intro tour" }).first().click();
