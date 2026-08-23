@@ -27,6 +27,8 @@
   <circle cx="224" cy="34" r="7" fill="#0a0a0a"/>
   <circle cx="224" cy="34" r="4" fill="#1c1c1e"/>
   <circle cx="224" cy="34" r="1.6" fill="#0a0a0a"/>
+  <!-- Subtle lens reflection ring -->
+  <circle cx="224" cy="34" r="6.1" fill="none" stroke="rgba(150,170,190,0.28)" stroke-width="0.9"/>
   <!-- Power button (right) -->
   <rect x="442" y="230" width="6" height="52" rx="3" fill="#5c5c62"/>
   <!-- Volume buttons (left) -->
