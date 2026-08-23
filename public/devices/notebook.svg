@@ -24,5 +24,13 @@
   <!-- Bottom base (keyboard deck) with the hinge seam -->
   <rect x="40" y="890" width="1520" height="104" rx="18" ry="18" fill="url(#nb-base)"/>
   <rect x="40" y="888" width="1520" height="3" fill="rgba(255,255,255,0.08)"/>
-  <rect x="760" y="940" width="80" height="42" rx="8" fill="rgba(255,255,255,0.06)"/>
+  <!-- Keyboard deck hint -->
+  <rect x="220" y="900" width="1160" height="50" rx="8" fill="rgba(255,255,255,0.05)"/>
+  <g stroke="rgba(255,255,255,0.05)" stroke-width="1">
+    <line x1="244" y1="916" x2="1356" y2="916"/>
+    <line x1="244" y1="932" x2="1356" y2="932"/>
+    <line x1="244" y1="948" x2="1356" y2="948"/>
+  </g>
+  <!-- Trackpad -->
+  <rect x="700" y="962" width="200" height="24" rx="6" fill="rgba(255,255,255,0.07)"/>
 </svg>
