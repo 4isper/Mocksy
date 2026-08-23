@@ -46,7 +46,10 @@ test("preview frame matches the PNG export (annotations + watermark)", async ({ 
   expect(box).toBeTruthy();
   // Clip to the exact frame box: the annotation/watermark overlay now overlaps
   // it, so this captures frame + annotations + watermark together.
-  const panelShot = await page.screenshot({ clip: box! });
+      // Editor chrome (upload chips, view zoom bar) intentionally overlays the
+    // canvas; hide it so the comparison isolates the artwork, not controls.
+    await page.addStyleTag({ content: "[class*='preview-chip'],.preview-zoom-bar{display:none!important}" });
+    const panelShot = await page.screenshot({ clip: box! });
 
   // Trigger the real PNG export and capture the downloaded blob.
   const downloadPromise = page.waitForEvent("download");
@@ -136,7 +139,10 @@ test("preview matches the PNG export for a landscape frame instance", async ({ p
 
   const box = await page.locator("#preview-canvas").boundingBox();
   expect(box).toBeTruthy();
-  const panelShot = await page.screenshot({ clip: box! });
+      // Editor chrome (upload chips, view zoom bar) intentionally overlays the
+    // canvas; hide it so the comparison isolates the artwork, not controls.
+    await page.addStyleTag({ content: "[class*='preview-chip'],.preview-zoom-bar{display:none!important}" });
+    const panelShot = await page.screenshot({ clip: box! });
 
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: /Export PNG \/ MP4/ }).click();

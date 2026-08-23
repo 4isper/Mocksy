@@ -67,6 +67,7 @@ for (const c of cases) {
           box-shadow: none !important;
         }
         .preview-chip { display: none !important; }
+        .preview-zoom-bar { display: none !important; }
       `
     });
 

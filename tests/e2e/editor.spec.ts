@@ -253,8 +253,10 @@ test("watermark preview matches the exported image", async ({ page }) => {
   await page.locator('label.toggle:has-text("Watermark")').click();
   await expect(page.locator(".preview-watermark")).toBeVisible();
 
-  // The on-screen watermark must read as 13px Inter/500 at a 16px inset so it
-  // visually matches what renderMockup paints onto the exported canvas.
+  // The on-screen watermark must scale with the artboard exactly like the
+  // export does: chrome px are authored against the 800px reference width
+  // (overlayMetrics), so at the current canvas size the expected font is
+  // 13 × (canvasWidth / 800) with a proportionally scaled inset.
   const wm = await page.evaluate(() => {
     const span = document.querySelector(".preview-watermark") as HTMLElement;
     const canvas = document.querySelector("#preview-canvas")!.getBoundingClientRect();
@@ -264,13 +266,14 @@ test("watermark preview matches the exported image", async ({ page }) => {
       fontSize: parseFloat(cs.fontSize),
       fontWeight: cs.fontWeight,
       rightGap: Math.round(canvas.right - r.right),
-      bottomGap: Math.round(canvas.bottom - r.bottom)
+      bottomGap: Math.round(canvas.bottom - r.bottom),
+      scale: canvas.width / 800
     };
   });
-  expect(wm.fontSize).toBe(13);
+  expect(wm.fontSize).toBeCloseTo(13 * wm.scale, 1);
   expect(wm.fontWeight).toBe("500");
-  expect(wm.rightGap).toBe(16);
-  expect(wm.bottomGap).toBe(16);
+  expect(wm.rightGap).toBe(Math.round(16 * wm.scale));
+  expect(wm.bottomGap).toBe(Math.round(16 * wm.scale));
 
   // Exporting with the watermark on must still produce a PNG download.
   await openExportDialog(page);
@@ -782,9 +785,11 @@ test("Auto from media builds a gradient from the uploaded image palette", async 
   await autoBtn.click();
   await page.waitForTimeout(150);
 
-  // The background container must now carry a gradient derived from the media.
+  // The scene background lives on the zoom-layer surface ([data-scene-bg])
+  // so it scales with the artboard; it must now carry a gradient derived
+  // from the media.
   const bg = await page.evaluate(
-    () => getComputedStyle(document.querySelector("#preview-canvas") as HTMLElement).backgroundImage
+    () => getComputedStyle(document.querySelector("[data-scene-bg]") as HTMLElement).backgroundImage
   );
   expect(bg).toContain("gradient");
   // The preset swatch should no longer read as the previously-active gradient.
@@ -908,8 +913,9 @@ test("adding an arrow draws an overlay and selecting it shows the editor", async
   await page.goto("/");
   await page.getByRole("tab", { name: "Annotations" }).click();
   await page.locator('.segmented[aria-label="Add annotation"] button', { hasText: "+ Arrow" }).click();
-  // The arrow is an SVG drawn on the canvas.
-  await expect(page.locator("#preview-canvas svg").first()).toBeVisible();
+  // The arrow is an SVG drawn on the canvas (scope to the annotation node —
+  // the canvas also hosts a zero-size <defs> svg for overlay clip paths).
+  await expect(page.locator("#preview-canvas [data-annotation] svg").first()).toBeVisible();
   await expect(page.getByRole("button", { name: /Arrow 1/ })).toBeVisible();
 
   // The selected annotation exposes a color and stroke editor.

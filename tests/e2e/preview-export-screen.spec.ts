@@ -97,6 +97,9 @@ for (const c of cases) {
 
     const box = await page.locator("#preview-canvas").boundingBox();
     expect(box).toBeTruthy();
+        // Editor chrome (upload chips, view zoom bar) intentionally overlays the
+    // canvas; hide it so the comparison isolates the artwork, not controls.
+    await page.addStyleTag({ content: "[class*='preview-chip'],.preview-zoom-bar{display:none!important}" });
     const panelShot = await page.screenshot({ clip: box! });
 
     const downloadPromise = page.waitForEvent("download");
