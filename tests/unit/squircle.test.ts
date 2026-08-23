@@ -75,6 +75,7 @@ describe("squircle geometry", () => {
     const def = overlayClipDefForSpec(spec);
     expect(def).not.toBeNull();
     expect(def!.id).toMatch(/^mocksy-sq-[a-z0-9]+$/i);
-    expect(def!.d).toMatch(/^M [\d.]+ 0\.00 L/);
+    expect(def!.d).toMatch(/^M [\d.]+ 0\.000000 L/);
+    expect(def!.d).not.toMatch(/-?\d+\.\d{1,2}\b/);
   });
 });

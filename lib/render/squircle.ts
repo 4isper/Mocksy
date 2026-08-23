@@ -57,10 +57,13 @@ export function traceSquirclePath(
  *  are fractions of the element's width/height so the px shape keeps a uniform
  *  corner radius once the browser stretches the unit box onto the element. */
 export function squircleUnitD(rux: number, ruy: number): string {
+  // Unit-box coordinates get 6 decimals: at 2 decimals a 0.01 quantization
+  // step is ~4px on a 400px element, which renders as a visible staircase.
+  const f6 = (n: number) => n.toFixed(6);
   const pts = squirclePoints(1, 1, rux, ruy);
   const first = pts[0]!;
-  let d = `M ${f2(first[0])} ${f2(first[1])} `;
-  for (let i = 1; i < pts.length; i++) d += `L ${f2(pts[i]![0])} ${f2(pts[i]![1])} `;
+  let d = `M ${f6(first[0])} ${f6(first[1])} `;
+  for (let i = 1; i < pts.length; i++) d += `L ${f6(pts[i]![0])} ${f6(pts[i]![1])} `;
   return d + "Z";
 }
 
