@@ -1,7 +1,8 @@
 import fs from "fs";
 
-const P = 0.5; // superellipse exponent power = 2/n (n=4 → Apple-ish squircle)
-const STEPS = 16;
+// Superellipse corner exponent power = 2/n (n=4 → Apple-ish squircle).
+const P = 0.5;
+const STEPS = 24;
 
 function parseAttrs(tag) {
   const attrs = {};
@@ -11,32 +12,38 @@ function parseAttrs(tag) {
   return attrs;
 }
 
-// Continuous-curvature rounded-rect path (superellipse corners).
+// Continuous-curvature rounded-rect path. Corners are true superellipse arcs
+// measured FROM THE ARC CENTER toward the sharp corner, tangent-continuous
+// with the straight edges at both ends of every corner.
 function squirclePath(x, y, w, h, r) {
-  const corner = (fn) => {
+  const pt = (px, py) => `L ${px.toFixed(2)} ${py.toFixed(2)} `;
+  // Corner from angle thStart→thEnd around center c; dir (+1/-1) points toward
+  // the sharp corner on each axis.
+  const corner = (cx, cy, sx, sy, reverse) => {
     let s = "";
     for (let i = 1; i <= STEPS; i++) {
-      const t = (i / STEPS) * (Math.PI / 2);
-      s += fn(t);
+      const k = reverse ? STEPS - i : i;
+      const th = (k / STEPS) * (Math.PI / 2);
+      s += pt(cx + sx * r * Math.pow(Math.cos(th), P), cy + sy * r * Math.pow(Math.sin(th), P));
     }
     return s;
   };
   let d = `M ${(x + r).toFixed(2)} ${y.toFixed(2)} `;
   d += `L ${(x + w - r).toFixed(2)} ${y.toFixed(2)} `;
-  d += corner((t) => `L ${(x + w - r * Math.pow(Math.cos(t), P)).toFixed(2)} ${(y + r * Math.pow(Math.sin(t), P)).toFixed(2)} `);
+  d += corner(x + w - r, y + r, +1, -1, true);  // top-right: θ 90°→0°
   d += `L ${(x + w).toFixed(2)} ${(y + h - r).toFixed(2)} `;
-  d += corner((t) => `L ${(x + w - r * Math.pow(Math.sin(t), P)).toFixed(2)} ${(y + h - r * Math.pow(Math.cos(t), P)).toFixed(2)} `);
+  d += corner(x + w - r, y + h - r, +1, +1, false); // bottom-right: θ 0°→90°
   d += `L ${(x + r).toFixed(2)} ${(y + h).toFixed(2)} `;
-  d += corner((t) => `L ${(x + r * Math.pow(Math.cos(t), P)).toFixed(2)} ${(y + h - r * Math.pow(Math.sin(t), P)).toFixed(2)} `);
+  d += corner(x + r, y + h - r, -1, +1, true); // bottom-left: θ 90°→0°
   d += `L ${x.toFixed(2)} ${(y + h - r).toFixed(2)} `;
-  d += corner((t) => `L ${(x + r * Math.pow(Math.sin(t), P)).toFixed(2)} ${(y + r * Math.pow(Math.cos(t), P)).toFixed(2)} `);
+  d += corner(x + r, y + r, -1, -1, false); // top-left: θ 0°→90°
   d += "Z";
   return d;
 }
 
-function rectToPath(tag) {
+function rectToPath(tag, radiusScale) {
   const a = parseAttrs(tag);
-  const r = +a.rx;
+  const r = +a.rx * radiusScale;
   if (!(r > 0)) return tag;
   const x = +a.x;
   const y = +a.y;
@@ -63,12 +70,11 @@ const files = [
 
 for (const f of files) {
   let s = fs.readFileSync(f, "utf8");
-  // Mask hole (transparent cutout) → squircle
-  s = s.replace(/<rect\b[^>]*\bfill="black"[^>]*\/>/g, (t) => rectToPath(t));
-  // Screen-edge rim → squircle
-  s = s.replace(/<rect\b[^>]*\bstroke="url\(#edgeHi\)"[^>]*\/>/g, (t) => rectToPath(t));
-  // Body / case (and any masked ring) → squircle
-  s = s.replace(/<rect\b[^>]*\bmask="url\([^)]*\)"[^>]*\/>/g, (t) => rectToPath(t));
+  // Mask hole (transparent cutout) and rim: reduced radius (media-clip-safe)
+  s = s.replace(/<rect\b[^>]*\bfill="black"[^>]*\/>/g, (t) => rectToPath(t, 1));
+  s = s.replace(/<rect\b[^>]*\bstroke="url\(#edgeHi\)"[^>]*\/>/g, (t) => rectToPath(t, 1));
+  // Body / case / decorative masked rings: full original radius
+  s = s.replace(/<rect\b[^>]*\bmask="url\([^)]*\)"[^>]*\/>/g, (t) => rectToPath(t, 1));
   fs.writeFileSync(f, s);
   console.log("squircle:", f);
 }

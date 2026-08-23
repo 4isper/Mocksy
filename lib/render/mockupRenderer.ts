@@ -7,6 +7,13 @@ import { resolveFrameStyle } from "@/lib/render/canvasDrawing";
 import { screenChromeSvg } from "@/lib/render/screenChrome";
 import { browserChromeSvg, isBrowserFrameSpec } from "@/lib/render/browserChrome";
 import { buildCssBackground } from "@/lib/render/sceneBackground";
+import { overlayClipDefForSpec } from "@/lib/render/squircle";
+
+function overlayClipCss(spec: FrameSpec): Pick<CSSProperties, "WebkitClipPath" | "clipPath"> {
+  const def = overlayClipDefForSpec(spec);
+  if (!def) return {};
+  return { WebkitClipPath: `url(#${def.id})`, clipPath: `url(#${def.id})` };
+}
 
 export interface SceneCss {
   container: CSSProperties;
@@ -138,7 +145,7 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
         objectPosition: `${mediaPosX}% ${mediaPosY}%`,
         transform: activeLayerForCss?.rotation ? `rotate(${activeLayerForCss.rotation}deg)` : undefined,
         transformOrigin: "center",
-        borderRadius: `${(spec.cutout.rx / spec.cutout.w) * 100}% / ${(spec.cutout.rx / spec.cutout.h) * 100}%`,
+        ...overlayClipCss(spec),
         background: "#0a0a0a",
         filter: buildLayerFilterCss(activeLayerForCss),
         opacity: mediaOpacity
@@ -163,7 +170,7 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
         top: `${(spec.cutout.y / vb.h) * 100}%`,
         width: `${(spec.cutout.w / vb.w) * 100}%`,
         height: `${(spec.cutout.h / vb.h) * 100}%`,
-        borderRadius: `${(spec.cutout.rx / spec.cutout.w) * 100}% / ${(spec.cutout.rx / spec.cutout.h) * 100}%`,
+        ...overlayClipCss(spec),
         display: "grid",
         placeItems: "center",
         color: "#a1a1aa",
@@ -203,7 +210,7 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
         top: `${(spec.cutout.y / vb.h) * 100}%`,
         width: `${(spec.cutout.w / vb.w) * 100}%`,
         height: `${(spec.cutout.h / vb.h) * 100}%`,
-        borderRadius: `${(spec.cutout.rx / spec.cutout.w) * 100}% / ${(spec.cutout.rx / spec.cutout.h) * 100}%`,
+        ...overlayClipCss(spec),
         overflow: "hidden",
         pointerEvents: "none"
       }
@@ -290,7 +297,7 @@ function buildScreenGlareStyle(scene: EditorScene, spec: FrameSpec): CSSProperti
       top: `${(spec.cutout.y / vb.h) * 100}%`,
       width: `${(spec.cutout.w / vb.w) * 100}%`,
       height: `${(spec.cutout.h / vb.h) * 100}%`,
-      borderRadius: `${(spec.cutout.rx / spec.cutout.w) * 100}% / ${(spec.cutout.rx / spec.cutout.h) * 100}%`,
+      ...overlayClipCss(spec),
       overflow: "hidden"
     };
   }

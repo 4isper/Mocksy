@@ -6,6 +6,7 @@ import { watermarkEdges } from "@/lib/render/watermark";
 import { buildLayerFilterCss } from "@/lib/render/layerFilters";
 import { drawScreenChrome } from "@/lib/render/screenChrome";
 import { drawBrowserUrl } from "@/lib/render/browserChrome";
+import { traceSquirclePath } from "@/lib/render/squircle";
 
 export const RENDER = {
   defaultFrameWidth: 900,
@@ -231,6 +232,16 @@ export function drawFrameAndMedia(
   overlay: CanvasImageSource | null
 ) {
   const { x, y, width: frameW, height: frameH, outerRadius, innerX, innerY, innerW, innerH, innerRadius } = box;
+  // Overlay screens clip to the skin's squircle cutout so the media fills the
+  // transparent hole exactly; CSS-only frames keep the circular clip.
+  const cutout = instSpec.isOverlay ? instSpec.cutout : null;
+  const screenRx = cutout ? (cutout.rx / cutout.w) * innerW : innerRadius;
+  const screenRy = cutout ? (cutout.rx / cutout.h) * innerH : innerRadius;
+  const clipScreen = () => {
+    if (cutout) traceSquirclePath(ctx, innerX, innerY, innerW, innerH, screenRx, screenRy);
+    else roundedRectPath(ctx, innerX, innerY, innerW, innerH, innerRadius);
+    ctx.clip();
+  };
 
   if (!instSpec.isOverlay) {
     ctx.save();
@@ -255,8 +266,7 @@ export function drawFrameAndMedia(
   }
 
   ctx.save();
-  roundedRectPath(ctx, innerX, innerY, innerW, innerH, innerRadius);
-  ctx.clip();
+  clipScreen();
   // Layer opacity applies to the media only — chrome/glare/bezel below stay
   // at full strength, mirroring the CSS preview's per-element opacity.
   const layerOpacity = Math.max(0, Math.min(1, (layer?.opacity ?? 100) / 100));
@@ -295,8 +305,7 @@ export function drawFrameAndMedia(
   // the media but under the device bezel, clipped to the rounded screen.
   if (scene.screen.enabled) {
     ctx.save();
-    roundedRectPath(ctx, innerX, innerY, innerW, innerH, innerRadius);
-    ctx.clip();
+    clipScreen();
     drawScreenChrome(ctx, { ...scene.screen, os: frameOs(box.frame) }, innerX, innerY, innerW, innerH);
     ctx.restore();
   }
@@ -306,8 +315,7 @@ export function drawFrameAndMedia(
   // SCREEN_GLARE_CSS in mockupRenderer so preview ≡ export.
   if (scene.screenGlare) {
     ctx.save();
-    roundedRectPath(ctx, innerX, innerY, innerW, innerH, innerRadius);
-    ctx.clip();
+    clipScreen();
     const glare = ctx.createLinearGradient(innerX, innerY, innerX + innerW, innerY + innerH);
     glare.addColorStop(0, "rgba(255,255,255,0.32)");
     glare.addColorStop(0.3, "rgba(255,255,255,0.14)");

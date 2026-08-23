@@ -8,6 +8,7 @@ import { screenChromeElements } from "@/lib/render/screenChrome";
 import { browserUrlSvg } from "@/lib/render/browserChrome";
 import { PATTERN_TILES } from "@/lib/render/sceneBackground";
 import { escapeMarkup, round2 } from "@/lib/export/markupUtils";
+import { squirclePathD } from "@/lib/render/squircle";
 
 /** Rounds to 2 decimals so generated SVG stays compact but accurate. */
 function num(n: number): string {
@@ -35,6 +36,8 @@ export interface SvgFrameGroup {
   isCircular?: boolean;
   /** Inner markup (children of the device SVG's <svg> root) to inline, or null. */
   overlayInner: string | null;
+  /** Screen cutout of overlay specs — drives the squircle media clip. */
+  cutout?: { x: number; y: number; w: number; h: number; rx: number } | null;
   /** URL for the browser frame's address bar, drawn above the skin. */
   browserUrl?: string | null;
   /** Per-frame media fill behavior; defaults to the layer's when omitted. */
@@ -137,7 +140,12 @@ function mediaScale(fit: "cover" | "contain", innerW: number, innerH: number, mw
 }
 
 function groupClipRect(group: SvgFrameGroup): string {
-  const { box } = group;
+  const { box, cutout } = group;
+  if (cutout) {
+    const rx = (cutout.rx / cutout.w) * box.innerW;
+    const ry = (cutout.rx / cutout.h) * box.innerH;
+    return `<path d="${squirclePathD(box.innerX, box.innerY, box.innerW, box.innerH, rx, ry)}"/>`;
+  }
   const isCircular = group.isCircular;
   const rounded = isCircular
     ? `rx="${num(Math.min(box.innerW, box.innerH) / 2)}"`
@@ -190,7 +198,9 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
     return `<g transform="${tilt}"><clipPath id="clip-t${index}">${groupClipRect(group)}</clipPath><g clip-path="url(#clip-t${index})">${media}${chromeMarkup}</g>${frameGroupInner(scene, group)}</g>`;
   }
   const glareMarkup = scene.screenGlare
-    ? `<rect x="${num(box.innerX)}" y="${num(box.innerY)}" width="${num(box.innerW)}" height="${num(box.innerH)}" rx="${num(group.isCircular ? Math.min(box.innerW, box.innerH) / 2 : Math.min(box.innerRadius, Math.min(box.innerW, box.innerH) / 2))}" fill="url(#glare-sweep)"/>`
+    ? group.cutout
+      ? `<path d="${squirclePathD(box.innerX, box.innerY, box.innerW, box.innerH, (group.cutout.rx / group.cutout.w) * box.innerW, (group.cutout.rx / group.cutout.h) * box.innerH)}" fill="url(#glare-sweep)"/>`
+      : `<rect x="${num(box.innerX)}" y="${num(box.innerY)}" width="${num(box.innerW)}" height="${num(box.innerH)}" rx="${num(group.isCircular ? Math.min(box.innerW, box.innerH) / 2 : Math.min(box.innerRadius, Math.min(box.innerW, box.innerH) / 2))}" fill="url(#glare-sweep)"/>`
     : "";
   let inner = `<g clip-path="url(#clip-${index})">${media}${chromeMarkup}${glareMarkup}</g>${frameGroupInner(scene, group)}`;
   if (group.orientation) {

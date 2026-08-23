@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
+import { collectOverlayClipDefs } from "@/lib/render/squircle";
 import type { GuideLine } from "@/lib/render/annotationAlign";
 import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
 import { tiltCss } from "@/lib/render/tilt";
@@ -230,6 +231,15 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           }}
         >
         <PreviewBackground sceneCss={sceneCss} showGrid={showGrid} gridDivisions={gridDivisions} />
+        <svg aria-hidden width="0" height="0" style={{ position: "absolute" }}>
+          <defs>
+            {collectOverlayClipDefs(scene).map((def) => (
+              <clipPath key={def.id} id={def.id} clipPathUnits="objectBoundingBox">
+                <path d={def.d} />
+              </clipPath>
+            ))}
+          </defs>
+        </svg>
         {isMultiFrame ? (
           <FrameInstanceGrid
             scene={scene}

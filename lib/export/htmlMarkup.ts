@@ -6,6 +6,7 @@ import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
 import { RENDER } from "@/lib/render/canvasDrawing";
 import { escapeMarkup, round2 } from "@/lib/export/markupUtils";
+import { collectOverlayClipDefs } from "@/lib/render/squircle";
 
 const UNITLESS = new Set(["opacity", "zIndex", "flexGrow", "flexShrink", "aspectRatio", "fontWeight", "lineHeight", "tabSize"]);
 
@@ -168,6 +169,11 @@ export function buildHtmlSnippet(scene: EditorScene, opts: HtmlSnippetOptions, a
     ? `\n<script>document.querySelectorAll("video").forEach(function(v){v.playbackRate=${speed};});</script>`
     : "";
 
+  const clipDefs = collectOverlayClipDefs(scene)
+    .map((def) => `<clipPath id="${def.id}" clipPathUnits="objectBoundingBox"><path d="${def.d}"/></clipPath>`)
+    .join("");
+  const defsSvg = clipDefs ? `<svg width="0" height="0" style="position:absolute"><defs>${clipDefs}</defs></svg>` : "";
+
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -237,6 +243,7 @@ ${animationCss}
 </style>
 </head>
 <body>
+${defsSvg}
 <div class="stage">
   ${bg}
   <div class="frame">

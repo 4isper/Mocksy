@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DEMO_MEDIA_URL } from "@/lib/media/demoMedia";
 import { buildOgScene } from "@/lib/state/ogScene";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
+import { collectOverlayClipDefs } from "@/lib/render/squircle";
 import { frameInstAr } from "@/lib/render/frames";
 import { FrameContent } from "@/components/editor/FrameContent";
 
@@ -33,6 +34,15 @@ export default function OgImagePage() {
           ...sceneCss.container
         }}
       >
+        <svg aria-hidden width="0" height="0" style={{ position: "absolute" }}>
+          <defs>
+            {collectOverlayClipDefs(scene).map((def) => (
+              <clipPath key={def.id} id={def.id} clipPathUnits="objectBoundingBox">
+                <path d={def.d} />
+              </clipPath>
+            ))}
+          </defs>
+        </svg>
         {layers.map(({ inst, layer, css }) => {
           const native = frameInstAr(inst.frame, scene.customFrame, scene.aspectRatio) ?? 390 / 844;
           return (
