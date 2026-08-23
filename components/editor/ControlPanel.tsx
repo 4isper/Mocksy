@@ -54,7 +54,7 @@ export function ControlPanel() {
   );
 
   return (
-    <div className="panel control-panel" style={{ padding: 16, display: "grid", gap: 12 }}>
+    <div id="control-panel" className="panel control-panel" style={{ padding: 16, display: "grid", gap: 12 }}>
       <h2 className="panel-title">{t("editor.controls")}</h2>
 
       <MediaSection />

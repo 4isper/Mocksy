@@ -42,6 +42,7 @@ export const useEditorStore = create<EditorStoreState>()((set) => ({
   fullscreenPreview: false,
   onboardingOpen: false,
   rightTab: "templates",
+  mobileSheet: null,
   ...createSceneSlice(set),
   ...createLayersSlice(set),
   ...createFramesSlice(set),

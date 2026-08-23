@@ -44,7 +44,12 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 export function generateViewport(): Viewport {
-  return { themeColor: "#6366f1" };
+  return {
+    themeColor: "#6366f1",
+    // Cover the notch/home-indicator areas so the mobile tab bar's
+    // env(safe-area-inset-bottom) padding resolves to a real value.
+    viewportFit: "cover"
+  };
 }
 
 export default async function LocaleLayout({

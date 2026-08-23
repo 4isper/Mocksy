@@ -24,6 +24,7 @@ export type SceneSlice = Pick<
   | "setFullscreenPreview"
   | "setOnboardingOpen"
   | "setRightTab"
+  | "setMobileSheet"
   | "setVideoCurrentTime"
 >;
 
@@ -125,6 +126,7 @@ export function createSceneSlice(set: EditorStoreSetter): SceneSlice {
     setFullscreenPreview: (fullscreenPreview) => set({ fullscreenPreview }),
     setOnboardingOpen: (onboardingOpen) => set({ onboardingOpen }),
     setRightTab: (rightTab) => set({ rightTab }),
+    setMobileSheet: (mobileSheet) => set({ mobileSheet }),
     setVideoCurrentTime: (videoCurrentTime) => set({ videoCurrentTime })
   };
 }

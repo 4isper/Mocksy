@@ -144,11 +144,19 @@ select {
 }
 
 /* ---- App shell ---- */
+/* Layout tokens: panel widths and grid gap are overridden in the narrow
+   desktop breakpoint below, so every rule reads from the same source. */
+:root {
+  --panel-left-w: 280px;
+  --panel-right-w: 310px;
+  --grid-gap: 14px;
+}
+
 .editor-shell {
   height: 100dvh;
   display: grid;
   grid-template-rows: auto 1fr;
-  gap: 14px;
+  gap: var(--grid-gap);
   padding: 16px;
   overflow: hidden;
   max-width: 1480px;
@@ -157,8 +165,8 @@ select {
 
 .editor-grid {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 310px;
-  gap: 14px;
+  grid-template-columns: var(--panel-left-w) minmax(0, 1fr) var(--panel-right-w);
+  gap: var(--grid-gap);
   align-items: stretch;
   min-height: 0;
   min-width: 0;
@@ -176,6 +184,19 @@ select {
   top: 10px;
   right: 10px;
   z-index: 30;
+}
+
+/* Narrow desktops and tablet landscape (split-view, half-screen tiling):
+   slimmer panels keep the preview usable without hiding any controls. */
+@media (min-width: 981px) and (max-width: 1180px) {
+  :root {
+    --panel-left-w: 244px;
+    --panel-right-w: 276px;
+    --grid-gap: 10px;
+  }
+  .editor-shell {
+    padding: 12px;
+  }
 }
 
 @media (max-width: 980px) {
@@ -205,6 +226,119 @@ select {
   .control-panel {
     max-height: none;
     overflow-y: visible;
+  }
+}
+
+/* ---- Mobile bottom-sheet layout (<=768px) ----
+   The preview stays in flow at the top; both side panels become fixed
+   bottom sheets toggled from the tab bar, so editing controls are always
+   one tap away without scrolling past them to reach the canvas. */
+/* Desktop: the hosts are layout-transparent so the editor grid keeps seeing
+   the panels as its direct children (min-height/scroll chains stay intact). */
+.sheet-host {
+  display: contents;
+}
+
+.mobile-tabbar,
+.sheet-backdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .editor-shell {
+    /* Keep the toolbar above the fixed tab bar. */
+    padding-bottom: calc(74px + env(safe-area-inset-bottom));
+  }
+
+  .sheet-host {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 45;
+    /* Parked below the viewport; the open state slides it up. `visibility`
+       keeps the parked panel out of the tab order and off screen readers,
+       and is delayed so the slide-out animation stays visible. */
+    transform: translateY(105%);
+    visibility: hidden;
+    transition: transform 0.28s ease, visibility 0s linear 0.28s;
+    pointer-events: none;
+  }
+  .sheet-host.is-open {
+    transform: none;
+    visibility: visible;
+    transition: transform 0.28s ease;
+    pointer-events: auto;
+  }
+  .sheet-host > .panel {
+    border-radius: var(--radius) var(--radius) 0 0;
+    box-shadow: var(--shadow-pop);
+  }
+  .sheet-host--controls .control-panel {
+    height: min(72dvh, 640px);
+    max-height: none;
+    overflow-y: auto;
+  }
+  .sheet-host--right .right-panel {
+    height: min(72dvh, 640px);
+    max-height: none;
+  }
+
+  .sheet-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(0, 0, 0, 0.45);
+    animation: backdropFadeIn 0.2s ease;
+  }
+
+  .mobile-tabbar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 46;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    background: var(--toolbar-bg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--panel-border);
+  }
+
+  .mtab {
+    appearance: none;
+    font: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 48px;
+    padding: 4px 8px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .mtab:hover {
+    color: var(--text);
+  }
+  .mtab.is-active {
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .mtab:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
   }
 }
 
@@ -1721,7 +1855,8 @@ select {
 }
 
 /* Coarse pointers (touch) need larger thumbs and taller hit areas so the
-   two overlapping trim sliders are easy to grab with a finger. */
+   two overlapping trim sliders are easy to grab with a finger, and so every
+   primary control reaches a comfortable touch-target size (~44px). */
 @media (pointer: coarse) {
   .trim-range {
     height: 40px;
@@ -1733,6 +1868,50 @@ select {
   .trim-range::-moz-range-thumb {
     width: 24px;
     height: 24px;
+  }
+
+  /* Toolbar: taller buttons and slightly larger type instead of the compact
+     28px desktop hit areas. */
+  .toolbar {
+    gap: 6px;
+    padding: 8px 12px;
+  }
+  .toolbar .btn-tb,
+  .toolbar .locale-select {
+    height: 38px;
+    font-size: 12.5px;
+  }
+  .toolbar .btn-tb-icon {
+    width: 38px;
+    padding: 0;
+  }
+
+  /* Segmented controls (theme switcher, export dialog, annotation tools). */
+  .segmented button {
+    min-height: 40px;
+  }
+
+  /* Accordion headers and right-panel tabs. */
+  .section-header {
+    min-height: 44px;
+  }
+  .right-panel-tabs button {
+    padding: 12px 6px;
+  }
+
+  /* Overlay chips on the canvas (upload/grid/watermark controls). */
+  .preview-chip {
+    padding: 9px 14px;
+  }
+
+  /* Range sliders outside the video trimmer. */
+  .range-wrap input[type="range"]::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+  }
+  .range-wrap input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
   }
 }
 

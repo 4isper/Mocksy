@@ -116,6 +116,7 @@
     "empty": "Empty",
     "expand": "Expand",
     "exportTitle": "Export PNG / MP4 / GIF (⌘E)",
+    "exportTab": "Export",
     "fill": "Fill",
     "fillFitLabel": "Fill / Fit",
     "filterBlur": "Blur ({val}px)",

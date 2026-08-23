@@ -328,7 +328,8 @@
       "graphite": "Graphite",
       "silver": "Silver",
       "white": "White"
-    }
+    },
+    "exportTab": "Export"
   },
   "frame": {
     "none": "Wala",

@@ -116,6 +116,7 @@
     "empty": "Пусто",
     "expand": "Развернуть",
     "exportTitle": "Экспорт PNG / MP4 / GIF (⌘E)",
+    "exportTab": "Экспорт",
     "fill": "Заполнение",
     "fillFitLabel": "Заполнение / Вписать",
     "filterBlur": "Размытие ({val}px)",

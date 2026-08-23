@@ -88,7 +88,7 @@ export function RightPanel({ onShareTemplate }: { onShareTemplate: () => Promise
   };
 
   return (
-    <div className="right-panel panel" style={{ padding: 0, display: "grid", gridTemplateRows: "auto 1fr", gridTemplateColumns: "minmax(0, 1fr)", overflow: "hidden" }}>
+    <div id="right-panel" className="right-panel panel" style={{ padding: 0, display: "grid", gridTemplateRows: "auto 1fr", gridTemplateColumns: "minmax(0, 1fr)", overflow: "hidden" }}>
       <div className="right-panel-tabs" role="tablist" aria-label={t("editor.panels")} onKeyDown={onTabKeyDown}>
         {tabs.map((tab) => {
           const count = tab.id === "layers" ? layersCount : tab.id === "annotations" ? annotationsCount : null;

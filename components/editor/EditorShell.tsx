@@ -16,6 +16,7 @@ import { CommandPalette } from "@/components/editor/CommandPalette";
 import { ErrorBoundary } from "@/components/editor/ErrorBoundary";
 import { ResetConfirmDialog } from "@/components/editor/ResetConfirmDialog";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
+import { MobileTabBar } from "@/components/editor/MobileTabBar";
 import { OnboardingTour, hasSeenOnboarding } from "@/components/editor/OnboardingTour";
 import { ShareQrDialog } from "@/components/editor/ShareQrDialog";
 import { useCommands } from "@/lib/hooks/useCommands";
@@ -47,6 +48,8 @@ export function EditorShell() {
   const saveError = useProjectsStore((s) => s.saveError);
   const fullscreenPreview = useEditorStore((s) => s.fullscreenPreview);
   const setFullscreenPreview = useEditorStore((s) => s.setFullscreenPreview);
+  const mobileSheet = useEditorStore((s) => s.mobileSheet);
+  const setMobileSheet = useEditorStore((s) => s.setMobileSheet);
 
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -214,7 +217,14 @@ export function EditorShell() {
         </div>
       ) : null}
       <div className={fullscreenPreview ? "editor-grid fullscreen" : "editor-grid"}>
-        {!fullscreenPreview ? <ErrorBoundary message={t("errors.message")}><ControlPanel /></ErrorBoundary> : null}
+        {!fullscreenPreview ? (
+          /* Sheet hosts are layout-transparent (`display: contents`) on
+             desktop so the grid still sees the panels directly; at the
+             mobile breakpoint they become fixed bottom sheets. */
+          <div className={mobileSheet === "controls" ? "sheet-host sheet-host--controls is-open" : "sheet-host sheet-host--controls"}>
+            <ErrorBoundary message={t("errors.message")}><ControlPanel /></ErrorBoundary>
+          </div>
+        ) : null}
         <section
           className="preview-column"
           style={{
@@ -266,11 +276,17 @@ export function EditorShell() {
           ) : null}
         </section>
         {!fullscreenPreview ? (
-          <ErrorBoundary message={t("errors.message")}>
-            <RightPanel onShareTemplate={exportApi.copyTemplateUrl} />
-          </ErrorBoundary>
+          <div className={mobileSheet === "right" ? "sheet-host sheet-host--right is-open" : "sheet-host sheet-host--right"}>
+            <ErrorBoundary message={t("errors.message")}>
+              <RightPanel onShareTemplate={exportApi.copyTemplateUrl} />
+            </ErrorBoundary>
+          </div>
         ) : null}
       </div>
+      {!fullscreenPreview && mobileSheet ? (
+        <div className="sheet-backdrop" aria-hidden="true" onClick={() => setMobileSheet(null)} />
+      ) : null}
+      {!fullscreenPreview ? <MobileTabBar onExport={() => setExportOpen(true)} /> : null}
       <ResetConfirmDialog open={confirmResetOpen} onConfirm={confirmReset} onCancel={cancelReset} />
       <ExportDialog
         open={exportOpen}

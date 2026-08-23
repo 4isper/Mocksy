@@ -70,6 +70,11 @@ export interface EditorStoreState {
    *  projects). Shared so the command palette can jump straight to a tab. Pure
    *  view state — never persisted or undone. */
   rightTab: RightTabId;
+  /** Mobile bottom-sheet navigation: which side panel is currently open as a
+   *  bottom sheet over the preview (null = preview only). Only meaningful at
+   *  the <=768px breakpoint, where the tab bar replaces the side-by-side
+   *  panels. Pure view state — never persisted or undone. */
+  mobileSheet: "controls" | "right" | null;
   /** Groups rapid same-field edits (e.g. slider drags) into one undo step. */
   lastHistoryKey: string | null;
   lastHistoryAt: number;
@@ -105,6 +110,8 @@ export interface EditorStoreState {
   setOnboardingOpen: (open: boolean) => void;
   /** Switches the active right-panel tab (templates/layers/annotations/…). */
   setRightTab: (tab: RightTabId) => void;
+  /** Opens/closes the mobile bottom sheets (null closes any open sheet). */
+  setMobileSheet: (sheet: "controls" | "right" | null) => void;
   resetScene: () => void;
   undo: () => void;
   redo: () => void;
