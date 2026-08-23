@@ -27,4 +27,11 @@
   <rect x="0" y="222" width="6" height="30" rx="3" fill="#5a5a5d"/>
   <rect x="396" y="194" width="6" height="58" rx="3" fill="#5a5a5d"/>
   <rect x="396" y="268" width="6" height="30" rx="3" fill="#5a5a5d"/>
+  <!-- Antenna break lines in the titanium frame rails -->
+  <g stroke="rgba(255,255,255,0.12)" stroke-width="1.5">
+    <line x1="11" y1="122" x2="11" y2="152"/>
+    <line x1="11" y1="722" x2="11" y2="752"/>
+    <line x1="391" y1="122" x2="391" y2="152"/>
+    <line x1="391" y1="722" x2="391" y2="752"/>
+  </g>
 </svg>

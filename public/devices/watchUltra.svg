@@ -24,4 +24,6 @@
   <rect x="395" y="228" width="10" height="86" rx="5" fill="#3d3d42"/>
   <!-- Speaker grille (left side) -->
   <rect x="7" y="214" width="6" height="78" rx="3" fill="#333338"/>
+  <!-- Action Button (signature international orange) -->
+  <rect x="7" y="150" width="6" height="44" rx="3" fill="#ff5f1f"/>
 </svg>

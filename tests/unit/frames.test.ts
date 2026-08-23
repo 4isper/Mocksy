@@ -70,7 +70,7 @@ describe("FRAME_SPECS", () => {
     expect(FRAME_SPECS.ipad.cutout).toEqual({ x: 14, y: 14, w: 806, h: 1166, rx: 25 });
     expect(FRAME_SPECS.galaxyTab.cutout).toEqual({ x: 18, y: 18, w: 764, h: 1244, rx: 24 });
     expect(FRAME_SPECS.macbook.cutout).toEqual({ x: 44, y: 34, w: 1512, h: 982, rx: 6 });
-    expect(FRAME_SPECS.imac.cutout).toEqual({ x: 70, y: 80, w: 1460, h: 821, rx: 10 });
+    expect(FRAME_SPECS.imac.cutout).toEqual({ x: 70, y: 80, w: 1460, h: 821, rx: 18 });
     expect(FRAME_SPECS.notebook.cutout).toEqual({ x: 80, y: 40, w: 1440, h: 810, rx: 8 });
     expect(FRAME_SPECS.browser.cutout).toEqual({ x: 0, y: 96, w: 1440, h: 904, rx: 20 });
     expect(FRAME_SPECS.tv.cutout).toEqual({ x: 40, y: 24, w: 1520, h: 855, rx: 12 });

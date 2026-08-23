@@ -45,7 +45,7 @@ export function frameViewBox(spec: FrameSpec): { w: number; h: number } {
  *  has no entry here. */
 export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
   none: { asset: null, padding: 0, screenRadius: 20, isOverlay: false, aspectRatio: null, cutout: null },
-  iphone: { asset: null, padding: 18, screenRadius: 36, isOverlay: false, aspectRatio: "390 / 844", cutout: null },
+  iphone: { asset: null, padding: 18, screenRadius: 55, isOverlay: false, aspectRatio: "390 / 844", cutout: null },
   iphone15: {
     asset: "/devices/iphone15.svg",
     padding: 14,
@@ -134,7 +134,7 @@ export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
     isOverlay: true,
     aspectRatio: "1600 / 1420",
     // viewBox 1600x1420; screen rect x70 y80 w1460 h821 rx10
-    cutout: { x: 70, y: 80, w: 1460, h: 821, rx: 10 },
+    cutout: { x: 70, y: 80, w: 1460, h: 821, rx: 18 },
     viewBox: { w: 1600, h: 1420 }
   },
   notebook: {

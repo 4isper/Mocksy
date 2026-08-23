@@ -29,4 +29,11 @@
   <!-- Volume buttons (left) -->
   <rect x="0" y="168" width="4" height="26" rx="2" fill="#4a4a4f"/>
   <rect x="0" y="206" width="4" height="26" rx="2" fill="#4a4a4f"/>
+  <!-- Antenna break lines in the frame rails -->
+  <g stroke="rgba(255,255,255,0.10)" stroke-width="1.2">
+    <line x1="8" y1="120" x2="8" y2="150"/>
+    <line x1="8" y1="630" x2="8" y2="660"/>
+    <line x1="352" y1="120" x2="352" y2="150"/>
+    <line x1="352" y1="630" x2="352" y2="660"/>
+  </g>
 </svg>
