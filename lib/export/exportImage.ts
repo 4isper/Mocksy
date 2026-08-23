@@ -157,7 +157,7 @@ export async function renderSceneToImageBlob(
           }
         }
         // Load overlay for this frame instance if it uses an overlay frame
-        const instSpec = getFrameSpec(inst.frame, scene.customFrame);
+        const instSpec = getFrameSpec(inst.frame, scene.customFrame, inst.material);
         if (instSpec.isOverlay && instSpec.asset) {
           try {
             const ov = await loadImage(instSpec.asset);

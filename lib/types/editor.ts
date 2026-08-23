@@ -48,6 +48,9 @@ export interface Annotation {
   animated?: boolean;
 }
 export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "pixel8pro" | "galaxy24" | "iphoneSE" | "ipad" | "galaxyTab" | "desktop" | "tablet" | "macbook" | "imac" | "notebook" | "browser" | "tv" | "watchUltra" | "watch" | "custom";
+
+/** Device body material / finish. Drives which SVG skin variant is rendered. */
+export type FrameMaterial = "graphite" | "silver" | "white";
 export type StylePreset = "default" | "glassLight" | "glassDark" | "outline";
 export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax" | "panLeft" | "panRight" | "breathe" | "float" | "sway";
 /** Easing curve applied between animation keyframes. */
@@ -130,6 +133,8 @@ export interface FrameInstance {
   layerId: string | null;
   /** Portrait (default) or rotated 90° landscape. Absent = portrait. */
   orientation?: FrameOrientation;
+  /** Body material / finish; absent = graphite (the default skin). */
+  material?: FrameMaterial;
 }
 
 /** A user-uploaded SVG device skin. Rendered as an overlay frame whose
@@ -210,6 +215,8 @@ export interface EditorScene {
   /** The layer targeted by scene-level zoom/position/video controls. */
   activeLayerId: string | null;
   frame: MockupFrame;
+  /** Material / finish for the single-frame mode device (instance frames carry their own). */
+  frameMaterial?: FrameMaterial;
   /** Multiple device frames in a grid. When present, overrides scene.frame (single-frame mode). */
   frameInstances: FrameInstance[];
   /** User-uploaded SVG device skin used when frame === "custom". */

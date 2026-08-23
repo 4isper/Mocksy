@@ -70,7 +70,7 @@ export async function exportHtml(
     if (scene.watermarkEnabled && scene.watermarkImageUrl) {
       watermarkHref = await toEmbeddableDataUrl(scene.watermarkImageUrl);
     }
-    const spec = getFrameSpec(scene.frame, scene.customFrame);
+    const spec = getFrameSpec(scene.frame, scene.customFrame, scene.frameMaterial);
     const overlayHref = spec.isOverlay && spec.asset ? await svgAssetToDataUrl(spec.asset) : null;
 
     const fontCss = await buildEmbeddedFontCss(collectFontStacks(scene));

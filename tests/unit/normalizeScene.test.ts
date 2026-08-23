@@ -171,6 +171,24 @@ describe("normalizeScene", () => {
     expect(normalizeScene({ screenGlare: "yes" }).screenGlare).toBe(false);
   });
 
+  it("leaves frameMaterial unset for unknown values and accepts valid ones", () => {
+    expect(normalizeScene({}).frameMaterial).toBeUndefined();
+    expect(normalizeScene({ frameMaterial: "rose" }).frameMaterial).toBeUndefined();
+    expect(normalizeScene({ frameMaterial: "silver" }).frameMaterial).toBe("silver");
+    expect(normalizeScene({ frameMaterial: "white" }).frameMaterial).toBe("white");
+  });
+
+  it("preserves a frame instance's material when valid", () => {
+    const s = normalizeScene({
+      frameInstances: [
+        { id: "f1", frame: "iphone15", x: 0, y: 0.5, scale: 0.5, layerId: null, material: "silver" },
+        { id: "f2", frame: "iphone16pro", x: 0.8, y: 0.5, scale: 0.5, layerId: null, material: "platinum" }
+      ]
+    });
+    expect(s.frameInstances[0]!.material).toBe("silver");
+    expect(s.frameInstances[1]!.material).toBeUndefined();
+  });
+
   it("normalizes frame instance orientation (valid kept, invalid dropped)", () => {
     const s = normalizeScene({
       frameInstances: [

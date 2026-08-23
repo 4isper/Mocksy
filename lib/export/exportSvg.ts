@@ -123,7 +123,7 @@ export async function exportSvg(
         const inst = scene.frameInstances[i];
         if (!box || !inst) continue;
         const layer = scene.layers.find((l) => l.id === inst.layerId) ?? activeLayer;
-        const spec = getFrameSpec(inst.frame, scene.customFrame);
+        const spec = getFrameSpec(inst.frame, scene.customFrame, inst.material);
         let media: { href: string; width: number; height: number } | null = null;
         if (layer?.mediaUrl) {
           if (isVideoLayer(layer)) {
@@ -156,7 +156,7 @@ export async function exportSvg(
         });
       }
     } else {
-      const spec = getFrameSpec(scene.frame, scene.customFrame);
+      const spec = getFrameSpec(scene.frame, scene.customFrame, scene.frameMaterial);
       let media: { href: string; width: number; height: number } | null = null;
       if (!activeLayer?.hidden) {
         if (video instanceof HTMLVideoElement) {

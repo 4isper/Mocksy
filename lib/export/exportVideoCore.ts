@@ -131,7 +131,7 @@ export async function captureWebm(
           layerMedias.set(layer.id, null);
         }
       }
-      const instSpec = getFrameSpec(inst.frame, scene.customFrame);
+      const instSpec = getFrameSpec(inst.frame, scene.customFrame, inst.material);
       if (instSpec.isOverlay && instSpec.asset) {
         try {
           const ov = await loadImage(instSpec.asset);

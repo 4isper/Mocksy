@@ -219,6 +219,9 @@ export interface EditorStoreState {
   setBrowserUrl: (url: string) => void;
   setBrowserChromeTheme: (theme: "light" | "dark") => void;
   setAspectRatio: (aspectRatio: string) => void;
+  /** Sets the device body material/finish for the single-frame device, or the
+   *  selected frame instance (bulk-applies to all instances when none selected). */
+  setFrameMaterial: (material: import("@/lib/types/editor").FrameMaterial) => void;
   addAnnotation: (type: AnnotationType) => void;
   updateAnnotation: (id: string, patch: Partial<Annotation>) => void;
   /** Clones an annotation slightly offset from the original and selects it. */

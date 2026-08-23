@@ -10,6 +10,7 @@ export type FramesSlice = Pick<
   | "setCustomFrame"
   | "setFrameInstances"
   | "updateFrameInstance"
+  | "setFrameMaterial"
   | "removeFrameInstance"
   | "duplicateFrameInstance"
   | "reorderFrameInstance"
@@ -167,6 +168,17 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
         const frameInstances = distributeFrameInstances(s.scene.frameInstances, axis, s.scene.aspectRatio, s.scene.customFrame);
         return pushHistory(s, { ...s.scene, frameInstances });
       }),
-    selectFrameInstance: (id) => set({ activeFrameInstanceId: id })
+    selectFrameInstance: (id) => set({ activeFrameInstanceId: id }),
+    setFrameMaterial: (material) =>
+      set((s) => {
+        const nextScene: EditorScene = { ...s.scene, frameMaterial: material };
+        if (nextScene.frameInstances.length > 0) {
+          const targetId = s.activeFrameInstanceId;
+          nextScene.frameInstances = nextScene.frameInstances.map((inst) =>
+            !targetId || inst.id === targetId ? { ...inst, material } : inst
+          );
+        }
+        return pushHistory(s, nextScene);
+      })
   };
 }

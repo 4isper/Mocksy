@@ -19,7 +19,7 @@ export interface LoadedExportAssets {
  * recorder so the two pipelines can't drift in which assets they pull in.
  */
 export async function loadExportAssets(scene: EditorScene): Promise<LoadedExportAssets> {
-  const spec = getFrameSpec(scene.frame, scene.customFrame);
+  const spec = getFrameSpec(scene.frame, scene.customFrame, scene.frameMaterial);
   let overlay: HTMLImageElement | null = null;
   if (spec.isOverlay && spec.asset) {
     try {

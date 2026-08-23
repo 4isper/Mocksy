@@ -23,7 +23,7 @@ describe("computeFrameBox geometry", () => {
   it("keeps the media inset ratio independent of pixelRatio (overlay cutout)", () => {
     const cssWidth = 700;
     const spec = getFrameSpec("iphone15");
-    const expectedRatio = (spec.cutout?.x ?? 0) / SVG_VIEWBOX_WIDTH;
+    const expectedRatio = (spec.cutout?.x ?? 0) / (spec.viewBox?.w ?? SVG_VIEWBOX_WIDTH);
 
     const atDpr = (dpr: number) =>
       computeFrameBox(scene({ frame: "iphone15" }), 1400, 1400, dpr, cssWidth * dpr, cssWidth * dpr * (10 / 16));
@@ -1074,9 +1074,9 @@ describe("computeFrameInstances", () => {
     };
     const boxes = computeFrameInstances(sceneWithFrames, 800, 800, 2);
     expect(boxes.length).toBe(1);
-    // iphone15 has aspectRatio "390/844" (portrait), so width/height = 390/844
+    // iphone15 has aspectRatio "393/852" (portrait), so width/height = 393/852
     const ratio = boxes[0]!.width / boxes[0]!.height;
-    expect(ratio).toBeCloseTo(390 / 844, 2);
+    expect(ratio).toBeCloseTo(393 / 852, 2);
   });
 });
 

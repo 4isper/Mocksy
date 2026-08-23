@@ -185,7 +185,7 @@ describe("computeFrameInstances", () => {
       ]
     });
     const result = computeFrameInstances(s, 1200, 1200, 2);
-    expect(result[0]!.width / result[0]!.height).toBeCloseTo(390 / 844, 3);
+    expect(result[0]!.width / result[0]!.height).toBeCloseTo(393 / 852, 3);
   });
 
   it("uses scene aspect ratio for 'none' frame instances", () => {

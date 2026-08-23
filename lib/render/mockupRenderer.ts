@@ -50,7 +50,7 @@ export interface SceneCss {
 }
 
 export function buildSceneCss(scene: EditorScene, activeLayerId: string | null = scene.activeLayerId): SceneCss {
-  const spec = getFrameSpec(scene.frame, scene.customFrame);
+  const spec = getFrameSpec(scene.frame, scene.customFrame, scene.frameMaterial);
   const baseShadow = `0 28px 70px rgba(0,0,0,${scene.shadowOpacity})`;
   const framePadding = spec.padding;
 

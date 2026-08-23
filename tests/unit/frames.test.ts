@@ -42,7 +42,7 @@ describe("FRAME_SPECS", () => {
   });
 
   it("gives each device frame its own native aspect ratio", () => {
-    expect(FRAME_SPECS.iphone15.aspectRatio).toBe("390 / 844");
+    expect(FRAME_SPECS.iphone15.aspectRatio).toBe("393 / 852");
     // Real logical sizes: iPhone 16 Pro is 402x874, Pixel 8 Pro is 448x996.
     expect(FRAME_SPECS.iphone16pro.aspectRatio).toBe("402 / 874");
     expect(FRAME_SPECS.pixel8pro.aspectRatio).toBe("448 / 996");
@@ -65,24 +65,24 @@ describe("FRAME_SPECS", () => {
   });
 
   it("defines a screen cutout for every overlay skin", () => {
-    expect(FRAME_SPECS.iphone15.cutout).toEqual({ x: 14, y: 14, w: 362, h: 816, rx: 55 });
+    expect(FRAME_SPECS.iphone15.cutout).toEqual({ x: 19, y: 19, w: 355, h: 814, rx: 55 });
     expect(FRAME_SPECS.iphoneSE.cutout).toEqual({ x: 10, y: 34, w: 355, h: 577, rx: 10 });
-    expect(FRAME_SPECS.ipad.cutout).toEqual({ x: 14, y: 14, w: 806, h: 1166, rx: 16 });
+    expect(FRAME_SPECS.ipad.cutout).toEqual({ x: 14, y: 14, w: 806, h: 1166, rx: 18 });
     expect(FRAME_SPECS.galaxyTab.cutout).toEqual({ x: 18, y: 18, w: 764, h: 1244, rx: 24 });
     expect(FRAME_SPECS.macbook.cutout).toEqual({ x: 44, y: 34, w: 1512, h: 982, rx: 6 });
     expect(FRAME_SPECS.imac.cutout).toEqual({ x: 70, y: 80, w: 1460, h: 821, rx: 18 });
     expect(FRAME_SPECS.notebook.cutout).toEqual({ x: 80, y: 40, w: 1440, h: 810, rx: 8 });
     expect(FRAME_SPECS.browser.cutout).toEqual({ x: 0, y: 96, w: 1440, h: 904, rx: 20 });
     expect(FRAME_SPECS.tv.cutout).toEqual({ x: 40, y: 40, w: 1520, h: 855, rx: 6 });
-    expect(FRAME_SPECS.watchUltra.cutout).toEqual({ x: 20, y: 24, w: 370, h: 454, rx: 82 });
-    expect(FRAME_SPECS.iphone.cutout).toEqual({ x: 14, y: 14, w: 362, h: 816, rx: 55 });
+    expect(FRAME_SPECS.watchUltra.cutout).toEqual({ x: 20, y: 24, w: 370, h: 454, rx: 82, power: 0.5 });
+    expect(FRAME_SPECS.watch.cutout).toEqual({ x: 22, y: 27, w: 352, h: 430, rx: 90, power: 0.5 });
+    expect(FRAME_SPECS.iphone.cutout).toEqual({ x: 19, y: 19, w: 352, h: 806, rx: 47.33 });
     expect(FRAME_SPECS.desktop.cutout).toEqual({ x: 40, y: 40, w: 1520, h: 840, rx: 8 });
     expect(FRAME_SPECS.tablet.cutout).toEqual({ x: 40, y: 30, w: 1120, h: 840, rx: 24 });
   });
 
   it("defaults skins to the 390x844 viewBox unless overridden", () => {
-    expect(FRAME_SPECS.iphone15.viewBox).toBeUndefined();
-    expect(frameViewBox(FRAME_SPECS.iphone15)).toEqual(DEFAULT_VIEWBOX);
+    expect(frameViewBox(FRAME_SPECS.iphone15)).toEqual({ w: 393, h: 852 });
     expect(frameViewBox(FRAME_SPECS.iphoneSE)).toEqual({ w: 375, h: 667 });
     expect(frameViewBox(FRAME_SPECS.ipad)).toEqual({ w: 834, h: 1194 });
     expect(frameViewBox(FRAME_SPECS.galaxyTab)).toEqual({ w: 800, h: 1280 });
@@ -134,6 +134,31 @@ describe("FRAME_SPECS", () => {
     expect(getFrameSpec("iphone15")).toBe(FRAME_SPECS.iphone15);
     // @ts-expect-error testing fallback for invalid frame
     expect(getFrameSpec("nonexistent")).toBe(FRAME_SPECS.none);
+  });
+
+  it("registers silver/white material variants for supported skins", () => {
+    const variantFrames = ["iphone", "iphone15", "iphone16pro", "pixel8pro", "galaxy24", "iphoneSE", "ipad", "galaxyTab", "desktop", "tablet", "macbook", "imac", "notebook", "browser", "tv"] as const;
+    for (const frame of variantFrames) {
+      expect(FRAME_SPECS[frame].materials, `${frame} should declare material variants`).toBeDefined();
+      expect(FRAME_SPECS[frame].materials?.silver).toBe(`/devices/${frame}--silver.svg`);
+      expect(FRAME_SPECS[frame].materials?.white).toBe(`/devices/${frame}--white.svg`);
+    }
+    // Watches only ship the graphite skin.
+    expect(FRAME_SPECS.watch.materials).toBeUndefined();
+    expect(FRAME_SPECS.watchUltra.materials).toBeUndefined();
+  });
+
+  it("swaps the asset when a material variant is requested", () => {
+    const graphite = getFrameSpec("iphone15");
+    const silver = getFrameSpec("iphone15", null, "silver");
+    const white = getFrameSpec("iphone15", null, "white");
+    expect(graphite.asset).toBe("/devices/iphone15.svg");
+    expect(silver.asset).toBe("/devices/iphone15--silver.svg");
+    expect(white.asset).toBe("/devices/iphone15--white.svg");
+    // Graphite (default) keeps the base asset.
+    expect(getFrameSpec("iphone15", null, "graphite").asset).toBe("/devices/iphone15.svg");
+    // A frame without variants never swaps off its base asset.
+    expect(getFrameSpec("watch", null, "silver").asset).toBe(FRAME_SPECS.watch.asset);
   });
 });
 

@@ -127,6 +127,12 @@
     "filters": "Filters",
     "fit": "Fit",
     "frame": "Frame",
+    "frameMaterial": "Material",
+    "material": {
+      "graphite": "Graphite",
+      "silver": "Silver",
+      "white": "White"
+    },
     "frameGrid": "Multi-frame:",
     "frameGridHorizontal": "side by side",
     "frameLayer": "Layer",
@@ -753,7 +759,6 @@
     "category": {
       "file": "File",
       "edit": "Edit",
-      "frame": "Frame",
       "style": "Style",
       "background": "Background",
       "aspect": "Aspect Ratio",

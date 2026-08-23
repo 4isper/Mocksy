@@ -127,6 +127,12 @@
     "filters": "Фильтры",
     "fit": "Вписать",
     "frame": "Рамка",
+    "frameMaterial": "Материал",
+    "material": {
+      "graphite": "Графит",
+      "silver": "Серебро",
+      "white": "Белый"
+    },
     "frameGrid": "Несколько рамок:",
     "frameGridHorizontal": "в ряд",
     "frameLayer": "Слой",
@@ -753,7 +759,6 @@
     "category": {
       "file": "Файл",
       "edit": "Правка",
-      "frame": "Фрейм",
       "style": "Стиль",
       "background": "Фон",
       "aspect": "Пропорции",

@@ -180,7 +180,8 @@ function normalizeFrameInstance(raw: unknown, fallback: FrameInstance): FrameIns
     y: num(r.y, fallback.y, 0, 1),
     scale: num(r.scale, fallback.scale, 0.1, 5),
     layerId: typeof r.layerId === "string" ? r.layerId : null,
-    orientation: r.orientation === "landscape" ? "landscape" : r.orientation === "portrait" ? "portrait" : undefined
+    orientation: r.orientation === "landscape" ? "landscape" : r.orientation === "portrait" ? "portrait" : undefined,
+    material: r.material === "silver" || r.material === "white" ? r.material : undefined
   };
 }
 
@@ -221,6 +222,7 @@ export function normalizeScene(raw: unknown): EditorScene {
     layers,
     activeLayerId: typeof r.activeLayerId === "string" ? r.activeLayerId : layers[0]?.id ?? null,
     frame,
+    frameMaterial: r.frameMaterial === "silver" || r.frameMaterial === "white" ? r.frameMaterial : undefined,
     frameInstances: Array.isArray(r.frameInstances) && r.frameInstances.length > 0
       ? r.frameInstances.slice(0, MAX_FRAME_INSTANCES).map((fi) => normalizeFrameInstance(fi, fallbackFrame))
       : [],

@@ -6,7 +6,7 @@ import { watermarkEdges } from "@/lib/render/watermark";
 import { buildLayerFilterCss } from "@/lib/render/layerFilters";
 import { drawScreenChrome } from "@/lib/render/screenChrome";
 import { drawBrowserUrl } from "@/lib/render/browserChrome";
-import { traceSquirclePath } from "@/lib/render/squircle";
+import { CORNER_POWER_CIRCLE, traceSquirclePath } from "@/lib/render/squircle";
 
 export const RENDER = {
   defaultFrameWidth: 900,
@@ -238,7 +238,7 @@ export function drawFrameAndMedia(
   const screenRx = cutout ? (cutout.rx / cutout.w) * innerW : innerRadius;
   const screenRy = cutout ? (cutout.rx / cutout.h) * innerH : innerRadius;
   const clipScreen = () => {
-    if (cutout) traceSquirclePath(ctx, innerX, innerY, innerW, innerH, screenRx, screenRy);
+    if (cutout) traceSquirclePath(ctx, innerX, innerY, innerW, innerH, screenRx, screenRy, cutout.power ?? CORNER_POWER_CIRCLE);
     else roundedRectPath(ctx, innerX, innerY, innerW, innerH, innerRadius);
     ctx.clip();
   };

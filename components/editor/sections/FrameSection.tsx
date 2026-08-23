@@ -5,7 +5,8 @@ import { useTranslations } from "next-intl";
 import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/lib/state/editorStore";
 import type { StylePreset } from "@/lib/types/editor";
-import { ASPECT_RATIOS } from "@/lib/render/frames";
+import { ASPECT_RATIOS, getFrameSpec } from "@/lib/render/frames";
+import type { FrameMaterial } from "@/lib/types/editor";
 import { SOCIAL_PRESETS } from "@/lib/presets/socialPresets";
 import { loadCustomFrameFromFile, UnsupportedFrameError } from "@/lib/media/customFrame";
 import { Segmented } from "@/components/editor/Segmented";
@@ -34,6 +35,7 @@ export function FrameSection() {
   const {
     scene,
     activeLayerId,
+    activeFrameInstanceId,
     setFrame,
     setCustomFrame,
     setFrameInstances,
@@ -48,11 +50,13 @@ export function FrameSection() {
       setAspectRatio,
       setBrowserUrl,
       setBrowserChromeTheme,
+      setFrameMaterial,
       setCustomExportSize
   } = useEditorStore(
     useShallow((s) => ({
       scene: s.scene,
       activeLayerId: s.activeLayerId,
+      activeFrameInstanceId: s.activeFrameInstanceId,
       setFrame: s.setFrame,
       setCustomFrame: s.setCustomFrame,
       setFrameInstances: s.setFrameInstances,
@@ -67,6 +71,7 @@ export function FrameSection() {
       setAspectRatio: s.setAspectRatio,
       setBrowserUrl: s.setBrowserUrl,
       setBrowserChromeTheme: s.setBrowserChromeTheme,
+      setFrameMaterial: s.setFrameMaterial,
       setCustomExportSize: s.setCustomExportSize
     }))
   );
@@ -80,6 +85,15 @@ export function FrameSection() {
 
   const showBrowserUrl =
     scene.frame === "browser" || scene.frameInstances.some((inst) => inst.frame === "browser");
+
+  const activeInst = activeFrameInstanceId
+    ? scene.frameInstances.find((i) => i.id === activeFrameInstanceId)
+    : undefined;
+  const targetSpec = getFrameSpec(activeInst?.frame ?? scene.frame, scene.customFrame);
+  const materials: FrameMaterial[] | null = targetSpec.materials
+    ? ["graphite", "silver", "white"]
+    : null;
+  const materialValue: FrameMaterial = activeInst?.material ?? scene.frameMaterial ?? "graphite";
 
   return (
     <Section
@@ -124,6 +138,14 @@ export function FrameSection() {
               { value: "dark", label: t("editor.browserThemeDark") }
             ]}
             onChange={setBrowserChromeTheme}
+          />
+        ) : null}
+        {materials ? (
+          <Segmented
+            label={t("editor.frameMaterial")}
+            value={materialValue}
+            options={materials.map((m) => ({ value: m, label: t(`editor.material.${m}`) }))}
+            onChange={setFrameMaterial}
           />
         ) : null}
         <div className="field" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>

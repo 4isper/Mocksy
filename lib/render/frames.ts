@@ -1,4 +1,4 @@
-import type { AnimationPreset, CustomFrame, FrameInstance, MockupFrame } from "@/lib/types/editor";
+import type { AnimationPreset, CustomFrame, FrameInstance, FrameMaterial, MockupFrame } from "@/lib/types/editor";
 import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
 
 /** Native SVG viewBox size shared by the iPhone overlay skins. The screen
@@ -26,13 +26,19 @@ export interface FrameSpec {
   aspectRatio: string | null;
   /** Transparent screen cutout in SVG viewBox units, used to inset/round the
    *  media so it matches the skin at any rendered size. Null for non-overlay. */
-  cutout: { x: number; y: number; w: number; h: number; rx: number } | null;
+  cutout: { x: number; y: number; w: number; h: number; rx: number;
+    /** Corner curve power: 1 = circular arc (default), 0.5 = Apple's fuller
+     *  n≈4 continuous corner (Apple Watch). Must match the committed SVG. */
+    power?: number } | null;
   /** The skin's SVG viewBox size. Defaults to 390x844 (iPhone skins); must
    *  match `aspectRatio` so the overlay stretches without distortion. */
   viewBox?: { w: number; h: number };
   /** True for the browser frame: renderers draw the scene's browserUrl text
    *  over the skin's address pill (see lib/render/browserChrome.ts). */
   urlBar?: boolean;
+  /** Alternative skin assets keyed by material finish. When present and the
+   *  requested material matches, the renderer swaps `asset` for the variant. */
+  materials?: Partial<Record<FrameMaterial, string>>;
 }
 
 /** ViewBox size used to convert cutout coordinates to frame percentages. */
@@ -48,30 +54,33 @@ export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
   iphone: {
     asset: "/devices/iphone.svg",
     padding: 0,
-    screenRadius: 55,
+    screenRadius: 47.33,
     isOverlay: true,
     aspectRatio: "390 / 844",
     viewBox: { w: 390, h: 844 },
-    // viewBox 390x844; screen rect x14 y14 w362 h816 rx55 (55pt corner radius)
-    cutout: { x: 14, y: 14, w: 362, h: 816, rx: 55 }
+    // viewBox 390x844; screen rect x19 y19 w352 h806 rx47.33 (iPhone 14: 47.33pt
+    // circular screen corner; 13px bezel puts the concentric body corner at 60.33)
+    cutout: { x: 19, y: 19, w: 352, h: 806, rx: 47.33 }
   },
   iphone15: {
     asset: "/devices/iphone15.svg",
     padding: 14,
     screenRadius: 55,
     isOverlay: true,
-    aspectRatio: "390 / 844",
-    // viewBox 390x844; screen rect x14 y14 w362 h816 rx55 (55pt corner radius)
-    cutout: { x: 14, y: 14, w: 362, h: 816, rx: 55 }
+    aspectRatio: "393 / 852",
+    viewBox: { w: 393, h: 852 },
+    // viewBox 393x852 (iPhone 15: 393x852 @3x, 55pt corner; 13px bezel puts the
+    // concentric body corner at 68 = 0.178·W, matching the iPhone 16 outline)
+    cutout: { x: 19, y: 19, w: 355, h: 814, rx: 55 }
   },
   iphone16pro: {
     asset: "/devices/iphone16pro.svg",
     padding: 14,
-    screenRadius: 55,
+    screenRadius: 62,
     isOverlay: true,
     aspectRatio: "402 / 874",
-    // viewBox 402x874 (real logical size); screen rect x14 y14 w374 h846 rx55
-    cutout: { x: 14, y: 14, w: 374, h: 846, rx: 55 },
+    // viewBox 402x874 (iPhone 16 Pro: 402x874 @3x, 62pt continuous corner)
+    cutout: { x: 14, y: 14, w: 374, h: 846, rx: 62 },
     viewBox: { w: 402, h: 874 }
   },
   pixel8pro: {
@@ -109,13 +118,12 @@ export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
   ipad: {
     asset: "/devices/ipad.svg",
     padding: 14,
-    screenRadius: 16,
+    screenRadius: 18,
     isOverlay: true,
     aspectRatio: "834 / 1194",
     viewBox: { w: 834, h: 1194 },
-    // viewBox 834x1194; screen rect x14 y14 w806 h1166 rx16 (iPad corners are
-    // squarish rather than the iPhone's 55pt radius)
-    cutout: { x: 14, y: 14, w: 806, h: 1166, rx: 16 }
+    // viewBox 834x1194; screen rect x14 y14 w806 h1166 rx18 (iPad Pro 11": 18pt continuous corner)
+    cutout: { x: 14, y: 14, w: 806, h: 1166, rx: 18 }
   },
   galaxyTab: {
     asset: "/devices/galaxyTab.svg",
@@ -160,10 +168,10 @@ export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
   imac: {
     asset: "/devices/imac.svg",
     padding: 70,
-    screenRadius: 10,
+    screenRadius: 18,
     isOverlay: true,
     aspectRatio: "1600 / 1420",
-    // viewBox 1600x1420; screen rect x70 y80 w1460 h821 rx10
+    // viewBox 1600x1420; screen rect x70 y80 w1460 h821 rx18
     cutout: { x: 70, y: 80, w: 1460, h: 821, rx: 18 },
     viewBox: { w: 1600, h: 1420 }
   },
@@ -193,10 +201,10 @@ export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
   tv: {
     asset: "/devices/tv.svg",
     padding: 24,
-    screenRadius: 12,
+    screenRadius: 6,
     isOverlay: true,
     aspectRatio: "1600 / 1000",
-    // viewBox 1600x1000; screen rect x40 y24 w1520 h855 rx12 (16/9)
+    // viewBox 1600x1000; screen rect x40 y40 w1520 h855 rx6 (16/9)
     cutout: { x: 40, y: 40, w: 1520, h: 855, rx: 6 },
     viewBox: { w: 1600, h: 1000 }
   },
@@ -206,8 +214,9 @@ export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
     screenRadius: 82,
     isOverlay: true,
     aspectRatio: "410 / 502",
-    // viewBox 410x502; screen rect x20 y24 w370 h454 rx82 (real 410x502 display)
-    cutout: { x: 20, y: 24, w: 370, h: 454, rx: 82 },
+    // viewBox 410x502; screen rect x20 y24 w370 h454 rx82 (real 410x502 display);
+    // power 0.5 = Apple's fuller n≈4 continuous corner, matching the committed SVG
+    cutout: { x: 20, y: 24, w: 370, h: 454, rx: 82, power: 0.5 },
     viewBox: { w: 410, h: 502 }
   },
   watch: {
@@ -216,15 +225,40 @@ export const FRAME_SPECS: Record<Exclude<MockupFrame, "custom">, FrameSpec> = {
     screenRadius: 90,
     isOverlay: true,
     aspectRatio: "396 / 484",
-    // viewBox 396x484; screen rect x22 y27 w352 h430 rx90 (rounded rect, not a circle)
-    cutout: { x: 22, y: 27, w: 352, h: 430, rx: 90 },
+    // viewBox 396x484; screen rect x22 y27 w352 h430 rx90 (rounded rect, not a
+    // circle); power 0.5 = Apple's fuller n≈4 continuous corner, matching the SVG
+    cutout: { x: 22, y: 27, w: 352, h: 430, rx: 90, power: 0.5 },
     viewBox: { w: 396, h: 484 }
   }
 };
 
-export function getFrameSpec(frame: MockupFrame, customFrame?: CustomFrame | null): FrameSpec {
-  if (frame === "custom" && customFrame) return customFrameSpec(customFrame);
-  return FRAME_SPECS[frame as Exclude<MockupFrame, "custom">] ?? FRAME_SPECS.none;
+/** Frames that ship silver/white material variants alongside the default graphite skin. */
+const MATERIAL_VARIANT_FRAMES: Exclude<MockupFrame, "custom">[] = [
+  "iphone", "iphone15", "iphone16pro", "pixel8pro", "galaxy24", "iphoneSE",
+  "ipad", "galaxyTab", "desktop", "tablet", "macbook", "imac", "notebook",
+  "browser", "tv"
+];
+
+for (const f of MATERIAL_VARIANT_FRAMES) {
+  FRAME_SPECS[f].materials = {
+    silver: `/devices/${f}--silver.svg`,
+    white: `/devices/${f}--white.svg`
+  };
+}
+
+export function getFrameSpec(
+  frame: MockupFrame,
+  customFrame?: CustomFrame | null,
+  material?: FrameMaterial | null
+): FrameSpec {
+  const base =
+    frame === "custom" && customFrame
+      ? customFrameSpec(customFrame)
+      : FRAME_SPECS[frame as Exclude<MockupFrame, "custom">] ?? FRAME_SPECS.none;
+  if (material && base.materials?.[material]) {
+    return { ...base, asset: base.materials[material] };
+  }
+  return base;
 }
 
 /** Height/width ratio (h/w) a frame instance adopts, or null when the frame

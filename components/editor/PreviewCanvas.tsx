@@ -68,7 +68,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
     const map = new Map<string, ReturnType<typeof buildSceneCss>>();
     for (const inst of scene.frameInstances) {
       const layer = scene.layers.find((l) => l.id !== undefined && l.id === inst.layerId) ?? activeLayer;
-      map.set(inst.id, buildSceneCss({ ...scene, frame: inst.frame, layers: layer ? [layer] : [] }));
+      map.set(inst.id, buildSceneCss({ ...scene, frame: inst.frame, frameMaterial: inst.material, layers: layer ? [layer] : [] }));
     }
     return map;
     // activeLayer is derived from activeLayerId, so keying on the id keeps the

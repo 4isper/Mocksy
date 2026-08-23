@@ -72,7 +72,7 @@ describe("buildSceneCss", () => {
 
   it("adopts the overlay skin's aspect ratio for iphone15", () => {
     const overlay = buildSceneCss(base({ frame: "iphone15", aspectRatio: "16 / 9" })).frame;
-    expect(overlay.aspectRatio).toBe("390 / 844");
+    expect(overlay.aspectRatio).toBe("393 / 852");
   });
 
   it("keeps its own device aspect ratio for CSS-only frames, ignoring the scene", () => {
@@ -106,11 +106,11 @@ describe("buildSceneCss", () => {
     const cssOnly = buildSceneCss(base({ frame: "none" })).frame;
     expect(overlay.frame.padding).toBe(0);
     expect(overlay.mediaStyle.position).toBe("absolute");
-    // Percent-based inset matching the viewBox cutout (14/390, 14/844).
-    expect(overlay.mediaStyle.left).toBe(`${(14 / 390) * 100}%`);
-    expect(overlay.mediaStyle.top).toBe(`${(14 / 844) * 100}%`);
-    expect(overlay.mediaStyle.width).toBe(`${(362 / 390) * 100}%`);
-    expect(overlay.mediaStyle.height).toBe(`${(816 / 844) * 100}%`);
+    // Percent-based inset matching the viewBox cutout (19/393, 19/852).
+    expect(overlay.mediaStyle.left).toBe(`${(19 / 393) * 100}%`);
+    expect(overlay.mediaStyle.top).toBe(`${(19 / 852) * 100}%`);
+    expect(overlay.mediaStyle.width).toBe(`${(355 / 393) * 100}%`);
+    expect(overlay.mediaStyle.height).toBe(`${(814 / 852) * 100}%`);
     expect(cssOnly.padding).toBe(FRAME_SPECS.none.padding);
   });
 
@@ -140,7 +140,7 @@ describe("buildSceneCss", () => {
 
   it("exposes the spec screen radius", () => {
     const { screenRadius } = buildSceneCss(base({ frame: "iphone16pro" }));
-    expect(screenRadius).toBe(55);
+    expect(screenRadius).toBe(62);
   });
 
   it("pans media via object-position from mediaOffset fields", () => {
@@ -251,8 +251,8 @@ describe("buildSceneCss", () => {
     expect(css.screenChromeStyle.position).toBe("absolute");
     // The chrome must sit on the screen (the frame's cutout), not over the
     // device bezel — matching where the media and canvas exports draw it.
-    expect(css.screenChromeStyle.left).toBe(`${(14 / 390) * 100}%`);
-    expect(css.screenChromeStyle.top).toBe(`${(14 / 844) * 100}%`);
+    expect(css.screenChromeStyle.left).toBe(`${(19 / 390) * 100}%`);
+    expect(css.screenChromeStyle.top).toBe(`${(19 / 844) * 100}%`);
     expect(css.screenChromeStyle.pointerEvents).toBe("none");
     // Overlay skins define the screen via a cutout, so the chrome viewBox
     // matches the cutout aspect and is centered ("meet").

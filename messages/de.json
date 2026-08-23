@@ -322,7 +322,13 @@
     "templateLinkCopied": "Template link copied",
     "qrTitle": "Scan to open this mockup",
     "qrCopiedHint": "Link copied to clipboard — scan it on your phone.",
-    "qrClose": "Close"
+    "qrClose": "Close",
+    "frameMaterial": "Material",
+    "material": {
+      "graphite": "Graphite",
+      "silver": "Silver",
+      "white": "White"
+    }
   },
   "frame": {
     "none": "Keiner",
@@ -681,7 +687,6 @@
     "category": {
       "file": "File",
       "edit": "Edit",
-      "frame": "Frame",
       "style": "Style",
       "background": "Background",
       "aspect": "Aspect Ratio",
