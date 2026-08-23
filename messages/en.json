@@ -214,6 +214,7 @@
     "addBlur": "Add blur",
     "fullscreenTitle": "Full-screen preview (F)",
     "exitFullscreen": "Exit full screen (Esc)",
+    "resizePanel": "Resize panel. Drag, double-click to reset, or use arrow keys",
     "resetCancel": "Cancel",
     "resetConfirm": "Reset",
     "resetConfirm_cancel": "Cancel",

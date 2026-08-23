@@ -329,7 +329,8 @@
       "silver": "Silver",
       "white": "White"
     },
-    "exportTab": "Export"
+    "exportTab": "Export",
+    "resizePanel": "Resize panel. Drag, double-click to reset, or use arrow keys"
   },
   "frame": {
     "none": "Hakuna",

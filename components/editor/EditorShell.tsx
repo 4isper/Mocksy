@@ -17,6 +17,7 @@ import { ErrorBoundary } from "@/components/editor/ErrorBoundary";
 import { ResetConfirmDialog } from "@/components/editor/ResetConfirmDialog";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { MobileTabBar } from "@/components/editor/MobileTabBar";
+import { PanelResizeHandles } from "@/components/editor/PanelResizeHandles";
 import { OnboardingTour, hasSeenOnboarding } from "@/components/editor/OnboardingTour";
 import { ShareQrDialog } from "@/components/editor/ShareQrDialog";
 import { useCommands } from "@/lib/hooks/useCommands";
@@ -282,6 +283,7 @@ export function EditorShell() {
             </ErrorBoundary>
           </div>
         ) : null}
+        {!fullscreenPreview ? <PanelResizeHandles /> : null}
       </div>
       {!fullscreenPreview && mobileSheet ? (
         <div className="sheet-backdrop" aria-hidden="true" onClick={() => setMobileSheet(null)} />

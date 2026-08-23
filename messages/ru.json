@@ -214,6 +214,7 @@
     "addBlur": "Добавить блюр",
     "fullscreenTitle": "Полноэкранный просмотр (F)",
     "exitFullscreen": "Выйти из полного экрана (Esc)",
+    "resizePanel": "Изменить ширину панели: перетащите, двойной клик — сброс, стрелки — с клавиатуры",
     "resetCancel": "Отмена",
     "resetConfirm": "Сбросить",
     "resetConfirm_cancel": "Отмена",
