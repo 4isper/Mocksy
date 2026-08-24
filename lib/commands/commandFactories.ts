@@ -72,13 +72,14 @@ export function createCommands(
   onExportWebm: () => void,
   onExportGif: () => void,
   onExportWebpAnim: () => void,
+  onExportZipVideo: () => void,
   onCopyPng: () => void,
   onCopyShareUrl: () => void,
   onSave: () => void,
   toggleFullscreenPreview: () => void,
 ): Command[] {
   return [
-    ...createFileCommands(t, { onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onCopyPng, onCopyShareUrl, onSave }),
+    ...createFileCommands(t, { onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onExportZipVideo, onCopyPng, onCopyShareUrl, onSave }),
     ...createEditCommands(t, { undo, redo, pastLength, futureLength, resetScene }),
     ...createFrameCommands(t, { setFrame }),
     ...createFrameAlignCommands(t, scene),

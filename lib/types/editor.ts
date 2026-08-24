@@ -93,7 +93,7 @@ export type WatermarkPosition = "bottom-right" | "bottom-left" | "top-right" | "
 export type LayoutPreset = "grid" | "fan" | "cascade" | "masonry" | "stack";
 
 /** Formats offered by the export dialog (raster, vector, video, batch zip). */
-export type ExportFormat = "png" | "webp" | "svg" | "html" | "mp4" | "webm" | "gif" | "webpAnim" | "pdf" | "zip";
+export type ExportFormat = "png" | "webp" | "svg" | "html" | "mp4" | "webm" | "gif" | "webpAnim" | "pdf" | "zip" | "zipVideo";
 
 /** A named snapshot of export-dialog settings (format + scale/size), stored
  *  outside the scene in localStorage so it survives reloads and projects. */

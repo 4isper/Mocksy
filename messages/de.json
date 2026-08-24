@@ -513,7 +513,9 @@
       "instagramSquare": "Instagram 1:1",
       "instagramPortrait": "Instagram 4:5",
       "story": "Story / Reels"
-    }
+    },
+    "zipVideo": "Video ZIP (all frames)",
+    "exportingZipVideo": "Exporting videos…"
   },
   "shortcuts": {
     "title": "Tastaturkürzel",
@@ -731,7 +733,9 @@
     "goHistory": "Go to History",
     "goHistoryDesc": "Open the History tab in the right panel",
     "goProjects": "Go to Projects",
-    "goProjectsDesc": "Open the Projects tab in the right panel"
+    "goProjectsDesc": "Open the Projects tab in the right panel",
+    "zipVideo": "Export Video ZIP",
+    "zipVideoDesc": "Record every frame instance as its own MP4 and download all as one archive"
   },
   "errors": {
     "title": "Etwas ist schiefgelaufen",

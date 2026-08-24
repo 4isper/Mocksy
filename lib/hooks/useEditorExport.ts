@@ -27,6 +27,7 @@ export interface EditorExportApi {
   handleExportWebm: () => void;
   handleExportWebpAnim: () => void;
   handleExportGif: () => void;
+  handleExportZipVideo: () => void;
   handleCopyPng: () => Promise<void>;
   copyTemplateUrl: () => Promise<void>;
   /** URL currently shown in the share-QR dialog, or null when closed. */
@@ -197,6 +198,33 @@ export function useEditorExport(
     }
   }, [scene, exportScale, t, clearVideoStatus, activeLayerId]);
 
+  const handleExportZipVideo = useCallback(async () => {
+    setExportError(null);
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    try {
+      setVideoExportStatus(t("export.exportingZipVideo"));
+      setVideoExportProgress(0);
+      const { exportVideoBatchZip } = await import("@/lib/export/exportBatch");
+      await exportVideoBatchZip(
+        scene,
+        "mocksy-export",
+        setExportError,
+        "mp4",
+        exportScale,
+        activeLayerId,
+        (current, total) => {
+          setVideoExportStatus(t("export.exportingZip", { current, total }));
+          setVideoExportProgress(Math.round((current / total) * 100));
+        },
+        ctrl.signal
+      );
+    } finally {
+      if (abortRef.current === ctrl) abortRef.current = null;
+      setTimeout(clearVideoStatus, STATUS_CLEAR_DELAY);
+    }
+  }, [scene, exportScale, t, clearVideoStatus, activeLayerId]);
+
   const handleExportMp4 = useCallback(async () => {
     setExportError(null);
     const ctrl = new AbortController();
@@ -262,7 +290,7 @@ export function useEditorExport(
       // Raster/image exports are synchronous downloads, so close the dialog
       // immediately. Video exports show live progress with a cancel button,
       // so keep the dialog open and let the toolbar/timer close it.
-      const isVideo = format === "mp4" || format === "webm" || format === "gif" || format === "webpAnim";
+      const isVideo = format === "mp4" || format === "webm" || format === "gif" || format === "webpAnim" || format === "zipVideo";
       if (!isVideo) onExportDialogClose();
       switch (format) {
         case "png":
@@ -295,6 +323,9 @@ export function useEditorExport(
         case "webpAnim":
           void handleExportWebpAnim();
           break;
+        case "zipVideo":
+          void handleExportZipVideo();
+          break;
       }
     },
     [
@@ -308,7 +339,8 @@ export function useEditorExport(
       handleExportMp4,
       handleExportWebm,
       handleExportGif,
-      handleExportWebpAnim
+      handleExportWebpAnim,
+      handleExportZipVideo
     ]
   );
 
@@ -349,6 +381,7 @@ export function useEditorExport(
     handleExportWebm,
     handleExportWebpAnim,
     handleExportGif,
+    handleExportZipVideo,
     handleCopyPng,
     cancelExport
   };

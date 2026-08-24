@@ -23,7 +23,8 @@ const FORMAT_LABELS: Record<ExportFormat, string> = {
   gif: "GIF",
   webpAnim: "WebP",
   pdf: "PDF",
-  zip: "ZIP"
+  zip: "ZIP",
+  zipVideo: "Video ZIP"
 };
 
 /** Human-readable preset label derived from the settings it captures. */

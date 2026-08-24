@@ -83,6 +83,7 @@ export function EditorShell() {
     exportApi.handleExportWebm,
     exportApi.handleExportGif,
     exportApi.handleExportWebpAnim,
+    exportApi.handleExportZipVideo,
     exportApi.handleCopyPng,
     exportApi.copyShareUrl,
     saveNow,

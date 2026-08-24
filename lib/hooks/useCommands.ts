@@ -16,6 +16,7 @@ export function useCommands(
   onExportWebm: () => void,
   onExportGif: () => void,
   onExportWebpAnim: () => void,
+  onExportZipVideo: () => void,
   onCopyPng: () => void,
   onCopyShareUrl: () => void,
   onSave: () => void,
@@ -66,11 +67,11 @@ export function useCommands(
     toggleWatermark, setExportScale, exportScale,
     activeProjectId, projects, switchProject,
     themeMode, setThemeMode,
-    onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim,
+    onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onExportZipVideo,
     onCopyPng, onCopyShareUrl, onSave, onToggleFullscreenPreview
   ), [
     t, scene, activeLayerId, pastLength, futureLength, activeProjectId, projects, themeMode, exportScale,
-    onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim,
+    onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onExportZipVideo,
     onCopyPng, onCopyShareUrl, onSave, onToggleFullscreenPreview,
     undo, redo, resetScene,
     setFrame, setStylePreset, setAnimationPreset,

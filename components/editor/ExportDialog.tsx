@@ -12,7 +12,7 @@ import type { ExportFormat } from "@/lib/types/editor";
 
 /** Raster formats honor the 1×/2×/4× scale control (and custom size); vector
  *  formats don't. */
-const RASTER_FORMATS: ExportFormat[] = ["png", "webp", "mp4", "webm", "gif", "webpAnim", "zip"];
+const RASTER_FORMATS: ExportFormat[] = ["png", "webp", "mp4", "webm", "gif", "webpAnim", "zip", "zipVideo"];
 const VECTOR_FORMATS: ExportFormat[] = ["svg", "html", "pdf"];
 
 /** Fallback size offered when the user first enables the custom-size option. */
@@ -59,6 +59,7 @@ export function ExportDialog({
   const VIDEO_FORMATS: { value: ExportFormat; label: string }[] = [
     { value: "mp4", label: t("export.mp4") },
     { value: "webm", label: t("export.webm") },
+    ...(isMultiFrame ? [{ value: "zipVideo" as ExportFormat, label: t("export.zipVideo") }] : []),
     { value: "gif", label: t("export.gif") },
     { value: "webpAnim", label: t("export.webpAnim") }
   ];

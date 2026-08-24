@@ -15,12 +15,13 @@ export function createFileCommands(
     onExportWebm: () => void;
     onExportGif: () => void;
     onExportWebpAnim: () => void;
+    onExportZipVideo: () => void;
     onCopyPng: () => void;
     onCopyShareUrl: () => void;
     onSave: () => void;
   }
 ): Command[] {
-  const { onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onCopyPng, onCopyShareUrl, onSave } = callbacks;
+  const { onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onExportZipVideo, onCopyPng, onCopyShareUrl, onSave } = callbacks;
   const recording = isScreenRecordingActive();
   return [
     {
@@ -150,6 +151,14 @@ export function createFileCommands(
       shortcut: "⇧⌘G",
       keywords: ["export", "gif", "animation", "animated"],
       action: onExportGif,
+    },
+    {
+      id: "export-video-zip",
+      category: "export",
+      label: t("commandPalette.zipVideo"),
+      description: t("commandPalette.zipVideoDesc"),
+      keywords: ["export", "zip", "video", "batch", "frames", "mp4", "archive"],
+      action: onExportZipVideo,
     },
     {
       id: "copy-png",
