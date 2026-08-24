@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { exportHtml } from "@/lib/export/exportHtml";
-import { buildAnimationCss, buildHtmlSnippet, buildRasterHtmlSnippet, serializeCssProperties } from "@/lib/export/htmlMarkup";
+import { buildAnimationCss, buildGridHtmlSnippet, buildHtmlSnippet, serializeCssProperties } from "@/lib/export/htmlMarkup";
 import { initialScene } from "@/lib/state/editorStore";
-import type { EditorScene, MediaLayer } from "@/lib/types/editor";
+import type { EditorScene, FrameInstance, MediaLayer } from "@/lib/types/editor";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -263,10 +263,145 @@ describe("buildHtmlSnippet", () => {
   });
 });
 
-describe("buildRasterHtmlSnippet", () => {
-  it("embeds the rasterized image", () => {
-    const html = buildRasterHtmlSnippet(MEDIA);
-    expect(html).toContain('<img src="data:image/png;base64,AAAA" alt="Mocksy mockup"/>');
+function instWith(overrides: Partial<FrameInstance> = {}): FrameInstance {
+  return { id: "fi1", frame: "none", x: 0.25, y: 0.5, scale: 0.4, layerId: layerWith().id, ...overrides };
+}
+
+describe("buildGridHtmlSnippet", () => {
+  const MEDIA2 = "data:image/png;base64,BBBB";
+
+  it("renders one live frame-instance wrapper per item with preview geometry", () => {
+    const scene = sceneWith({
+      backgroundMode: "transparent",
+      watermarkEnabled: false,
+      frameInstances: [instWith({ id: "a", x: 0.25 }), instWith({ id: "b", x: 0.75 })]
+    });
+    const html = buildGridHtmlSnippet(
+      scene,
+      [
+        { inst: scene.frameInstances[0]!, mediaHref: MEDIA, mediaType: "image", overlayHref: null },
+        { inst: scene.frameInstances[1]!, mediaHref: MEDIA2, mediaType: "image", overlayHref: null }
+      ]
+    );
+    expect(html.match(/class="frame-instance"/g)).toHaveLength(2);
+    expect(html).toContain("left: 25%;");
+    expect(html).toContain("left: 75%;");
+    expect(html).toContain("top: 50%;");
+    expect(html).toContain(`width: ${0.4 * 100}%;`);
+    // A "none" instance shares the scene aspect (16:9 → native h/w = 0.5625).
+    expect(html).toContain("aspect-ratio: 1 / 0.5625;");
+    expect(html).toContain("transform: translate(-50%, -50%);");
+    expect(html).toContain('<img class="media" src="data:image/png;base64,AAAA"');
+    expect(html).toContain(`<img class="media" src="${MEDIA2}"`);
+  });
+
+  it("wraps a landscape instance in a rotate(90deg) rotor and swaps the aspect ratio", () => {
+    const scene = sceneWith({
+      backgroundMode: "transparent",
+      frameInstances: [instWith({ orientation: "landscape" })]
+    });
+    const html = buildGridHtmlSnippet(scene, [
+      { inst: scene.frameInstances[0]!, mediaHref: MEDIA, mediaType: "image", overlayHref: null }
+    ]);
+    expect(html).toContain("rotate(90deg)");
+    // landscape box is wide: native (h/w) becomes the width multiplier
+    expect(html).toMatch(/aspect-ratio: [\d.]+ \/ 1;/);
+    expect(html).not.toMatch(/aspect-ratio: 1 \/ [\d.]+/);
+  });
+
+  it("applies the per-layer zoom and the shared tilt prefix to each frame", () => {
+    const layer = layerWith({ zoom: 1.4 });
+    const scene = sceneWith({
+      tiltX: 12,
+      tiltY: 8,
+      backgroundMode: "transparent",
+      layers: [layer],
+      frameInstances: [instWith({ layerId: layer.id })]
+    });
+    const html = buildGridHtmlSnippet(scene, [
+      { inst: scene.frameInstances[0]!, mediaHref: MEDIA, mediaType: "image", overlayHref: null }
+    ]);
+    expect(html).toContain("transform: perspective(1200px) rotateY(12deg) rotateX(8deg) scale(1.4);");
+  });
+
+  it("embeds the overlay skin and screen chrome inside each instance", () => {
+    const scene = sceneWith({
+      backgroundMode: "transparent",
+      frame: "iphone15",
+      screen: { ...initialScene.screen, enabled: true },
+      frameInstances: [instWith({ frame: "iphone15" })]
+    });
+    const html = buildGridHtmlSnippet(scene, [
+      { inst: scene.frameInstances[0]!, mediaHref: MEDIA, mediaType: "image", overlayHref: SKIN }
+    ]);
+    expect(html).toContain('<img class="overlay" src="data:image/svg+xml;utf8,<svg/>" alt=""/>');
+    expect(html).toContain("9:41");
+    expect(html).toContain('class="chrome"');
+  });
+
+  it("marks off-speed videos with data-rate and adds one boot script", () => {
+    const layer = layerWith({ playbackSpeed: 1.5 });
+    const scene = sceneWith({
+      backgroundMode: "transparent",
+      layers: [layer],
+      frameInstances: [instWith({ layerId: layer.id })]
+    });
+    const html = buildGridHtmlSnippet(scene, [
+      { inst: scene.frameInstances[0]!, mediaHref: MEDIA, mediaType: "video", overlayHref: null }
+    ]);
+    expect(html).toContain('<video class="media" src="data:image/png;base64,AAAA" controls muted loop autoplay playsinline style="object-fit: contain" data-rate="1.5">');
+    expect(html).toContain('v.playbackRate=parseFloat(v.dataset.rate)');
+  });
+
+  it("renders annotations and the watermark once for the whole grid", () => {
+    const scene = sceneWith({
+      backgroundMode: "transparent",
+      annotations: [{ id: "a1", type: "text", x: 0.1, y: 0.1, w: 0.3, h: 0, text: "Hi", color: "#fff", strokeWidth: 0, fontSize: 24 }],
+      watermarkEnabled: true,
+      watermarkText: "Mocksy",
+      watermarkSize: 13,
+      frameInstances: [instWith()]
+    });
+    const html = buildGridHtmlSnippet(scene, [
+      { inst: scene.frameInstances[0]!, mediaHref: null, mediaType: null, overlayHref: null }
+    ]);
+    expect(html.match(/class="wm"/g)).toHaveLength(1);
+    expect(html.match(/class="anno anno-text"/g)).toHaveLength(1);
+  });
+});
+
+describe("exportHtml multi-frame", () => {
+  it("downloads a live-CSS document for a multi-frame scene instead of a raster image", async () => {
+    const l1 = layerWith({ id: "l1", mediaUrl: MEDIA });
+    const l2 = layerWith({ id: "l2", mediaUrl: "data:image/png;base64,BBBB" });
+    const scene = sceneWith({
+      backgroundMode: "transparent",
+      watermarkEnabled: false,
+      layers: [l1, l2],
+      frameInstances: [
+        { id: "fi1", frame: "none", x: 0.3, y: 0.5, scale: 0.4, layerId: "l1" },
+        { id: "fi2", frame: "none", x: 0.7, y: 0.5, scale: 0.4, layerId: "l2" }
+      ]
+    });
+    const link = { href: "", download: "", click: vi.fn() };
+    vi.stubGlobal("document", { createElement: (tag: string) => (tag === "a" ? link : undefined) });
+    const createObjectURL = vi.fn((_blob: Blob) => "blob:mock");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
+    vi.useFakeTimers();
+
+    await exportHtml(scene, "preview");
+    await vi.advanceTimersByTimeAsync(300);
+
+    const blob = createObjectURL.mock.calls[0]![0] as Blob;
+    expect(blob.type).toBe("text/html;charset=utf-8");
+    const html = await blob.text();
+    expect(html.match(/class="frame-instance"/g)).toHaveLength(2);
+    expect(html).toContain('src="data:image/png;base64,AAAA"');
+    expect(html).not.toContain('alt="Mocksy mockup"'); // no raster fallback image
+    expect(link.download).toBe("mocksy-export.html");
+
+    vi.useRealTimers();
   });
 });
 

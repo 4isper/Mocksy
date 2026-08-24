@@ -1,9 +1,10 @@
 import type { CSSProperties } from "react";
-import type { EditorScene, MediaLayer } from "@/lib/types/editor";
+import type { EditorScene, FrameInstance, MediaLayer } from "@/lib/types/editor";
 import { buildSceneCss } from "@/lib/render/mockupRenderer";
 import { tiltCss } from "@/lib/render/tilt";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
+import { frameInstAr } from "@/lib/render/frames";
 import { RENDER } from "@/lib/render/canvasDrawing";
 import { escapeMarkup, round2 } from "@/lib/export/markupUtils";
 import { collectOverlayClipDefs } from "@/lib/render/squircle";
@@ -93,6 +94,200 @@ function annotationsHtml(scene: EditorScene, arW: number, arH: number): string {
   return out;
 }
 
+function watermarkHtml(scene: EditorScene, watermarkHref?: string | null): string {
+  if (!scene.watermarkEnabled) return "";
+  const pos = `${scene.watermarkPosition.includes("left") ? "left" : "right"}:16px;${scene.watermarkPosition.includes("top") ? "top" : "bottom"}:16px;`;
+  if (scene.watermarkImageUrl && watermarkHref) {
+    return `<img class="wm wm-logo" src="${watermarkHref}" alt="" style="${pos}height:${num(scene.watermarkSize)}px"/>`;
+  }
+  return scene.watermarkText
+    ? `<span class="wm" style="${pos}font-size:${num(scene.watermarkSize)}px">${escapeHtml(scene.watermarkText)}</span>`
+    : "";
+}
+
+export interface GridItemOptions {
+  inst: FrameInstance;
+  /** data: URL of this instance's layer media, or null when the layer has none. */
+  mediaHref: string | null;
+  mediaType: "image" | "video" | null;
+  /** data: URL of the overlay device skin, or null for CSS frames. */
+  overlayHref: string | null;
+}
+
+export interface GridSnippetOptions {
+  backgroundHref?: string | null;
+  watermarkHref?: string | null;
+  fontCss?: string;
+}
+
+/** Markup of one frame instance, mirroring FrameInstanceGrid in the live
+ *  preview: a centered wrapper box sized by scale/aspect-ratio, an optional
+ *  landscape rotor that rotates the native-orientation assembly by 90°, a
+ *  zoom/tilt transform on the frame itself, then the canonical paint order
+ *  from FrameContent (media → glare → chrome → skin → browser URL). */
+function gridItemHtml(scene: EditorScene, tiltPrefix: string, item: GridItemOptions): string {
+  const inst = item.inst;
+  const layer = scene.layers.find((l) => l.id === inst.layerId) ?? scene.layers[0];
+  const css = buildSceneCss(
+    { ...scene, frame: inst.frame, frameMaterial: inst.material, layers: layer ? [layer] : [] },
+    layer?.id ?? scene.activeLayerId
+  );
+  const native = frameInstAr(inst.frame, scene.customFrame, scene.aspectRatio) ?? 390 / 844;
+  const landscape = inst.orientation === "landscape";
+
+  let wrapperCss =
+    `position: absolute;\nleft: ${num(inst.x * 100)}%;\ntop: ${num(inst.y * 100)}%;\n` +
+    `width: ${num((landscape ? inst.scale * native : inst.scale) * 100)}%;\nheight: auto;\n` +
+    `aspect-ratio: ${landscape ? `${num(native)} / 1` : `1 / ${native}`};\n` +
+    `transform: translate(-50%, -50%);`;
+  if (scene.floorReflection) {
+    wrapperCss += "\n-webkit-box-reflect: below 0 linear-gradient(transparent 45%, rgba(255,255,255,0.30));";
+  }
+
+  const zoom = layer?.zoom ?? 1;
+  let frameCss = serializeCssProperties(css.frame);
+  frameCss += `\nwidth: 100%;\nheight: 100%;\nposition: relative;\ntransform: ${tiltPrefix}scale(${num(zoom)});\ntransform-origin: center;`;
+
+  const mediaCss = serializeCssProperties(css.mediaStyle);
+  const media =
+    item.mediaType === "video" && item.mediaHref
+      ? `<video class="media" src="${item.mediaHref}" controls muted loop autoplay playsinline style="object-fit: contain"${(layer?.playbackSpeed ?? 1) !== 1 ? ` data-rate="${num(Math.max(0.5, Math.min(2, layer?.playbackSpeed ?? 1)))}"` : ""}></video>`
+      : item.mediaHref
+        ? `<img class="media" src="${item.mediaHref}" alt="" style="${mediaCss}"/>`
+        : "";
+
+  const glare = css.screenGlareStyle
+    ? `<div class="glare" style="${serializeCssProperties(css.screenGlareStyle)}"></div>`
+    : "";
+  const chrome = css.screenChrome
+    ? `<div class="chrome" style="${serializeCssProperties(css.screenChromeStyle)}">${css.screenChrome}</div>`
+    : "";
+  const overlay = item.overlayHref ? `<img class="overlay" src="${item.overlayHref}" alt=""/>` : "";
+  const browserChrome =
+    css.browserChrome && css.browserChromeStyle
+      ? `<div style="${serializeCssProperties(css.browserChromeStyle)}">${css.browserChrome}</div>`
+      : "";
+
+  const rotorOpen = landscape
+    ? `<div class="rotor" style="position: absolute;left: 50%;top: 50%;width: calc(100% / ${native.toFixed(6)});aspect-ratio: ${(1 / native).toFixed(6)} / 1;transform: translate(-50%, -50%) rotate(90deg);">`
+    : "";
+  const rotorClose = landscape ? "</div>" : "";
+
+  return `<div class="frame-instance" style="${wrapperCss}">
+${rotorOpen}<div data-mockup-frame style="${frameCss}">
+${media}${chrome}${glare}
+${overlay}
+${browserChrome}
+</div>${rotorClose}
+</div>`;
+}
+
+/**
+ * Builds a self-contained HTML document for multi-frame scenes with real CSS —
+ * one live mockup per frame instance instead of a rasterized screenshot.
+ * Pure and DOM-free for testability; callers pass only visible instances.
+ */
+export function buildGridHtmlSnippet(
+  scene: EditorScene,
+  items: GridItemOptions[],
+  opts: GridSnippetOptions = {}
+): string {
+  const css = buildSceneCss(scene);
+  const tiltPrefix = tiltCss(scene);
+  const { w: arW, h: arH } = parseAspectRatioOr(scene.aspectRatio, { w: 16, h: 9 });
+  const ar = `${arW}/${arH}`;
+
+  const containerCss = serializeCssProperties(css.container);
+  const backgroundCss = css.backgroundImage
+    ? `.bg {\n  position: absolute;\n  inset: -${css.backgroundBlur + 6}px;\n  z-index: 0;\n  background-image: url("${opts.backgroundHref ?? css.backgroundImage}");\n  background-size: cover;\n  background-position: center;\n${css.backgroundBlur > 0 ? `  filter: blur(${css.backgroundBlur}px);\n` : ""}}`
+    : "";
+  const bg = css.backgroundImage ? `<div class="bg"></div>` : "";
+
+  const instances = items.map((item) => gridItemHtml(scene, tiltPrefix, item)).join("\n");
+  const hasVideoRate = items.some(
+    (item) =>
+      item.mediaType === "video" &&
+      (scene.layers.find((l) => l.id === item.inst.layerId)?.playbackSpeed ?? 1) !== 1
+  );
+
+  const clipDefs = collectOverlayClipDefs(scene)
+    .map((def) => `<clipPath id="${def.id}" clipPathUnits="objectBoundingBox"><path d="${def.d}"/></clipPath>`)
+    .join("");
+  const defsSvg = clipDefs ? `<svg width="0" height="0" style="position:absolute"><defs>${clipDefs}</defs></svg>` : "";
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Mocksy mockup</title>
+${opts.fontCss ? `<style>\n${opts.fontCss}\n</style>\n` : ""}<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0a0a0f;
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+}
+.stage {
+  position: relative;
+  overflow: hidden;
+  width: min(96vw, calc(96vh * ${arW} / ${arH}));
+  aspect-ratio: ${ar};
+  border-radius: 12px;
+${containerCss}
+}
+.media {
+  display: block;
+}
+.overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+${backgroundCss}
+.anno {
+  position: absolute;
+  pointer-events: none;
+}
+.anno-text {
+  font-weight: 600;
+  line-height: ${RENDER.lineHeightMultiplier};
+  white-space: pre-line;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+.wm {
+  position: absolute;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+.wm-logo {
+  width: auto;
+  max-width: 45%;
+}
+</style>
+</head>
+<body>
+${defsSvg}
+<div class="stage">
+  ${bg}
+  ${instances}
+  ${annotationsHtml(scene, arW, arH)}
+  ${watermarkHtml(scene, opts.watermarkHref)}
+</div>
+${hasVideoRate ? `<script>document.querySelectorAll("video[data-rate]").forEach(function(v){v.playbackRate=parseFloat(v.dataset.rate);});</script>` : ""}
+</body>
+</html>
+`;
+}
+
 export interface HtmlSnippetOptions {
   /** data: URL of the active layer's media, or null. */
   mediaHref: string | null;
@@ -149,13 +344,7 @@ export function buildHtmlSnippet(scene: EditorScene, opts: HtmlSnippetOptions, a
     ? `<div class="chrome" style="${serializeCssProperties(css.screenChromeStyle)}">${css.screenChrome}</div>`
     : "";
   const bg = css.backgroundImage ? `<div class="bg"></div>` : "";
-  const watermark = scene.watermarkEnabled
-    ? scene.watermarkImageUrl && opts.watermarkHref
-      ? `<img class="wm wm-logo" src="${opts.watermarkHref}" alt="" style="${scene.watermarkPosition.includes("left") ? "left" : "right"}:16px;${scene.watermarkPosition.includes("top") ? "top" : "bottom"}:16px;height:${num(scene.watermarkSize)}px"/>`
-      : scene.watermarkText
-        ? `<span class="wm" style="${scene.watermarkPosition.includes("left") ? "left" : "right"}:16px;${scene.watermarkPosition.includes("top") ? "top" : "bottom"}:16px;font-size:${num(scene.watermarkSize)}px">${escapeHtml(scene.watermarkText)}</span>`
-        : ""
-    : "";
+  const watermark = watermarkHtml(scene, opts.watermarkHref);
 
   const animationCss = buildAnimationCss(
     activeLayer,
@@ -256,30 +445,6 @@ ${defsSvg}
   ${watermark}
 </div>
 ${playbackScript}
-</body>
-</html>
-`;
-}
-
-/**
- * Fallback snippet for scenes the CSS renderer doesn't cover (multi-frame
- * grids): the scene is rasterized to PNG and embedded in a simple responsive
- * document, so the HTML export still produces a working standalone file.
- */
-export function buildRasterHtmlSnippet(imageHref: string): string {
-  return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Mocksy mockup</title>
-<style>
-html, body { margin: 0; padding: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0a0a0f; }
-img { max-width: 100%; max-height: 100vh; display: block; border-radius: 12px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); }
-</style>
-</head>
-<body>
-<img src="${imageHref}" alt="Mocksy mockup"/>
 </body>
 </html>
 `;
