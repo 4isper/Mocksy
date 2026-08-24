@@ -21,6 +21,8 @@
  * Usage:
  *   npm run i18n:sync          # write updated locale files + i18n/generated.ts
  *   npm run i18n:sync -- --check  # exit 1 if any locale is out of sync (CI)
+ *   npm run i18n:report        # untranslated key counts per locale
+ *   npm run i18n:report -- --keys  # also list the untranslated dot-paths
  */
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -135,6 +137,29 @@ export function computeCoverage(dir = MESSAGES_DIR) {
   return coverage;
 }
 
+/** Per-locale list of untranslated leaves: values that still equal English
+ *  while the reference locale translated them (shared terms excluded), sorted
+ *  by missing count. Powers `npm run i18n:report -- --keys` so translation
+ *  passes and contributors get an actionable backlog instead of a bare
+ *  percentage. */
+export function missingTranslations(dir = MESSAGES_DIR, { keys = false } = {}) {
+  const en = JSON.parse(readFileSync(path.join(dir, "en.json"), "utf-8"));
+  const ru = JSON.parse(readFileSync(path.join(dir, `${REFERENCE_LOCALE}.json`), "utf-8"));
+  const shared = sharedTermPaths(en, ru);
+  const enLeaves = leafPaths(en);
+  const rows = [];
+  const files = readdirSync(dir)
+    .filter((f) => f.endsWith(".json") && f !== "en.json" && f !== `${REFERENCE_LOCALE}.json`)
+    .sort();
+  for (const file of files) {
+    const locale = file.replace(/\.json$/, "");
+    const loc = JSON.parse(readFileSync(path.join(dir, file), "utf-8"));
+    const missing = enLeaves.filter((p) => getLeaf(loc, p) === getLeaf(en, p) && !shared.has(p));
+    rows.push({ locale, count: missing.length, ...(keys ? { keys: missing } : {}) });
+  }
+  return rows.sort((a, b) => b.count - a.count || a.locale.localeCompare(b.locale));
+}
+
 /** Serializes the coverage map into the generated TS module consumed by the
  *  LocaleSwitcher. Kept dependency-free so the output is deterministic. */
 export function renderCoverageModule(coverage) {
@@ -217,8 +242,18 @@ export function runCliSync(dir = MESSAGES_DIR, checkMode = false) {
   return { errors, logs, exitCode: 0 };
 }
 
-/** CLI entrypoint: prints results and exits non-zero on check drift. */
+/** CLI entrypoint: prints results and exits non-zero on check drift.
+ *  `--report` lists untranslated key counts per locale (with `--keys`, the
+ *  actual dot-paths) and never touches files. */
 export async function main(dir = MESSAGES_DIR) {
+  if (process.argv.includes("--report")) {
+    const withKeys = process.argv.includes("--keys");
+    for (const row of missingTranslations(dir, { keys: withKeys })) {
+      console.log(`${row.locale}: ${row.count} untranslated`);
+      if (withKeys) for (const key of row.keys ?? []) console.log(`  ${key}`);
+    }
+    return;
+  }
   const checkMode = process.argv.includes("--check");
   const { errors, logs, exitCode } = runCliSync(dir, checkMode);
   for (const text of errors) console.error(text);

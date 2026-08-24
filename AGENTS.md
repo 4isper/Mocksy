@@ -9,6 +9,7 @@ Free browser-based mockup editor (Next.js 16 + React 19 + TypeScript). Media is 
 - `next-intl` v4 is used for internationalization.
 - 57 locales live in `messages/*.json`. Add new keys to `messages/en.json` (and translate in `messages/ru.json`), then run `npm run i18n:sync` to backfill the English fallback into every other locale (`--check` mode fails in CI if any locale is out of sync).
 - `npm run i18n:sync` also regenerates `i18n/generated.ts` — a committed module with per-locale translation coverage (`localeCoverage`, 100 = fully translated) consumed by `LocaleSwitcher` to flag partial locales. Never edit it by hand; it's validated in `--check` mode.
+- `npm run i18n:report` lists untranslated key counts per locale (`-- --keys` for the dot-paths) — use it to scope translation passes; en + ru must stay at 100%.
 - The canonical locale list is `i18n/locales.ts` (`locales`, `Locale`, `defaultLocale`, `isValidLocale`). Never redefine it elsewhere.
 - Routing is file-based: `app/[locale]/` — `proxy.ts` detects locale from cookie/header, defaults to `en`.
 - Use `useTranslations(namespace)` in client components; `getMessages()` in server components/layouts.

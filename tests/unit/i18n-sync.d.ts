@@ -6,6 +6,10 @@ declare module "@/scripts/i18n-sync.mjs" {
     dir?: string
   ): { changed: { file: string; addedKeys: string[] }[]; fileCount: number };
   export function computeCoverage(dir?: string): Record<string, number>;
+  export function missingTranslations(
+    dir?: string,
+    opts?: { keys?: boolean }
+  ): Array<{ locale: string; count: number; keys?: string[] }>;
   export function renderCoverageModule(coverage: Record<string, number>): string;
   export function runCliSync(
     dir?: string,

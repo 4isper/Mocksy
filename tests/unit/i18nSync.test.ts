@@ -6,6 +6,7 @@ import {
   computeCoverage,
   leafPaths,
   main,
+  missingTranslations,
   renderCoverageModule,
   runCliSync,
   syncLocale,
@@ -151,6 +152,74 @@ describe("computeCoverage", () => {
     expect(coverage.ru).toBe(100);
     expect(Object.keys(coverage).length).toBeGreaterThan(50);
     expect(Object.values(coverage).every((v) => v >= 0 && v <= 100)).toBe(true);
+  });
+});
+
+describe("missingTranslations", () => {
+  function coverageDir(en: Record<string, unknown>, ru: Record<string, unknown>, locales: Record<string, Record<string, unknown>>): string {
+    const dir = mkdtempSync(path.join(os.tmpdir(), "i18n-report-"));
+    const messages = path.join(dir, "messages");
+    mkdirSync(messages);
+    writeFileSync(path.join(messages, "en.json"), `${JSON.stringify(en, null, 2)}\n`);
+    writeFileSync(path.join(messages, "ru.json"), `${JSON.stringify(ru, null, 2)}\n`);
+    for (const [locale, msgs] of Object.entries(locales)) {
+      writeFileSync(path.join(messages, `${locale}.json`), `${JSON.stringify(msgs, null, 2)}\n`);
+    }
+    return messages;
+  }
+
+  it("lists untranslated leaves per locale, sorted by missing count", () => {
+    const messages = coverageDir(
+      { a: "A", b: "B", c: "C" },
+      { a: "А", b: "Б", c: "В" },
+      // Locale files are always post-sync (i18n:sync backfills en), so an
+      // untranslated leaf carries the English value verbatim.
+      { de: { a: "A", b: "B", c: "Ц" }, fr: { a: "A", b: "B", c: "C" } }
+    );
+    try {
+      expect(missingTranslations(messages)).toEqual([
+        { locale: "fr", count: 3 },
+        { locale: "de", count: 2 }
+      ]);
+    } finally {
+      rmSync(path.dirname(messages), { recursive: true, force: true });
+    }
+  });
+
+  it("excludes shared terms and the reference locale", () => {
+    const messages = coverageDir(
+      { a: "A", format: "PNG" },
+      { a: "А", format: "PNG" },
+      { de: { a: "A", format: "PNG" }, ru: { a: "А", format: "PNG" } }
+    );
+    try {
+      const rows = missingTranslations(messages);
+      expect(rows.map((r) => r.locale)).toEqual(["de"]);
+      expect(rows[0]!.count).toBe(1);
+    } finally {
+      rmSync(path.dirname(messages), { recursive: true, force: true });
+    }
+  });
+
+  it("can include the actual dot-paths", () => {
+    const messages = coverageDir(
+      { a: "A", b: "B" },
+      { a: "А", b: "Б" },
+      { de: { a: "A", b: "B" } }
+    );
+    try {
+      expect(missingTranslations(messages, { keys: true })).toEqual([
+        { locale: "de", count: 2, keys: ["a", "b"] }
+      ]);
+    } finally {
+      rmSync(path.dirname(messages), { recursive: true, force: true });
+    }
+  });
+
+  it("reports real backlog sizes for the committed locales", () => {
+    const rows: Array<{ locale: string; count: number }> = missingTranslations();
+    expect(rows.find((r) => r.locale === "de")!.count).toBeGreaterThan(100);
+    expect(rows.find((r) => r.locale === "ru")).toBeUndefined();
   });
 });
 
