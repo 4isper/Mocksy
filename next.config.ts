@@ -1,4 +1,7 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin();
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -9,12 +12,11 @@ const nextConfig: NextConfig = {
         config.externals = [config.externals || {}];
       }
       config.externals.push({
-        "@ffmpeg/ffmpeg": "@ffmpeg/ffmpeg",
-        "@ffmpeg/util": "@ffmpeg/util"
+        "@ffmpeg/ffmpeg": "@ffmpeg/ffmpeg"
       });
     }
     return config;
   }
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

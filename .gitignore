@@ -6,3 +6,7 @@ test-results
 *.log
 dist
 .DS_Store
+tsconfig.tsbuildinfo
+.qwen/
+.lighthouseci/
+public/test-photo.png

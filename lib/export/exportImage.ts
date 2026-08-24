@@ -1,62 +1,277 @@
 "use client";
 
-import type { EditorScene } from "@/lib/types/editor";
-import { renderMockupToCanvas } from "@/lib/export/renderMockup";
+import type { EditorScene, ExportSize } from "@/lib/types/editor";
+import { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
+import { renderMockupToCanvas } from "@/lib/render/renderMockup";
+import { getFrameSpec } from "@/lib/render/frames";
+import { isVideoLayer } from "@/lib/render/mediaKind";
+import { downloadBlob } from "@/lib/export/downloadBlob";
+import { encodeCanvasToBlob } from "@/lib/export/offthreadEncode";
+import { renderSceneInWorker } from "@/lib/export/offthreadRender";
+import {
+  buildRenderWorkerPayload,
+  canRenderSceneInWorker
+} from "@/lib/render/renderWorkerProtocol";
+import { resolveExportTransform, waitForImage } from "@/lib/export/exportImageCore";
+import { fitRatioForCustomSize, intrinsicExportSize } from "@/lib/export/exportSize";
+import { singleFrameCssSize } from "@/lib/render/frameGeometry";
+import { loadExportAssets } from "@/lib/export/exportAssets";
 
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-}
+/**
+ * Renders the current scene to a raster `Blob` (PNG or WebP) at an intrinsic,
+ * viewport-independent resolution (see exportSize.ts), reusing the exact
+ * geometry the preview uses (frame box, zoom/animation transform, overlay
+ * skin, transparent background). Returns null
+ * (and routes the reason through `onError`) when the scene can't be rendered
+ * or the canvas can't be read. Shared by `exportImage`, `exportWebp` and
+ * `copyPngToClipboard`.
+ */
+export async function renderSceneToImageBlob(
+  scene: EditorScene,
+  containerId: string,
+  mimeType: "image/png" | "image/webp",
+  onError?: (message: string) => void,
+  /** Pixel ratio for the export. Defaults to `Math.max(2, devicePixelRatio)`
+   *  when omitted so existing callers keep 2× output on standard displays. */
+  scale?: number,
+  /** Absolute output size in pixels. When width/height > 0, overrides `scale`:
+   *  the canvas is exactly that size and the frame scales to fit (keeping its
+   *  aspect ratio, letterboxed within the canvas). */
+  customSize?: ExportSize | null,
+  /** Live layer selection from the store root; defaults to the scene snapshot. */
+  activeLayerId: string | null = scene.activeLayerId
+): Promise<Blob | null> {
+  try {
+    const node = document.getElementById(containerId);
+    if (!node) {
+      onError?.("Preview area not found.");
+      return null;
+    }
 
-function waitForImage(img: HTMLImageElement) {
-  if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-  return new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = () => reject(new Error("Image load failed"));
-  });
-}
+    const video = node.querySelector("video");
+    const img = node.querySelector("img");
+    const isMultiFrame = scene.frameInstances.length > 0;
+    const active = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
+    let media: CanvasImageSource | null = null;
 
-export async function exportImage(scene: EditorScene, containerId: string, filename: string) {
-  const node = document.getElementById(containerId);
-  if (!node) return;
+    // A hidden active layer renders nothing, matching the preview.
+    if (!active?.hidden) {
+      if (video instanceof HTMLVideoElement) {
+        if (video.readyState >= 2) {
+          media = video;
+        } else if (active && isVideoLayer(active) && active.mediaUrl) {
+          // Export fired before the preview video decoded; load a frame
+          // explicitly instead of drawing an empty screen.
+          try {
+            media = await loadVideoFrame(active.mediaUrl, active.videoPosterTime ?? 0);
+          } catch {
+            media = null;
+          }
+        }
+      } else if (img instanceof HTMLImageElement) {
+        await waitForImage(img);
+        media = img;
+      }
+    }
 
-  const video = node.querySelector("video");
-  const img = node.querySelector("img");
-  const frameElement = node.querySelector<HTMLElement>("[data-mockup-frame]");
-  let media: CanvasImageSource | null = null;
+    const hasCustomSize = customSize !== null && customSize !== undefined && customSize.width > 0 && customSize.height > 0;
+    // Exports anchor to the scene's intrinsic artboard (exportSize.ts), not to
+    // the live preview's CSS box — so the output is identical regardless of
+    // window size, browser page zoom or devicePixelRatio. The scale argument
+    // is a pure quality multiplier on top of that base.
+    const base = intrinsicExportSize(scene, 1);
+    const pixelRatio = hasCustomSize
+      ? fitRatioForCustomSize(scene, customSize)
+      : typeof scale === "number" && scale > 0
+        ? scale
+        : 2;
 
-  if (video instanceof HTMLVideoElement && video.readyState >= 2) {
-    media = video;
-  } else if (img instanceof HTMLImageElement) {
-    await waitForImage(img);
-    media = img;
+    const canvas = document.createElement("canvas");
+    const canvasWidth = Math.max(1, Math.round(hasCustomSize ? customSize.width : base.width * pixelRatio));
+    const canvasHeight = Math.max(1, Math.round(hasCustomSize ? customSize.height : base.height * pixelRatio));
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+
+    // Frame box comes from the same pure math as the CSS layout instead of a
+    // DOM measurement, keeping exports deterministic (and correct in tests).
+    const frameCss = isMultiFrame ? undefined : singleFrameCssSize(scene, base.width, base.height);
+    const frameWidth = frameCss ? Math.max(1, Math.round(frameCss.w * pixelRatio)) : undefined;
+    const frameHeight = frameCss ? Math.max(1, Math.round(frameCss.h * pixelRatio)) : undefined;
+
+    const transform = resolveExportTransform(scene, activeLayerId);
+
+    // Fast path: render the whole composite inside a worker so big exports
+    // don't block input. Video layers can't decode off-thread and any worker
+    // hiccup resolves null, both falling through to the synchronous path.
+    if (canRenderSceneInWorker(scene, activeLayerId)) {
+      const payload = buildRenderWorkerPayload({
+        id: 0,
+        scene,
+        activeLayerId,
+        width: canvasWidth,
+        height: canvasHeight,
+        pixelRatio,
+        mimeType,
+        transform,
+        frameWidth,
+        frameHeight
+      });
+      if (payload) {
+        const blob = await renderSceneInWorker(payload);
+        if (blob) return blob;
+      }
+    }
+
+    const { overlay, backgroundImage, watermarkImage } = await loadExportAssets(scene);
+
+    // For multi-frame mode, load media for each frame's layer
+    let layerMedias: Map<string, CanvasImageSource | null> | undefined;
+    // For multi-frame mode, load overlay for each frame with isOverlay spec
+    let frameOverlays: Map<string, CanvasImageSource | null> | undefined;
+    if (scene.frameInstances.length > 0) {
+      layerMedias = new Map();
+      frameOverlays = new Map();
+      for (const inst of scene.frameInstances) {
+        const layer = scene.layers.find((l) => l.id === inst.layerId);
+        if (layer?.mediaUrl) {
+          try {
+            // An <img> can't decode a video URL; load video frames through a
+            // <video> element that has actually decoded a frame, so the static
+            // export shows the poster frame instead of an empty screen.
+            if (isVideoLayer(layer)) {
+              const videoFrame = await loadVideoFrame(layer.mediaUrl, layer.videoPosterTime ?? 0);
+              layerMedias.set(layer.id, videoFrame);
+            } else {
+              const loaded = await loadImage(layer.mediaUrl);
+              layerMedias.set(layer.id, loaded);
+            }
+          } catch {
+            layerMedias.set(layer.id, null);
+          }
+        }
+        // Load overlay for this frame instance if it uses an overlay frame
+        const instSpec = getFrameSpec(inst.frame, scene.customFrame, inst.material);
+        if (instSpec.isOverlay && instSpec.asset) {
+          try {
+            const ov = await loadImage(instSpec.asset);
+            if (layer?.id) frameOverlays.set(layer.id, ov);
+          } catch {
+            // Overlay failed to load - leave empty
+          }
+        }
+      }
+    }
+
+    renderMockupToCanvas(
+      canvas,
+      scene,
+      media,
+      undefined,
+      undefined,
+      frameWidth,
+      frameHeight,
+      pixelRatio,
+      transform,
+      undefined,
+      overlay,
+      backgroundImage,
+      layerMedias,
+      frameOverlays,
+      activeLayerId,
+      watermarkImage
+    );
+
+    const imageBlob = await encodeCanvasToBlob(canvas, mimeType);
+    if (!imageBlob) {
+      onError?.("Failed to render image.");
+      return null;
+    }
+    return imageBlob;
+  } catch (err) {
+    onError?.(err instanceof Error ? err.message : "Image export failed.");
+    return null;
   }
-
-  if (!frameElement) return;
-
-  const baseFrameWidth = frameElement.offsetWidth;
-  const baseFrameHeight = frameElement.offsetHeight;
-  if (!baseFrameWidth || !baseFrameHeight) return;
-
-  const containerWidth = node.clientWidth;
-  const containerHeight = node.clientHeight;
-  if (!containerWidth || !containerHeight) return;
-
-  const pixelRatio = Math.max(2, window.devicePixelRatio || 1);
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(containerWidth * pixelRatio));
-  canvas.height = Math.max(1, Math.round(containerHeight * pixelRatio));
-
-  const frameWidth = Math.max(1, Math.round(baseFrameWidth * pixelRatio));
-  const frameHeight = Math.max(1, Math.round(baseFrameHeight * pixelRatio));
-
-  renderMockupToCanvas(canvas, scene, media, undefined, undefined, frameWidth, frameHeight, pixelRatio, scene.zoom);
-
-  const pngBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
-  if (!pngBlob) return;
-  downloadBlob(pngBlob, `${filename}.png`);
 }
+
+/** PNG-specific wrapper around `renderSceneToImageBlob`. */
+export async function renderSceneToPngBlob(
+  scene: EditorScene,
+  containerId: string,
+  onError?: (message: string) => void,
+  scale?: number,
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
+): Promise<Blob | null> {
+  return renderSceneToImageBlob(scene, containerId, "image/png", onError, scale, customSize, activeLayerId);
+}
+
+export async function exportImage(
+  scene: EditorScene,
+  containerId: string,
+  filename: string,
+  onError?: (message: string) => void,
+  /** Export pixel ratio (1×/2×/4×), read from the editor's PNG scale control. */
+  scale?: number,
+  /** Absolute output size in pixels; overrides `scale` when set. */
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
+) {
+  const blob = await renderSceneToPngBlob(scene, containerId, onError, scale, customSize, activeLayerId);
+  if (blob) downloadBlob(blob, `${filename}.png`);
+}
+
+/**
+ * Exports the scene as a static WebP image (lossy, ~half the PNG size for
+ * photos). Rendered through the same canvas pipeline as PNG so the output
+ * matches the preview pixel-for-pixel.
+ */
+export async function exportWebp(
+  scene: EditorScene,
+  containerId: string,
+  filename: string,
+  onError?: (message: string) => void,
+  /** Export pixel ratio (1×/2×/4×), read from the editor's scale control. */
+  scale?: number,
+  /** Absolute output size in pixels; overrides `scale` when set. */
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
+) {
+  const blob = await renderSceneToImageBlob(scene, containerId, "image/webp", onError, scale, customSize, activeLayerId);
+  if (blob) downloadBlob(blob, `${filename}.webp`);
+}
+
+/**
+ * Copies a PNG snapshot of the scene to the system clipboard. Handy for pasting
+ * a mockup straight into Slack/Notion without a file download. Needs a secure
+ * context (https or localhost) and the Clipboard Image write permission; falls
+ * back through `onError` when unavailable.
+ */
+export async function copyPngToClipboard(
+  scene: EditorScene,
+  containerId: string,
+  onError?: (message: string) => void,
+  onStatus?: (message: string) => void,
+  /** Export pixel ratio (1×/2×/4×), read from the editor's PNG scale control. */
+  scale?: number,
+  /** Absolute output size in pixels; overrides `scale` when set. */
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
+) {
+  try {
+    if (typeof navigator === "undefined" || !navigator.clipboard || typeof ClipboardItem === "undefined") {
+      onError?.("Clipboard isn't available here (open over https or localhost).");
+      return;
+    }
+    const blob = await renderSceneToPngBlob(scene, containerId, onError, scale, customSize, activeLayerId);
+    if (!blob) return;
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    onStatus?.("Copied PNG to clipboard");
+  } catch (err) {
+    onError?.(err instanceof Error ? err.message : "Could not copy the image.");
+  }
+}
+
+// Re-exported for callers that previously imported these pure helpers from the
+// image export module; they now live in exportImageCore (DOM-free, shared with
+// the SVG/HTML exporters).
+export { resolveExportTransform, waitForImage } from "@/lib/export/exportImageCore";

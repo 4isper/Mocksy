@@ -1,0 +1,326 @@
+"use client";
+
+import { create } from "zustand";
+import type { EditorScene, Project } from "@/lib/types/editor";
+import { makeDemoScene, useEditorStore } from "@/lib/state/editorStore";
+import { normalizeScene } from "@/lib/state/normalizeScene";
+import { readSceneFromUrl, clearSceneFromUrl } from "@/lib/state/shareState";
+import { nextProjectId } from "@/lib/state/ids";
+import { decodeProjectsState, encodeProjectsState, stateNeedsMediaOffload, sweepOrphanedMedia, type PersistedProjectsState } from "@/lib/state/mediaPersistence";
+
+const STORAGE_KEY = "mocksy-projects";
+const AUTOSAVE_KEY = "mocksy-scene";
+
+/**
+ * Decoded-once view of localStorage. `hydrate` must stay synchronous (the
+ * editor bootstraps from its return value), so the async IndexedDB decode of
+ * media placeholders happens in `warmProjectCache`, which the app shell awaits
+ * once before hydrating. Callers that skip warming (tests, SSR) transparently
+ * get the legacy inline parse — small scenes never carry placeholders anyway.
+ */
+let decodedCache: PersistedProjectsState | null | undefined;
+
+export async function warmProjectCache(): Promise<void> {
+  if (typeof window === "undefined") {
+    decodedCache = null;
+    return;
+  }
+  let raw: string | null = null;
+  try {
+    raw = window.localStorage.getItem(STORAGE_KEY);
+  } catch {
+    raw = null;
+  }
+  decodedCache = await decodeProjectsState(raw);
+  // Blobs left over from deleted scenes/replaced uploads would otherwise sit
+  // in IndexedDB forever.
+  void sweepOrphanedMedia(decodedCache);
+}
+
+/** Clears the decode-once cache. Test seam: the module-level cache must not
+ *  leak between suites that stub different storage backends. */
+export function resetProjectCacheForTests(): void {
+  decodedCache = undefined;
+}
+
+function cloneScene(scene: EditorScene): EditorScene {
+  return JSON.parse(JSON.stringify(scene)) as EditorScene;
+}
+
+/** Loads a project's scene into the editor without recording undo history.
+ *  Keeps the editor scene and the active project in sync so the 500ms autosave
+ *  never writes one project's scene into another (project activation isn't an
+ *  edit, so it must not pollute the undo stack either). */
+function activateEditorScene(project: Project | undefined): void {
+  if (project) useEditorStore.getState().setScene(project.scene, false);
+}
+
+export interface ProjectsStoreState {
+  projects: Project[];
+  activeProjectId: string | null;
+  /** True once hydrate() has run (localStorage/URL read on the client). */
+  hydrated: boolean;
+  /** Set when a persist() fails because localStorage is full, so the UI can
+   *  stop showing "Saved" and warn the user their latest edits weren't stored. */
+  saveError: string | null;
+  /** Loads persisted projects (or migrates a legacy autosave / demo) and
+   *  returns the scene that should become the editor's active scene. Pass a
+   *  pre-resolved share-URL scene (or explicit null) to skip URL reading. */
+  hydrate: (preloaded?: EditorScene | null) => EditorScene;
+  createProject: (name?: string, scene?: EditorScene) => string;
+  switchProject: (id: string) => void;
+  renameProject: (id: string, name: string) => void;
+  duplicateProject: (id: string) => void;
+  /** Soft-deletes a project. Cannot trash the last non-deleted project. */
+  deleteProject: (id: string) => void;
+  /** Restores a project from the trash. */
+  restoreProject: (id: string) => void;
+  /** Permanently removes all soft-deleted projects. */
+  emptyTrash: () => void;
+  /** Writes the current editor scene into the active project. */
+  updateActiveProjectScene: (scene: EditorScene) => void;
+  /** Adds an already-built project (e.g. imported from file) and activates it. */
+  importProject: (project: Project) => void;
+}
+
+let persistSeq = 0;
+
+/** Persists projects, offloading large media into IndexedDB first. Writes are
+ *  serialized by sequence number: a slow encode that finishes after a newer
+ *  save must not clobber it. Scenes without large media — the common case —
+ *  take the legacy synchronous write path with no behavioral change. */
+async function persist(state: ProjectsStoreState): Promise<boolean> {
+  if (typeof window === "undefined") return true;
+  const seq = ++persistSeq;
+  try {
+    // Fast path: nothing to offload → write inline synchronously (the async
+    // function body runs sync until the first await, so quota errors surface
+    // in the same tick as before).
+    if (!stateNeedsMediaOffload(state)) {
+      const json = JSON.stringify({ projects: state.projects, activeProjectId: state.activeProjectId });
+      window.localStorage.setItem(STORAGE_KEY, json);
+      decodedCache = { projects: state.projects, activeProjectId: state.activeProjectId };
+      useProjectsStore.setState({ saveError: null });
+      return true;
+    }
+
+    let json = await encodeProjectsState(state);
+    // Superseded by a newer persist meanwhile — drop this stale write.
+    if (seq !== persistSeq) return true;
+    if (json === null) {
+      // Encoding unavailable: keep the old fully-inline format so nothing
+      // breaks (large media just costs localStorage quota, as before).
+      json = JSON.stringify({ projects: state.projects, activeProjectId: state.activeProjectId });
+    }
+    window.localStorage.setItem(STORAGE_KEY, json);
+    // Keep the decode-once cache in sync so later reads see this write even
+    // if they happen before the next warm-up.
+    decodedCache = { projects: state.projects, activeProjectId: state.activeProjectId };
+    // A successful write clears any prior quota warning.
+    useProjectsStore.setState({ saveError: null });
+    return true;
+  } catch (err) {
+    void err;
+    if (seq !== persistSeq) return true;
+    // A full quota means the latest edits were NOT persisted, even though the
+    // in-memory state is intact. Surface it so the UI stops showing "Saved".
+    // Other storage failures (private mode, disabled storage) aren't
+    // actionable, so they stay silent but still report failure.
+    if (
+      err instanceof DOMException &&
+      (err.name === "QuotaExceededError" || err.name === "NS_ERROR_DOM_QUOTA_REACHED")
+    ) {
+      useProjectsStore.setState({ saveError: "Storage full — recent changes may not be saved" });
+    }
+    return false;
+  }
+}
+
+function readStorage(): { projects: Project[]; activeProjectId: string | null } | null {
+  if (typeof window === "undefined") return null;
+  // Prefer the warmed cache (media placeholders already resolved from IDB).
+  if (decodedCache !== undefined) return decodedCache;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { projects?: unknown; activeProjectId?: unknown };
+    if (!Array.isArray(parsed.projects)) return null;
+    const projects = (parsed.projects as unknown[])
+      .map((p) => {
+        if (!p || typeof p !== "object") return null;
+        const r = p as Record<string, unknown>;
+        const scene = normalizeScene(r.scene);
+        return {
+          id: typeof r.id === "string" ? r.id : nextProjectId(),
+          name: typeof r.name === "string" && r.name.length > 0 ? r.name : "Untitled",
+          scene,
+          updatedAt: typeof r.updatedAt === "number" ? r.updatedAt : Date.now(),
+          ...(typeof r.deletedAt === "number" ? { deletedAt: r.deletedAt } : {})
+        } satisfies Project;
+      })
+      .filter((p): p is Project => p !== null);
+    const activeProjectId =
+      typeof parsed.activeProjectId === "string" && projects.some((p) => p.id === parsed.activeProjectId)
+        ? parsed.activeProjectId
+        : (projects[0]?.id ?? null);
+    return { projects, activeProjectId };
+  } catch {
+    return null;
+  }
+}
+
+export const useProjectsStore = create<ProjectsStoreState>((set, get) => ({
+  projects: [],
+  activeProjectId: null,
+  hydrated: false,
+  saveError: null,
+  /**
+   * Bootstraps the project list. By default the shared-scene URL is read
+   * synchronously (legacy raw-JSON links). When the caller has pre-resolved a
+   * share link (compressed links need async inflate) it passes the result in —
+   * including an explicit null, which skips URL handling entirely.
+   */
+  hydrate: (preloaded?: EditorScene | null) => {
+    // A shared scene URL takes precedence as the active scene, but it must not
+    // wipe the user's saved projects — merge it in as a new project instead.
+    const fromUrl = preloaded !== undefined ? preloaded : readSceneFromUrl();
+    if (fromUrl) {
+      const stored = readStorage();
+      const projects = stored?.projects ?? [];
+      const shared: Project = {
+        id: nextProjectId(),
+        name: "Shared mockup",
+        scene: fromUrl,
+        updatedAt: Date.now()
+      };
+      set({ projects: [...projects, shared], activeProjectId: shared.id, hydrated: true });
+      persist(get());
+      // Drop the ?scene= param so a reload loads the persisted project list
+      // instead of re-importing the share (stacking duplicate projects).
+      clearSceneFromUrl();
+      return fromUrl;
+    }
+
+    const stored = readStorage();
+    if (stored && stored.projects.length > 0) {
+      set({ projects: stored.projects, activeProjectId: stored.activeProjectId, hydrated: true });
+      const active = stored.projects.find((p) => p.id === stored.activeProjectId) ?? stored.projects[0]!;
+      return active.scene;
+    }
+
+    // Legacy single-scene autosave: migrate it into one project.
+    if (typeof window !== "undefined") {
+      try {
+        const legacy = window.localStorage.getItem(AUTOSAVE_KEY);
+        if (legacy) {
+          const scene = normalizeScene(JSON.parse(legacy));
+          const project: Project = { id: nextProjectId(), name: "My mockup", scene, updatedAt: Date.now() };
+          set({ projects: [project], activeProjectId: project.id, hydrated: true });
+          persist(get());
+          return scene;
+        }
+      } catch {
+        // fall through to a fresh demo project
+      }
+    }
+
+    const scene = makeDemoScene();
+    const project: Project = { id: nextProjectId(), name: "My mockup", scene, updatedAt: Date.now() };
+    set({ projects: [project], activeProjectId: project.id, hydrated: true });
+    persist(get());
+    return scene;
+  },
+  createProject: (name, scene) => {
+    const id = nextProjectId();
+    const project: Project = {
+      id,
+      name: name && name.trim().length > 0 ? name.trim() : "Untitled",
+      scene: scene ? cloneScene(scene) : makeDemoScene(),
+      updatedAt: Date.now()
+    };
+    set((s) => ({ projects: [...s.projects, project], activeProjectId: id }));
+    persist(get());
+    return id;
+  },
+  switchProject: (id) => {
+    const state = get();
+    const target = state.projects.find((p) => p.id === id);
+    if (!target) return;
+    set({ activeProjectId: id });
+    // The editor scene and the active project must stay in sync: switch the
+    // stored scene into the editor (without recording undo history — project
+    // navigation isn't an edit), otherwise the autosave would write the old
+    // project's scene over the newly-activated one.
+    activateEditorScene(target);
+    persist(get());
+  },
+  renameProject: (id, name) => {
+    const trimmed = name.trim();
+    if (trimmed.length === 0) return;
+    set((s) => ({ projects: s.projects.map((p) => (p.id === id ? { ...p, name: trimmed } : p)) }));
+    persist(get());
+  },
+  deleteProject: (id) => {
+    const state = get();
+    const nonDeleted = state.projects.filter((p) => p.deletedAt == null);
+    if (nonDeleted.length <= 1) return;
+    const wasActive = state.activeProjectId === id;
+    const projects = state.projects.map((p) => (p.id === id ? { ...p, deletedAt: Date.now() } : p));
+    const nextActiveId = wasActive ? (nonDeleted.find((p) => p.id !== id)?.id ?? null) : state.activeProjectId;
+    set({ projects, activeProjectId: nextActiveId });
+    // When the active project is deleted, load the newly-activated project's
+    // scene into the editor. Otherwise the next autosave (which writes the
+    // editor scene into the active project) would overwrite the switched-to
+    // project with the just-deleted one's scene.
+    if (wasActive && nextActiveId) {
+      activateEditorScene(projects.find((p) => p.id === nextActiveId));
+    }
+    persist(get());
+  },
+  restoreProject: (id) => {
+    set((s) => ({
+      projects: s.projects.map((p) => (p.id === id ? { ...p, deletedAt: undefined } : p))
+    }));
+    persist(get());
+  },
+  emptyTrash: () => {
+    set((s) => ({
+      projects: s.projects.filter((p) => p.deletedAt == null)
+    }));
+    persist(get());
+  },
+  duplicateProject: (id) => {
+    const source = get().projects.find((p) => p.id === id);
+    if (!source) return;
+    const newId = nextProjectId();
+    const copy: Project = {
+      id: newId,
+      name: `${source.name} copy`,
+      scene: cloneScene(source.scene),
+      updatedAt: Date.now()
+    };
+    set((s) => ({ projects: [...s.projects, copy], activeProjectId: newId }));
+    activateEditorScene(copy);
+    persist(get());
+  },
+  updateActiveProjectScene: (scene) => {
+    const { activeProjectId, projects } = get();
+    if (!activeProjectId) return;
+    set({
+      projects: projects.map((p) =>
+        p.id === activeProjectId ? { ...p, scene: cloneScene(scene), updatedAt: Date.now() } : p
+      )
+    });
+    persist(get());
+  },
+  importProject: (project) => {
+    // Regenerate the id so an imported file (which carries its own id from the
+    // source browser) can never collide with an existing project here. Without
+    // this, importing a project exported on another device could overwrite or
+    // alias an existing one, breaking switch/delete by id.
+    const imported: Project = { ...project, id: nextProjectId() };
+    set((s) => ({ projects: [...s.projects, imported], activeProjectId: imported.id }));
+    activateEditorScene(imported);
+    persist(get());
+  }
+}));

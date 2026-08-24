@@ -8,6 +8,18 @@ export default defineConfig({
     }
   },
   test: {
-    include: ["tests/unit/**/*.test.ts"]
+    include: ["tests/unit/**/*.test.{ts,tsx}", "tests/components/**/*.test.tsx"],
+    setupFiles: ["tests/components/setup.ts"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov"],
+      reportsDirectory: "coverage",
+      thresholds: {
+        lines: 80,
+        statements: 80,
+        functions: 80,
+        branches: 70
+      }
+    }
   }
 });

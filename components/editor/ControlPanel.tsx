@@ -1,195 +1,135 @@
 "use client";
 
-import type { ChangeEvent } from "react";
+import { useTranslations } from "next-intl";
+import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/lib/state/editorStore";
-import type { AnimationPreset, MockupFrame, StylePreset } from "@/lib/types/editor";
-
-const frames: MockupFrame[] = ["none", "iphone", "desktop", "tablet"];
-const styles: StylePreset[] = ["default", "glassLight", "glassDark", "outline"];
-const animations: AnimationPreset[] = ["none", "zoomIn", "zoomOut", "parallax"];
-const aspectRatios = ["16 / 9", "4 / 3", "3 / 2", "1 / 1", "9 / 16"];
-const videoExt = /\.(mp4|mov|m4v|webm|ogg|ogv|avi|mkv)$/i;
-
-function detectMediaType(file: File): "video" | "image" {
-  if (file.type.startsWith("video/")) return "video";
-  if (file.type.includes("mp4") || file.type.includes("quicktime") || file.type.includes("webm")) return "video";
-  if (videoExt.test(file.name)) return "video";
-  return "image";
-}
+import { BackgroundControls } from "@/components/editor/BackgroundControls";
+import { WatermarkControls } from "@/components/editor/WatermarkControls";
+import { ScreenControls } from "@/components/editor/ScreenControls";
+import { Section } from "@/components/editor/Section";
+import { MediaSection } from "@/components/editor/sections/MediaSection";
+import { FrameSection } from "@/components/editor/sections/FrameSection";
+import { PositionSection } from "@/components/editor/sections/PositionSection";
+import { FiltersSection } from "@/components/editor/sections/FiltersSection";
+import { AnimationSection } from "@/components/editor/sections/AnimationSection";
 
 export function ControlPanel() {
+  const t = useTranslations();
   const {
     scene,
-    setMedia,
-    setFrame,
-    setStylePreset,
-    setAnimationPreset,
-    setZoom,
-    setShadowOpacity,
-    setBorderRadius,
+    scenePalette,
     setBackgroundSolid,
     setBackgroundGradient,
+    setBackgroundTransparent,
+    setBackgroundImage,
+    setBackgroundPattern,
+    setGradientType,
+    setGradientVia,
+    setBackgroundBlur,
     toggleWatermark,
     setWatermarkText,
-    setAspectRatio,
-    setVideoMuted,
-    setVideoLoop,
-    setVideoAutoplay,
-    setVideoPosterTime,
-    setVideoCurrentTime,
-    setVideoTrimStart,
-    setVideoTrimEnd
-  } = useEditorStore();
-
-  const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const mediaType = detectMediaType(file);
-    setMedia(URL.createObjectURL(file), mediaType, file.name);
-  };
+    setWatermarkPosition,
+    setWatermarkSize,
+    setWatermarkImage,
+    setScreenChrome
+  } = useEditorStore(
+    useShallow((s) => ({
+      scene: s.scene,
+      scenePalette: s.scenePalette,
+      setBackgroundSolid: s.setBackgroundSolid,
+      setBackgroundGradient: s.setBackgroundGradient,
+      setBackgroundTransparent: s.setBackgroundTransparent,
+      setBackgroundImage: s.setBackgroundImage,
+      setBackgroundPattern: s.setBackgroundPattern,
+      setGradientType: s.setGradientType,
+      setGradientVia: s.setGradientVia,
+      setBackgroundBlur: s.setBackgroundBlur,
+      toggleWatermark: s.toggleWatermark,
+      setWatermarkText: s.setWatermarkText,
+      setWatermarkPosition: s.setWatermarkPosition,
+      setWatermarkSize: s.setWatermarkSize,
+      setWatermarkImage: s.setWatermarkImage,
+      setScreenChrome: s.setScreenChrome
+    }))
+  );
 
   return (
-    <div className="panel" style={{ padding: 16, display: "grid", gap: 12 }}>
-      <label>
-        Media
-        <input type="file" accept="image/*,video/*" onChange={handleFile} />
-      </label>
-      {scene.mediaType === "video" && (
-        <>
-          <label>
-            Video muted
-            <input type="checkbox" checked={scene.videoMuted} onChange={(e) => setVideoMuted(e.target.checked)} />
-          </label>
-          <label>
-            Video loop
-            <input type="checkbox" checked={scene.videoLoop} onChange={(e) => setVideoLoop(e.target.checked)} />
-          </label>
-          <label>
-            Video autoplay
-            <input type="checkbox" checked={scene.videoAutoplay} onChange={(e) => setVideoAutoplay(e.target.checked)} />
-          </label>
-          <label>
-            Poster time
-            <input
-              type="range"
-              min={0}
-              max={Math.max(scene.videoDuration, 0.1)}
-              step={0.1}
-              value={scene.videoPosterTime}
-              onChange={(e) => setVideoPosterTime(Number(e.target.value))}
-            />
-          </label>
-          <label>
-            Timeline
-            <input
-              type="range"
-              min={0}
-              max={Math.max(scene.videoDuration, 0.1)}
-              step={0.01}
-              value={scene.videoCurrentTime}
-              onChange={(e) => setVideoCurrentTime(Number(e.target.value))}
-            />
-          </label>
-          <label>
-            Trim start
-            <input
-              type="range"
-              min={0}
-              max={Math.max(scene.videoDuration, 0.1)}
-              step={0.01}
-              value={scene.videoTrimStart}
-              onChange={(e) => setVideoTrimStart(Number(e.target.value))}
-            />
-          </label>
-          <label>
-            Trim end
-            <input
-              type="range"
-              min={0}
-              max={Math.max(scene.videoDuration, 0.1)}
-              step={0.01}
-              value={scene.videoTrimEnd || scene.videoDuration}
-              onChange={(e) => setVideoTrimEnd(Number(e.target.value))}
-            />
-          </label>
-        </>
-      )}
-      <label>
-        Frame
-        <select value={scene.frame} onChange={(e) => setFrame(e.target.value as MockupFrame)}>
-          {frames.map((frame) => (
-            <option key={frame} value={frame}>
-              {frame}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Aspect ratio
-        <select value={scene.aspectRatio} onChange={(e) => setAspectRatio(e.target.value)}>
-          {aspectRatios.map((ratio) => (
-            <option key={ratio} value={ratio}>
-              {ratio}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Style
-        <select value={scene.stylePreset} onChange={(e) => setStylePreset(e.target.value as StylePreset)}>
-          {styles.map((style) => (
-            <option key={style} value={style}>
-              {style}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Animation
-        <select value={scene.animationPreset} onChange={(e) => setAnimationPreset(e.target.value as AnimationPreset)}>
-          {animations.map((anim) => (
-            <option key={anim} value={anim}>
-              {anim}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Zoom
-        <input type="range" min={0.8} max={1.5} step={0.01} value={scene.zoom} onChange={(e) => setZoom(Number(e.target.value))} />
-      </label>
-      <label>
-        Shadow
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
-          value={scene.shadowOpacity}
-          onChange={(e) => setShadowOpacity(Number(e.target.value))}
+    <div id="control-panel" className="panel control-panel" style={{ padding: 16, display: "grid", gap: 12 }}>
+      <h2 className="panel-title">{t("editor.controls")}</h2>
+
+      <MediaSection />
+      <FrameSection />
+      <AnimationSection />
+      <PositionSection />
+      <FiltersSection />
+
+      <Section
+        id="background"
+        title={t("editor.background")}
+        icon={(
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2"/><path d="M6 1.5a4.5 4.5 0 010 9z" fill="currentColor" opacity="0.5"/></svg>
+        )}
+      >
+        <BackgroundControls
+          scenePalette={scenePalette}
+          backgroundMode={scene.backgroundMode}
+          backgroundColor={scene.backgroundColor}
+          gradientFrom={scene.gradientFrom}
+          gradientTo={scene.gradientTo}
+          gradientVia={scene.gradientVia}
+          gradientType={scene.gradientType}
+          gradientAngle={scene.gradientAngle}
+          patternId={scene.patternId}
+          backgroundBlur={scene.backgroundBlur}
+          backgroundImageUrl={scene.backgroundImageUrl}
+          setBackgroundSolid={setBackgroundSolid}
+          setBackgroundGradient={setBackgroundGradient}
+          setBackgroundTransparent={setBackgroundTransparent}
+          setBackgroundImage={setBackgroundImage}
+          setBackgroundPattern={setBackgroundPattern}
+          setGradientType={setGradientType}
+          setGradientVia={setGradientVia}
+          setBackgroundBlur={setBackgroundBlur}
         />
-      </label>
-      <label>
-        Radius
-        <input type="range" min={0} max={48} step={1} value={scene.borderRadius} onChange={(e) => setBorderRadius(Number(e.target.value))} />
-      </label>
-      <div style={{ display: "grid", gap: 8 }}>
-        <span>Background</span>
-        <button onClick={() => setBackgroundSolid("#09090b")} type="button">
-          Solid
-        </button>
-        <button onClick={() => setBackgroundGradient("#1d4ed8", "#7c3aed")} type="button">
-          Gradient
-        </button>
-      </div>
-      <label>
-        Watermark
-        <input type="checkbox" checked={scene.watermarkEnabled} onChange={(e) => toggleWatermark(e.target.checked)} />
-      </label>
-      <label>
-        Watermark text
-        <input value={scene.watermarkText} onChange={(e) => setWatermarkText(e.target.value)} />
-      </label>
+      </Section>
+
+      <Section
+        id="watermark"
+        defaultOpen={false}
+        title={t("editor.watermark")}
+        icon={(
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 8.5V6a4 4 0 018 0v2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><rect x="1" y="8.5" width="2.6" height="2" rx="0.8" stroke="currentColor" strokeWidth="1" /></svg>
+        )}
+      >
+        <WatermarkControls
+          watermarkEnabled={scene.watermarkEnabled}
+          watermarkText={scene.watermarkText}
+          watermarkPosition={scene.watermarkPosition}
+          watermarkSize={scene.watermarkSize}
+          watermarkImageUrl={scene.watermarkImageUrl}
+          toggleWatermark={toggleWatermark}
+          setWatermarkText={setWatermarkText}
+          setWatermarkPosition={setWatermarkPosition}
+          setWatermarkSize={setWatermarkSize}
+          setWatermarkImage={setWatermarkImage}
+        />
+      </Section>
+
+      <Section
+        id="screen"
+        defaultOpen={false}
+        title={t("editor.screen")}
+        icon={(
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="2" y="3" width="8" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.2"/><path d="M2 3.5h8M2 5h8" stroke="currentColor" strokeWidth="0.8" opacity="0.45"/></svg>
+        )}
+      >
+        <ScreenControls
+          screen={scene.screen}
+          setScreenChrome={setScreenChrome}
+          screenGlare={scene.screenGlare}
+          setScreenGlare={(on) => useEditorStore.getState().setScreenGlare(on)}
+        />
+      </Section>
     </div>
   );
 }

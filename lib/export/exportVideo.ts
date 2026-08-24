@@ -1,160 +1,258 @@
 "use client";
 
-import type { EditorScene } from "@/lib/types/editor";
-import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { renderMockupToCanvas } from "@/lib/export/renderMockup";
+import type { EditorScene, ExportSize } from "@/lib/types/editor";
+import { downloadBlob } from "@/lib/export/downloadBlob";
+import {
+  cleanupFfmpegTempFiles,
+  getFfmpegInstance,
+  getFfmpegSingleton,
+  terminateFfmpeg,
+  sanitizeFilename,
+  activeLayerOf,
+  exportBaseName,
+  resolvePixelRatio,
+  computeCaptureDuration,
+  chooseWebmMimeType,
+  QUALITY,
+  captureWebm,
+  captureWebmWithRetry,
+  warmUpFfmpeg,
+} from "@/lib/export/exportVideoCore";
 
-let ffmpegSingleton: FFmpeg | null = null;
-
-async function getFfmpegInstance() {
-  if (ffmpegSingleton) return ffmpegSingleton;
-
-  const ffmpeg = new FFmpeg();
-  console.log("loading ffmpeg...");
-  await ffmpeg.load({
-    coreURL: "/ffmpeg-core.js",
-    wasmURL: "/ffmpeg-core.wasm",
-  });
-  console.log("ffmpeg loaded");
-  ffmpegSingleton = ffmpeg;
-  return ffmpeg;
-}
-
-function sanitizeFilename(name: string) {
-  return name.replace(/[^a-zA-Z0-9._-]/g, "_");
-}
-
-function isVideoScene(scene: EditorScene) {
-  if (scene.mediaType === "video") return true;
-  return Boolean(scene.mediaName && /\.(mp4|mov|m4v|webm|ogg|ogv|avi|mkv)$/i.test(scene.mediaName));
-}
-
-async function recordCanvasToWebm(
-  scene: EditorScene,
-  canvas: HTMLCanvasElement,
-  media: HTMLVideoElement | HTMLImageElement | null,
-  onStatus?: (message: string) => void,
-  onProgress?: (progress: number) => void
-) {
-  const fps = 30;
-  const stream = canvas.captureStream(fps);
-  const chunks: BlobPart[] = [];
-  const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-    ? "video/webm;codecs=vp9"
-    : "video/webm;codecs=vp8";
-  const recorder = new MediaRecorder(stream, { mimeType });
-  recorder.ondataavailable = (e) => {
-    if (e.data.size > 0) chunks.push(e.data);
-  };
-
-  const start = Math.max(0, scene.videoTrimStart || 0);
-  const end = scene.videoTrimEnd > start ? scene.videoTrimEnd : scene.videoDuration;
-  const duration = Math.max(0.2, end - start);
-
-  await new Promise<void>((resolve, reject) => {
-    recorder.onstop = () => resolve();
-    recorder.onerror = () => reject(new Error("MediaRecorder failed"));
-    recorder.start(200);
-
-    let raf = 0;
-    const startedAt = performance.now();
-    if (media instanceof HTMLVideoElement) {
-      media.currentTime = start;
-      media.muted = true;
-      media.play().catch(() => null);
-    }
-
-    const tick = () => {
-      const elapsed = (performance.now() - startedAt) / 1000;
-      const progress = Math.min(100, (elapsed / duration) * 100);
-      onProgress?.(progress);
-
-      if (media instanceof HTMLVideoElement) {
-        if (media.currentTime >= end || elapsed >= duration) {
-          media.pause();
-          renderMockupToCanvas(canvas, scene, media);
-          recorder.stop();
-          cancelAnimationFrame(raf);
-          onProgress?.(100);
-          return;
-        }
-      } else if (elapsed >= duration) {
-        recorder.stop();
-        cancelAnimationFrame(raf);
-        onProgress?.(100);
-        return;
-      }
-
-      renderMockupToCanvas(canvas, scene, media);
-      raf = requestAnimationFrame(tick);
-    };
-
-    onStatus?.("Recording mockup frames...");
-    raf = requestAnimationFrame(tick);
-  });
-
-  return new Blob(chunks, { type: "video/webm" });
-}
+export { terminateFfmpeg };
+export { warmUpFfmpeg };
+export { sanitizeFilename };
+export { activeLayerOf };
+export { exportBaseName };
+export { resolvePixelRatio };
+export { computeCaptureDuration };
+export { chooseWebmMimeType };
+export { QUALITY };
+export { captureWebm };
+export { captureWebmWithRetry };
+export { cleanupFfmpegTempFiles };
 
 export async function exportVideo(
   scene: EditorScene,
+  scale?: number,
   onStatus?: (message: string) => void,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
+  onError?: (message: string) => void,
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId,
+  signal?: AbortSignal
 ) {
-  const previewNode = document.getElementById("preview-canvas");
-  if (!previewNode) return;
+  try {
+    signal?.throwIfAborted();
+    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId);
+    if (!webmBlob || webmBlob.size === 0) {
+      onError?.("Recording produced no frames.");
+      return;
+    }
 
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(640, previewNode.clientWidth * 2);
-  canvas.height = Math.max(360, previewNode.clientHeight * 2);
-
-  const videoInPreview = previewNode.querySelector("video");
-  const imageInPreview = previewNode.querySelector("img");
-  let media: HTMLVideoElement | HTMLImageElement | null = null;
-  if (isVideoScene(scene) && scene.mediaUrl) {
-    const sourceVideo = document.createElement("video");
-    sourceVideo.src = scene.mediaUrl;
-    sourceVideo.crossOrigin = "anonymous";
-    sourceVideo.muted = true;
-    sourceVideo.playsInline = true;
-    await new Promise<void>((resolve, reject) => {
-      sourceVideo.onloadedmetadata = () => resolve();
-      sourceVideo.onerror = () => reject(new Error("Unable to load video for export"));
-    });
-    media = sourceVideo;
-  } else if (imageInPreview instanceof HTMLImageElement) {
-    media = imageInPreview;
-  } else if (videoInPreview instanceof HTMLVideoElement) {
-    media = videoInPreview;
-  }
-
-  const webmBlob = await recordCanvasToWebm(scene, canvas, media, onStatus, onProgress);
-
-  onStatus?.("Converting to MP4...");
+  signal?.throwIfAborted();
+  onStatus?.("Encoding MP4…");
   onProgress?.(0);
-  const ffmpeg = await getFfmpegInstance();
+  const exportQuality = (scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0])?.videoQuality ?? "medium";
+  const quality = QUALITY[exportQuality] ?? QUALITY.medium;
+  const ffmpeg = await getFfmpegInstance(onStatus);
   const inputName = "input.webm";
   const outputName = "mocksy-export.mp4";
   await ffmpeg.writeFile(inputName, new Uint8Array(await webmBlob.arrayBuffer()));
   onProgress?.(50);
-  await ffmpeg.exec([
+  signal?.throwIfAborted();
+  const code = await ffmpeg.exec([
     "-i", inputName,
     "-c:v", "mpeg4",
-    "-q:v", "5",
+    "-q:v", String(quality.qscale),
     "-pix_fmt", "yuv420p",
     outputName,
   ]);
+  // FFmpeg returns 0 on success; a non-zero code means the encode failed
+  // (e.g. unsupported input) and would otherwise produce an empty/corrupt MP4.
+  if (code !== 0) {
+    throw new Error("Video encoding failed.");
+  }
   onProgress?.(90);
+  signal?.throwIfAborted();
   const data = await ffmpeg.readFile(outputName);
   const bytes = typeof data === "string" ? new TextEncoder().encode(data) : new Uint8Array(data);
+  if (bytes.length === 0) {
+    throw new Error("Video encoding produced no output.");
+  }
   const blob = new Blob([bytes], { type: "video/mp4" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = sanitizeFilename((scene.mediaName || "mocksy-export").replace(/\.[^.]+$/, "")) + ".mp4";
+  link.download = `${exportBaseName(scene, activeLayerId)}.mp4`;
   link.click();
-  URL.revokeObjectURL(link.href);
+  setTimeout(() => URL.revokeObjectURL(link.href), 200);
   await ffmpeg.deleteFile(inputName);
   await ffmpeg.deleteFile(outputName);
-  onStatus?.("MP4 exported");
+  onStatus?.("Done");
   onProgress?.(100);
+  } catch (err) {
+    // Best-effort temp-file cleanup so the FFmpeg singleton doesn't carry
+    // stale input/output between failed exports.
+    await cleanupFfmpegTempFiles(getFfmpegSingleton(), ["input.webm", "mocksy-export.mp4"]);
+    onError?.(err instanceof Error ? err.message : "Video export failed.");
+  }
+}
+
+export async function exportWebm(
+  scene: EditorScene,
+  scale?: number,
+  onStatus?: (message: string) => void,
+  onProgress?: (progress: number) => void,
+  onError?: (message: string) => void,
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId,
+  signal?: AbortSignal
+) {
+  try {
+    signal?.throwIfAborted();
+    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId);
+    if (!webmBlob || webmBlob.size === 0) {
+      onError?.("Recording produced no video frames.");
+      return;
+    }
+    downloadBlob(webmBlob, `${exportBaseName(scene, activeLayerId)}.webm`);
+    onStatus?.("Done");
+    onProgress?.(100);
+  } catch (err) {
+    onError?.(err instanceof Error ? err.message : "WebM export failed.");
+  }
+}
+
+export async function exportWebpAnim(
+  scene: EditorScene,
+  scale?: number,
+  onStatus?: (message: string) => void,
+  onProgress?: (progress: number) => void,
+  onError?: (message: string) => void,
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId,
+  signal?: AbortSignal
+) {
+  try {
+    signal?.throwIfAborted();
+    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId);
+    if (!webmBlob || webmBlob.size === 0) {
+      onError?.("Recording produced no frames.");
+      return;
+    }
+
+  signal?.throwIfAborted();
+  onStatus?.("Encoding WebP…");
+    onProgress?.(0);
+    const exportQuality = activeLayerOf(scene, activeLayerId)?.videoQuality ?? "medium";
+    const quality = QUALITY[exportQuality] ?? QUALITY.medium;
+    const ffmpeg = await getFfmpegInstance(onStatus);
+    const inputName = "input.webm";
+    const outputName = "mocksy-export.webp";
+    await ffmpeg.writeFile(inputName, new Uint8Array(await webmBlob.arrayBuffer()));
+    onProgress?.(50);
+    // Animated WebP is best kept small: cap the width per quality tier (2× is
+    // the baseline, so 1× halves and 4× doubles it) and drop to 15fps. A custom
+    // resolution is capped at its own width so it never exceeds it.
+    const hasCustomSize = customSize !== null && customSize !== undefined && customSize.width > 0;
+    const width = hasCustomSize
+      ? Math.round(Math.min(customSize.width, 480 * quality.scale))
+      : Math.round(480 * quality.scale * (typeof scale === "number" && scale > 0 ? scale / 2 : 1));
+    const code = await ffmpeg.exec([
+      "-i", inputName,
+      "-vf", `fps=15,scale=${width}:-1:flags=lanczos`,
+      "-c:v", "libwebp_anim",
+      "-lossless", "0",
+      "-q:v", "75",
+      outputName
+    ]);
+    if (code !== 0) {
+      throw new Error("WebP encoding failed.");
+    }
+    onProgress?.(90);
+    const data = await ffmpeg.readFile(outputName);
+    const bytes = typeof data === "string" ? new TextEncoder().encode(data) : new Uint8Array(data);
+    if (bytes.length === 0) {
+      throw new Error("WebP encoding produced no output.");
+    }
+    downloadBlob(new Blob([bytes], { type: "image/webp" }), `${exportBaseName(scene, activeLayerId)}.webp`);
+    await ffmpeg.deleteFile(inputName);
+    await ffmpeg.deleteFile(outputName);
+    onStatus?.("Done");
+    onProgress?.(100);
+  } catch (err) {
+    await cleanupFfmpegTempFiles(getFfmpegSingleton(), ["input.webm", "mocksy-export.webp"]);
+    onError?.(err instanceof Error ? err.message : "Animated WebP export failed.");
+  }
+}
+
+export async function exportGif(
+  scene: EditorScene,
+  scale?: number,
+  onStatus?: (message: string) => void,
+  onProgress?: (progress: number) => void,
+  onError?: (message: string) => void,
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId,
+  signal?: AbortSignal
+) {
+  try {
+    signal?.throwIfAborted();
+    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId);
+    if (!webmBlob || webmBlob.size === 0) {
+      onError?.("Recording produced no frames.");
+      return;
+    }
+
+  signal?.throwIfAborted();
+  onStatus?.("Encoding GIF…");
+    onProgress?.(0);
+    const exportQuality = (scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0])?.videoQuality ?? "medium";
+    const quality = QUALITY[exportQuality] ?? QUALITY.medium;
+    const ffmpeg = await getFfmpegInstance(onStatus);
+    const inputName = "input.webm";
+    const paletteName = "palette.png";
+    const outputName = "mocksy-export.gif";
+    await ffmpeg.writeFile(inputName, new Uint8Array(await webmBlob.arrayBuffer()));
+    onProgress?.(50);
+    // Scale down for GIF: keep it crisp but cap width so the palette step
+    // stays cheap. Quality tier and the chosen export scale drive the width
+    // (2× is the baseline, so 1× halves and 4× doubles it). A custom resolution
+    // is capped at its own width.
+    const hasCustomSize = customSize !== null && customSize !== undefined && customSize.width > 0;
+    const width = hasCustomSize
+      ? Math.round(Math.min(customSize.width, 480 * quality.scale))
+      : Math.round(480 * quality.scale * (typeof scale === "number" && scale > 0 ? scale / 2 : 1));
+    signal?.throwIfAborted();
+    const code = await ffmpeg.exec([
+      "-i", inputName,
+      "-vf", `fps=15,scale=${width}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`,
+      "-loop", "0",
+      outputName
+    ]);
+    if (code !== 0) {
+      throw new Error("GIF encoding failed.");
+    }
+    onProgress?.(90);
+    signal?.throwIfAborted();
+    const data = await ffmpeg.readFile(outputName);
+    const bytes = typeof data === "string" ? new TextEncoder().encode(data) : new Uint8Array(data);
+    if (bytes.length === 0) {
+      throw new Error("GIF encoding produced no output.");
+    }
+    const blob = new Blob([bytes], { type: "image/gif" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${exportBaseName(scene, activeLayerId)}.gif`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 200);
+    await ffmpeg.deleteFile(inputName);
+    await ffmpeg.deleteFile(paletteName);
+    await ffmpeg.deleteFile(outputName);
+    onStatus?.("Done");
+    onProgress?.(100);
+  } catch (err) {
+    await cleanupFfmpegTempFiles(getFfmpegSingleton(), ["input.webm", "palette.png", "mocksy-export.gif"]);
+    onError?.(err instanceof Error ? err.message : "GIF export failed.");
+  }
 }
