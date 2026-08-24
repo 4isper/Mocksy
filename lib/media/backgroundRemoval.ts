@@ -6,6 +6,12 @@ import type { MediaLayer } from "@/lib/types/editor";
  * so the main bundle and initial page load stay clean; afterwards the
  * pipeline is cached module-wide and reuse is fast. Everything runs in the
  * browser — images never leave the device.
+ *
+ * Offline reuse after the first run is provided by two cache layers:
+ *   - model weights: transformers.js's own Cache API store (useBrowserCache),
+ *     checked before any network request;
+ *   - the ONNX Runtime wasm binaries from jsdelivr: the app service worker
+ *     serves them stale-while-revalidate (see scripts/sw-template.js).
  */
 
 /** A layer is eligible when it carries a raster image (videos are skipped). */
@@ -39,6 +45,9 @@ async function loadPipeline(onProgress?: (p: BackgroundRemovalProgress) => void)
       const { pipeline, env } = await import("@huggingface/transformers");
       // Models always come from the HF hub; there are no local model files.
       env.allowLocalModels = false;
+      // Cache-first model loading: once downloaded, weights are served from
+      // the browser's Cache API even when offline.
+      env.useBrowserCache = true;
       const remover = await pipeline("background-removal", "briaai/RMBG-1.4", {
         progress_callback: (info: { status?: string; progress?: number }) => {
           if (info.status === "progress" || typeof info.progress === "number") {

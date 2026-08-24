@@ -101,10 +101,41 @@ describe("service worker", () => {
     expect(event.respondWith).not.toHaveBeenCalled();
   });
 
-  it("ignores cross-origin requests", () => {
+  it("ignores cross-origin requests outside the runtime CDN allowlist", () => {
     const event = fetchEvent({ url: "https://other.test/x" });
     handler("fetch")(event);
     expect(event.respondWith).not.toHaveBeenCalled();
+  });
+
+  it("serves AI runtime CDN assets stale-while-revalidate when cached", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("fresh wasm")));
+    const cached = new Response("cached wasm");
+    env.caches.match.mockResolvedValue(cached);
+    const event = fetchEvent({ url: "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/ort-wasm-simd-threaded.jsep.wasm" });
+    handler("fetch")(event);
+    const res = await event.respondWith!.mock.calls[0]![0];
+    expect(await res.text()).toBe("cached wasm");
+    expect(vi.mocked(fetch)).toHaveBeenCalled();
+  });
+
+  it("fetches and caches AI runtime CDN assets when not cached", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("fresh wasm")));
+    env.caches.match.mockResolvedValue(undefined);
+    const event = fetchEvent({ url: "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/ort-wasm-simd-threaded.jsep.mjs" });
+    handler("fetch")(event);
+    const res = await event.respondWith!.mock.calls[0]![0];
+    expect(await res.text()).toBe("fresh wasm");
+    expect(env.cache.put).toHaveBeenCalled();
+  });
+
+  it("falls back to the cached wasm when the CDN is unreachable offline", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("network")));
+    const cached = new Response("offline wasm");
+    env.caches.match.mockResolvedValue(cached);
+    const event = fetchEvent({ url: "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/ort-wasm-simd-threaded.jsep.wasm" });
+    handler("fetch")(event);
+    const res = await event.respondWith!.mock.calls[0]![0];
+    expect(await res.text()).toBe("offline wasm");
   });
 
   it("serves navigations network-first and updates the cache in background", async () => {

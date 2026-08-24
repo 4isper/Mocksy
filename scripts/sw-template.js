@@ -4,7 +4,7 @@
  * and writes the result to public/sw.js. Do not edit public/sw.js directly;
  * edit this template and run `npm run build` (or `node scripts/generate-sw.mjs`).
  * Strategy: navigation = network-first, Next.js chunks = network-first + background cache update,
- * immutable static assets = stale-while-revalidate.
+ * immutable static assets + AI runtime CDN (jsdelivr) = stale-while-revalidate.
  * Using a versioned cache name so activate purges stale chunks on every deploy.
  */
 const CACHE = "mocksy-sw-__SW_VERSION__";
@@ -45,12 +45,24 @@ function isImmutableAsset(url) {
   return url.pathname.startsWith("/fonts/") || url.pathname.startsWith("/icon") || url.pathname === "/manifest.json";
 }
 
+/**
+ * Cross-origin CDNs that host the on-device AI runtime. transformers.js caches
+ * model weights itself via the Cache API, but the ONNX Runtime wasm binaries
+ * (~25 MB) are fetched straight from jsdelivr by ort-web and would fail
+ * offline without this entry. Served stale-while-revalidate like immutable
+ * assets: versioned npm URLs never change content once published.
+ */
+function isRuntimeCdnAsset(url) {
+  return url.hostname === "cdn.jsdelivr.net";
+}
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET and cross-origin requests.
-  if (request.method !== "GET" || url.origin !== self.location.origin) return;
+  // Skip non-GET and unlisted cross-origin requests.
+  if (request.method !== "GET") return;
+  if (url.origin !== self.location.origin && !isRuntimeCdnAsset(url)) return;
 
   // Navigation requests (HTML pages): network-first, fallback to cache.
   if (request.mode === "navigate") {
@@ -83,8 +95,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Immutable assets (fonts, icons): stale-while-revalidate.
-  if (isImmutableAsset(url)) {
+  // Immutable assets (fonts, icons) and the AI runtime CDN: stale-while-revalidate.
+  if (isImmutableAsset(url) || isRuntimeCdnAsset(url)) {
     event.respondWith(
       caches.match(request).then((cached) => {
         const fetchPromise = fetch(request).then((res) => {
