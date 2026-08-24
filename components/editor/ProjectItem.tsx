@@ -16,6 +16,7 @@ interface ProjectItemProps {
   onDraftChange: (v: string) => void;
   onDuplicate: (id: string) => void;
   onExport: (project: Project) => void;
+  onExportBundle: (project: Project) => void | Promise<void>;
   onDelete: (id: string) => void;
   disableDelete: boolean;
 }
@@ -34,6 +35,7 @@ export function ProjectItem({
   onDraftChange,
   onDuplicate,
   onExport,
+  onExportBundle,
   onDelete,
   disableDelete
 }: ProjectItemProps) {
@@ -131,6 +133,18 @@ export function ProjectItem({
         }}
       >
         <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 2v6M6 8l3-3M6 8l-3-3M2 9v1a1 1 0 001 1h6a1 1 0 001-1V9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      </button>
+      <button
+        type="button"
+        className="btn-icon tooltip"
+        aria-label={t("projects.bundleExportLabel", { name: project.name })}
+        data-tooltip={t("projects.bundleExport")}
+        onClick={(e) => {
+          e.stopPropagation();
+          void onExportBundle(project);
+        }}
+      >
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M1.5 4 6 1.5 10.5 4 6 6.5 1.5 4zM1.5 4v4L6 10.5V6.5M10.5 4v4L6 10.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>
       </button>
       <button
         type="button"

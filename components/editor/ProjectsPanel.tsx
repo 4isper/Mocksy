@@ -3,9 +3,11 @@
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import type { Project } from "@/lib/types/editor";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { exportProjectToFile, importProjectFromFile } from "@/lib/state/projectFile";
+import { exportProjectBundle, importProjectBundle, isBundleFile } from "@/lib/state/projectBundle";
 import { exportTemplateToFile, importTemplateFromFile } from "@/lib/state/templateFile";
 import { relativeTime } from "@/lib/utils/relativeTime";
 import { ProjectItem } from "@/components/editor/ProjectItem";
@@ -62,11 +64,22 @@ export function ProjectsPanel() {
     event.target.value = "";
     if (!file) return;
     try {
-      const project = await importProjectFromFile(file);
+      // .mocksy.zip bundles carry their media; plain JSON imports the
+      // appearance-only project format.
+      const project = isBundleFile(file) ? await importProjectBundle(file) : await importProjectFromFile(file);
       importProject(project);
       setError(null);
     } catch {
       setError(t("projects.importError"));
+    }
+  };
+
+  const handleExportBundle = async (project: Project) => {
+    try {
+      await exportProjectBundle(project);
+      setError(null);
+    } catch {
+      setError(t("projects.bundleError"));
     }
   };
 
@@ -96,7 +109,12 @@ export function ProjectsPanel() {
         </button>
         <label className="btn" style={{ flex: 1, fontSize: 12, padding: "7px 10px", cursor: "pointer", textAlign: "center" }}>
           {t("projects.import")}
-          <input type="file" accept="application/json,.json" onChange={handleImport} style={{ display: "none" }} />
+          <input
+            type="file"
+            accept="application/json,.json,.zip,application/zip,.mocksy.zip"
+            onChange={handleImport}
+            style={{ display: "none" }}
+          />
         </label>
       </div>
       <div style={{ display: "flex", gap: 6 }}>
@@ -153,6 +171,7 @@ export function ProjectsPanel() {
               onDraftChange={setDraftName}
               onDuplicate={duplicateProject}
               onExport={exportProjectToFile}
+              onExportBundle={handleExportBundle}
               onDelete={deleteProject}
               disableDelete={activeProjects.length <= 1}
             />

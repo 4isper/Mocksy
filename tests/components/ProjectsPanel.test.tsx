@@ -166,7 +166,7 @@ describe("ProjectsPanel", () => {
     mockImport.mockResolvedValue(project("imp1", "Imported"));
     useProjectsStore.setState({ projects: [project("p1", "Existing")], activeProjectId: "p1" });
     render(<ProjectsPanel />);
-    const input = document.querySelector('input[accept="application/json,.json"]') as HTMLInputElement;
+    const input = document.querySelector('input[accept="application/json,.json,.zip,application/zip,.mocksy.zip"]') as HTMLInputElement;
     await userEvent.upload(input, new File(["{}"], "proj.json", { type: "application/json" }));
     await waitFor(() => expect(useProjectsStore.getState().projects.some((p) => p.name === "Imported")).toBe(true));
     expect(mockImport).toHaveBeenCalledTimes(1);
@@ -175,7 +175,7 @@ describe("ProjectsPanel", () => {
   it("shows an error when importing an invalid project file", async () => {
     mockImport.mockRejectedValue(new Error("bad file"));
     render(<ProjectsPanel />);
-    const input = document.querySelector('input[accept="application/json,.json"]') as HTMLInputElement;
+    const input = document.querySelector('input[accept="application/json,.json,.zip,application/zip,.mocksy.zip"]') as HTMLInputElement;
     await userEvent.upload(input, new File(["nope"], "bad.json", { type: "application/json" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("projects.importError");
   });

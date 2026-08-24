@@ -30,8 +30,9 @@ import { nextProjectId } from "@/lib/state/ids";
 type MediaHolder = Record<string, unknown>;
 
 /** Calls `visit` for every media-URL field of the scene (layers, background
- *  image, watermark logo, background audio, custom frame asset). */
-function visitSceneMedia(scene: unknown, visit: (holder: MediaHolder, prop: string) => void): void {
+ *  image, watermark logo, background audio, custom frame asset). Exported so
+ *  other codecs (project bundles) walk exactly the same field set. */
+export function visitSceneMedia(scene: unknown, visit: (holder: MediaHolder, prop: string) => void): void {
   if (!scene || typeof scene !== "object") return;
   const s = scene as MediaHolder;
   if (Array.isArray(s.layers)) {
