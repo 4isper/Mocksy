@@ -4,6 +4,8 @@
 
 Free browser-based mockup editor. No auth, no paywall, no subscriptions — and 100% client-side: your media never leaves the device.
 
+**Try it live: [mocksy-ashen.vercel.app](https://mocksy-ashen.vercel.app)**
+
 > [!WARNING]
 > Mocksy is under active development — bugs are expected. If you run into one, please [open an issue](https://github.com/4isper/Mocksy/issues) so it can be fixed.
 
