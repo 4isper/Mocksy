@@ -73,25 +73,27 @@ export async function inlineSvgAsset(asset: string): Promise<string | null> {
   }
 }
 
+export interface StandaloneSvg {
+  markup: string;
+  width: number;
+  height: number;
+}
+
 /**
- * Exports the scene as a standalone SVG. Geometry is measured from the live
- * preview (so it matches the PNG/video exports), media is embedded as data
- * URLs, and overlay device skins are inlined so the file opens cleanly in
- * Figma/Illustrator/browsers.
+ * Builds a standalone SVG document from the live preview. Geometry is
+ * measured from the DOM (so it matches the PNG/video exports), media is
+ * embedded as data URLs, and overlay device skins are inlined so the result
+ * opens cleanly in Figma/Illustrator/browsers. Shared by the SVG and PDF
+ * exporters so both stay pixel-identical. Returns null when the preview
+ * area is missing.
  */
-export async function exportSvg(
+export async function buildStandaloneSvg(
   scene: EditorScene,
   containerId: string,
-  filename = "mocksy-export",
-  onError?: (message: string) => void,
   activeLayerId: string | null = scene.activeLayerId
-) {
-  try {
-    const node = document.getElementById(containerId);
-    if (!node) {
-      onError?.("Preview area not found.");
-      return;
-    }
+): Promise<StandaloneSvg | null> {
+  const node = document.getElementById(containerId);
+  if (!node) return null;
     // Anchor the SVG canvas to the scene's intrinsic artboard (exportSize.ts)
     // so vector output matches the raster exports and never depends on the
     // preview's on-screen size.
@@ -219,7 +221,26 @@ export async function exportSvg(
       groups,
       fontCss: await buildEmbeddedFontCss(collectFontStacks(scene))
     });
-    downloadBlob(new Blob([markup], { type: "image/svg+xml" }), `${filename}.svg`);
+    return { markup, width, height };
+}
+
+/**
+ * Exports the scene as a standalone SVG file.
+ */
+export async function exportSvg(
+  scene: EditorScene,
+  containerId: string,
+  filename = "mocksy-export",
+  onError?: (message: string) => void,
+  activeLayerId: string | null = scene.activeLayerId
+) {
+  try {
+    const svg = await buildStandaloneSvg(scene, containerId, activeLayerId);
+    if (!svg) {
+      onError?.("Preview area not found.");
+      return;
+    }
+    downloadBlob(new Blob([svg.markup], { type: "image/svg+xml" }), `${filename}.svg`);
   } catch (err) {
     onError?.(err instanceof Error ? err.message : "SVG export failed.");
   }
