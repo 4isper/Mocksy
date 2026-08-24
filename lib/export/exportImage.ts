@@ -12,10 +12,15 @@ import {
   buildRenderWorkerPayload,
   canRenderSceneInWorker
 } from "@/lib/render/renderWorkerProtocol";
-import { resolveExportTransform, waitForImage } from "@/lib/export/exportImageCore";
+import { resolveExportTransform, waitForImage, layerMediaSelector } from "@/lib/export/exportImageCore";
 import { fitRatioForCustomSize, intrinsicExportSize } from "@/lib/export/exportSize";
-import { singleFrameCssSize } from "@/lib/render/frameGeometry";
+import { singleFrameCssSize, isVisibleFrameInstance } from "@/lib/render/frameGeometry";
 import { loadExportAssets } from "@/lib/export/exportAssets";
+
+/** Escapes a value for use inside a double-quoted CSS attribute selector. */
+function escapeSelectorValue(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
 
 /**
  * Renders the current scene to a raster `Blob` (PNG or WebP) at an intrinsic,
@@ -48,18 +53,21 @@ export async function renderSceneToImageBlob(
       return null;
     }
 
-    const video = node.querySelector("video");
-    const img = node.querySelector("img");
     const isMultiFrame = scene.frameInstances.length > 0;
     const active = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
     let media: CanvasImageSource | null = null;
 
     // A hidden active layer renders nothing, matching the preview.
-    if (!active?.hidden) {
-      if (video instanceof HTMLVideoElement) {
-        if (video.readyState >= 2) {
-          media = video;
-        } else if (active && isVideoLayer(active) && active.mediaUrl) {
+    if (!active?.hidden && active) {
+      // Resolve the active layer's media element by identity, never by DOM
+      // order: the preview container also holds unrelated <img>s (device-skin
+      // overlays, the watermark logo) and other layers' media, which a blind
+      // querySelector would export with this layer's fit/filters applied.
+      const el = node.querySelector(layerMediaSelector(active.id));
+      if (el instanceof HTMLVideoElement) {
+        if (el.readyState >= 2) {
+          media = el;
+        } else if (isVideoLayer(active) && active.mediaUrl) {
           // Export fired before the preview video decoded; load a frame
           // explicitly instead of drawing an empty screen.
           try {
@@ -68,9 +76,9 @@ export async function renderSceneToImageBlob(
             media = null;
           }
         }
-      } else if (img instanceof HTMLImageElement) {
-        await waitForImage(img);
-        media = img;
+      } else if (el instanceof HTMLImageElement) {
+        await waitForImage(el);
+        media = el;
       }
     }
 
@@ -132,6 +140,8 @@ export async function renderSceneToImageBlob(
       layerMedias = new Map();
       frameOverlays = new Map();
       for (const inst of scene.frameInstances) {
+        // Hidden layers' instances aren't rendered — skip their media too.
+        if (!isVisibleFrameInstance(scene, inst)) continue;
         const layer = scene.layers.find((l) => l.id === inst.layerId);
         if (layer?.mediaUrl) {
           try {

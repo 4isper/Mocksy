@@ -247,7 +247,7 @@ describe("createAspectRatioCommands", () => {
 });
 
 describe("createLayerCommands", () => {
-  it("adds a layer from a picked file", () => {
+  it("adds a layer from a picked file", async () => {
     const addLayer = vi.fn();
     const input = {
       type: "",
@@ -256,7 +256,6 @@ describe("createLayerCommands", () => {
       click: vi.fn()
     };
     vi.stubGlobal("document", { createElement: (tag: string) => (tag === "input" ? input : undefined) });
-    vi.stubGlobal("URL", { createObjectURL: vi.fn(() => "blob:file"), revokeObjectURL: vi.fn() });
 
     const cmds = createLayerCommands(t, makeScene(), {
       addLayer, duplicateLayer: vi.fn(), removeLayer: vi.fn(), toggleLayerHidden: vi.fn(), selectLayer: vi.fn()
@@ -264,7 +263,13 @@ describe("createLayerCommands", () => {
     cmds.find((c) => c.id === "layer-add")!.action();
     expect(input.click).toHaveBeenCalled();
     input.onchange?.({ target: { files: [new File(["x"], "clip.mp4", { type: "video/mp4" })] } });
-    expect(addLayer).toHaveBeenCalledWith("blob:file", "video", "clip.mp4");
+    // The layer gets a self-contained data URL (not a one-shot blob: URL) so
+    // it survives reloads and the video export's teardown.
+    await vi.waitFor(() => expect(addLayer).toHaveBeenCalledTimes(1));
+    const [url, type, name] = addLayer.mock.calls[0]! as [string, string, string];
+    expect(url).toMatch(/^data:video\/mp4;base64,/);
+    expect(type).toBe("video");
+    expect(name).toBe("clip.mp4");
   });
 
   it("duplicates, removes, toggles and selects the active layer", () => {

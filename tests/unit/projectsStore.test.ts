@@ -405,6 +405,41 @@ describe("projectsStore", () => {
     expect(useProjectsStore.getState().activeProjectId).toBe(first);
   });
 
+  it("switchProject clears the previous project's undo/redo history", () => {
+    useProjectsStore.getState().hydrate();
+    const watchScene: EditorScene = { ...initialScene, frame: "watch" };
+    const second = useProjectsStore.getState().createProject("Second", watchScene);
+    // Edit the current (first) project so its undo stack gains entries.
+    useEditorStore.getState().setScene({ frame: "tablet" });
+    expect(useEditorStore.getState().past.length).toBeGreaterThan(0);
+    useProjectsStore.getState().switchProject(second);
+    expect(useEditorStore.getState().past).toEqual([]);
+    expect(useEditorStore.getState().future).toEqual([]);
+    expect(useEditorStore.getState().lastHistoryKey).toBeNull();
+    // Undo after the switch must be a no-op — it must not paste the previous
+    // project's scene into the newly-activated one (autosave would persist it).
+    useEditorStore.getState().undo();
+    expect(useEditorStore.getState().scene.frame).toBe("watch");
+  });
+
+  it("switchProject flushes the outgoing project's pending autosave", () => {
+    useProjectsStore.getState().hydrate();
+    const first = useProjectsStore.getState().activeProjectId!;
+    const watchScene: EditorScene = { ...initialScene, frame: "watch" };
+    const second = useProjectsStore.getState().createProject("Second", watchScene);
+    // createProject activates the new project — switch back so we're editing A.
+    useProjectsStore.getState().switchProject(first);
+    expect(useEditorStore.getState().scene.frame).toBe(useProjectsStore.getState().projects.find((p) => p.id === first)!.scene.frame);
+    // An edit that the debounced autosave hasn't persisted yet (the watcher
+    // would cancel its timer on the scene swap below).
+    useEditorStore.setState({ scene: { ...useEditorStore.getState().scene, frame: "tablet" } });
+    useProjectsStore.getState().switchProject(second);
+    // The unsaved edit must have been written into project A before switching.
+    expect(useProjectsStore.getState().projects.find((p) => p.id === first)!.scene.frame).toBe("tablet");
+    // And the editor now shows project B's own scene.
+    expect(useEditorStore.getState().scene.frame).toBe("watch");
+  });
+
   it("renameProject is a no-op for empty name", () => {
     useProjectsStore.getState().hydrate();
     const id = useProjectsStore.getState().activeProjectId!;
@@ -436,6 +471,9 @@ describe("projectsStore", () => {
 
   it("updateActiveProjectScene only updates the active project in multi-project", () => {
     useProjectsStore.getState().hydrate();
+    // Pin the editor scene: createProject snapshots it, and switchProject now
+    // flushes the live scene into the outgoing project.
+    useEditorStore.setState({ scene: { ...initialScene } });
     const b = useProjectsStore.getState().activeProjectId!;
     const a = useProjectsStore.getState().createProject("A");
     useProjectsStore.getState().switchProject(b);

@@ -122,6 +122,9 @@ export function initHistoryPersistence(): () => void {
   return () => {
     unsubscribe();
     window.removeEventListener("pagehide", flush);
-    if (timer) clearTimeout(timer);
+    // Flush instead of dropping: an SPA unmount (locale switch remounts the
+    // editor) must not lose the pending write, or the next mount's
+    // restoreHistory would resurrect a stale stack over newer history.
+    flush();
   };
 }

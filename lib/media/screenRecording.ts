@@ -97,7 +97,8 @@ export async function startScreenRecording(options: {
 
   let recorder: MediaRecorder;
   try {
-    recorder = new MediaRecorder(stream, { mimeType: chooseWebmMimeType() });
+    const mimeType = chooseWebmMimeType();
+    recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
   } catch {
     // Some platforms refuse explicit mime types; fall back to the default.
     try {

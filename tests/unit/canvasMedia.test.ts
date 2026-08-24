@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadImage, clearImageCache, loadVideoFrame, drawFrameMediaFromLayer } from "@/lib/render/canvasMedia";
+import { IMAGE_CACHE_LIMIT } from "@/lib/render/canvasMedia";
 
 describe("loadImage", () => {
   afterEach(() => {
@@ -78,6 +79,36 @@ describe("loadImage", () => {
     await expect(second).resolves.toBeDefined();
     expect(callbacks).toHaveLength(2);
   });
+
+  it("evicts the oldest entry when the cache exceeds its limit", async () => {
+    const instances: unknown[] = [];
+    class MockImage {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      constructor() {
+        instances.push(this);
+      }
+      set src(_v: string) {
+        // Auto-resolve: each load completes immediately.
+        this.onload?.();
+      }
+    }
+    vi.stubGlobal("Image", MockImage);
+
+    // Overflow the cache by one so the very first entry (img-0) gets evicted.
+    for (let i = 0; i <= IMAGE_CACHE_LIMIT; i++) {
+      await loadImage(`img-${i}.png`);
+    }
+
+    // The evicted URL constructs a fresh Image when requested again.
+    const before = instances.length;
+    await loadImage("img-0.png");
+    expect(instances.length).toBe(before + 1);
+    // The most recent entry is still cached — no new instance.
+    const recentBefore = instances.length;
+    await loadImage(`img-${IMAGE_CACHE_LIMIT}.png`);
+    expect(instances.length).toBe(recentBefore);
+  });
 });
 
 describe("loadVideoFrame", () => {
@@ -137,6 +168,21 @@ describe("loadVideoFrame", () => {
     const promise = loadVideoFrame("blob:bad");
     (video.onerror as () => void)();
     await expect(promise).rejects.toThrow("Failed to load video: blob:bad");
+  });
+
+  it("rejects when metadata never loads instead of hanging forever", async () => {
+    vi.useFakeTimers();
+    try {
+      const video = mockVideo({ remove: vi.fn() });
+      stubDocumentWithVideo(video);
+      const promise = loadVideoFrame("blob:stuck");
+      const assertion = expect(promise).rejects.toThrow("Timed out loading video: blob:stuck");
+      await vi.advanceTimersByTimeAsync(10_000);
+      await assertion;
+      expect(video.remove).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("sets crossOrigin to anonymous", async () => {

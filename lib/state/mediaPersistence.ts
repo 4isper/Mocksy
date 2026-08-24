@@ -216,8 +216,15 @@ export async function decodeProjectsState(raw: string | null): Promise<Persisted
 }
 
 /** Deletes IndexedDB blobs no longer referenced by any stored project
- *  (deleted scenes, replaced uploads). Runs once per load after decoding. */
-export async function sweepOrphanedMedia(state: PersistedProjectsState | null): Promise<number> {
+ *  (deleted scenes, replaced uploads). Runs once per load after decoding.
+ *  `readFreshRaw` re-snapshots the raw localStorage JSON at deletion time:
+ *  a concurrent persist (share-link bootstrap, another tab) may offload new
+ *  blobs while we await listMediaKeys — deleting against the stale load-time
+ *  snapshot would strand those fresh placeholders with no blob behind them. */
+export async function sweepOrphanedMedia(
+  state: PersistedProjectsState | null,
+  readFreshRaw?: () => string | null
+): Promise<number> {
   const referenced = new Set<string>();
   const collect = (scene: unknown) =>
     visitSceneMedia(scene, (holder, prop) => {
@@ -229,6 +236,20 @@ export async function sweepOrphanedMedia(state: PersistedProjectsState | null): 
   if (state) for (const p of state.projects) collect(p.scene);
 
   const keys = await listMediaKeys();
+  if (readFreshRaw) {
+    let raw: string | null = null;
+    try {
+      raw = readFreshRaw();
+    } catch {
+      raw = null;
+    }
+    if (raw) {
+      // Textual scan is enough — placeholders are plain "@idb:<hex>" strings.
+      for (const match of raw.matchAll(/@idb:([0-9a-f]+)/g)) {
+        referenced.add(match[1]!);
+      }
+    }
+  }
   const orphans = keys.filter((k) => !referenced.has(k));
   for (const key of orphans) await deleteMediaBlob(key);
   return orphans.length;

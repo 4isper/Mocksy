@@ -9,6 +9,13 @@ import {
 import type { MediaLayer } from "@/lib/types/editor";
 import type { EditorStoreSetter, EditorStoreState } from "../editorStoreTypes";
 
+/** Coalesce key for a group edit, scoped to the affected selection: two edits
+ *  of DIFFERENT groups within the 400ms window must stay separate undo steps,
+ *  while repeated updates of the same selection coalesce into one. */
+function groupKey(prefix: string, ids: string[]): string {
+  return `${prefix}:${[...ids].sort().join(",")}`;
+}
+
 export type LayersSlice = Pick<
   EditorStoreState,
   | "setMedia"
@@ -223,7 +230,7 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         const layers = s.scene.layers.map((l) => (idSet.has(l.id) && !l.locked ? { ...l, ...patch } : l));
         const changed = layers.some((l, i) => l !== s.scene.layers[i]);
         if (!changed) return {};
-        return pushHistory(s, { ...s.scene, layers }, "layerGroupTransform");
+        return pushHistory(s, { ...s.scene, layers }, groupKey("layerGroupTransform", ids));
       }),
     nudgeLayers: (ids, dx, dy) =>
       set((s) => {
@@ -236,7 +243,7 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         );
         const changed = layers.some((l, i) => l !== s.scene.layers[i]);
         if (!changed) return {};
-        return pushHistory(s, { ...s.scene, layers }, "layerGroupNudge");
+        return pushHistory(s, { ...s.scene, layers }, groupKey("layerGroupNudge", ids));
       }),
     selectLayer: (id) =>
       set((s) => {
@@ -295,20 +302,20 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         return pushHistory(s, { ...s.scene, layers }, "rename");
       }),
     setStylePreset: (stylePreset) => set((s) => pushHistory(s, { ...s.scene, stylePreset })),
-    setAnimationPreset: (animationPreset) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationPreset }, s.activeLayerId) }, "animation")),
-    setAnimationEasing: (animationEasing) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationEasing }, s.activeLayerId) }, "animation")),
+    setAnimationPreset: (animationPreset) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationPreset }, s.activeLayerId) }, "animationPreset")),
+    setAnimationEasing: (animationEasing) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationEasing }, s.activeLayerId) }, "animationEasing")),
     setAnimationDuration: (animationDurationMs) => set((s) => pushHistory(s, { ...s.scene, animationDurationMs: Math.max(500, Math.min(20000, Math.round(animationDurationMs))) }, "animationDuration")),
     setZoom: (zoom) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { zoom }, s.activeLayerId) }, "zoom")),
     setMediaOffsetX: (mediaOffsetX) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetX }, s.activeLayerId) }, "mediaOffset")),
     setMediaOffsetY: (mediaOffsetY) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetY }, s.activeLayerId) }, "mediaOffset")),
     setRotation: (rotation) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { rotation }, s.activeLayerId) }, "rotation")),
     setMediaFit: (mediaFit) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaFit }, s.activeLayerId) }, "mediaFit")),
-    setBrightness: (brightness) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { brightness }, s.activeLayerId) }, "layerFilter")),
-    setContrast: (contrast) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { contrast }, s.activeLayerId) }, "layerFilter")),
-    setSaturate: (saturate) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { saturate }, s.activeLayerId) }, "layerFilter")),
-    setBlur: (blur) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { blur }, s.activeLayerId) }, "layerFilter")),
-    setGrayscale: (grayscale) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { grayscale }, s.activeLayerId) }, "layerFilter")),
-    setOpacity: (opacity) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { opacity }, s.activeLayerId) }, "layerFilter")),
+    setBrightness: (brightness) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { brightness }, s.activeLayerId) }, "brightness")),
+    setContrast: (contrast) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { contrast }, s.activeLayerId) }, "contrast")),
+    setSaturate: (saturate) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { saturate }, s.activeLayerId) }, "saturate")),
+    setBlur: (blur) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { blur }, s.activeLayerId) }, "blur")),
+    setGrayscale: (grayscale) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { grayscale }, s.activeLayerId) }, "grayscale")),
+    setOpacity: (opacity) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { opacity }, s.activeLayerId) }, "opacity")),
     setShadowOpacity: (shadowOpacity) => set((s) => pushHistory(s, { ...s.scene, shadowOpacity }, "shadow")),
     setBorderRadius: (borderRadius) => set((s) => pushHistory(s, { ...s.scene, borderRadius }, "radius")),
     setTiltX: (tiltX) => set((s) => pushHistory(s, { ...s.scene, tiltX }, "tilt")),

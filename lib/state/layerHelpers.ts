@@ -40,9 +40,15 @@ export function makeAnnotation(type: AnnotationType): Annotation {
   return { ...base, w: 0.28, h: 0.2, text: "", fontSize: 0 };
 }
 
-export function makeDemoLayer(): MediaLayer {
+/** Builds the demo layer. `initialScene` is created at module scope on BOTH
+ *  the server and the client, so its id must be deterministic — a random id
+ *  (Date.now-based) would differ between the SSR HTML and the first client
+ *  render and trip React's hydration check (visible via any attribute that
+ *  carries the id into the DOM, e.g. data-layer-media). Runtime callers keep
+ *  getting unique random ids. */
+export function makeDemoLayer(id: string = nextLayerId()): MediaLayer {
   return {
-    id: nextLayerId(),
+    id,
     mediaUrl: DEMO_MEDIA_URL,
     mediaType: "image",
     mediaName: DEMO_MEDIA_NAME,

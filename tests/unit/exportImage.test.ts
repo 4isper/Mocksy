@@ -98,11 +98,14 @@ function setupDOMMocks({
     clientWidth: containerSize ? 800 : 0,
     clientHeight: containerSize ? 600 : 0,
     querySelector: (selector: string) => {
-      if (selector === "video") return hasMedia && mediaType === "video" ? ({ readyState: 2 } as HTMLVideoElement) : null;
-      if (selector === "img")
-        return hasMedia && mediaType === "image"
-          ? ({ complete: true, naturalWidth: 100, naturalHeight: 100 } as HTMLImageElement)
-          : null;
+      // Exporters must query by data-layer-media identity; a plain
+      // "img"/"video" selector would grab skins/watermark/other layers.
+      if (selector.startsWith("[data-layer-media=")) {
+        if (!hasMedia) return null;
+        return mediaType === "video"
+          ? ({ readyState: 2 } as HTMLVideoElement)
+          : ({ complete: true, naturalWidth: 100, naturalHeight: 100 } as HTMLImageElement);
+      }
       if (selector === "[data-mockup-frame]")
         return frameElement ? ({ offsetWidth: 400, offsetHeight: 300 } as HTMLElement) : null;
       return null;
@@ -242,6 +245,47 @@ describe("renderSceneToPngBlob", () => {
     const { renderSceneToPngBlob } = await import("@/lib/export/exportImage");
     const result = await renderSceneToPngBlob({ ...initialScene, layers: [] } as any, "preview");
     expect(result).toBeNull();
+  });
+
+  it("queries media by layer identity, never by DOM order", async () => {
+    vi.stubGlobal("window", { devicePixelRatio: 2 });
+    vi.stubGlobal("HTMLCanvasElement", class {});
+    vi.stubGlobal("HTMLVideoElement", class {});
+    vi.stubGlobal("HTMLImageElement", class {});
+    const selectors: string[] = [];
+    // A watermark/skin <img> would answer a blind "img" query — the export
+    // must instead ask for the active layer's own element and accept that
+    // no such element exists (empty frame), never draw the impostor.
+    const container = {
+      clientWidth: 800,
+      clientHeight: 600,
+      querySelector: (sel: string) => {
+        selectors.push(sel);
+        if (sel === "img") return { complete: true, naturalWidth: 100, naturalHeight: 100 } as HTMLImageElement;
+        if (sel === "[data-mockup-frame]") return { offsetWidth: 400, offsetHeight: 300 } as HTMLElement;
+        return null;
+      }
+    };
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => null,
+      toBlob: (cb: (b: Blob | null) => void) => cb(new Blob(["png"]))
+    } as unknown as HTMLCanvasElement;
+    vi.stubGlobal("document", {
+      getElementById: (id: string) => (id === "preview" ? container : null),
+      createElement: (tag: string) => (tag === "canvas" ? canvas : null)
+    });
+
+    const { renderSceneToPngBlob } = await import("@/lib/export/exportImage");
+    const errors: string[] = [];
+    const activeId = initialScene.layers[0]!.id;
+    const blob = await renderSceneToPngBlob(initialScene, "preview", (m) => errors.push(m));
+    expect(errors, errors.join(" | ")).toEqual([]);
+    expect(blob).toBeInstanceOf(Blob);
+    expect(selectors).toContain(`[data-layer-media="${activeId}"]`);
+    expect(selectors).not.toContain("img");
+    expect(selectors).not.toContain("video");
   });
 });
 
@@ -629,7 +673,7 @@ describe("renderSceneToPngBlob single-frame video fallback", () => {
       clientWidth: 800,
       clientHeight: 600,
       querySelector: (sel: string) => {
-        if (sel === "video") return undecoded;
+        if (sel.startsWith("[data-layer-media=")) return undecoded;
         if (sel === "[data-mockup-frame]") return { offsetWidth: 400, offsetHeight: 300 };
         return null;
       }

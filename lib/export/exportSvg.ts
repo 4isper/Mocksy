@@ -1,12 +1,12 @@
 "use client";
 
 import type { EditorScene } from "@/lib/types/editor";
-import { computeFrameBox, computeFrameInstances, singleFrameCssSize, type FrameBox } from "@/lib/render/frameGeometry";
+import { computeFrameBox, computeFrameInstances, isVisibleFrameInstance, singleFrameCssSize, type FrameBox } from "@/lib/render/frameGeometry";
 import { intrinsicExportSize } from "@/lib/export/exportSize";
 import { getFrameSpec, frameViewBox } from "@/lib/render/frames";
 import { isBrowserFrameSpec } from "@/lib/render/browserChrome";
 import { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
-import { resolveExportTransform, waitForImage } from "@/lib/export/exportImageCore";
+import { resolveExportTransform, waitForImage, layerMediaSelector } from "@/lib/export/exportImageCore";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { buildEmbeddedFontCss, collectFontStacks } from "@/lib/export/fontEmbed";
 import { downloadBlob } from "@/lib/export/downloadBlob";
@@ -92,8 +92,6 @@ export async function exportSvg(
       onError?.("Preview area not found.");
       return;
     }
-    const video = node.querySelector("video");
-    const img = node.querySelector("img");
     // Anchor the SVG canvas to the scene's intrinsic artboard (exportSize.ts)
     // so vector output matches the raster exports and never depends on the
     // preview's on-screen size.
@@ -124,6 +122,8 @@ export async function exportSvg(
         const box: FrameBox | undefined = boxes[i];
         const inst = scene.frameInstances[i];
         if (!box || !inst) continue;
+        // Hidden layers' instances are invisible in the preview — skip them.
+        if (!isVisibleFrameInstance(scene, inst)) continue;
         const layer = scene.layers.find((l) => l.id === inst.layerId) ?? activeLayer;
         const spec = getFrameSpec(inst.frame, scene.customFrame, inst.material);
         let media: { href: string; width: number; height: number } | null = null;
@@ -160,23 +160,27 @@ export async function exportSvg(
     } else {
       const spec = getFrameSpec(scene.frame, scene.customFrame, scene.frameMaterial);
       let media: { href: string; width: number; height: number } | null = null;
-      if (!activeLayer?.hidden) {
-        if (video instanceof HTMLVideoElement) {
-          let src: HTMLVideoElement = video;
-          if (video.readyState < 2 && activeLayer && isVideoLayer(activeLayer) && activeLayer.mediaUrl) {
+      if (!activeLayer?.hidden && activeLayer) {
+        // Resolve the active layer's media element by identity, never by DOM
+        // order: the preview also holds device-skin overlays, the watermark
+        // logo and other layers' media.
+        const el = node.querySelector(layerMediaSelector(activeLayer.id));
+        if (el instanceof HTMLVideoElement) {
+          let src: HTMLVideoElement = el;
+          if (el.readyState < 2 && isVideoLayer(activeLayer) && activeLayer.mediaUrl) {
             try {
               src = await loadVideoFrame(activeLayer.mediaUrl, activeLayer.videoPosterTime ?? 0);
             } catch {
-              src = video;
+              src = el;
             }
           }
           media = videoToDataUrl(src);
-        } else if (img instanceof HTMLImageElement) {
-          await waitForImage(img);
+        } else if (el instanceof HTMLImageElement) {
+          await waitForImage(el);
           media = {
-            href: img.src,
-            width: img.naturalWidth || img.width || 1,
-            height: img.naturalHeight || img.height || 1
+            href: el.src,
+            width: el.naturalWidth || el.width || 1,
+            height: el.naturalHeight || el.height || 1
           };
         }
       }

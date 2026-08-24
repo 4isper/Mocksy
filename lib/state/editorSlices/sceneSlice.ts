@@ -9,6 +9,7 @@ export type SceneSlice = Pick<
   EditorStoreState,
   | "setScene"
   | "resetScene"
+  | "clearHistory"
   | "undo"
   | "redo"
   | "jumpToHistory"
@@ -54,6 +55,13 @@ export function createSceneSlice(set: EditorStoreSetter): SceneSlice {
       set((s) => {
         const fresh = buildFreshScene();
         return { ...pushHistory(s, fresh), activeLayerId: reconcileActiveLayerId(fresh, s.activeLayerId) };
+      }),
+    clearHistory: () =>
+      set(() => {
+        // Reset the coalescing keys too: an edit right after the reset must
+        // start a fresh entry instead of merging into a stale one whose
+        // snapshot predates the scene replacement.
+        return { past: [], future: [], lastHistoryKey: null, lastHistoryAt: 0 };
       }),
     undo: () =>
       set((s) => {

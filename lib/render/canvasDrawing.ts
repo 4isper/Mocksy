@@ -28,7 +28,12 @@ export const RENDER = {
   watermarkInset: 16,
   lineHeightMultiplier: 1.2,
   arrowHead: 14,
-  minZoom: 0.01
+  minZoom: 0.01,
+  /** Floor reflection: alpha at the device's bottom edge (fades to 0). */
+  reflectionOpacity: 0.28,
+  /** Reflection fade length as a fraction of the box height below the edge.
+   *  Shared by the canvas and SVG renderers so exports can't drift apart. */
+  reflectionFade: 0.55
 } as const;
 
 export interface ResolvedFrameStyle {

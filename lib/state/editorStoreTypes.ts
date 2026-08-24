@@ -124,6 +124,10 @@ export interface EditorStoreState {
   resetScene: () => void;
   undo: () => void;
   redo: () => void;
+  /** Drops the entire undo/redo history. Used when the editor's scene is
+   *  replaced wholesale by a non-edit (project switch/import) — the stacks
+   *  belong to the replaced session and must not leak across projects. */
+  clearHistory: () => void;
   /** Jumps to an absolute position in the undo timeline. `index` 0 is the
    *  oldest entry; `past.length` is the current scene (a no-op). Entries after
    *  the target become the redo stack. */

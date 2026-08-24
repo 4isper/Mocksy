@@ -6,7 +6,7 @@ import { RENDER, drawAnnotations, drawFrameAndMedia, drawWatermark } from "@/lib
 import { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
 import { createLayerCanvas, layerContext } from "@/lib/render/canvasFactory";
 import type { FrameBox, RenderTransform } from "@/lib/render/frameGeometry";
-import { computeFrameBox, computeFrameInstances } from "@/lib/render/frameGeometry";
+import { computeFrameBox, computeFrameInstances, isVisibleFrameInstance } from "@/lib/render/frameGeometry";
 import { TILT_PERSPECTIVE, drawTiltedQuad, hasTilt, projectTiltedRect } from "@/lib/render/tilt";
 import { paintBackground } from "@/lib/render/renderBackground";
 
@@ -75,7 +75,7 @@ function paintFloorReflection(
   drawOne: (target: CanvasRenderingContext2D) => void,
   width: number,
   height: number,
-  opacity = 0.28
+  opacity = RENDER.reflectionOpacity
 ): void {
   const layer = createLayerCanvas(width, height);
   const lctx = layerContext(layer);
@@ -84,17 +84,24 @@ function paintFloorReflection(
   for (const box of boxes) {
     const bottom = box.y + box.height;
     lctx.save();
+    // Only the strip below the device may contain reflection: with tilt the
+    // mirrored quad extends sideways past the box, and anything drawn outside
+    // this rect would escape the fade pass below as a full-strength ghost.
+    lctx.beginPath();
+    lctx.rect(box.x, bottom, box.width, box.height);
+    lctx.clip();
     lctx.setTransform(1, 0, 0, -1, 0, 2 * bottom);
     drawOne(lctx);
     lctx.restore();
 
-    // Fade this strip: keep ~opacity at the device edge, gone by ~55% down.
+    // Fade this strip: keep ~opacity at the device edge, gone by
+    // RENDER.reflectionFade of the box height below it (mirrored in SVG).
     lctx.save();
     lctx.beginPath();
     lctx.rect(box.x, bottom, box.width, box.height);
     lctx.clip();
     lctx.globalCompositeOperation = "destination-in";
-    const fade = lctx.createLinearGradient(0, bottom, 0, bottom + box.height * 0.55);
+    const fade = lctx.createLinearGradient(0, bottom, 0, bottom + box.height * RENDER.reflectionFade);
     fade.addColorStop(0, `rgba(0,0,0,${opacity})`);
     fade.addColorStop(1, "rgba(0,0,0,0)");
     lctx.fillStyle = fade;
@@ -137,6 +144,16 @@ export function renderMockupToCanvas(
     paintBackground(ctx, scene, width, height, dpiScale, backgroundFill, backgroundImage);
 
     const frameBoxes = computeFrameInstances(scene, width, height, pixelRatio, transform, activeLayerId);
+    // Hidden layers' instances are invisible in the live preview; zip the
+    // boxes with their instances and drop hidden ones so exports match.
+    const visible: Array<{ box: FrameBox; inst: EditorScene["frameInstances"][number] }> = [];
+    for (let i = 0; i < frameBoxes.length; i++) {
+      const box = frameBoxes[i];
+      const inst = scene.frameInstances[i];
+      if (!box || !inst) continue;
+      if (!isVisibleFrameInstance(scene, inst)) continue;
+      visible.push({ box, inst });
+    }
 
     const renderInstance = (
       target: CanvasRenderingContext2D,
@@ -172,23 +189,16 @@ export function renderMockupToCanvas(
     if (scene.floorReflection) {
       paintFloorReflection(
         ctx,
-        frameBoxes,
+        visible.map(({ box }) => box),
         (target) => {
-          for (let i = 0; i < frameBoxes.length; i++) {
-            const box = frameBoxes[i];
-            const inst = scene.frameInstances[i];
-            if (box && inst) renderInstance(target, box, inst);
-          }
+          for (const { box, inst } of visible) renderInstance(target, box, inst);
         },
         width,
         height
       );
     }
 
-    for (let i = 0; i < frameBoxes.length; i++) {
-      const box = frameBoxes[i];
-      const inst = scene.frameInstances[i];
-      if (!box || !inst) continue;
+    for (const { box, inst } of visible) {
       renderInstance(ctx, box, inst);
     }
     drawWatermark(ctx, scene, width, height, watermarkImage);

@@ -261,9 +261,11 @@ export function FrameInstanceGrid({
         const spec = getFrameSpec(inst.frame);
         const instCss = frameInstanceCssMap.get(inst.id)!;
         const zoom = layer?.zoom ?? 1;
-        const offsetX = layer?.mediaOffsetX ?? 0;
-        const offsetY = layer?.mediaOffsetY ?? 0;
-        const zoomStyle = { transform: tiltCss(scene) + "scale(" + zoom + ") translate(" + (offsetX * 2) + "px, " + (offsetY * 2) + "px)", transformOrigin: "center" };
+        // mediaOffset pans the MEDIA inside the frame (objectPosition in
+        // instCss, matching the exporters) — translating the whole frame here
+        // as well double-applies it and shifts the device ~2px per unit away
+        // from its exported position.
+        const zoomStyle = { transform: tiltCss(scene) + "scale(" + zoom + ")", transformOrigin: "center" };
         // Live preview uses the native -webkit-box-reflect (Chromium/Safari);
         // canvas-based exports implement the effect fully for every browser.
         const isSelected = activeFrameInstanceId === inst.id;

@@ -39,3 +39,15 @@ export function waitForImage(img: HTMLImageElement, timeoutMs = 10000): Promise<
     };
   });
 }
+
+/**
+ * CSS attribute selector matching a layer's own media element in the preview
+ * (see `data-layer-media` in SingleFrameView). Exporters must resolve media by
+ * this identity instead of DOM order — the preview container also holds
+ * unrelated elements (device-skin overlays, the watermark logo, other layers'
+ * media) that a blind `querySelector("img"/"video")` would grab.
+ */
+export function layerMediaSelector(layerId: string): string {
+  const escaped = layerId.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  return `[data-layer-media="${escaped}"]`;
+}

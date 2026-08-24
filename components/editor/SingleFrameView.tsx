@@ -115,6 +115,10 @@ export function SingleFrameView({
                 playsInline
                 controls
                 crossOrigin="anonymous"
+                // Tags this element as the layer's media so the export pipeline
+                // can resolve it by identity instead of DOM order (the preview
+                // container also holds skins, the watermark and other layers).
+                data-layer-media={layer.id}
                 style={{ ...sceneCss.mediaStyle, objectFit: "contain", backgroundColor: "var(--panel-solid)" }}
                 onPointerDown={() => selectLayer(layer.id)}
                 onLoadedMetadata={(e) => {
@@ -139,6 +143,7 @@ export function SingleFrameView({
                 key={layer.id}
                 src={layer.mediaUrl}
                 alt={t("editor.uploadedMediaAlt")}
+                data-layer-media={layer.id}
                 style={sceneCss.mediaStyle}
                 onPointerDown={() => selectLayer(layer.id)}
                 onLoad={(e) => {

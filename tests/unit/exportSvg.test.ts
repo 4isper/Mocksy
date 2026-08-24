@@ -393,6 +393,30 @@ describe("buildSvgMarkup", () => {
      expect(markup).toContain('<rect');
      expect(markup).toContain('fill="rgba(0,0,0,0.5)"');
    });
+
+  it("fades the floor reflection downward from the device edge", () => {
+    const scene = sceneWith({ backgroundMode: "transparent", floorReflection: true });
+    const box = boxFor(scene);
+    const group = { box, mediaHref: null, mediaWidth: 100, mediaHeight: 50, isOverlay: false, overlayInner: null };
+    const markup = buildSvgMarkup(scene, { width: 800, height: 600, backgroundHref: null, groups: [group] });
+
+    // The reflection defs use index i + groups.length → 1 for the first group.
+    const gradTag = markup.match(/<linearGradient id="refl-fade-1"[\s\S]*?<\/linearGradient>/)?.[0];
+    expect(gradTag).toBeTruthy();
+    const y1 = Number(gradTag!.match(/y1="([-\d.]+)"/)![1]);
+    const y2 = Number(gradTag!.match(/y2="([-\d.]+)"/)![1]);
+    // The axis must start at the device's bottom edge and point DOWN into the
+    // mirrored content (which lies entirely below that edge): an upward axis
+    // would pad-clamp every sample to the first stop and hide the reflection.
+    expect(y1).toBeCloseTo(box.y + box.height, 0);
+    expect(y2).toBeGreaterThan(y1);
+    expect(y2 - y1).toBeCloseTo(box.height * 0.55, 0);
+    // Full alpha at the device edge, gone at the far end.
+    expect(gradTag).toContain('<stop offset="0" stop-color="#fff" stop-opacity="0.28"/>');
+    expect(gradTag).toContain('<stop offset="1" stop-color="#fff" stop-opacity="0"/>');
+    // The mirrored group is masked by the gradient.
+    expect(markup).toContain('mask="url(#refl-mask-1)"');
+  });
  });
 
 describe("mediaToDataUrl", () => {
@@ -488,8 +512,7 @@ describe("exportSvg", () => {
       clientWidth: 800,
       clientHeight: 600,
       querySelector: (selector: string) => {
-        if (selector === "img") return img;
-        if (selector === "video") return null;
+        if (selector.startsWith("[data-layer-media=")) return img;
         if (selector === "[data-mockup-frame]") return null;
         return null;
       }

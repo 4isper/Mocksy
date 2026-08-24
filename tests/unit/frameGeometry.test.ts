@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeFrameBox, computeFrameInstances } from "@/lib/render/frameGeometry";
+import { computeFrameBox, computeFrameInstances, isVisibleFrameInstance } from "@/lib/render/frameGeometry";
 import { getFrameSpec } from "@/lib/render/frames";
 import { initialScene } from "@/lib/state/editorStore";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
@@ -332,5 +332,27 @@ describe("computeFrameInstances landscape orientation", () => {
     const expectedDy = box.y + box.height / 2 - drawH / 2;
     expect(nativeCx).toBeCloseTo(expectedDx + drawW / 2);
     expect(nativeCy).toBeCloseTo(expectedDy + drawH / 2);
+  });
+});
+
+describe("isVisibleFrameInstance", () => {
+  it("is visible when its own layer is visible", () => {
+    const inst = { id: "i1", frame: "iphone15" as const, x: 0.5, y: 0.5, scale: 0.4, layerId: "l1" };
+    const s = scene({ layers: [layer({ id: "l1", hidden: false })], activeLayerId: "l1", frameInstances: [inst] });
+    expect(isVisibleFrameInstance(s, inst)).toBe(true);
+  });
+
+  it("is hidden when its layer is hidden (preview parity for exports)", () => {
+    const inst = { id: "i1", frame: "iphone15" as const, x: 0.5, y: 0.5, scale: 0.4, layerId: "l1" };
+    const s = scene({ layers: [layer({ id: "l1", hidden: true })], activeLayerId: "l1", frameInstances: [inst] });
+    expect(isVisibleFrameInstance(s, inst)).toBe(false);
+  });
+
+  it("falls back to the active layer's visibility like the preview grid does", () => {
+    const inst = { id: "i1", frame: "iphone15" as const, x: 0.5, y: 0.5, scale: 0.4, layerId: null };
+    const visibleActive = scene({ layers: [layer({ id: "a", hidden: false })], activeLayerId: "a", frameInstances: [inst] });
+    expect(isVisibleFrameInstance(visibleActive, inst)).toBe(true);
+    const hiddenActive = scene({ layers: [layer({ id: "a", hidden: true })], activeLayerId: "a", frameInstances: [inst] });
+    expect(isVisibleFrameInstance(hiddenActive, inst)).toBe(false);
   });
 });

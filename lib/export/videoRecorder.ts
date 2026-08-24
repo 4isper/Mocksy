@@ -18,7 +18,8 @@ export async function recordCanvasToWebm(
   onProgress?: (progress: number) => void,
   layerMedias?: Map<string, CanvasImageSource | null>,
   frameOverlays?: Map<string, CanvasImageSource | null>,
-  activeLayerId: string | null = scene.activeLayerId
+  activeLayerId: string | null = scene.activeLayerId,
+  signal?: AbortSignal
 ) {
   // Annotations are drawn from the scene automatically; the background image
   // must be preloaded and passed in (the canvas renderer is synchronous).
@@ -61,159 +62,228 @@ export async function recordCanvasToWebm(
     // must not abort the export.
   }
 
-  let stream: MediaStream;
-  try {
-    stream = canvas.captureStream(fps);
-  } catch (err) {
-    canvas.remove();
-    if (err instanceof DOMException && err.name === "SecurityError") {
-      throw new Error("This video can't be exported: its host doesn't allow cross-origin capture. Use a file you uploaded instead.");
-    }
-    throw err;
-  }
-
-  // Background audio: if the user uploaded an audio track, capture it through
-  // a gain node (so fade in/out can be applied) instead of any video-layer
-  // audio (replaces, not mixes).
+  let stream: MediaStream | null = null;
   let bgAudioEl: HTMLAudioElement | null = null;
   let bgAudioCtx: AudioContext | null = null;
-  let bgGain: GainNode | null = null;
-  if (scene.backgroundAudioUrl) {
+
+  // Everything from stream setup onwards must run through the try/finally
+  // below: a recorder error, an aborted capture or a render exception inside
+  // the tick loop would otherwise leak the off-screen canvas, keep the
+  // MediaStream tracks live and leave background music playing until reload.
+  try {
     try {
-      bgAudioEl = document.createElement("audio");
-      bgAudioEl.src = scene.backgroundAudioUrl;
-      bgAudioEl.loop = true;
-      bgAudioEl.crossOrigin = "anonymous";
-      await bgAudioEl.play();
-      const videoTrack = stream.getVideoTracks()[0];
-      if (videoTrack && typeof AudioContext !== "undefined") {
-        // Route element → gain → destination so linear ramps shape the fades.
-        bgAudioCtx = new AudioContext();
-        const source = bgAudioCtx.createMediaElementSource(bgAudioEl);
-        bgGain = bgAudioCtx.createGain();
-        bgGain.gain.value = 1;
-        const dest = bgAudioCtx.createMediaStreamDestination();
-        source.connect(bgGain);
-        bgGain.connect(dest);
-        const fadeTracks = dest.stream.getAudioTracks();
-        if (fadeTracks.length > 0) {
-          stream = new MediaStream([videoTrack, ...fadeTracks]);
-        }
-      } else if (videoTrack) {
-        const bgStream = (bgAudioEl as HTMLAudioElement & { captureStream: () => MediaStream }).captureStream();
-        const bgTracks = bgStream.getAudioTracks();
-        if (bgTracks.length > 0) {
-          stream = new MediaStream([videoTrack, ...bgTracks]);
-        }
+      stream = canvas.captureStream(fps);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "SecurityError") {
+        throw new Error("This video can't be exported: its host doesn't allow cross-origin capture. Use a file you uploaded instead.");
       }
-    } catch {
-      // background audio not supported — export video-only
+      throw err;
     }
-  } else if (media instanceof HTMLVideoElement && activeForCapture.videoMuted === false) {
-    try {
-      const audioMs = (media as HTMLVideoElement & { captureStream: () => MediaStream }).captureStream();
-      const audioTracks = audioMs.getAudioTracks();
-      if (audioTracks.length > 0) {
+
+    // Background audio: if the user uploaded an audio track, capture it through
+    // a gain node (so fade in/out can be applied) instead of any video-layer
+    // audio (replaces, not mixes).
+    let bgGain: GainNode | null = null;
+    if (scene.backgroundAudioUrl) {
+      try {
+        bgAudioEl = document.createElement("audio");
+        bgAudioEl.src = scene.backgroundAudioUrl;
+        bgAudioEl.loop = true;
+        bgAudioEl.crossOrigin = "anonymous";
+        await bgAudioEl.play();
         const videoTrack = stream.getVideoTracks()[0];
-        if (videoTrack) {
-          stream = new MediaStream([videoTrack, ...audioTracks]);
+        if (videoTrack && typeof AudioContext !== "undefined") {
+          // Route element → gain → destination so linear ramps shape the fades.
+          bgAudioCtx = new AudioContext();
+          const source = bgAudioCtx.createMediaElementSource(bgAudioEl);
+          bgGain = bgAudioCtx.createGain();
+          bgGain.gain.value = 1;
+          const dest = bgAudioCtx.createMediaStreamDestination();
+          source.connect(bgGain);
+          bgGain.connect(dest);
+          const fadeTracks = dest.stream.getAudioTracks();
+          if (fadeTracks.length > 0) {
+            stream = new MediaStream([videoTrack, ...fadeTracks]);
+          }
+        } else if (videoTrack) {
+          const bgStream = (bgAudioEl as HTMLAudioElement & { captureStream: () => MediaStream }).captureStream();
+          const bgTracks = bgStream.getAudioTracks();
+          if (bgTracks.length > 0) {
+            stream = new MediaStream([videoTrack, ...bgTracks]);
+          }
         }
+      } catch {
+        // background audio not supported — export video-only
       }
-    } catch {
-      // audio capture not supported — export video-only
-    }
-  }
-
-  const chunks: BlobPart[] = [];
-  const mimeType = chooseWebmMimeType();
-  const recorder = new MediaRecorder(stream, { mimeType });
-  recorder.ondataavailable = (e) => {
-    if (e.data.size > 0) chunks.push(e.data);
-  };
-  const start = Math.max(0, activeForCapture.videoTrimStart || 0);
-  const end = activeForCapture.videoTrimEnd > start ? activeForCapture.videoTrimEnd : activeForCapture.videoDuration;
-  const isVideo = media instanceof HTMLVideoElement;
-  const duration = computeCaptureDuration(scene, activeLayerId);
-
-  await new Promise<void>((resolve, reject) => {
-    recorder.onstop = () => resolve();
-    recorder.onerror = () => reject(new Error("MediaRecorder failed"));
-    // Schedule the background-audio fades against the recording timeline:
-    // linear ramp from silence after start, and to silence before the end.
-    if (bgGain && bgAudioCtx) {
-      const t0 = bgAudioCtx.currentTime;
-      const durationSec = Math.max(0.1, duration);
-      const fadeIn = Math.max(0, Math.min(durationSec / 2, scene.audioFadeIn || 0));
-      const fadeOut = Math.max(0, Math.min(durationSec / 2, scene.audioFadeOut || 0));
-      if (fadeIn > 0) {
-        bgGain.gain.setValueAtTime(0.0001, t0);
-        bgGain.gain.linearRampToValueAtTime(1, t0 + fadeIn);
-      }
-      if (fadeOut > 0) {
-        bgGain.gain.setValueAtTime(1, t0 + Math.max(fadeIn, durationSec - fadeOut));
-        bgGain.gain.linearRampToValueAtTime(0.0001, t0 + durationSec);
-      }
-    }
-    recorder.start(200);
-
-    let raf = 0;
-    const startedAt = performance.now();
-    if (media instanceof HTMLVideoElement) {
-      media.currentTime = start;
-      media.playbackRate = Math.max(0.5, Math.min(2, activeForCapture?.playbackSpeed ?? 1));
-      media.muted = activeForCapture?.videoMuted !== false;
-      media.play().catch(() => null);
-    }
-
-    const tick = () => {
-      const elapsed = (performance.now() - startedAt) / 1000;
-      const normalized = duration > 0 ? Math.min(1, elapsed / duration) : 1;
-      const progress = Math.min(100, normalized * 100);
-      const sampled = sampleVideoTransform(activeForCapture ?? scene.layers[0], normalized);
-      const transform: RenderTransform = { zoom: sampled.zoom, offsetX: sampled.x, offsetY: sampled.y };
-      onProgress?.(progress);
-
-      if (media instanceof HTMLVideoElement) {
-        // Guard against a not-yet-measured duration (end undefined/0): only
-        // stop on the video's playhead when we actually know where it ends.
-        const stopAt = typeof end === "number" && isFinite(end) && end > 0 ? end : Infinity;
-        if (media.currentTime >= stopAt || elapsed >= duration) {
-          media.pause();
-          renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId, watermarkImage);
-          recorder.stop();
-          cancelAnimationFrame(raf);
-          onProgress?.(100);
-          return;
+    } else if (media instanceof HTMLVideoElement && activeForCapture.videoMuted === false) {
+      try {
+        const audioMs = (media as HTMLVideoElement & { captureStream: () => MediaStream }).captureStream();
+        const audioTracks = audioMs.getAudioTracks();
+        if (audioTracks.length > 0) {
+          const videoTrack = stream.getVideoTracks()[0];
+          if (videoTrack) {
+            stream = new MediaStream([videoTrack, ...audioTracks]);
+          }
         }
-      } else if (elapsed >= duration) {
-        recorder.stop();
-        cancelAnimationFrame(raf);
-        onProgress?.(100);
-        return;
+      } catch {
+        // audio capture not supported — export video-only
       }
+    }
 
-      renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId, watermarkImage);
-      raf = requestAnimationFrame(tick);
-    };
-
-    onStatus?.("Recording preview…");
-    raf = requestAnimationFrame(tick);
-  });
-
-  canvas.remove();
-  // Free the capture stream's tracks so the canvas track doesn't leak between
-  // exports, and tear down the audio graph.
-  stream.getTracks().forEach((track) => track.stop());
-  if (bgAudioCtx) {
+    const chunks: BlobPart[] = [];
+    const mimeType = chooseWebmMimeType();
+    let recorder: MediaRecorder;
     try {
-      void bgAudioCtx.close();
+      recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
     } catch {
-      // already closed
+      // Engines that can't record any requested WebM codec (e.g. Safari)
+      // throw NotSupportedError from the constructor; fall back to the
+      // browser's default recording format rather than failing the export.
+      recorder = new MediaRecorder(stream);
+    }
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunks.push(e.data);
+    };
+    const start = Math.max(0, activeForCapture.videoTrimStart || 0);
+    const end = activeForCapture.videoTrimEnd > start ? activeForCapture.videoTrimEnd : activeForCapture.videoDuration;
+    const isVideo = media instanceof HTMLVideoElement;
+    const duration = computeCaptureDuration(scene, activeLayerId);
+
+    await new Promise<void>((resolve, reject) => {
+      let raf = 0;
+      let bgTimer: ReturnType<typeof setTimeout> | null = null;
+      const fail = (err: unknown) => {
+        cancelAnimationFrame(raf);
+        if (bgTimer) clearTimeout(bgTimer);
+        try {
+          recorder.stop();
+        } catch {
+          // never started
+        }
+        reject(err);
+      };
+      recorder.onstop = () => resolve();
+      recorder.onerror = () => fail(new Error("MediaRecorder failed"));
+      // Schedule the background-audio fades against the recording timeline:
+      // linear ramp from silence after start, and to silence before the end.
+      if (bgGain && bgAudioCtx) {
+        const t0 = bgAudioCtx.currentTime;
+        const durationSec = Math.max(0.1, duration);
+        const fadeIn = Math.max(0, Math.min(durationSec / 2, scene.audioFadeIn || 0));
+        const fadeOut = Math.max(0, Math.min(durationSec / 2, scene.audioFadeOut || 0));
+        if (fadeIn > 0) {
+          bgGain.gain.setValueAtTime(0.0001, t0);
+          bgGain.gain.linearRampToValueAtTime(1, t0 + fadeIn);
+        }
+        if (fadeOut > 0) {
+          bgGain.gain.setValueAtTime(1, t0 + Math.max(fadeIn, durationSec - fadeOut));
+          bgGain.gain.linearRampToValueAtTime(0.0001, t0 + durationSec);
+        }
+      }
+      recorder.start(200);
+
+      const startedAt = performance.now();
+      if (media instanceof HTMLVideoElement) {
+        media.currentTime = start;
+        media.playbackRate = Math.max(0.5, Math.min(2, activeForCapture?.playbackSpeed ?? 1));
+        media.muted = activeForCapture?.videoMuted !== false;
+        media.play().catch(() => null);
+      }
+
+      // rAF pauses entirely while the tab is hidden, which would stall the
+      // stop conditions and balloon the recording with frozen frames until
+      // the user refocuses. Timers keep firing (throttled), so hidden tabs
+      // fall back to a timer-driven loop; the ticking flag guards re-entry.
+      let ticking = false;
+      const isHidden = () => typeof document !== "undefined" && document.hidden === true;
+
+      const clearPending = () => {
+        cancelAnimationFrame(raf);
+        if (bgTimer) {
+          clearTimeout(bgTimer);
+          bgTimer = null;
+        }
+      };
+
+      const scheduleNext = () => {
+        if (isHidden()) {
+          bgTimer = setTimeout(runTick, 250);
+        } else {
+          raf = requestAnimationFrame(runTick);
+        }
+      };
+
+      const tick = () => {
+        try {
+          clearPending();
+          ticking = false;
+          // Cancellation is checked every frame so cancelling mid-recording
+          // actually stops the capture.
+          if (signal?.aborted) {
+            if (media instanceof HTMLVideoElement) media.pause();
+            fail(new DOMException("Export cancelled", "AbortError"));
+            return;
+          }
+          const elapsed = (performance.now() - startedAt) / 1000;
+          const normalized = duration > 0 ? Math.min(1, elapsed / duration) : 1;
+          const progress = Math.min(100, normalized * 100);
+          const sampled = sampleVideoTransform(activeForCapture ?? scene.layers[0], normalized);
+          const transform: RenderTransform = { zoom: sampled.zoom, offsetX: sampled.x, offsetY: sampled.y };
+          onProgress?.(progress);
+
+          if (isVideo) {
+            // Guard against a not-yet-measured duration (end undefined/0): only
+            // stop on the video's playhead when we actually know where it ends.
+            const stopAt = typeof end === "number" && isFinite(end) && end > 0 ? end : Infinity;
+            if (media.currentTime >= stopAt || elapsed >= duration) {
+              media.pause();
+              renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId, watermarkImage);
+              recorder.stop();
+              onProgress?.(100);
+              return;
+            }
+          } else if (elapsed >= duration) {
+            recorder.stop();
+            onProgress?.(100);
+            return;
+          }
+
+          renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId, watermarkImage);
+          scheduleNext();
+        } catch (err) {
+          // A render exception must not leave the promise pending forever with
+          // the recorder running and everything leaked.
+          if (media instanceof HTMLVideoElement) media.pause();
+          fail(err);
+        }
+      };
+
+      const runTick = () => {
+        if (ticking) return;
+        ticking = true;
+        tick();
+      };
+
+      onStatus?.("Recording preview…");
+      scheduleNext();
+    });
+
+    return new Blob(chunks, { type: recorder.mimeType || "video/webm" });
+  } finally {
+    canvas.remove();
+    // Free the capture stream's tracks so the canvas track doesn't leak between
+    // exports, and tear down the audio graph.
+    stream?.getTracks().forEach((track) => track.stop());
+    if (bgAudioCtx) {
+      try {
+        void bgAudioCtx.close();
+      } catch {
+        // already closed
+      }
+    }
+    if (bgAudioEl) {
+      bgAudioEl.pause();
+      bgAudioEl.remove();
     }
   }
-  if (bgAudioEl) {
-    bgAudioEl.pause();
-    bgAudioEl.remove();
-  }
-  return new Blob(chunks, { type: "video/webm" });
 }

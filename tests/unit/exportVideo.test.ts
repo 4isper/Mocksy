@@ -14,7 +14,11 @@ vi.mock("@/lib/render/canvasMedia", () => ({
 }));
 
 // FFmpeg WASM can't run in node; stub the heavy lifetime.
-const ffmpegHarness = vi.hoisted(() => ({ execCode: 0, loadCalls: 0 }));
+const ffmpegHarness = vi.hoisted(() => ({
+  execCode: 0,
+  loadCalls: 0,
+  instances: [] as Array<{ deleteFile: (path: string) => Promise<void> }>
+}));
 vi.mock("@ffmpeg/ffmpeg", () => ({
   FFmpeg: class {
     writeFile = vi.fn().mockResolvedValue(undefined);
@@ -25,10 +29,14 @@ vi.mock("@ffmpeg/ffmpeg", () => ({
       ffmpegHarness.loadCalls += 1;
       return Promise.resolve(undefined);
     });
+    constructor() {
+      ffmpegHarness.instances.push(this);
+    }
   }
 }));
 
 import { exportVideo, exportWebm, exportWebpAnim, exportGif, exportBaseName, sanitizeFilename, resolvePixelRatio, computeCaptureDuration, chooseWebmMimeType, terminateFfmpeg } from "@/lib/export/exportVideo";
+import { getFfmpegInstance } from "@/lib/export/ffmpegLoader";
 
 const ORIGINAL_WINDOW = globalThis.window;
 
@@ -139,14 +147,28 @@ describe("exportVideo pure helpers", () => {
   it("chooseWebmMimeType falls back to vp9", () => {
     Object.defineProperty(globalThis, "MediaRecorder", {
       configurable: true,
-      value: { isTypeSupported: () => false }
+      value: { isTypeSupported: (t: string) => t === "video/webm;codecs=vp9" }
     });
     expect(chooseWebmMimeType()).toBe("video/webm;codecs=vp9");
+  });
+
+  it("chooseWebmMimeType returns null when no WebM codec is supported (Safari)", () => {
+    Object.defineProperty(globalThis, "MediaRecorder", {
+      configurable: true,
+      value: { isTypeSupported: () => false }
+    });
+    expect(chooseWebmMimeType()).toBeNull();
   });
 
   it("exportBaseName strips the media extension and sanitizes", () => {
     expect(exportBaseName(sceneWithLayer({ mediaName: "My Shot (1).png" }))).toBe("My_Shot__1_");
     expect(exportBaseName(sceneWithLayer({ mediaName: null }))).toBe("mocksy-export");
+  });
+
+  it("exportBaseName falls back to the default when the stripped name is empty", () => {
+    // ".hidden" has no basename before the extension; an empty fallback would
+    // produce downloads named ".png" (hidden dotfiles on Unix).
+    expect(exportBaseName(sceneWithLayer({ mediaName: ".hidden" }))).toBe("mocksy-export");
   });
 });
 
@@ -288,6 +310,52 @@ describe("exportVideo orchestration", () => {
     expect(statuses).toContain("Done");
   });
 
+  it("reports Done for a GIF even when post-download temp-file cleanup fails", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+    // The real worker rejects deleteFile for a path that doesn't exist
+    // (ENOENT from FS.unlink); cleanup after the download must swallow it.
+    const ffmpeg = await getFfmpegInstance();
+    ffmpeg.deleteFile = vi.fn().mockRejectedValueOnce(new Error("ENOENT"));
+
+    const statuses: string[] = [];
+    const progress: number[] = [];
+    const errors: string[] = [];
+    await exportGif(
+      sceneWithLayer({ mediaUrl: null, mediaType: "none" }),
+      undefined,
+      (m) => statuses.push(m),
+      (p) => progress.push(p),
+      (m) => errors.push(m)
+    );
+    expect(errors).toEqual([]);
+    expect(statuses).toContain("Done");
+  });
+
+  it("reports Done for an MP4 even when post-download temp-file cleanup fails", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+    const ffmpeg = await getFfmpegInstance();
+    ffmpeg.deleteFile = vi.fn().mockRejectedValueOnce(new Error("ENOENT"));
+
+    const statuses: string[] = [];
+    const progress: number[] = [];
+    const errors: string[] = [];
+    await exportVideo(
+      sceneWithLayer({ mediaUrl: null, mediaType: "none" }),
+      undefined,
+      (m) => statuses.push(m),
+      (p) => progress.push(p),
+      (m) => errors.push(m)
+    );
+    expect(errors).toEqual([]);
+    expect(statuses).toContain("Done");
+  });
+
   it("exports a WebM directly from the MediaRecorder capture", async () => {
     const preview = fakePreview();
     const canvas = fakeCanvas();
@@ -299,6 +367,34 @@ describe("exportVideo orchestration", () => {
     expect(recorder.start).toHaveBeenCalled();
     expect(recorder.stop).toHaveBeenCalled();
     expect(statuses).toContain("Done");
+  });
+
+  it("aborts a WebM export mid-recording without downloading the file", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+
+    const controller = new AbortController();
+    // Abort while the capture loop is running (the rAF tick fires on a
+    // microtask): the export must surface the abort instead of delivering
+    // a file that was recorded after the user hit cancel.
+    controller.abort();
+
+    const statuses: string[] = [];
+    const errors: string[] = [];
+    await exportWebm(
+      sceneWithLayer({ mediaUrl: null, mediaType: "none" }),
+      undefined,
+      (m) => statuses.push(m),
+      undefined,
+      (m) => errors.push(m),
+      undefined,
+      undefined,
+      controller.signal
+    );
+    expect(statuses).not.toContain("Done");
+    expect(errors.join(" ")).toMatch(/abort/i);
   });
 
   it("plays detached videos so multi-frame captures render the media", async () => {
@@ -762,7 +858,7 @@ describe("exportVideo orchestration", () => {
     vi.stubGlobal("HTMLImageElement", Img);
     const preview = fakePreview();
     const imgEl = new Img() as unknown as HTMLImageElement;
-    preview.querySelector = vi.fn((sel: string) => (sel === "img" ? imgEl : null)) as unknown as typeof preview.querySelector;
+    preview.querySelector = vi.fn((sel: string) => (sel.startsWith("[data-layer-media=") ? imgEl : null)) as unknown as typeof preview.querySelector;
     const canvas = fakeCanvas();
     installDom(preview, canvas);
     installMediaRecorder();
@@ -777,7 +873,7 @@ describe("exportVideo orchestration", () => {
     vi.stubGlobal("HTMLVideoElement", VideoClass);
     const preview = fakePreview();
     const vidEl = new VideoClass() as unknown as HTMLVideoElement;
-    preview.querySelector = vi.fn((sel: string) => (sel === "video" ? vidEl : null)) as unknown as typeof preview.querySelector;
+    preview.querySelector = vi.fn((sel: string) => (sel.startsWith("[data-layer-media=") ? vidEl : null)) as unknown as typeof preview.querySelector;
     const canvas = fakeCanvas();
     installDom(preview, canvas);
     installMediaRecorder();

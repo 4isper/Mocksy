@@ -980,11 +980,14 @@ describe("scene-wide settings", () => {
 
   it("setAnimationEasing updates the active layer easing and coalesces", () => {
     reset();
+    // A preset click and an easing click are separate undo steps now (they
+    // used to share one coalesce key and merge into a single step); repeated
+    // easing changes still coalesce with each other.
     store().setAnimationPreset("zoomIn");
     store().setAnimationEasing("bounce");
     expect(store().scene.layers[0]!.animationEasing).toBe("bounce");
     store().setAnimationEasing("spring");
-    expect(store().past.length).toBe(1);
+    expect(store().past.length).toBe(2);
   });
 
   it("setAnimationDuration updates the loop length and clamps into range", () => {
@@ -1103,6 +1106,36 @@ describe("scene-wide settings", () => {
     expect(store().past.length).toBe(1);
     expect(store().past[0]!.tiltX).toBe(0);
     expect(store().past[0]!.tiltY).toBe(0);
+  });
+
+  it("different filter sliders stay separate undo steps", () => {
+    reset();
+    store().setBrightness(120);
+    store().setBrightness(150);
+    // The same slider still coalesces with itself.
+    expect(store().past.length).toBe(1);
+    // Touching brightness then contrast within the coalescing window used to
+    // merge into one unrecoverable step (shared "layerFilter" key).
+    store().setContrast(80);
+    expect(store().past.length).toBe(2);
+    expect(store().scene.layers[0]!.brightness).toBe(150);
+    expect(store().scene.layers[0]!.contrast).toBe(80);
+  });
+
+  it("group transforms of different selections stay separate undo steps", () => {
+    reset();
+    const a = store().scene.layers[0]!;
+    store().addLayer("data:image/png;base64,abc", "image", "b.png");
+    const b = store().scene.layers[1]!;
+    const base = store().past.length; // addLayer recorded its own step
+    store().transformLayers([a.id], { zoom: 1.5 });
+    expect(store().past.length).toBe(base + 1);
+    store().transformLayers([b.id], { zoom: 1.5 });
+    expect(store().past.length).toBe(base + 2);
+    // Repeated edits of the same (adjacent) selection still coalesce.
+    store().transformLayers([b.id], { opacity: 50 });
+    expect(store().past.length).toBe(base + 2);
+    expect(store().scene.layers.find((l) => l.id === b.id)!.opacity).toBe(50);
   });
 
   it("setVideoMuted toggles the muted flag", () => {
