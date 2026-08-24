@@ -451,7 +451,13 @@
     "surprise": "Surprise me",
     "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
     "copyLink": "Copy template link",
-    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media",
+    "save": "Save",
+    "savePlaceholder": "Save current look as…",
+    "saveTitle": "Save the current scene's look (without media) as a reusable template",
+    "myTemplates": "My templates",
+    "deleteTitle": "Delete template {name}",
+    "limitReached": "Template limit reached ({max}). Delete an older template to save a new one."
   },
   "help": {
     "layersStack": "లేయర్లు పైన నుండి కిందకి అమర్చబడ్డాయి. వాటి పరిమాణాన్ని, స్థానాన్ని మరియు చిత్ర ఐచ్ఛికాలను మార్చడానికి ఒక లేయర్ ఎంచుకోండి. వాటి క్రమాన్ని మార్చడానికి లేయర్‌ను బయటకి తీయండి. క్రియాశీల లేయర్ షార్ట్‌కట్స్: ⌘D నకలు, ⌘↑ / ⌘↓ తరలుచేయండి, ⌘[ / ⌘] మార్చండి."
@@ -601,7 +607,10 @@
     "templateImportBtn": "Apply template",
     "templateExportHint": "Download the current scene as a shareable .mocksy.json template (media not included).",
     "templateImportHint": "Load a .mocksy.json template into the current mockup.",
-    "templateError": "Could not apply that template."
+    "templateError": "Could not apply that template.",
+    "bundleExport": "Export with media (.zip)",
+    "bundleExportLabel": "Export {name} with media (.zip)",
+    "bundleError": "Could not export that project bundle."
   },
   "theme": {
     "light": "లేతం",

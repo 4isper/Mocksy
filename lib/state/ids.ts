@@ -26,3 +26,7 @@ export function nextFrameInstanceId(): string {
 export function nextProjectId(): string {
   return makeId("proj");
 }
+
+export function nextTemplateId(): string {
+  return makeId("tpl");
+}

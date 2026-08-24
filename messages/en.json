@@ -470,7 +470,13 @@
     "surprise": "Surprise me",
     "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
     "copyLink": "Copy template link",
-    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media",
+    "save": "Save",
+    "savePlaceholder": "Save current look as…",
+    "saveTitle": "Save the current scene's look (without media) as a reusable template",
+    "myTemplates": "My templates",
+    "deleteTitle": "Delete template {name}",
+    "limitReached": "Template limit reached ({max}). Delete an older template to save a new one."
   },
   "help": {
     "layersStack": "Layers stack top to bottom. Select a layer to edit its zoom, position and video options. Drag a layer to reorder. Shortcuts for the active layer: ⌘D duplicate, ⌘↑ / ⌘↓ reorder, ⌘[ / ⌘] switch."
@@ -591,6 +597,9 @@
     "delete": "Delete",
     "import": "Import",
     "export": "Export project",
+    "bundleExport": "Export with media (.zip)",
+    "bundleExportLabel": "Export {name} with media (.zip)",
+    "bundleError": "Could not export that project bundle.",
     "switch": "Switch to",
     "noProjects": "No projects yet.",
     "deleteConfirm_title": "Delete project",

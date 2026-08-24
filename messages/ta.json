@@ -451,7 +451,13 @@
     "surprise": "Surprise me",
     "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
     "copyLink": "Copy template link",
-    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media",
+    "save": "Save",
+    "savePlaceholder": "Save current look as…",
+    "saveTitle": "Save the current scene's look (without media) as a reusable template",
+    "myTemplates": "My templates",
+    "deleteTitle": "Delete template {name}",
+    "limitReached": "Template limit reached ({max}). Delete an older template to save a new one."
   },
   "help": {
     "layersStack": "அட்டைகள் மேலிருந்து கீழாக அமைந்துள்ளன. அவற்றின் அளவு, நிலையிடம் மற்றும் பட விருப்பங்களை மாற்ற ஒரு அட்டையைத் தேர்ந்தெடுக்கவும். அவற்றின் வரிசையை மாற்ற அட்டையை இழுக்கவும். செயல்படும் அட்டையின் விரைவுக் குறியீடுகள்: ⌘D நகல், ⌘↑ / ⌘↓ வரிசை மாற்று, ⌘[ / ⌘] மாற்று."
@@ -601,7 +607,10 @@
     "templateImportBtn": "Apply template",
     "templateExportHint": "Download the current scene as a shareable .mocksy.json template (media not included).",
     "templateImportHint": "Load a .mocksy.json template into the current mockup.",
-    "templateError": "Could not apply that template."
+    "templateError": "Could not apply that template.",
+    "bundleExport": "Export with media (.zip)",
+    "bundleExportLabel": "Export {name} with media (.zip)",
+    "bundleError": "Could not export that project bundle."
   },
   "theme": {
     "light": "ஒளிமயம்",

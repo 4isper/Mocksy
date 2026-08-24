@@ -451,7 +451,13 @@
     "surprise": "Surprise me",
     "surpriseTitle": "Randomize style, background, shadow and corners — media stays untouched",
     "copyLink": "Copy template link",
-    "copyLinkTitle": "Copy a URL that opens this scene's look without any media"
+    "copyLinkTitle": "Copy a URL that opens this scene's look without any media",
+    "save": "Save",
+    "savePlaceholder": "Save current look as…",
+    "saveTitle": "Save the current scene's look (without media) as a reusable template",
+    "myTemplates": "My templates",
+    "deleteTitle": "Delete template {name}",
+    "limitReached": "Template limit reached ({max}). Delete an older template to save a new one."
   },
   "help": {
     "layersStack": "Sluoksniai išdėstyti nuo viršaus iki apačios. Pasirinkite sluoksnį, kad keistumėte jo dydį, padėtį ir vaizdo nustatymus. Perkelkite sluoksnį, kad keistumėte jo tvarką. Aktyvaus sluoksnio spartūs klavišai: ⌘D dubliavimas, ⌘↑ / ⌘↓ tvarkymas, ⌘[ / ⌘] perjungimas."
@@ -601,7 +607,10 @@
     "templateImportBtn": "Apply template",
     "templateExportHint": "Download the current scene as a shareable .mocksy.json template (media not included).",
     "templateImportHint": "Load a .mocksy.json template into the current mockup.",
-    "templateError": "Could not apply that template."
+    "templateError": "Could not apply that template.",
+    "bundleExport": "Export with media (.zip)",
+    "bundleExportLabel": "Export {name} with media (.zip)",
+    "bundleError": "Could not export that project bundle."
   },
   "theme": {
     "light": "Šviesa",
