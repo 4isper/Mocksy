@@ -843,5 +843,9 @@
     "bold": "Bold",
     "regular": "Regular",
     "defaultContent": "Your text here"
+  },
+  "pwa": {
+    "updateReady": "A new version is available",
+    "reload": "Reload"
   }
 }

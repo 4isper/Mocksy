@@ -676,6 +676,10 @@
     "minimal": "Minimal",
     "warm": "Warm"
   },
+  "pwa": {
+    "updateReady": "A new version is available",
+    "reload": "Reload"
+  },
   "commandPalette": {
     "navHint": "↑↓ Navigate · ⏎ Select · Esc Close",
     "title": "Command palette",

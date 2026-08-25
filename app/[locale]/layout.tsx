@@ -70,10 +70,14 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           <SkipLink />
           <ErrorBoundary message={errors?.message} retryLabel={errors?.tryAgain}>
-            <ThemeProvider>{children}</ThemeProvider>
+            {/* PWA registration + update banner: lives inside the provider so
+                the banner can be localized. Renders null until an update lands. */}
+            <ThemeProvider>
+              <PwaRegister />
+              {children}
+            </ThemeProvider>
           </ErrorBoundary>
         </NextIntlClientProvider>
-        <PwaRegister />
       </body>
     </html>
   );
