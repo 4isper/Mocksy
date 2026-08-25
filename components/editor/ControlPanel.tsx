@@ -8,6 +8,7 @@ import { WatermarkControls } from "@/components/editor/WatermarkControls";
 import { ScreenControls } from "@/components/editor/ScreenControls";
 import { Section } from "@/components/editor/Section";
 import { MediaSection } from "@/components/editor/sections/MediaSection";
+import { TextSection } from "@/components/editor/sections/TextSection";
 import { FrameSection } from "@/components/editor/sections/FrameSection";
 import { PositionSection } from "@/components/editor/sections/PositionSection";
 import { FiltersSection } from "@/components/editor/sections/FiltersSection";
@@ -58,6 +59,7 @@ export function ControlPanel() {
       <h2 className="panel-title">{t("editor.controls")}</h2>
 
       <MediaSection />
+      <TextSection />
       <FrameSection />
       <AnimationSection />
       <PositionSection />

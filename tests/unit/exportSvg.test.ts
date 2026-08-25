@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildSvgMarkup, exportSvg, inlineSvgAsset, mediaToDataUrl, videoToDataUrl } from "@/lib/export/exportSvg";
 import { clearImageCache } from "@/lib/render/canvasMedia";
 import { computeFrameBox } from "@/lib/render/frameGeometry";
+import { RENDER } from "@/lib/render/canvasDrawing";
 import { initialScene } from "@/lib/state/editorStore";
 import type { EditorScene } from "@/lib/types/editor";
 
@@ -394,8 +395,7 @@ describe("buildSvgMarkup", () => {
      expect(markup).toContain('fill="rgba(0,0,0,0.5)"');
    });
 
-  it("fades the floor reflection downward from the device edge", () => {
-    const scene = sceneWith({ backgroundMode: "transparent", floorReflection: true });
+  it("fades the floor reflection downward from the device edge", () => {    const scene = sceneWith({ backgroundMode: "transparent", floorReflection: true });
     const box = boxFor(scene);
     const group = { box, mediaHref: null, mediaWidth: 100, mediaHeight: 50, isOverlay: false, overlayInner: null };
     const markup = buildSvgMarkup(scene, { width: 800, height: 600, backgroundHref: null, groups: [group] });
@@ -416,6 +416,20 @@ describe("buildSvgMarkup", () => {
     expect(gradTag).toContain('<stop offset="1" stop-color="#fff" stop-opacity="0"/>');
     // The mirrored group is masked by the gradient.
     expect(markup).toContain('mask="url(#refl-mask-1)"');
+  });
+
+  it("embeds the text layer svg instead of media for text layers", () => {
+    const scene = sceneWith({ frame: "none" });
+    const box = boxFor(scene);
+    const layer = { ...scene.layers[0]!, kind: "text" as const, mediaUrl: null, mediaType: "none" as const, textContent: "Hello", textColor: "#00ff00", textSize: 0.1 };
+    const group = { box, mediaHref: null, mediaWidth: 100, mediaHeight: 50, isOverlay: false, overlayInner: null, textLayer: layer };
+    const markup = buildSvgMarkup(scene, { width: 800, height: 600, backgroundHref: null, groups: [group] });
+    // The nested svg's viewBox matches the screen box aspect (400×300 → 390×292.5)
+    // and the text carries the layer's color — no <image>, no empty fill.
+    expect(markup).toContain('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 ');
+    expect(markup).toContain('fill="#00ff00"');
+    expect(markup).not.toContain("<image ");
+    expect(markup).not.toContain(RENDER.emptyMediaFill);
   });
  });
 

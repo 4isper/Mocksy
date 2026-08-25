@@ -7,6 +7,7 @@ export function createFileCommands(
   t: (key: string, values?: Record<string, string | number | Date>) => string,
   callbacks: {
     onExportPng: () => void;
+    onExportJpeg: () => void;
     onExportWebp: () => void;
     onExportSvg: () => void;
     onExportHtml: () => void;
@@ -21,7 +22,7 @@ export function createFileCommands(
     onSave: () => void;
   }
 ): Command[] {
-  const { onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onExportZipVideo, onCopyPng, onCopyShareUrl, onSave } = callbacks;
+  const { onExportPng, onExportJpeg, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onExportZipVideo, onCopyPng, onCopyShareUrl, onSave } = callbacks;
   const recording = isScreenRecordingActive();
   return [
     {
@@ -79,6 +80,14 @@ export function createFileCommands(
       shortcut: "⌘E",
       keywords: ["export", "png", "image", "download", "picture"],
       action: onExportPng,
+    },
+    {
+      id: "export-jpeg",
+      category: "export",
+      label: t("commandPalette.exportJpeg"),
+      description: t("commandPalette.exportJpegDesc"),
+      keywords: ["export", "jpeg", "jpg", "image", "download", "picture"],
+      action: onExportJpeg,
     },
     {
       id: "export-mp4",

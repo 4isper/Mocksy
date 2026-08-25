@@ -138,6 +138,10 @@ export interface EditorStoreState {
    *  where the visible frame isn't necessarily the globally-active layer). */
   setMediaOnLayer: (layerId: string, mediaUrl: string | null, mediaType: MediaType, mediaName?: string | null) => void;
   addLayer: (mediaUrl: string, mediaType: MediaType, mediaName?: string | null) => void;
+  /** Appends a new text layer (kind "text") with the given initial content
+   *  and selects it. Styled via the text controls; renders inside the frame's
+ *  screen like a media layer. */
+  addTextLayer: (textContent: string) => void;
   /** Clones a layer (same media + per-layer settings) as a new top-of-stack
    *  layer with a fresh id. Shares the source's blob: URL, which the
    *  orphan-revocation logic keeps alive while either layer references it. */

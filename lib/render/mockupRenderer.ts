@@ -8,6 +8,7 @@ import { screenChromeSvg } from "@/lib/render/screenChrome";
 import { browserChromeSvg, isBrowserFrameSpec } from "@/lib/render/browserChrome";
 import { buildCssBackground } from "@/lib/render/sceneBackground";
 import { overlayClipDefForSpec } from "@/lib/render/squircle";
+import { buildTextLayerSvg } from "@/lib/render/layerText";
 
 function overlayClipCss(spec: FrameSpec): Pick<CSSProperties, "WebkitClipPath" | "clipPath"> {
   const def = overlayClipDefForSpec(spec);
@@ -28,6 +29,14 @@ export interface SceneCss {
   mediaStyle: CSSProperties;
   /** Style for the empty-media placeholder when no media is loaded. */
   emptyMediaStyle: CSSProperties;
+  /** Full SVG markup of a text layer's content stretched over the screen box,
+   *  or null when the active layer is not a text layer (or has no content). */
+  textSvg: string | null;
+  /** Box styles positioning `textSvg` over the frame's screen area. */
+  textStyle: CSSProperties;
+  /** Screen-area aspect ratio (w/h) so per-layer text markup can be built
+   *  outside this module without recomputing frame geometry. */
+  screenAspect: number;
   /** Full SVG markup of the on-screen decoration (status bar, lock clock,
    *  home dock), or null when the screen chrome is disabled. */
   screenChrome: string | null;
@@ -203,6 +212,29 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
   const screenChrome = scene.screen.enabled
     ? screenChromeSvg({ ...scene.screen, os: frameOs(scene.frame) }, chromeW, chromeH, `screen-chrome-${String(scene.frame).replace(/[^a-z0-9]/gi, "")}`, chromePar)
     : null;
+
+  // Text layers render instead of media, stretched over the same screen box.
+  // The SVG's viewBox matches the screen aspect so glyphs never distort; the
+  // canvas/SVG/HTML renderers reuse the identical layout from layerText.ts.
+  const textSvg = buildTextLayerSvg(activeLayerForCss, screenAspect);
+  const textStyle: CSSProperties = spec.isOverlay && spec.cutout
+    ? {
+        position: "absolute",
+        left: `${(spec.cutout.x / vb.w) * 100}%`,
+        top: `${(spec.cutout.y / vb.h) * 100}%`,
+        width: `${(spec.cutout.w / vb.w) * 100}%`,
+        height: `${(spec.cutout.h / vb.h) * 100}%`,
+        ...overlayClipCss(spec),
+        overflow: "hidden",
+        pointerEvents: "none"
+      }
+    : {
+        position: "absolute",
+        inset: framePadding,
+        borderRadius: spec.screenRadius,
+        overflow: "hidden",
+        pointerEvents: "none"
+      };
   const screenChromeStyle: CSSProperties = spec.isOverlay && spec.cutout
     ? {
         position: "absolute",
@@ -262,6 +294,9 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
     screenRadius: spec.screenRadius,
     mediaStyle,
     emptyMediaStyle,
+    textSvg,
+    textStyle,
+    screenAspect,
     screenChrome,
     screenChromeStyle,
     screenGlareStyle: buildScreenGlareStyle(scene, spec),

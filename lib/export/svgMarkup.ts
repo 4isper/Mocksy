@@ -1,4 +1,5 @@
-import type { Annotation, EditorScene, MockupFrame } from "@/lib/types/editor";
+import type { Annotation, EditorScene, MediaLayer, MockupFrame } from "@/lib/types/editor";
+import { buildTextLayerSvg } from "@/lib/render/layerText";
 import { computeFrameBox, computeFrameInstances, type FrameBox } from "@/lib/render/frameGeometry";
 import { frameViewBox, frameOs, getFrameSpec, DEFAULT_VIEWBOX } from "@/lib/render/frames";
 import { tiltMatrixSvg } from "@/lib/render/tilt";
@@ -55,6 +56,8 @@ export interface SvgFrameGroup {
   orientation?: number;
   /** The frame this group represents, so chrome can be OS-specific. */
   frame?: MockupFrame;
+  /** Text layer whose content fills the screen instead of media. */
+  textLayer?: MediaLayer | null;
 }
 
 export interface SvgExportOptions {
@@ -171,7 +174,12 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
   const dy = box.innerY + (box.innerH - dh) / 2 + (offY * (box.innerH - dh)) / 2;
 
   const mediaRaw =
-    group.mediaHref != null
+    group.textLayer
+      ? // Text layer: nested aspect-exact SVG stretched over the screen box
+        // (same layout constants the CSS preview and canvas export use).
+        buildTextLayerSvg(group.textLayer, box.innerW / box.innerH) ??
+        `<rect x="${num(box.innerX)}" y="${num(box.innerY)}" width="${num(box.innerW)}" height="${num(box.innerH)}" fill="${RENDER.emptyMediaFill}"/>`
+      : group.mediaHref != null
       ? `<image href="${group.mediaHref}" x="${num(dx)}" y="${num(dy)}" width="${num(dw)}" height="${num(dh)}"/>`
       : `<rect x="${num(box.innerX)}" y="${num(box.innerY)}" width="${num(box.innerW)}" height="${num(box.innerH)}" fill="${RENDER.emptyMediaFill}"/>`;
   // Rotate the media about the inner screen's center to match the CSS preview

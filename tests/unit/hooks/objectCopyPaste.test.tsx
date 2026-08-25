@@ -42,7 +42,16 @@ function frameInstance(id: string): FrameInstance {
 afterEach(() => {
   cleanup();
   setCopiedObject(null);
-  useEditorStore.setState({ scene: initialScene, past: [], future: [], selectedAnnotationId: null, selectedAnnotationIds: [], activeFrameInstanceId: null });
+  useEditorStore.setState({
+    scene: initialScene,
+    past: [],
+    future: [],
+    activeLayerId: initialScene.activeLayerId,
+    selectedLayerIds: [initialScene.activeLayerId ?? ""].filter(Boolean),
+    selectedAnnotationId: null,
+    selectedAnnotationIds: [],
+    activeFrameInstanceId: null
+  });
 });
 
 describe("object copy/paste", () => {
@@ -77,6 +86,36 @@ describe("object copy/paste", () => {
     expect(getCopiedObject()).toEqual({ kind: "frameInstance", id: "fi-1" });
   });
 
+  it("⌘C copies the active layer when no annotation or frame instance is selected", () => {
+    const layers = [
+      { ...initialScene.layers[0]!, id: "layer-a", mediaName: "a.png" },
+      { ...initialScene.layers[0]!, id: "layer-b", mediaName: "b.png" }
+    ];
+    useEditorStore.setState({ scene: { ...initialScene, layers }, activeLayerId: "layer-b", selectedLayerIds: ["layer-b"] });
+    render(<Harness />);
+    fireEvent.keyDown(window, { key: "c", metaKey: true });
+    expect(getCopiedObject()).toEqual({ kind: "layer", id: "layer-b" });
+
+    fireEvent(window, new Event("paste"));
+    const state = useEditorStore.getState();
+    expect(state.scene.layers.map((l) => l.id)).toEqual(["layer-a", "layer-b", expect.any(String)]);
+    // The clone carries the source's content and becomes the active selection.
+    expect(state.scene.layers[2]!.mediaName).toBe("b.png");
+    expect(state.activeLayerId).toBe(state.scene.layers[2]!.id);
+    expect(state.past.length).toBe(1);
+  });
+
+  it("⌘C prefers the selected annotation over the active layer", () => {
+    useEditorStore.setState({
+      scene: { ...initialScene, annotations: [annotation("a-1")] },
+      selectedAnnotationId: "a-1",
+      selectedAnnotationIds: ["a-1"]
+    });
+    render(<Harness />);
+    fireEvent.keyDown(window, { key: "c", metaKey: true });
+    expect(getCopiedObject()).toEqual({ kind: "annotation", id: "a-1" });
+  });
+
   it("pasting media wins over the object clipboard", async () => {
     setCopiedObject({ kind: "annotation", id: "a-1" });
     useEditorStore.setState({ scene: { ...initialScene, annotations: [annotation("a-1")] }, selectedAnnotationId: "a-1" });
@@ -100,5 +139,15 @@ describe("object copy/paste", () => {
     fireEvent(window, new Event("paste"));
     expect(getCopiedObject()).toBeNull();
     expect(useEditorStore.getState().scene.annotations).toHaveLength(0);
+  });
+
+  it("drops a stale copied layer id after the layer was removed", () => {
+    setCopiedObject({ kind: "layer", id: "gone" });
+    render(<Harness />);
+    fireEvent(window, new Event("paste"));
+    expect(getCopiedObject()).toBeNull();
+    // No duplicate was appended and no undo step recorded.
+    expect(useEditorStore.getState().scene.layers).toHaveLength(initialScene.layers.length);
+    expect(useEditorStore.getState().past.length).toBe(0);
   });
 });

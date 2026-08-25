@@ -17,6 +17,10 @@ function sceneWith(overrides: Partial<EditorScene> = {}): EditorScene {
   return { ...initialScene, ...overrides };
 }
 
+function svgTspans(html: string): string[] {
+  return [...html.matchAll(/<tspan [^>]*>([^<]*)<\/tspan>/g)].map((m) => m[1]!);
+}
+
 function layerWith(overrides: Partial<MediaLayer> = {}): MediaLayer {
   const layer = sceneWith().layers[0];
   if (!layer) throw new Error("no layer");
@@ -139,6 +143,17 @@ describe("buildHtmlSnippet", () => {
     const scene = sceneWith({ frame: "iphone15" });
     const html = buildHtmlSnippet(scene, { mediaHref: MEDIA, mediaType: "image", backgroundHref: null, overlayHref: SKIN });
     expect(html).toContain(`<img class="overlay" src="data:image/svg+xml;utf8,<svg/>" alt=""/>`);
+  });
+
+  it("embeds the text layer svg instead of media for text layers", () => {
+    const layer = { ...sceneWith().layers[0]!, kind: "text" as const, mediaUrl: null, mediaType: "none" as const, textContent: "Hi\nThere", textColor: "#ff0000", textSize: 0.1 };
+    const scene = sceneWith({ layers: [layer] });
+    const html = buildHtmlSnippet(scene, { mediaHref: null, mediaType: null, backgroundHref: null, overlayHref: null });
+    expect(html).toContain("<svg");
+    // Aspect-exact viewBox stretched over the iphone screen box.
+    expect(html).toMatch(/viewBox="0 0 390 [\d.]+"/);
+    expect(svgTspans(html)).toEqual(["Hi", "There"]);
+    expect(html).toContain('fill="#ff0000"');
   });
 
   it("renders annotations and the watermark", () => {

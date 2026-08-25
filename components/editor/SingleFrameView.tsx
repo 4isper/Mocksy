@@ -3,6 +3,7 @@
 import { useEffect, type ChangeEvent } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { isVideoLayer } from "@/lib/render/mediaKind";
+import { buildTextLayerSvg, isTextLayer } from "@/lib/render/layerText";
 import type { SceneCss } from "@/lib/render/mockupRenderer";
 import type { CSSProperties } from "react";
 import { useTranslations } from "next-intl";
@@ -104,8 +105,7 @@ export function SingleFrameView({
             .filter((layer) => !layer.hidden)
             .map((layer) =>
             layer.mediaUrl ? (
-            isVideoLayer(layer) ? (
-              <video
+            isVideoLayer(layer) ? (              <video
                 key={layer.id}
                 ref={videoRef}
                 src={layer.mediaUrl}
@@ -152,11 +152,18 @@ export function SingleFrameView({
                 }}
               />
             )
+            ) : isTextLayer(layer) ? (
+              <div
+                key={layer.id}
+                style={sceneCss.textStyle}
+                onPointerDown={() => selectLayer(layer.id)}
+                dangerouslySetInnerHTML={{ __html: buildTextLayerSvg(layer, sceneCss.screenAspect) ?? "" }}
+              />
             ) : null
           )
         }
         emptyMedia={
-          scene.layers.every((l) => !l.mediaUrl) ? (
+          scene.layers.every((l) => !l.mediaUrl) && !scene.layers.some(isTextLayer) ? (
             <label style={sceneCss.emptyMediaStyle}>
               <span>{t("editor.dropToStart")}</span>
               <input type="file" accept="image/*,video/*" onChange={handleCanvasFile} key={canvasFileInputKey} style={{ display: "none" }} />

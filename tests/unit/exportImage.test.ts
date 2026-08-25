@@ -633,8 +633,7 @@ describe("renderSceneToPngBlob multi-frame video", () => {
   });
 });
 
-describe("renderSceneToPngBlob single-frame video fallback", () => {
-  it("loads a video frame when the preview video is not decoded yet", async () => {
+describe("renderSceneToPngBlob single-frame video fallback", () => {  it("loads a video frame when the preview video is not decoded yet", async () => {
     const videoEl: Record<string, unknown> = {
       src: "",
       crossOrigin: "",
@@ -708,5 +707,81 @@ describe("renderSceneToPngBlob single-frame video fallback", () => {
     // The fallback decoded a frame through loadVideoFrame (seek + pause).
     expect(videoEl.currentTime).toBe(2);
     expect(videoEl.pause).toHaveBeenCalled();
+  });
+});
+
+describe("renderSceneToImageBlob jpeg flatten", () => {
+  /** Runs an export against a canvas ctx that records every fillStyle
+   *  assignment, so the test can observe what paintBackground filled with. */
+  async function exportWithFillRecording(mimeType: "image/png" | "image/jpeg"): Promise<string[]> {
+    const fills: string[] = [];
+    vi.stubGlobal("window", { devicePixelRatio: 2 });
+    vi.stubGlobal("HTMLCanvasElement", class {});
+    vi.stubGlobal("HTMLVideoElement", class {});
+    vi.stubGlobal("HTMLImageElement", class {});
+    const ctx: Record<string, unknown> = {
+      clearRect: vi.fn(),
+      fillRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      quadraticCurveTo: vi.fn(),
+      closePath: vi.fn(),
+      clip: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+      createLinearGradient: () => ({ addColorStop: vi.fn() }),
+      drawImage: vi.fn()
+    };
+    Object.defineProperty(ctx, "fillStyle", { set: (v: unknown) => fills.push(String(v)), get: () => "", configurable: true });
+    const setters = ["font", "textAlign", "textBaseline", "strokeStyle", "shadowColor", "shadowBlur", "shadowOffsetX", "shadowOffsetY", "lineWidth", "lineCap", "filter"];
+    for (const s of setters) {
+      Object.defineProperty(ctx, s, { set: vi.fn(), get: () => "", configurable: true });
+    }
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => ctx,
+      toBlob: (cb: (b: Blob | null) => void) => cb(new Blob(["x"], { type: mimeType }))
+    } as unknown as HTMLCanvasElement;
+    const container = {
+      clientWidth: 800,
+      clientHeight: 600,
+      querySelector: (sel: string) =>
+        sel === "[data-mockup-frame]" ? ({ offsetWidth: 400, offsetHeight: 300 } as HTMLElement) : null
+    };
+    vi.stubGlobal("document", {
+      getElementById: (id: string) => (id === "preview" ? container : null),
+      createElement: (tag: string) => (tag === "canvas" ? canvas : null)
+    });
+    vi.stubGlobal("Image", class {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      set src(_v: string) { setTimeout(() => this.onload?.(), 0); }
+      naturalWidth = 100;
+      naturalHeight = 100;
+    });
+
+    const { renderSceneToImageBlob } = await import("@/lib/export/exportImage");
+    const scene: EditorScene = { ...initialScene, backgroundMode: "transparent" };
+    const errors: string[] = [];
+    const blob = await renderSceneToImageBlob(scene, "preview", mimeType, (m) => errors.push(m));
+    expect(errors, errors.join(" | ")).toEqual([]);
+    expect(blob).toBeInstanceOf(Blob);
+    return fills;
+  }
+
+  it("flattens a transparent background onto white for JPEG", async () => {
+    // JPEG has no alpha channel — without the white underlay toBlob would
+    // encode the transparent canvas as black.
+    const fills = await exportWithFillRecording("image/jpeg");
+    expect(fills).toContain("#ffffff");
+  });
+
+  it("keeps transparency for PNG (only the faint empty-scene wash)", async () => {
+    const fills = await exportWithFillRecording("image/png");
+    expect(fills).not.toContain("#ffffff");
   });
 });

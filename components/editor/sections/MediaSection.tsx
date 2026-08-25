@@ -19,14 +19,15 @@ export function MediaSection() {
   const t = useTranslations();
   const [mediaUrlInput, setMediaUrlInput] = useState("");
   const [mediaUrlBusy, setMediaUrlBusy] = useState(false);
-  const { scene, activeLayerId, setMedia, setScenePalette, mediaUploadError, setMediaUploadError } = useEditorStore(
+  const { scene, activeLayerId, setMedia, setScenePalette, mediaUploadError, setMediaUploadError, addTextLayer } = useEditorStore(
     useShallow((s) => ({
       scene: s.scene,
       activeLayerId: s.activeLayerId,
       setMedia: s.setMedia,
       setScenePalette: s.setScenePalette,
       mediaUploadError: s.mediaUploadError,
-      setMediaUploadError: s.setMediaUploadError
+      setMediaUploadError: s.setMediaUploadError,
+      addTextLayer: s.addTextLayer
     }))
   );
 
@@ -106,6 +107,14 @@ export function MediaSection() {
               {t("editor.clearMedia")}
             </button>
           ) : null}
+          <button
+            type="button"
+            className="btn btn-sm"
+            title={t("editor.addTextLayer")}
+            onClick={() => addTextLayer(t("text.defaultContent"))}
+          >
+            {t("editor.addTextLayer")}
+          </button>
         </div>
         <div className="field">
           <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.mediaByUrl")}</span>

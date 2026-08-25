@@ -168,8 +168,10 @@ export async function loadMediaFromUrl(inputUrl: string): Promise<LoadedMedia> {
 /** Raster image mimes that get downscaled on upload. SVG stays vector, GIF
  *  may be animated, so both are skipped. */
 const RASTER_IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp", "image/avif", "image/bmp"];
-/** Largest side kept when a photo is uploaded; mockups rarely need more. */
-export const MAX_IMAGE_DIMENSION = 2048;
+/** Largest side kept when a photo is uploaded. High enough that 4× exports of
+ *  a full-height artboard don't upscale the source, low enough that decode
+ *  stays ~64MB RGBA and the data URL path stays usable. */
+export const MAX_IMAGE_DIMENSION = 4096;
 const WEBP_QUALITY = 0.85;
 
 /** Downscales large raster images to `MAX_IMAGE_DIMENSION` and re-encodes

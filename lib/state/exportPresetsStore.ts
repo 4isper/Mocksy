@@ -15,6 +15,7 @@ export const MAX_EXPORT_PRESETS = 12;
 
 const FORMAT_LABELS: Record<ExportFormat, string> = {
   png: "PNG",
+  jpeg: "JPEG",
   webp: "WebP",
   svg: "SVG",
   html: "HTML",

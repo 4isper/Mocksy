@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Eye, EyeOff, Lock, LockOpen, Video } from "lucide-react";
 import type { MediaLayer } from "@/lib/types/editor";
 import { isVideoLayer } from "@/lib/render/mediaKind";
+import { isTextLayer } from "@/lib/render/layerText";
 import { useEditorStore } from "@/lib/state/editorStore";
 
 interface LayerItemProps {
@@ -61,7 +62,9 @@ export function LayerItem({
   const duplicateLayers = useEditorStore((s) => s.duplicateLayers);
   const removeLayers = useEditorStore((s) => s.removeLayers);
 
-  const label = layer.mediaName ?? (layer.mediaType === "video" ? t("editor.videoLabel") : t("editor.imageLabel"));
+  const label = isTextLayer(layer)
+    ? layer.textContent?.trim() || t("editor.textLabel")
+    : layer.mediaName ?? (layer.mediaType === "video" ? t("editor.videoLabel") : t("editor.imageLabel"));
   const dropStyle = dropIndicator
     ? { boxShadow: dropIndicator.inset === "top" ? "0 -2px 0 0 var(--accent) inset" : "0 2px 0 0 var(--accent) inset" }
     : undefined;
@@ -125,6 +128,8 @@ export function LayerItem({
           ) : (
             <img src={layer.mediaUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           )
+        ) : isTextLayer(layer) ? (
+          <span style={{ fontSize: 12, fontWeight: 700, color: layer.textColor ?? "#ffffff" }}>T</span>
         ) : (
           <span style={{ fontSize: 11, color: "var(--text-dim)" }}><Video size={10} /></span>
         )}

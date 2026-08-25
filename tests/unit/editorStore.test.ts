@@ -532,6 +532,26 @@ describe("annotations", () => {
     expect(store().activeLayerId).toBe(added.id);
   });
 
+  it("addTextLayer appends a text layer, selects it and records history", () => {
+    reset();
+    const before = store().scene.layers.length;
+    const pastBefore = store().past.length;
+    store().addTextLayer("Hello world");
+    expect(store().scene.layers.length).toBe(before + 1);
+    const added = store().scene.layers[store().scene.layers.length - 1]!;
+    expect(added.kind).toBe("text");
+    expect(added.textContent).toBe("Hello world");
+    expect(added.mediaUrl).toBeNull();
+    expect(store().activeLayerId).toBe(added.id);
+    expect(store().selectedLayerIds).toEqual([added.id]);
+    // Editing the text afterwards flows through updateActiveLayer with undo.
+    useEditorStore.getState().updateActiveLayer({ textContent: "Changed" });
+    expect(store().scene.layers.find((l) => l.id === added.id)!.textContent).toBe("Changed");
+    store().undo();
+    expect(store().scene.layers.find((l) => l.id === added.id)!.textContent).toBe("Hello world");
+    expect(store().past.length).toBe(pastBefore + 1);
+  });
+
   it("addLayer sets isMediaLoading while media decodes", () => {
     reset();
     store().addLayer("data:image/png;base64,loading", "image");

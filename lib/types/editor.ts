@@ -93,7 +93,7 @@ export type WatermarkPosition = "bottom-right" | "bottom-left" | "top-right" | "
 export type LayoutPreset = "grid" | "fan" | "cascade" | "masonry" | "stack";
 
 /** Formats offered by the export dialog (raster, vector, video, batch zip). */
-export type ExportFormat = "png" | "webp" | "svg" | "html" | "mp4" | "webm" | "gif" | "webpAnim" | "pdf" | "zip" | "zipVideo";
+export type ExportFormat = "png" | "jpeg" | "webp" | "svg" | "html" | "mp4" | "webm" | "gif" | "webpAnim" | "pdf" | "zip" | "zipVideo";
 
 /** A named snapshot of export-dialog settings (format + scale/size), stored
  *  outside the scene in localStorage so it survives reloads and projects. */
@@ -159,13 +159,32 @@ export type LayerTransformPatch = Partial<
   Pick<MediaLayer, "zoom" | "mediaOffsetX" | "mediaOffsetY" | "rotation" | "opacity" | "brightness" | "contrast" | "saturate" | "blur" | "grayscale">
 >;
 
+/** Content kind of a layer: "media" (default) renders the uploaded image/video,
+ *  "text" renders styled text filling the frame's screen. Absent = "media" so
+ *  scenes saved before text layers stay valid without migration. */
+export type LayerKind = "media" | "text";
+
 /** A single media item stacked inside the mockup frame. Each layer owns its
  *  own transform, animation and (for video) playback/trim settings. */
 export interface MediaLayer {
   id: string;
+  /** Content kind; absent means "media". */
+  kind?: LayerKind;
   mediaUrl: string | null;
   mediaType: MediaType;
   mediaName: string | null;
+  /** Text content for kind === "text"; newlines split lines. */
+  textContent?: string;
+  /** Text fill color, any CSS color. */
+  textColor?: string;
+  /** Font size as a fraction of the screen height, [0.01, 0.6]. */
+  textSize?: number;
+  /** Horizontal alignment of the text block inside the screen. */
+  textAlign?: TextAlign;
+  /** Text font weight (default "bold", matching annotations). */
+  fontWeight?: FontWeight;
+  /** Font family for text layers. Falls back to "Inter, system-ui, sans-serif". */
+  fontFamily?: string;
   /** When true the layer is omitted from the preview and export. */
   hidden: boolean;
   /** Base scale of this layer (frame-wide zoom is applied on top in preview). */

@@ -6,6 +6,7 @@ export function createLayerCommands(
   scene: EditorScene,
   callbacks: {
     addLayer: (url: string, type: MediaType, name?: string | null) => void;
+    addTextLayer: (textContent: string) => void;
     duplicateLayer: (id: string) => void;
     removeLayer: (id: string) => void;
     toggleLayerHidden: (id: string) => void;
@@ -13,7 +14,7 @@ export function createLayerCommands(
   },
   activeLayerId: string | null = scene.activeLayerId
 ): Command[] {
-  const { addLayer, duplicateLayer, removeLayer, toggleLayerHidden, selectLayer } = callbacks;
+  const { addLayer, addTextLayer, duplicateLayer, removeLayer, toggleLayerHidden, selectLayer } = callbacks;
   const layers = scene.layers;
   const activeLayer = activeLayerId ?? layers[0]?.id;
 
@@ -41,6 +42,14 @@ export function createLayerCommands(
         };
         input.click();
       },
+    },
+    {
+      id: "layer-add-text",
+      category: "layer",
+      label: t("commandPalette.addTextLayer"),
+      description: t("commandPalette.addTextLayerDesc"),
+      keywords: ["layer", "add", "new", "text", "label", "caption", "typography"],
+      action: () => addTextLayer(t("text.defaultContent")),
     },
     {
       id: "layer-duplicate",

@@ -8,6 +8,7 @@ import { isBrowserFrameSpec } from "@/lib/render/browserChrome";
 import { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
 import { resolveExportTransform, waitForImage, layerMediaSelector } from "@/lib/export/exportImageCore";
 import { isVideoLayer } from "@/lib/render/mediaKind";
+import { isTextLayer } from "@/lib/render/layerText";
 import { buildEmbeddedFontCss, collectFontStacks } from "@/lib/export/fontEmbed";
 import { downloadBlob } from "@/lib/export/downloadBlob";
 import { buildSvgMarkup, type SvgFrameGroup, type SvgExportOptions } from "@/lib/export/svgMarkup";
@@ -156,7 +157,8 @@ export async function buildStandaloneSvg(
           rotation: layer?.rotation ?? 0,
           opacity: layer?.opacity,
           orientation: box.rotation ? (box.rotation * 180) / Math.PI : undefined,
-          frame: inst.frame
+          frame: inst.frame,
+          textLayer: isTextLayer(layer) ? layer : null
         });
       }
     } else {
@@ -204,7 +206,8 @@ export async function buildStandaloneSvg(
         offsetY: activeLayer?.mediaOffsetY,
         rotation: activeLayer?.rotation ?? 0,
         frame: scene.frame,
-        opacity: activeLayer?.opacity
+        opacity: activeLayer?.opacity,
+        textLayer: isTextLayer(activeLayer) ? activeLayer : null
       });
     }
 

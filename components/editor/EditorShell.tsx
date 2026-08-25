@@ -75,6 +75,7 @@ export function EditorShell() {
 
   const commands = useCommands(
     exportApi.handleExportPng,
+    exportApi.handleExportJpeg,
     exportApi.handleExportWebp,
     exportApi.handleExportSvg,
     exportApi.handleExportHtml,

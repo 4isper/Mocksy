@@ -45,6 +45,7 @@ function makeProject(id: string, name: string): Project {
 function makeFileCallbacks() {
   return {
     onExportPng: vi.fn(),
+    onExportJpeg: vi.fn(),
     onExportWebp: vi.fn(),
     onExportSvg: vi.fn(),
     onExportHtml: vi.fn(),
@@ -75,6 +76,7 @@ function makeOrchestratorArgs(scene: EditorScene) {
     setBackgroundImage: vi.fn(),
     setAspectRatio: vi.fn(),
     addLayer: vi.fn(),
+    addTextLayer: vi.fn(),
     duplicateLayer: vi.fn(),
     removeLayer: vi.fn(),
     toggleLayerHidden: vi.fn(),
@@ -112,12 +114,13 @@ describe("createFileCommands", () => {
     const cb = makeFileCallbacks();
     const cmds = createFileCommands(t, cb);
     expect(cmds.map((c) => c.id)).toEqual([
-      "record-screen", "new-project", "save-project", "export-png", "export-mp4", "export-webm",
+      "record-screen", "new-project", "save-project", "export-png", "export-jpeg", "export-mp4", "export-webm",
       "export-webp", "export-webp-anim", "export-svg", "export-html", "export-pdf",
       "export-gif", "export-video-zip", "copy-png", "copy-share-url"
     ]);
     cmds.find((c) => c.id === "save-project")!.action();
     cmds.find((c) => c.id === "export-png")!.action();
+    cmds.find((c) => c.id === "export-jpeg")!.action();
     cmds.find((c) => c.id === "export-mp4")!.action();
     cmds.find((c) => c.id === "export-webm")!.action();
     cmds.find((c) => c.id === "export-webp")!.action();
@@ -131,6 +134,7 @@ describe("createFileCommands", () => {
     cmds.find((c) => c.id === "copy-share-url")!.action();
     expect(cb.onSave).toHaveBeenCalledTimes(1);
     expect(cb.onExportPng).toHaveBeenCalledTimes(1);
+    expect(cb.onExportJpeg).toHaveBeenCalledTimes(1);
     expect(cb.onExportMp4).toHaveBeenCalledTimes(1);
     expect(cb.onExportWebm).toHaveBeenCalledTimes(1);
     expect(cb.onExportWebp).toHaveBeenCalledTimes(1);
@@ -261,7 +265,7 @@ describe("createLayerCommands", () => {
     vi.stubGlobal("document", { createElement: (tag: string) => (tag === "input" ? input : undefined) });
 
     const cmds = createLayerCommands(t, makeScene(), {
-      addLayer, duplicateLayer: vi.fn(), removeLayer: vi.fn(), toggleLayerHidden: vi.fn(), selectLayer: vi.fn()
+      addLayer, addTextLayer: vi.fn(), duplicateLayer: vi.fn(), removeLayer: vi.fn(), toggleLayerHidden: vi.fn(), selectLayer: vi.fn()
     });
     cmds.find((c) => c.id === "layer-add")!.action();
     expect(input.click).toHaveBeenCalled();
@@ -282,7 +286,7 @@ describe("createLayerCommands", () => {
     const toggleLayerHidden = vi.fn();
     const selectLayer = vi.fn();
     const cmds = createLayerCommands(t, scene, {
-      addLayer: vi.fn(), duplicateLayer, removeLayer, toggleLayerHidden, selectLayer
+      addLayer: vi.fn(), addTextLayer: vi.fn(), duplicateLayer, removeLayer, toggleLayerHidden, selectLayer
     });
     expect(cmds.find((c) => c.id === "layer-duplicate")!.disabled).toBe(false);
     expect(cmds.find((c) => c.id === "layer-remove")!.disabled).toBe(false);
@@ -301,7 +305,7 @@ describe("createLayerCommands", () => {
     const removeLayer = vi.fn();
     const toggleLayerHidden = vi.fn();
     const cmds = createLayerCommands(t, { ...makeScene(2), activeLayerId: null }, {
-      addLayer: vi.fn(), duplicateLayer, removeLayer, toggleLayerHidden, selectLayer: vi.fn()
+      addLayer: vi.fn(), addTextLayer: vi.fn(), duplicateLayer, removeLayer, toggleLayerHidden, selectLayer: vi.fn()
     });
     cmds.find((c) => c.id === "layer-duplicate")!.action();
     cmds.find((c) => c.id === "layer-toggle-hidden")!.action();
@@ -311,7 +315,7 @@ describe("createLayerCommands", () => {
 
   it("never offers to remove the last remaining layer", () => {
     const cmds = createLayerCommands(t, makeScene(1), {
-      addLayer: vi.fn(), duplicateLayer: vi.fn(), removeLayer: vi.fn(), toggleLayerHidden: vi.fn(), selectLayer: vi.fn()
+      addLayer: vi.fn(), addTextLayer: vi.fn(), duplicateLayer: vi.fn(), removeLayer: vi.fn(), toggleLayerHidden: vi.fn(), selectLayer: vi.fn()
     });
     expect(cmds.find((c) => c.id === "layer-remove")!.disabled).toBe(true);
   });
@@ -444,13 +448,13 @@ describe("createCommands", () => {
       a.setFrame, a.setStylePreset, a.setAnimationPreset,
       a.setBackgroundSolid, a.setBackgroundGradient, a.setBackgroundPattern, a.setBackgroundTransparent, a.setBackgroundImage,
       a.setAspectRatio,
-      a.addLayer, a.duplicateLayer, a.removeLayer, a.toggleLayerHidden, a.selectLayer, a.reorderLayers,
+      a.addLayer, a.addTextLayer, a.duplicateLayer, a.removeLayer, a.toggleLayerHidden, a.selectLayer, a.reorderLayers,
       a.addAnnotation, a.clearAnnotations,
       a.toggleWatermark,
       a.setExportScale, 2,
       "p1", [makeProject("p1", "One")], a.switchProject,
       "dark", a.setThemeMode,
-      a.onExportPng, a.onExportWebp, a.onExportSvg, a.onExportHtml, a.onExportPdf,
+      a.onExportPng, a.onExportJpeg, a.onExportWebp, a.onExportSvg, a.onExportHtml, a.onExportPdf,
       a.onExportMp4, a.onExportWebm, a.onExportGif, a.onExportWebpAnim, a.onExportZipVideo,
       a.onCopyPng, a.onCopyShareUrl, a.onSave, a.onToggleFullscreen
     );

@@ -167,6 +167,10 @@ function gridItemHtml(scene: EditorScene, tiltPrefix: string, item: GridItemOpti
     css.browserChrome && css.browserChromeStyle
       ? `<div style="${serializeCssProperties(css.browserChromeStyle)}">${css.browserChrome}</div>`
       : "";
+  // Text layers replace media with the same aspect-exact SVG the preview uses.
+  const textLayer = css.textSvg
+    ? `<div style="${serializeCssProperties(css.textStyle)}">${css.textSvg}</div>`
+    : "";
 
   const rotorOpen = landscape
     ? `<div class="rotor" style="position: absolute;left: 50%;top: 50%;width: calc(100% / ${native.toFixed(6)});aspect-ratio: ${(1 / native).toFixed(6)} / 1;transform: translate(-50%, -50%) rotate(90deg);">`
@@ -175,7 +179,7 @@ function gridItemHtml(scene: EditorScene, tiltPrefix: string, item: GridItemOpti
 
   return `<div class="frame-instance" style="${wrapperCss}">
 ${rotorOpen}<div data-mockup-frame style="${frameCss}">
-${media}${chrome}${glare}
+${media}${textLayer}${chrome}${glare}
 ${overlay}
 ${browserChrome}
 </div>${rotorClose}
@@ -337,6 +341,10 @@ export function buildHtmlSnippet(scene: EditorScene, opts: HtmlSnippetOptions, a
   const browserChrome = css.browserChrome && css.browserChromeStyle
     ? `<div style="${serializeCssProperties(css.browserChromeStyle)}">${css.browserChrome}</div>`
     : "";
+  // Text layers replace media with the same aspect-exact SVG the preview uses.
+  const textLayer = css.textSvg
+    ? `<div style="${serializeCssProperties(css.textStyle)}">${css.textSvg}</div>`
+    : "";
   const glare = css.screenGlareStyle
     ? `<div class="glare" style="${serializeCssProperties(css.screenGlareStyle)}"></div>`
     : "";
@@ -437,6 +445,7 @@ ${defsSvg}
   ${bg}
   <div class="frame">
     ${media}
+    ${textLayer}
     ${chrome}${glare}
     ${overlay}
     ${browserChrome}

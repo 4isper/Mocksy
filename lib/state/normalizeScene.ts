@@ -113,9 +113,21 @@ function normalizeLayer(raw: unknown, fallback: MediaLayer): MediaLayer {
     // to the demo data URL here would resurrect the demo phone on every
     // normalize (load, share import, undo) — see shareState for where the demo
     // is restored deliberately.
+    kind: pick(r.kind, ["media", "text"] as const, fallback.kind ?? "media"),
+    // A layer with no media (the user cleared it, or a stripped demo that the
+    // share/project loader chose not to restore) must stay empty. Falling back
+    // to the demo data URL here would resurrect the demo phone on every
+    // normalize (load, share import, undo) — see shareState for where the demo
+    // is restored deliberately.
     mediaUrl: str(r.mediaUrl, null),
     mediaType: pick(r.mediaType, MEDIA_TYPES, fallback.mediaType),
     mediaName: str(r.mediaName, fallback.mediaName),
+    textContent: str(r.textContent, "") ?? "",
+    textColor: str(r.textColor, null) ?? "#ffffff",
+    textSize: num(r.textSize, fallback.textSize ?? 0.12, 0.01, 0.6),
+    textAlign: pick(r.textAlign, ["left", "center", "right"] as const, fallback.textAlign ?? "center"),
+    fontWeight: pick(r.fontWeight, ["normal", "bold"] as const, fallback.fontWeight ?? "bold"),
+    fontFamily: str(r.fontFamily, null) ?? undefined,
     hidden: r.hidden === true,
     zoom: num(r.zoom, fallback.zoom, 0.1, 3),
     mediaOffsetX: num(r.mediaOffsetX, fallback.mediaOffsetX, -1, 1),

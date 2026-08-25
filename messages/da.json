@@ -333,7 +333,10 @@
     "resizePanel": "Resize panel. Drag, double-click to reset, or use arrow keys",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
-    "zoomReset": "Reset to 100%"
+    "zoomReset": "Reset to 100%",
+    "addTextLayer": "+ Text layer",
+    "text": "Text",
+    "textLabel": "Text layer"
   },
   "frame": {
     "none": "Ingen",
@@ -521,7 +524,8 @@
       "story": "Story / Reels"
     },
     "zipVideo": "Video ZIP (all frames)",
-    "exportingZipVideo": "Exporting videos…"
+    "exportingZipVideo": "Exporting videos…",
+    "jpeg": "JPEG"
   },
   "shortcuts": {
     "title": "Tastaturgenveje",
@@ -568,7 +572,13 @@
     "zoomOut": "Zoom out",
     "zoomFit": "Fit preview",
     "panCanvas": "Pan canvas",
-    "zoomCursor": "Zoom at cursor (scroll)"
+    "zoomCursor": "Zoom at cursor (scroll)",
+    "rebind": "Change shortcut",
+    "rebindReset": "Reset to default",
+    "recording": "…",
+    "recordingHint": "Press the new key combination (Esc to cancel).",
+    "conflict": "Already used by “{label}”",
+    "resetAll": "Reset all shortcuts"
   },
   "projects": {
     "title": "Projekter",
@@ -744,7 +754,11 @@
     "goProjects": "Go to Projects",
     "goProjectsDesc": "Open the Projects tab in the right panel",
     "zipVideo": "Export Video ZIP",
-    "zipVideoDesc": "Record every frame instance as its own MP4 and download all as one archive"
+    "zipVideoDesc": "Record every frame instance as its own MP4 and download all as one archive",
+    "exportJpeg": "Export JPEG",
+    "exportJpegDesc": "Export current scene as JPEG image",
+    "addTextLayer": "Add Text Layer",
+    "addTextLayerDesc": "Add a new text layer inside the device screen"
   },
   "errors": {
     "title": "Noget gik galt",
@@ -816,5 +830,18 @@
       "watermark": "Changed watermark",
       "canvas": "Changed canvas"
     }
+  },
+  "text": {
+    "content": "Content",
+    "color": "Color",
+    "size": "Size",
+    "align": "Alignment",
+    "alignLeft": "Left",
+    "alignCenter": "Center",
+    "alignRight": "Right",
+    "weight": "Weight",
+    "bold": "Bold",
+    "regular": "Regular",
+    "defaultContent": "Your text here"
   }
 }

@@ -69,6 +69,28 @@ describe("normalizeScene", () => {
     expect(s.layers[0]!.videoLoop).toBe(true);
   });
 
+  it("defaults text-layer fields for legacy layers without kind", () => {
+    const s = normalizeScene({ layers: [{}] });
+    expect(s.layers[0]!.kind).toBe("media");
+    expect(s.layers[0]!.textContent).toBe("");
+    expect(s.layers[0]!.textColor).toBe("#ffffff");
+    expect(s.layers[0]!.textSize).toBe(0.12);
+    expect(s.layers[0]!.textAlign).toBe("center");
+    expect(s.layers[0]!.fontWeight).toBe("bold");
+  });
+
+  it("normalizes a text layer, clamping size and rejecting bad enums", () => {
+    const s = normalizeScene({
+      layers: [{ kind: "text", textContent: "Hello", textColor: "#ff0000", textSize: 5, textAlign: "diagonal", fontWeight: "black" }]
+    });
+    expect(s.layers[0]!.kind).toBe("text");
+    expect(s.layers[0]!.textContent).toBe("Hello");
+    expect(s.layers[0]!.textColor).toBe("#ff0000");
+    expect(s.layers[0]!.textSize).toBe(0.6); // clamped to the max
+    expect(s.layers[0]!.textAlign).toBe("center"); // fallback enum
+    expect(s.layers[0]!.fontWeight).toBe("bold");
+  });
+
   it("accepts image background mode, url and blur within range", () => {
     const s = normalizeScene({
       backgroundMode: "image",

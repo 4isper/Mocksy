@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { exportImage, copyPngToClipboard, exportWebp } from "@/lib/export/exportImage";
+import { exportImage, copyPngToClipboard, exportWebp, exportJpeg } from "@/lib/export/exportImage";
 import { exportPdf } from "@/lib/export/exportPdf";
 import type { ExportFormat } from "@/components/editor/ExportDialog";
 import { sceneToShareUrl, sceneToTemplateUrl, ShareUrlTooLarge } from "@/lib/state/shareState";
@@ -18,6 +18,7 @@ export interface EditorExportApi {
   handleExport: (format: ExportFormat) => void;
   handleCopyFromDialog: () => void;
   handleExportPng: () => void;
+  handleExportJpeg: () => void;
   handleExportWebp: () => void;
   handleExportSvg: () => void;
   handleExportHtml: () => void;
@@ -137,6 +138,13 @@ export function useEditorExport(
     setExportError(null);
     await copyPngToClipboard(scene, "preview-canvas", setExportError, setCopyStatus, exportScale, customExportSize, activeLayerId);
   }, [scene, exportScale, customExportSize, activeLayerId]);
+
+  const handleExportJpeg = useCallback(() => {
+    setExportError(null);
+    void Promise.resolve(exportJpeg(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId)).then(
+      () => setCopyStatus(t("editor.exported"))
+    );
+  }, [scene, exportScale, customExportSize, activeLayerId, t]);
 
   const handleExportWebp = useCallback(() => {
     setExportError(null);
@@ -296,6 +304,9 @@ export function useEditorExport(
         case "png":
           handleExportPng();
           break;
+        case "jpeg":
+          handleExportJpeg();
+          break;
         case "webp":
           handleExportWebp();
           break;
@@ -331,6 +342,7 @@ export function useEditorExport(
     [
       onExportDialogClose,
       handleExportPng,
+      handleExportJpeg,
       handleExportWebp,
       handleExportSvg,
       handleExportHtml,
@@ -372,6 +384,7 @@ export function useEditorExport(
     handleExport,
     handleCopyFromDialog,
     handleExportPng,
+    handleExportJpeg,
     handleExportWebp,
     handleExportSvg,
     handleExportHtml,

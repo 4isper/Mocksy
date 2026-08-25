@@ -4,6 +4,7 @@ import { getFrameSpec, frameOs } from "@/lib/render/frames";
 import { createLayerCanvas, layerContext } from "@/lib/render/canvasFactory";
 import { watermarkEdges } from "@/lib/render/watermark";
 import { buildLayerFilterCss } from "@/lib/render/layerFilters";
+import { drawTextLayer, isTextLayer } from "@/lib/render/layerText";
 import { drawScreenChrome } from "@/lib/render/screenChrome";
 import { drawBrowserUrl } from "@/lib/render/browserChrome";
 import { CORNER_POWER_CIRCLE, traceSquirclePath } from "@/lib/render/squircle";
@@ -303,6 +304,12 @@ export function drawFrameAndMedia(
     }
     ctx.filter = buildLayerFilterCss(layer);
     ctx.drawImage(media, dx, dy, dw, dh);
+    ctx.globalAlpha = 1;
+  } else if (isTextLayer(layer)) {
+    // Text layers paint styled text instead of media, using the exact layout
+    // the CSS/SVG renderers embed (same constants from layerText.ts).
+    ctx.globalAlpha = layerOpacity;
+    drawTextLayer(ctx, layer as MediaLayer, innerX, innerY, innerW, innerH);
     ctx.globalAlpha = 1;
   } else {
     ctx.fillStyle = RENDER.emptyMediaFill;

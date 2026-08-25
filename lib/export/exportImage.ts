@@ -23,18 +23,18 @@ function escapeSelectorValue(value: string): string {
 }
 
 /**
- * Renders the current scene to a raster `Blob` (PNG or WebP) at an intrinsic,
- * viewport-independent resolution (see exportSize.ts), reusing the exact
- * geometry the preview uses (frame box, zoom/animation transform, overlay
+ * Renders the current scene to a raster `Blob` (PNG, JPEG or WebP) at an
+ * intrinsic, viewport-independent resolution (see exportSize.ts), reusing the
+ * exact geometry the preview uses (frame box, zoom/animation transform, overlay
  * skin, transparent background). Returns null
  * (and routes the reason through `onError`) when the scene can't be rendered
- * or the canvas can't be read. Shared by `exportImage`, `exportWebp` and
- * `copyPngToClipboard`.
+ * or the canvas can't be read. Shared by `exportImage`, `exportWebp`,
+ * `exportJpeg` and `copyPngToClipboard`.
  */
 export async function renderSceneToImageBlob(
   scene: EditorScene,
   containerId: string,
-  mimeType: "image/png" | "image/webp",
+  mimeType: "image/png" | "image/webp" | "image/jpeg",
   onError?: (message: string) => void,
   /** Pixel ratio for the export. Defaults to `Math.max(2, devicePixelRatio)`
    *  when omitted so existing callers keep 2× output on standard displays. */
@@ -108,6 +108,11 @@ export async function renderSceneToImageBlob(
 
     const transform = resolveExportTransform(scene, activeLayerId);
 
+    // JPEG has no alpha channel: a transparent background would encode as
+    // black. Flatten onto white instead (same call the video pipeline makes
+    // with black) so both render paths — worker and main thread — agree.
+    const jpegFlattenFill = mimeType === "image/jpeg" && scene.backgroundMode === "transparent" ? "#ffffff" : undefined;
+
     // Fast path: render the whole composite inside a worker so big exports
     // don't block input. Video layers can't decode off-thread and any worker
     // hiccup resolves null, both falling through to the synchronous path.
@@ -122,7 +127,8 @@ export async function renderSceneToImageBlob(
         mimeType,
         transform,
         frameWidth,
-        frameHeight
+        frameHeight,
+        backgroundFill: jpegFlattenFill
       });
       if (payload) {
         const blob = await renderSceneInWorker(payload);
@@ -182,7 +188,7 @@ export async function renderSceneToImageBlob(
       frameHeight,
       pixelRatio,
       transform,
-      undefined,
+      jpegFlattenFill,
       overlay,
       backgroundImage,
       layerMedias,
@@ -248,6 +254,26 @@ export async function exportWebp(
 ) {
   const blob = await renderSceneToImageBlob(scene, containerId, "image/webp", onError, scale, customSize, activeLayerId);
   if (blob) downloadBlob(blob, `${filename}.webp`);
+}
+
+/**
+ * Exports the scene as a static JPEG image (lossy, universally supported).
+ * Rendered through the same canvas pipeline as PNG; a transparent background
+ * is flattened onto white because JPEG has no alpha channel.
+ */
+export async function exportJpeg(
+  scene: EditorScene,
+  containerId: string,
+  filename: string,
+  onError?: (message: string) => void,
+  /** Export pixel ratio (1×/2×/4×), read from the editor's scale control. */
+  scale?: number,
+  /** Absolute output size in pixels; overrides `scale` when set. */
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
+) {
+  const blob = await renderSceneToImageBlob(scene, containerId, "image/jpeg", onError, scale, customSize, activeLayerId);
+  if (blob) downloadBlob(blob, `${filename}.jpg`);
 }
 
 /**

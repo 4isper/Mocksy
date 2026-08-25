@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import type { EditorScene, FrameInstance, MediaLayer } from "@/lib/types/editor";
 import { frameInstanceHalfExtents, frameInstAr, getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
+import { buildTextLayerSvg, isTextLayer } from "@/lib/render/layerText";
 import type { SceneCss } from "@/lib/render/mockupRenderer";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { resolveZoomScale } from "@/lib/render/previewViewport";
@@ -396,6 +397,12 @@ export function FrameInstanceGrid({
                         onPointerDown={() => selectLayer(layer.id)}
                       />
                     )
+                  ) : isTextLayer(layer) ? (
+                    <div
+                      style={{ ...instCss.textStyle, cursor: "grab" }}
+                      onPointerDown={() => selectLayer(layer!.id)}
+                      dangerouslySetInnerHTML={{ __html: buildTextLayerSvg(layer, instCss.screenAspect) ?? "" }}
+                    />
                   ) : null
                 }
               />

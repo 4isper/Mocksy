@@ -21,6 +21,7 @@ export type LayersSlice = Pick<
   | "setMedia"
   | "setMediaOnLayer"
   | "addLayer"
+  | "addTextLayer"
   | "duplicateLayer"
   | "toggleLayerHidden"
   | "toggleLayersLocked"
@@ -142,6 +143,32 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
           activeLayerId: newLayer.id,
           videoCurrentTime: 0,
           isMediaLoading: mediaUrl != null
+        };
+      }),
+    addTextLayer: (textContent) =>
+      set((s) => {
+        // Text layers reuse the layer pipeline (transform/animation/frames);
+        // only the screen-content slot differs. No media payload to load.
+        const newLayer: MediaLayer = {
+          ...makeDemoLayer(),
+          id: nextLayerId(),
+          kind: "text",
+          mediaUrl: null,
+          mediaType: "none",
+          mediaName: null,
+          textContent,
+          textColor: "#ffffff",
+          textSize: 0.12,
+          textAlign: "center",
+          fontWeight: "bold"
+        };
+        const layers = [...s.scene.layers, newLayer];
+        return {
+          ...pushHistory(s, { ...s.scene, layers }),
+          activeLayerId: newLayer.id,
+          selectedLayerIds: [newLayer.id],
+          videoCurrentTime: 0,
+          isMediaLoading: false
         };
       }),
     duplicateLayer: (id) =>
