@@ -180,36 +180,49 @@ export async function renderSceneToImageBlob(
     if (scene.frameInstances.length > 0) {
       layerMedias = new Map();
       frameOverlays = new Map();
-      for (const inst of scene.frameInstances) {
-        // Hidden layers' instances aren't rendered — skip their media too.
-        if (!isVisibleFrameInstance(scene, inst)) continue;
-        const layer = scene.layers.find((l) => l.id === inst.layerId);
-        if (layer?.mediaUrl) {
-          try {
-            // An <img> can't decode a video URL; load video frames through a
-            // <video> element that has actually decoded a frame, so the static
-            // export shows the poster frame instead of an empty screen.
-            if (isVideoLayer(layer)) {
-              const videoFrame = await loadVideoFrame(layer.mediaUrl, layer.videoPosterTime ?? 0);
-              layerMedias.set(layer.id, videoFrame);
-            } else {
-              const loaded = await loadImage(layer.mediaUrl);
-              layerMedias.set(layer.id, loaded);
+      // Hidden layers' instances aren't rendered — skip their media too. All
+      // loads run concurrently: each instance waits on its own media + skin
+      // fetch instead of queueing behind every earlier frame's round-trip.
+      const visible = scene.frameInstances.filter((inst) => isVisibleFrameInstance(scene, inst));
+      const loaded = await Promise.all(
+        visible.map(async (inst) => {
+          const layer = scene.layers.find((l) => l.id === inst.layerId);
+          let media: CanvasImageSource | null = null;
+          let hasMedia = false;
+          if (layer?.mediaUrl) {
+            hasMedia = true;
+            try {
+              // An <img> can't decode a video URL; load video frames through a
+              // <video> element that has actually decoded a frame, so the static
+              // export shows the poster frame instead of an empty screen.
+              media = isVideoLayer(layer)
+                ? await loadVideoFrame(layer.mediaUrl, layer.videoPosterTime ?? 0)
+                : await loadImage(layer.mediaUrl);
+            } catch {
+              media = null;
             }
-          } catch {
-            layerMedias.set(layer.id, null);
           }
-        }
-        // Load overlay for this frame instance if it uses an overlay frame
-        const instSpec = getFrameSpec(inst.frame, scene.customFrame, inst.material);
-        if (instSpec.isOverlay && instSpec.asset) {
-          try {
-            const ov = await loadImage(instSpec.asset);
-            if (layer?.id) frameOverlays.set(layer.id, ov);
-          } catch {
-            // Overlay failed to load - leave empty
+          // Load overlay for this frame instance if it uses an overlay frame
+          let overlay: CanvasImageSource | null = null;
+          let hasOverlay = false;
+          const instSpec = getFrameSpec(inst.frame, scene.customFrame, inst.material);
+          if (instSpec.isOverlay && instSpec.asset) {
+            try {
+              overlay = await loadImage(instSpec.asset);
+              hasOverlay = true;
+            } catch {
+              // Overlay failed to load - leave empty
+            }
           }
-        }
+          return { layerId: layer?.id ?? null, media, hasMedia, overlay, hasOverlay };
+        })
+      );
+      // Apply in instance order so a layer shared by several frames keeps the
+      // sequential semantics (the last visible instance wins).
+      for (const { layerId, media, hasMedia, overlay, hasOverlay } of loaded) {
+        if (!layerId) continue;
+        if (hasMedia) layerMedias.set(layerId, media);
+        if (hasOverlay && overlay) frameOverlays.set(layerId, overlay);
       }
     }
 

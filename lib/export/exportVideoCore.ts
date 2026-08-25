@@ -113,66 +113,93 @@ export async function captureWebm(
   // For multi-frame mode, load media for each frame's layer and per-instance overlays
   let layerMedias: Map<string, CanvasImageSource | null> | undefined;
   let frameOverlays: Map<string, CanvasImageSource | null> | undefined;
+  // Detached <video> elements created for frame-instance layers: they play
+  // while the recorder samples them, so the finally block below must stop
+  // and drop every one of them after the capture.
+  const instanceVideos: HTMLVideoElement[] = [];
   if (isMultiFrame) {
     layerMedias = new Map();
     frameOverlays = new Map();
-    for (const inst of scene.frameInstances) {
-      // Hidden layers' instances aren't rendered — skip their media too.
-      if (!isVisibleFrameInstance(scene, inst)) continue;
-      const layer = scene.layers.find((l) => l.id === inst.layerId);
-      if (layer?.mediaUrl) {
-        try {
-          const isVideo = isVideoLayer(layer);
-          if (isVideo) {
-            // Create a detached video element for the export. It must be
-            // seeked to its trim start AND played: an element that never
-            // plays stays undecoded, and drawImage of an undecoded video
-            // renders an empty frame.
-            const v = document.createElement("video");
-            v.src = layer.mediaUrl;
-            v.crossOrigin = "anonymous";
-            v.muted = true;
-            v.playbackRate = Math.max(0.5, Math.min(2, layer.playbackSpeed ?? 1));
-            v.playsInline = true;
-            await new Promise<void>((resolve, reject) => {
-              const timer = setTimeout(() => reject(new Error("Timed out loading video for export")), MEDIA_LOAD_TIMEOUT);
-              const finish = () => {
-                clearTimeout(timer);
-                resolve();
-              };
-              v.onloadedmetadata = () => {
-                const trimStart = Math.max(0, layer?.videoTrimStart || 0);
-                if (trimStart > 0) {
-                  v.onseeked = finish;
-                  v.currentTime = trimStart;
-                } else {
-                  finish();
-                }
-              };
-              v.onerror = () => {
-                clearTimeout(timer);
-                reject(new Error("Unable to load video for export"));
-              };
-            });
-            v.play().catch(() => null);
-            layerMedias.set(layer.id, v);
-          } else {
-            const img = await loadImage(layer.mediaUrl);
-            layerMedias.set(layer.id, img);
+    // Hidden layers' instances aren't rendered — skip their media too. All
+    // loads run concurrently: each video/image decodes in parallel instead of
+    // queueing behind the previous frame's metadata round-trip.
+    const visible = scene.frameInstances.filter((inst) => isVisibleFrameInstance(scene, inst));
+    const loaded = await Promise.all(
+      visible.map(async (inst) => {
+        const layer = scene.layers.find((l) => l.id === inst.layerId);
+        let media: CanvasImageSource | null = null;
+        let hasMedia = false;
+        if (layer?.mediaUrl) {
+          hasMedia = true;
+          try {
+            if (isVideoLayer(layer)) {
+              // Create a detached video element for the export. It must be
+              // seeked to its trim start AND played: an element that never
+              // plays stays undecoded, and drawImage of an undecoded video
+              // renders an empty frame.
+              const v = document.createElement("video");
+              v.src = layer.mediaUrl;
+              v.crossOrigin = "anonymous";
+              v.muted = true;
+              v.playbackRate = Math.max(0.5, Math.min(2, layer.playbackSpeed ?? 1));
+              v.playsInline = true;
+              try {
+                await new Promise<void>((resolve, reject) => {
+                  const timer = setTimeout(() => reject(new Error("Timed out loading video for export")), MEDIA_LOAD_TIMEOUT);
+                  const finish = () => {
+                    clearTimeout(timer);
+                    resolve();
+                  };
+                  v.onloadedmetadata = () => {
+                    const trimStart = Math.max(0, layer?.videoTrimStart || 0);
+                    if (trimStart > 0) {
+                      v.onseeked = finish;
+                      v.currentTime = trimStart;
+                    } else {
+                      finish();
+                    }
+                  };
+                  v.onerror = () => {
+                    clearTimeout(timer);
+                    reject(new Error("Unable to load video for export"));
+                  };
+                });
+              } catch (err) {
+                // The element never joined the recording; drop it before the
+                // outer catch degrades this slot to null.
+                v.remove();
+                throw err;
+              }
+              v.play().catch(() => null);
+              instanceVideos.push(v);
+              media = v;
+            } else {
+              media = await loadImage(layer.mediaUrl);
+            }
+          } catch {
+            media = null;
           }
-        } catch {
-          layerMedias.set(layer.id, null);
         }
-      }
-      const instSpec = getFrameSpec(inst.frame, scene.customFrame, inst.material);
-      if (instSpec.isOverlay && instSpec.asset) {
-        try {
-          const ov = await loadImage(instSpec.asset);
-          if (layer?.id) frameOverlays.set(layer.id, ov);
-        } catch {
-          // overlay failed to load
+        let overlay: CanvasImageSource | null = null;
+        let hasOverlay = false;
+        const instSpec = getFrameSpec(inst.frame, scene.customFrame, inst.material);
+        if (instSpec.isOverlay && instSpec.asset) {
+          try {
+            overlay = await loadImage(instSpec.asset);
+            hasOverlay = true;
+          } catch {
+            // overlay failed to load
+          }
         }
-      }
+        return { layerId: layer?.id ?? null, media, hasMedia, overlay, hasOverlay };
+      })
+    );
+    // Apply in instance order so a layer shared by several frames keeps the
+    // sequential semantics (the last visible instance wins).
+    for (const { layerId, media, hasMedia, overlay, hasOverlay } of loaded) {
+      if (!layerId) continue;
+      if (hasMedia) layerMedias.set(layerId, media);
+      if (hasOverlay && overlay) frameOverlays.set(layerId, overlay);
     }
   }
 
@@ -187,6 +214,12 @@ export async function captureWebm(
       // the preview's <video> mid-session; dropping the element reference
       // lets GC reclaim it.
       sourceVideo.remove();
+    }
+    // Same ownership rule for the multi-frame elements created above: they
+    // keep decoding (and playing!) until explicitly stopped.
+    for (const v of instanceVideos) {
+      v.pause();
+      v.remove();
     }
   }
   return webmBlob;

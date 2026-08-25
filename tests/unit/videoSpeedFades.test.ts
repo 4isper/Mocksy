@@ -107,6 +107,32 @@ describe("blur annotation", () => {
     expect(markup.split("data:image/png;base64,x").length - 1).toBeGreaterThanOrEqual(1);
   });
 
+  it("keeps blur-region ids in lockstep across interleaved annotation types", () => {
+    // The defs builder and the markup pass must agree on region ids even when
+    // non-blur annotations sit between blurs — ids are assigned in annotation
+    // order, once, from a shared array (no mutable module-level counter).
+    const markup = buildSvgMarkup(scene({
+      annotations: [
+        { ...makeAnnotation("blur"), id: "b0", w: 0.3, h: 0.2 },
+        { ...makeAnnotation("arrow"), id: "a0", w: 0.4, h: 0.4 },
+        { ...makeAnnotation("blur"), id: "b1", w: 0.2, h: 0.2 },
+        { ...makeAnnotation("rect"), id: "r0", w: 0.1, h: 0.1 },
+        { ...makeAnnotation("blur"), id: "b2", w: 0.1, h: 0.1 }
+      ] as Annotation[]
+    }), {
+      width: 800,
+      height: 450,
+      backgroundHref: null,
+      groups: []
+    });
+    const uses = [...markup.matchAll(/<use href="#mocksy-scene" filter="url\(#anno-blur-(\d+)\)"\/>/g)].map((m) => m[1]);
+    expect(uses).toEqual(["0", "1", "2"]);
+    for (const idx of ["0", "1", "2"]) {
+      expect(markup).toContain(`<clipPath id="anno-blur-clip-${idx}">`);
+      expect(markup).toContain(`<filter id="anno-blur-${idx}"`);
+    }
+  });
+
   it("draws via a blurred self-snapshot on canvas", () => {
     const draws: string[] = [];
     const snapCtx = { drawImage: vi.fn() };

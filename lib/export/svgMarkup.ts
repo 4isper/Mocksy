@@ -17,11 +17,6 @@ function num(n: number): string {
   return round2(n);
 }
 
-/** Running index of blur regions while the markup pass walks the annotations.
- *  Reset at the start of every buildSvgMarkup call; must stay in lockstep with
- *  the defs builder, which iterates the same annotations in the same order. */
-let blurRegionIndex = 0;
-
 export interface SvgFrameGroup {
   /** Canvas-space frame geometry (design px, computed with pixelRatio 1). */
   box: FrameBox;
@@ -262,13 +257,24 @@ function blurRegionGeometry(a: Annotation, width: number, height: number) {
   return { bx, by, bw, bh, radius: Math.max(1, a.strokeWidth * overlayScaleFor(width)) };
 }
 
-function annotationsMarkup(scene: EditorScene, width: number, height: number): string {
+/** One blur-region id per annotation (-1 for non-blur rows), assigned in
+ *  annotation order. Computed once and shared by the defs builder and the
+ *  markup pass, so their ids can never drift apart — and no mutable
+ *  module-level counter needs to be reset between calls. */
+function assignBlurRegionIds(scene: EditorScene): number[] {
+  const ids: number[] = [];
+  let next = 0;
+  for (const a of scene.annotations) ids.push(a.type === "blur" ? next++ : -1);
+  return ids;
+}
+
+function annotationsMarkup(scene: EditorScene, width: number, height: number, blurIds: number[]): string {
   if (scene.annotations.length === 0) return "";
   // Overlay chrome scales with the artboard reference width (overlayMetrics),
   // matching the canvas export and the live preview.
   const s = overlayScaleFor(width);
   let out = "";
-  for (const a of scene.annotations) {
+  for (const [i, a] of scene.annotations.entries()) {
     const bx = Math.min(a.x, a.x + a.w) * width;
     const by = Math.min(a.y, a.y + a.h) * height;
     const bw = Math.abs(a.w) * width;
@@ -277,7 +283,7 @@ function annotationsMarkup(scene: EditorScene, width: number, height: number): s
       // Frosted region: replay the scene group through a Gaussian blur,
       // clipped to the rect. The scene is emitted once as #mocksy-scene and
       // referenced via <use>, so media data URLs are never duplicated.
-      const idx = blurRegionIndex++;
+      const idx = blurIds[i]!;
       out += `<g clip-path="url(#anno-blur-clip-${idx})"><use href="#mocksy-scene" filter="url(#anno-blur-${idx})"/></g>`;
       continue;
     }
@@ -373,9 +379,9 @@ export function buildSvgMarkup(scene: EditorScene, opts: SvgExportOptions): stri
   const { width, height, groups, zoom = 1 } = opts;
   const shadowDy = num(RENDER.shadowOffsetY * zoom);
   const shadowStd = num((RENDER.shadowBlur / 2) * zoom);
-  // Blur-region ids are shared between the defs below and the markup pass —
-  // keep the counter in lockstep.
-  blurRegionIndex = 0;
+  // Shared blur-region ids: defs below and the annotation markup above the
+  // same array stay in lockstep by construction.
+  const blurIds = assignBlurRegionIds(scene);
 
   const defs = [
     // Halo-only drop shadow: blur the opaque silhouette's alpha, offset it,
@@ -384,9 +390,9 @@ export function buildSvgMarkup(scene: EditorScene, opts: SvgExportOptions): stri
     `<filter id="frame-shadow" x="-60%" y="-250%" width="220%" height="500%"><feGaussianBlur in="SourceAlpha" stdDeviation="${shadowStd}"/><feOffset dy="${shadowDy}" result="off"/><feFlood flood-color="#000" flood-opacity="${scene.shadowOpacity}"/><feComposite in2="off" operator="in" result="shadow"/><feComposite in2="SourceAlpha" operator="out"/></filter>`,
     `<filter id="anno-shadow" x="-50%" y="-100%" width="200%" height="300%"><feDropShadow dx="0" dy="${RENDER.annoShadowOffsetY}" stdDeviation="${RENDER.annoShadowBlur / 2}" flood-color="#000" flood-opacity="0.5"/></filter>`,
     scene.backgroundBlur > 0 ? `<filter id="bg-blur"><feGaussianBlur stdDeviation="${num(scene.backgroundBlur / 2)}"/></filter>` : "",
-    ...scene.annotations.flatMap((a) => {
+    ...scene.annotations.flatMap((a, i) => {
       if (a.type !== "blur") return [];
-      const idx = blurRegionIndex++;
+      const idx = blurIds[i]!;
       const { bx, by, bw, bh, radius } = blurRegionGeometry(a, width, height);
       return [
         `<clipPath id="anno-blur-clip-${idx}"><rect x="${num(bx)}" y="${num(by)}" width="${num(bw)}" height="${num(bh)}" rx="${num(Math.min(bw, bh) * 0.12)}"/></clipPath>`,
@@ -425,13 +431,12 @@ export function buildSvgMarkup(scene: EditorScene, opts: SvgExportOptions): stri
     (scene.floorReflection ? groups.map((g, i) => reflectionGroupMarkup(scene, g, i, groups.length)).join("") : "") +
     groups.map((g, i) => frameGroupMarkup(scene, g, i)).join("") +
     `</g>`;
-  blurRegionIndex = 0;
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${num(width)} ${num(height)}" width="${num(width)}" height="${num(height)}">`,
     `<defs>${defs.join("")}</defs>`,
     sceneBase,
-    annotationsMarkup(scene, width, height),
+    annotationsMarkup(scene, width, height, blurIds),
     watermarkMarkup(scene, opts),
     `</svg>`
   ].join("");

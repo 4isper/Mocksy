@@ -480,6 +480,87 @@ describe("exportVideo orchestration", () => {
     expect(gridVideo.play).toHaveBeenCalled();
   });
 
+  it("stops and detaches every instance video once the capture ends", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    const videos: Array<Record<string, unknown>> = [];
+    const makeVideoStub = (): Record<string, unknown> => {
+      const v: Record<string, unknown> = {
+        src: "",
+        crossOrigin: "",
+        muted: false,
+        playsInline: false,
+        play: vi.fn().mockResolvedValue(undefined),
+        pause: vi.fn(),
+        remove: vi.fn(),
+        captureStream: vi.fn().mockReturnValue({ getAudioTracks: () => [], getVideoTracks: () => [] })
+      };
+      Object.defineProperty(v, "currentTime", {
+        configurable: true,
+        get() { return v._currentTime ?? 0; },
+        set(t) {
+          v._currentTime = t;
+          queueMicrotask(() => (v.onseeked as (() => void) | null)?.());
+        }
+      });
+      Object.defineProperty(v, "onloadedmetadata", {
+        configurable: true,
+        get() { return v._onLoadedMetadata; },
+        set(fn) { v._onLoadedMetadata = fn; if (fn) queueMicrotask(() => (fn as () => void)()); }
+      });
+      Object.defineProperty(v, "onseeked", {
+        configurable: true,
+        get() { return v._onSeeked; },
+        set(fn) { v._onSeeked = fn; }
+      });
+      Object.defineProperty(v, "onerror", {
+        configurable: true,
+        get() { return v._onError; },
+        set(fn) { v._onError = fn; }
+      });
+      videos.push(v);
+      return v;
+    };
+    vi.stubGlobal("document", {
+      getElementById: vi.fn().mockReturnValue(preview),
+      createElement: vi.fn().mockImplementation((tag: string) => {
+        if (tag === "canvas") return canvas;
+        if (tag === "video") return makeVideoStub();
+        return {};
+      }),
+      body: { appendChild: vi.fn(), removeChild: vi.fn() }
+    });
+    installMediaRecorder();
+
+    const videoLayer = layer({
+      id: "vlayer",
+      mediaUrl: "blob:vid",
+      mediaType: "video",
+      mediaName: "clip.mp4",
+      videoDuration: 10,
+      videoTrimStart: 2,
+      videoTrimEnd: 8
+    });
+    const scene: EditorScene = {
+      ...sceneWithLayer(videoLayer),
+      frameInstances: [
+        { id: "inst1", layerId: "vlayer", frame: "iphone15", x: 0.25, y: 0.5, scale: 0.4 },
+        { id: "inst2", layerId: "other", frame: "iphone15", x: 0.75, y: 0.5, scale: 0.4 }
+      ]
+    };
+
+    await exportWebm(scene);
+
+    // Instance <video> elements keep decoding (and playing!) until explicitly
+    // stopped: after the recording they must all be paused and dropped, or
+    // every export leaks live media elements until reload.
+    expect(videos.length).toBeGreaterThanOrEqual(2);
+    for (const v of videos) {
+      expect(v.pause).toHaveBeenCalled();
+      expect(v.remove).toHaveBeenCalled();
+    }
+  });
+
   it("sizes the capture canvas to a custom resolution", async () => {
     const preview = fakePreview(); // 800×600 preview
     const canvas = fakeCanvas();
