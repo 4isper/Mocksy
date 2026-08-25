@@ -1,8 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { clearImageCache } from "@/lib/render/canvasMedia";
 import { resolveExportTransform, waitForImage } from "@/lib/export/exportImage";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { initialScene } from "@/lib/state/editorStore";
 import type { AnimationPreset, EditorScene, MediaLayer } from "@/lib/types/editor";
+
+// Tests stub document/Image/URL/... heavily; leaking one stub into the next
+// test breaks it in confusing ways (e.g. a URL stub without a constructor
+// makes isSvgAssetUrl silently skip every path url).
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 function layer(overrides: Partial<MediaLayer> = {}): MediaLayer {
   return { ...initialScene.layers[0]!, id: overrides.id ?? "layer-test", ...overrides };
@@ -783,5 +791,69 @@ describe("renderSceneToImageBlob jpeg flatten", () => {
   it("keeps transparency for PNG (only the faint empty-scene wash)", async () => {
     const fills = await exportWithFillRecording("image/png");
     expect(fills).not.toContain("#ffffff");
+  });
+});
+
+describe("decodeSvgAssetsForWorker", () => {
+  /** Workers can neither construct Image nor createImageBitmap an SVG blob;
+   *  this contract (pre-decoded bitmaps shipped from the main thread) is what
+   *  keeps device skins — and their drop shadows — alive in off-thread
+   *  exports. A silent miss here used to export skinless frames. */
+  function stubImageDecoder() {
+    // Earlier tests in this file poison the shared canvasMedia image cache
+    // (their Image stubs throw synchronously, and executor throws cache the
+    // rejected promise without eviction). Start from a clean cache.
+    clearImageCache();
+    vi.stubGlobal("Image", class {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      naturalWidth = 393;
+      naturalHeight = 852;
+      #src = "";
+      get src(): string {
+        return this.#src;
+      }
+      set src(value: string) {
+        this.#src = value;
+        if (value.includes("broken")) queueMicrotask(() => this.onerror?.());
+        else queueMicrotask(() => this.onload?.());
+      }
+    });
+    vi.stubGlobal("createImageBitmap", async (img: { src: string }) => ({ __bitmapFor: img.src }));
+  }
+
+  it("pre-decodes every SVG url (overlay + slots) and skips raster ones", async () => {
+    stubImageDecoder();
+    const { decodeSvgAssetsForWorker } = await import("@/lib/export/exportImage");
+    const payload = {
+      overlayUrl: "/devices/iphone15.svg",
+      backgroundImageUrl: "data:image/png;base64,AAA",
+      watermarkImageUrl: null,
+      images: [
+        { key: "l1", url: "data:image/svg+xml;base64,PHN2Zy8+" },
+        { key: "overlay:l1", url: "/devices/iphone15.svg" },
+        { key: "l2", url: "data:image/png;base64,BBB" }
+      ]
+    } as unknown as Parameters<typeof decodeSvgAssetsForWorker>[0];
+    const out = await decodeSvgAssetsForWorker(payload);
+    // Deduped by url: the skin appears once even though two slots reference it.
+    expect(out).toHaveLength(2);
+    const byUrl = new Map(out.map((e) => [e.url, e.bitmap]));
+    expect(byUrl.get("/devices/iphone15.svg")).toEqual({ __bitmapFor: "/devices/iphone15.svg" });
+    expect(byUrl.get("data:image/svg+xml;base64,PHN2Zy8+")).toEqual({ __bitmapFor: "data:image/svg+xml;base64,PHN2Zy8+" });
+  });
+
+  it("skips a failed decode instead of aborting the batch", async () => {
+    stubImageDecoder();
+    const { decodeSvgAssetsForWorker } = await import("@/lib/export/exportImage");
+    const payload = {
+      overlayUrl: "/devices/broken.svg",
+      backgroundImageUrl: null,
+      watermarkImageUrl: null,
+      images: [{ key: "l1", url: "/devices/iphone15.svg" }]
+    } as unknown as Parameters<typeof decodeSvgAssetsForWorker>[0];
+    const out = await decodeSvgAssetsForWorker(payload);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.url).toBe("/devices/iphone15.svg");
   });
 });

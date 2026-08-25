@@ -10,7 +10,9 @@ import { encodeCanvasToBlob } from "@/lib/export/offthreadEncode";
 import { renderSceneInWorker } from "@/lib/export/offthreadRender";
 import {
   buildRenderWorkerPayload,
-  canRenderSceneInWorker
+  canRenderSceneInWorker,
+  isSvgAssetUrl,
+  type RenderWorkerPayload
 } from "@/lib/render/renderWorkerProtocol";
 import { resolveExportTransform, waitForImage, layerMediaSelector } from "@/lib/export/exportImageCore";
 import { fitRatioForCustomSize, intrinsicExportSize } from "@/lib/export/exportSize";
@@ -20,6 +22,38 @@ import { loadExportAssets } from "@/lib/export/exportAssets";
 /** Escapes a value for use inside a double-quoted CSS attribute selector. */
 function escapeSelectorValue(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+/**
+ * Rasterizes every SVG asset referenced by the payload (device skins, custom
+ * frames, SVG media/backgrounds/watermarks) into transferred ImageBitmaps.
+ * Workers can't decode SVG themselves (no Image constructor, and
+ * createImageBitmap rejects SVG blobs), so this runs on the main thread right
+ * before the payload ships. Failures are skipped: the worker then throws for
+ * mandatory slots (overlay) or degrades optional ones, and the export falls
+ * back to the main-thread render. Exported for tests — this contract is what
+ * keeps device skins (and their drop shadows) alive in off-thread exports.
+ */
+export async function decodeSvgAssetsForWorker(payload: RenderWorkerPayload): Promise<Array<{ url: string; bitmap: ImageBitmap }>> {
+  const urls = new Set<string>();
+  if (payload.overlayUrl && isSvgAssetUrl(payload.overlayUrl)) urls.add(payload.overlayUrl);
+  if (payload.backgroundImageUrl && isSvgAssetUrl(payload.backgroundImageUrl)) urls.add(payload.backgroundImageUrl);
+  if (payload.watermarkImageUrl && isSvgAssetUrl(payload.watermarkImageUrl)) urls.add(payload.watermarkImageUrl);
+  for (const slot of payload.images) {
+    if (isSvgAssetUrl(slot.url)) urls.add(slot.url);
+  }
+  const out: Array<{ url: string; bitmap: ImageBitmap }> = [];
+  await Promise.all(
+    [...urls].map(async (url) => {
+      try {
+        const img = await loadImage(url);
+        out.push({ url, bitmap: await createImageBitmap(img) });
+      } catch {
+        // Skipped: the worker's strict/optional decode handles the miss.
+      }
+    })
+  );
+  return out;
 }
 
 /**
@@ -131,7 +165,8 @@ export async function renderSceneToImageBlob(
         backgroundFill: jpegFlattenFill
       });
       if (payload) {
-        const blob = await renderSceneInWorker(payload);
+        const predecoded = await decodeSvgAssetsForWorker(payload);
+        const blob = await renderSceneInWorker(payload, predecoded);
         if (blob) return blob;
       }
     }

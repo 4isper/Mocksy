@@ -267,7 +267,9 @@ describe("buildSvgMarkup", () => {
       zoom: 1,
       groups: [{ box, mediaHref: null, mediaWidth: 362, mediaHeight: 816, isOverlay: true, overlayInner: '<rect fill="red"/>' }]
     });
-    expect(markup).toContain('<g filter="url(#frame-shadow)"><g transform="translate(205 -122) scale(1 1)"><rect fill="red"/></g></g>');
+    // Shadow comes from an opaque halo rect; the skin rides unfiltered.
+    expect(markup).toContain('<rect x="205" y="-122" width="390" height="844" rx="55" fill="#000" filter="url(#frame-shadow)"/>');
+    expect(markup).toContain('<g transform="translate(205 -122) scale(1 1)"><rect fill="red"/></g>');
   });
 
   it("adds a drop-shadow filter scaled by the frame zoom", () => {
@@ -280,7 +282,11 @@ describe("buildSvgMarkup", () => {
       zoom: 1.5,
       groups: [{ box, mediaHref: null, mediaWidth: 400, mediaHeight: 300, isOverlay: false, overlayInner: null }]
     });
-    expect(markup).toContain('<feDropShadow dx="0" dy="42" stdDeviation="52.5" flood-color="#000" flood-opacity="0.5"/>');
+    // Halo-only chain: blur SourceAlpha, offset, tint, then subtract the
+    // silhouette so only the halo renders.
+    expect(markup).toContain('<feOffset dy="42" result="off"/>');
+    expect(markup).toContain('flood-opacity="0.5"');
+    expect(markup).toContain('<feComposite in2="SourceAlpha" operator="out"/>');
   });
 
   it("renders text, rect and arrow annotations", () => {

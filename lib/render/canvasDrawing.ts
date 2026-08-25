@@ -230,8 +230,95 @@ export function drawWatermark(
   ctx.restore();
 }
 
-export function drawFrameAndMedia(
+/**
+ * Draws the device drop shadow by casting it from an explicit OPAQUE
+ * silhouette on an isolated layer, then erasing the silhouette with its own
+ * mask so only the halo composites onto the scene. Canvas shadows derive
+ * their alpha from the drawn shape — the real shapes here are either
+ * semi-transparent (glass body fills) or an SVG skin raster whose thin,
+ * partly translucent artwork renders the shadow far weaker than the preview's
+ * CSS drop-shadow. The silhouette mirrors what the preview's drop-shadow
+ * sees (skin artwork ∪ screen cutout, or the whole glass box), so the shadow
+ * hugs the device with no light ring and no silhouette color bleeding
+ * through transparent artwork margins. Falls back to the legacy direct
+ * shadow when layer canvases are unavailable (tests/SSR).
+ */
+function drawFrameShadow(
   ctx: CanvasRenderingContext2D,
+  box: FrameBox,
+  scene: EditorScene,
+  dpiScale: number,
+  zoom: number,
+  silhouette?: { image: CanvasImageSource; cutout?: { x: number; y: number; w: number; h: number; r: number } } | null
+) {
+  const opacity = Math.max(0, Math.min(1, scene.shadowOpacity));
+  if (opacity <= 0) return;
+  const padX = RENDER.shadowBlur * dpiScale * zoom + 4;
+  const padY = (RENDER.shadowBlur + RENDER.shadowOffsetY) * dpiScale * zoom + 4;
+  const w = Math.ceil(box.width + padX * 2);
+  const h = Math.ceil(box.height + padY * 2);
+
+  // 1) Opaque black silhouette mask in layer-local coordinates: the skin
+  //    artwork plus the screen cutout (the areas the group fills opaquely),
+  //    or simply the rounded box for glass body frames.
+  const mask = createLayerCanvas(w, h);
+  const mctx = layerContext(mask);
+  if (!mctx) {
+    ctx.save();
+    ctx.shadowColor = `rgba(0,0,0,${opacity})`;
+    ctx.shadowBlur = RENDER.shadowBlur * dpiScale * zoom;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = RENDER.shadowOffsetY * dpiScale * zoom;
+    roundedRectPath(ctx, box.x, box.y, box.width, box.height, box.outerRadius);
+    ctx.fillStyle = "#000";
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+  mctx.fillStyle = "#000";
+  if (silhouette) {
+    mctx.drawImage(silhouette.image, padX, padY, box.width, box.height);
+    mctx.globalCompositeOperation = "source-in";
+    mctx.fillRect(0, 0, w, h);
+    mctx.globalCompositeOperation = "source-over";
+    if (silhouette.cutout) {
+      const c = silhouette.cutout;
+      roundedRectPath(mctx, padX + (c.x - box.x), padY + (c.y - box.y), c.w, c.h, c.r);
+      mctx.fill();
+    }
+  } else {
+    roundedRectPath(mctx, padX, padY, box.width, box.height, box.outerRadius);
+    mctx.fill();
+  }
+
+  // 2) Cast the shadow from the mask; 3) erase the mask itself so only the
+  //    halo remains (the frame body/media/skin repaint the interior).
+  const layer = createLayerCanvas(w, h);
+  const lctx = layerContext(layer);
+  if (!lctx) {
+    ctx.save();
+    ctx.shadowColor = `rgba(0,0,0,${opacity})`;
+    ctx.shadowBlur = RENDER.shadowBlur * dpiScale * zoom;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = RENDER.shadowOffsetY * dpiScale * zoom;
+    ctx.drawImage(mask as CanvasImageSource, box.x - padX, box.y - padY);
+    ctx.restore();
+    return;
+  }
+  lctx.save();
+  lctx.shadowColor = `rgba(0,0,0,${opacity})`;
+  lctx.shadowBlur = RENDER.shadowBlur * dpiScale * zoom;
+  lctx.shadowOffsetX = 0;
+  lctx.shadowOffsetY = RENDER.shadowOffsetY * dpiScale * zoom;
+  lctx.drawImage(mask as CanvasImageSource, 0, 0);
+  lctx.restore();
+  lctx.globalCompositeOperation = "destination-out";
+  lctx.drawImage(mask as CanvasImageSource, 0, 0);
+  lctx.globalCompositeOperation = "source-over";
+  ctx.drawImage(layer as CanvasImageSource, box.x - padX, box.y - padY);
+}
+
+export function drawFrameAndMedia(  ctx: CanvasRenderingContext2D,
   scene: EditorScene,
   instSpec: ReturnType<typeof getFrameSpec>,
   layer: MediaLayer | undefined,
@@ -254,11 +341,12 @@ export function drawFrameAndMedia(
   };
 
   if (!instSpec.isOverlay) {
+    // Cast the drop shadow from an opaque rounded-rect silhouette (see
+    // drawFrameShadow), then paint the actual body — whose glass fills are
+    // nearly transparent and would produce a barely-visible shadow.
+    drawFrameShadow(ctx, box, scene, dpiScale, zoom);
+
     ctx.save();
-    ctx.shadowColor = `rgba(0,0,0,${Math.max(0, Math.min(1, scene.shadowOpacity))})`;
-    ctx.shadowBlur = RENDER.shadowBlur * dpiScale * zoom;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = RENDER.shadowOffsetY * dpiScale * zoom;
     roundedRectPath(ctx, x, y, frameW, frameH, outerRadius);
     ctx.fillStyle = resolveFrameStyle(scene.stylePreset).fill;
     ctx.fill();
@@ -342,11 +430,14 @@ export function drawFrameAndMedia(
   }
 
   if (overlay) {
+    // Silhouette = skin artwork ∪ screen cutout — exactly what the preview's
+    // CSS drop-shadow sees, so the halo hugs the device with no light ring
+    // and no silhouette color showing through the skin's transparent margins.
+    drawFrameShadow(ctx, box, scene, dpiScale, zoom, {
+      image: overlay,
+      cutout: { x: innerX, y: innerY, w: innerW, h: innerH, r: screenRx }
+    });
     ctx.save();
-    ctx.shadowColor = `rgba(0,0,0,${Math.max(0, Math.min(1, scene.shadowOpacity))})`;
-    ctx.shadowBlur = RENDER.shadowBlur * dpiScale * zoom;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = RENDER.shadowOffsetY * dpiScale * zoom;
     ctx.drawImage(overlay, x, y, frameW, frameH);
     ctx.restore();
   }

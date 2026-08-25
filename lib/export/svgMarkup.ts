@@ -226,6 +226,11 @@ function frameGroupInner(scene: EditorScene, group: SvgFrameGroup): string {
   const { box } = group;
   const isCircular = group.isCircular;
   let frame = "";
+  // The drop shadow is cast from an opaque rounded-rect silhouette (the
+  // halo-only filter below), mirroring drawFrameShadow in canvasDrawing —
+  // filtering the actual body/skin would derive the shadow alpha from glass
+  // fills or skin raster alpha and render it far weaker than the preview.
+  frame += `<rect x="${num(box.x)}" y="${num(box.y)}" width="${num(box.width)}" height="${num(box.height)}" rx="${num(box.outerRadius)}" fill="#000" filter="url(#frame-shadow)"/>`;
   if (group.isOverlay) {
     if (group.overlayInner) {
       const vb = group.viewBox ?? DEFAULT_VIEWBOX;
@@ -234,12 +239,12 @@ function frameGroupInner(scene: EditorScene, group: SvgFrameGroup): string {
       // The browser URL rides in the same translate/scale group as the skin
       // so it tracks the frame at any size (coordinates are viewBox units).
       const urlText = group.browserUrl ? browserUrlSvg(group.browserUrl, scene.browserChromeTheme) : "";
-      frame = `<g filter="url(#frame-shadow)"><g transform="translate(${num(box.x)} ${num(box.y)}) scale(${num(sx)} ${num(sy)})">${group.overlayInner}${urlText}</g></g>`;
+      frame += `<g transform="translate(${num(box.x)} ${num(box.y)}) scale(${num(sx)} ${num(sy)})">${group.overlayInner}${urlText}</g>`;
     }
   } else {
     const frameStyle = resolveFrameStyle(scene.stylePreset);
     const radius = isCircular ? num(Math.min(box.width, box.height) / 2) : num(box.outerRadius);
-    frame = `<rect x="${num(box.x)}" y="${num(box.y)}" width="${num(box.width)}" height="${num(box.height)}" rx="${radius}" fill="${frameStyle.fill}" filter="url(#frame-shadow)"/>`;
+    frame += `<rect x="${num(box.x)}" y="${num(box.y)}" width="${num(box.width)}" height="${num(box.height)}" rx="${radius}" fill="${frameStyle.fill}"/>`;
     if (frameStyle.stroke) {
       frame += `<rect x="${num(box.x)}" y="${num(box.y)}" width="${num(box.width)}" height="${num(box.height)}" rx="${radius}" fill="none" stroke="${frameStyle.strokeStyle}" stroke-width="${frameStyle.strokeWidth}"/>`;
     }
@@ -373,7 +378,10 @@ export function buildSvgMarkup(scene: EditorScene, opts: SvgExportOptions): stri
   blurRegionIndex = 0;
 
   const defs = [
-    `<filter id="frame-shadow" x="-60%" y="-250%" width="220%" height="500%"><feDropShadow dx="0" dy="${shadowDy}" stdDeviation="${shadowStd}" flood-color="#000" flood-opacity="${scene.shadowOpacity}"/></filter>`,
+    // Halo-only drop shadow: blur the opaque silhouette's alpha, offset it,
+    // tint it, then subtract the silhouette itself so only the halo renders
+    // (the frame body is painted separately on top, unfiltered).
+    `<filter id="frame-shadow" x="-60%" y="-250%" width="220%" height="500%"><feGaussianBlur in="SourceAlpha" stdDeviation="${shadowStd}"/><feOffset dy="${shadowDy}" result="off"/><feFlood flood-color="#000" flood-opacity="${scene.shadowOpacity}"/><feComposite in2="off" operator="in" result="shadow"/><feComposite in2="SourceAlpha" operator="out"/></filter>`,
     `<filter id="anno-shadow" x="-50%" y="-100%" width="200%" height="300%"><feDropShadow dx="0" dy="${RENDER.annoShadowOffsetY}" stdDeviation="${RENDER.annoShadowBlur / 2}" flood-color="#000" flood-opacity="0.5"/></filter>`,
     scene.backgroundBlur > 0 ? `<filter id="bg-blur"><feGaussianBlur stdDeviation="${num(scene.backgroundBlur / 2)}"/></filter>` : "",
     ...scene.annotations.flatMap((a) => {
