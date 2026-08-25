@@ -14,14 +14,22 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      testIgnore: /.*visual\.spec\.ts/,
+      // Video/GIF exports run MediaRecorder + the 32MB FFmpeg WASM encoder
+      // under SwiftShader; at the default worker count several run in
+      // parallel and starve the machine, timing out exports and flaking
+      // unrelated tests (fullscreen, a11y). Cap to keep headroom.
+      workers: 2,
+      // Mobile-only specs (stacked bottom-sheet layout) run under
+      // chromium-mobile; on the desktop project they'd assert against a
+      // 1280px layout and fail by design.
+      testIgnore: /.*(visual|mobile)\.spec\.ts/,
       use: {
         ...devices["Desktop Chrome"],
         // ffmpeg-core.wasm (32MB) loads + converts in-browser; disable the
         // sandbox and enable SwiftShader so captureStream works in headless.
         launchOptions: {
           chromiumSandbox: false,
-          args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"]
+          args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"]
         }
       }
     },
@@ -35,7 +43,7 @@ export default defineConfig({
         ...devices["Pixel 7"],
         launchOptions: {
           chromiumSandbox: false,
-          args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"]
+          args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"]
         }
       }
     },
