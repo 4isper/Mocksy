@@ -170,6 +170,35 @@ describe("loadVideoFrame", () => {
     await expect(promise).rejects.toThrow("Failed to load video: blob:bad");
   });
 
+  it("seeks near the start when the duration is unknown", async () => {
+    const video = mockVideo({ duration: undefined });
+    stubDocumentWithVideo(video);
+    const promise = loadVideoFrame("blob:vid", 3);
+    (video.onloadedmetadata as () => void)();
+    expect(video.currentTime).toBe(0.001);
+    (video.onseeked as () => void)();
+    await expect(promise).resolves.toBe(video);
+  });
+
+  it("ignores a duplicate seeked event after settling", async () => {
+    const video = mockVideo();
+    stubDocumentWithVideo(video);
+    const promise = loadVideoFrame("blob:vid");
+    (video.onloadedmetadata as () => void)();
+    (video.onseeked as () => void)();
+    await expect(promise).resolves.toBe(video);
+    expect(() => (video.onseeked as () => void)()).not.toThrow();
+  });
+
+  it("ignores a duplicate error event after settling", async () => {
+    const video = mockVideo();
+    stubDocumentWithVideo(video);
+    const promise = loadVideoFrame("blob:bad");
+    (video.onerror as () => void)();
+    await expect(promise).rejects.toThrow("Failed to load video: blob:bad");
+    expect(() => (video.onerror as () => void)()).not.toThrow();
+  });
+
   it("rejects when metadata never loads instead of hanging forever", async () => {
     vi.useFakeTimers();
     try {
@@ -220,6 +249,8 @@ describe("drawFrameMediaFromLayer", () => {
       clip: vi.fn(),
       drawImage: vi.fn(),
       fillRect: vi.fn(),
+      translate: vi.fn(),
+      rotate: vi.fn(),
       set fillStyle(_v: unknown) {}
     } as unknown as CanvasRenderingContext2D;
   }
@@ -301,6 +332,75 @@ describe("drawFrameMediaFromLayer", () => {
     const ctx = mockCtx();
     const box = { x: 0, y: 0, width: 400, height: 300, outerRadius: 0, innerX: 10, innerY: 10, innerW: 400, innerH: 300, innerRadius: 10 };
     await drawFrameMediaFromLayer(ctx, { id: "l1", mediaUrl: "test.png", mediaFit: "cover", mediaOffsetX: 0.5, mediaOffsetY: -0.5 } as any, box, 2);
+    expect(ctx.drawImage).toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("falls back to the box size for a zero-dimension image", async () => {
+    vi.stubGlobal("Image", class {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      width = 0;
+      height = 0;
+      set src(_v: string) {
+        this.onload?.();
+      }
+    } as any);
+    const ctx = mockCtx();
+    const box = { x: 0, y: 0, width: 400, height: 300, outerRadius: 0, innerX: 10, innerY: 10, innerW: 400, innerH: 300, innerRadius: 10 };
+    await drawFrameMediaFromLayer(ctx, { id: "l1", mediaUrl: "zero-dim.png", mediaFit: "cover" } as any, box, 2);
+    expect(ctx.drawImage).toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("rotates the media when a rotation is set", async () => {
+    vi.stubGlobal("Image", class {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      width = 800;
+      height = 600;
+      set src(_v: string) {
+        this.onload?.();
+      }
+    } as any);
+    const ctx = mockCtx();
+    const box = { x: 0, y: 0, width: 400, height: 300, outerRadius: 0, innerX: 10, innerY: 10, innerW: 400, innerH: 300, innerRadius: 10 };
+    await drawFrameMediaFromLayer(ctx, { id: "l1", mediaUrl: "test.png", mediaFit: "cover", rotation: 45 } as any, box, 2);
+    expect(ctx.translate).toHaveBeenCalled();
+    expect(ctx.rotate).toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("defaults offsets to zero when omitted", async () => {
+    vi.stubGlobal("Image", class {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      width = 800;
+      height = 600;
+      set src(_v: string) {
+        this.onload?.();
+      }
+    } as any);
+    const ctx = mockCtx();
+    const box = { x: 0, y: 0, width: 400, height: 300, outerRadius: 0, innerX: 10, innerY: 10, innerW: 400, innerH: 300, innerRadius: 10 };
+    await drawFrameMediaFromLayer(ctx, { id: "l1", mediaUrl: "test.png", mediaFit: "cover" } as any, box, 2);
+    expect(ctx.drawImage).toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("defaults the fit mode to cover when mediaFit is omitted", async () => {
+    vi.stubGlobal("Image", class {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      width = 800;
+      height = 600;
+      set src(_v: string) {
+        this.onload?.();
+      }
+    } as any);
+    const ctx = mockCtx();
+    const box = { x: 0, y: 0, width: 400, height: 300, outerRadius: 0, innerX: 10, innerY: 10, innerW: 400, innerH: 300, innerRadius: 10 };
+    await drawFrameMediaFromLayer(ctx, { id: "l1", mediaUrl: "test.png" } as any, box, 2);
     expect(ctx.drawImage).toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
