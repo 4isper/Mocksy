@@ -101,6 +101,7 @@ export function ExportDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="export-title"
+        aria-describedby="export-title"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 id="export-title">{t("export.title")}</h3>

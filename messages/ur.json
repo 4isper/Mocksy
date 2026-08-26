@@ -477,7 +477,8 @@
     "saveTitle": "Save the current scene's look (without media) as a reusable template",
     "myTemplates": "My templates",
     "deleteTitle": "Delete template {name}",
-    "limitReached": "Template limit reached ({max}). Delete an older template to save a new one."
+    "limitReached": "Template limit reached ({max}). Delete an older template to save a new one.",
+    "noTemplates": "No saved templates yet."
   },
   "help": {
     "layersStack": "لیئرز اوپر سے نیچے تک پے ہیں۔ اپنے سائز، پوزیشن اور تصویری اختیارات تبدیل کرنے کے لیے ایک لیئر منتخب کریں۔ لیئر کو کھینچ کر اس کا نظم بدلیں۔ فعال لیئر کے شارٹ کٹس: ⌘D ڈیوپلیکیٹ، ⌘↑ / ⌘↓ دوبارہ ترتیب دیں، ⌘[ / ⌘] تبدیل کریں۔"
@@ -638,7 +639,8 @@
     "templateError": "Could not apply that template.",
     "bundleExport": "Export with media (.zip)",
     "bundleExportLabel": "Export {name} with media (.zip)",
-    "bundleError": "Could not export that project bundle."
+    "bundleError": "Could not export that project bundle.",
+    "untitled": "Untitled"
   },
   "theme": {
     "light": "ہلکا",

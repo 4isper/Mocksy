@@ -63,8 +63,8 @@ export function FrameInstanceList({
 
   return (
     <>
-      <div className="field" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
-        <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.frames")}</span>
+      <div className="field field-row" style={{ justifyContent: "space-between" }}>
+        <span className="text-dim-sm">{t("editor.frames")}</span>
         <button
           type="button"
           className="btn btn-sm"
@@ -103,6 +103,20 @@ export function FrameInstanceList({
                   if (fromIndex < 0 || toIndex < 0) return;
                   ids.splice(toIndex, 0, ids.splice(fromIndex, 1)[0]!);
                   reorderFrameInstances(ids);
+                }}
+                onKeyDown={(e) => {
+                  if (!e.altKey || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+                  e.preventDefault();
+                  const ids = scene.frameInstances.map((f) => f.id);
+                  const idx = ids.indexOf(inst.id);
+                  if (idx < 0) return;
+                  if (e.key === "ArrowUp" && idx > 0) {
+                    [ids[idx - 1], ids[idx]] = [ids[idx]!, ids[idx - 1]!];
+                    reorderFrameInstances(ids);
+                  } else if (e.key === "ArrowDown" && idx < ids.length - 1) {
+                    [ids[idx], ids[idx + 1]] = [ids[idx + 1]!, ids[idx]!];
+                    reorderFrameInstances(ids);
+                  }
                 }}
               >
                 <div className="frame-card-head">
@@ -198,11 +212,11 @@ export function FrameInstanceList({
                       <span className="range-val">{Math.round(inst.scale * 100)}%</span>
                     </label>
                     <label className="range-wrap" style={{ display: "grid", gap: 3 }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-dim)" }}>{t("editor.frameLayer")}</span>
+                      <span className="text-dim-sm" style={{ fontSize: 11, fontWeight: 600 }}>{t("editor.frameLayer")}</span>
                       <select
                         value={inst.layerId ?? ""}
                         onChange={(e) => updateFrameInstance(inst.id, { layerId: e.target.value || null })}
-                        style={{ flex: 1, fontSize: 12, padding: "4px 6px" }}
+                        className="frame-layer-select"
                       >
                         <option value="">—</option>
                         {scene.layers.map((l, li) => (

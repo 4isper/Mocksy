@@ -66,6 +66,8 @@ export function EditorShell() {
   const historyCleanupRef = useRef<(() => void) | null>(null);
 
   const resetTrapRef = useFocusTrap(confirmResetOpen);
+  const controlsSheetTrapRef = useFocusTrap(mobileSheet === "controls");
+  const rightSheetTrapRef = useFocusTrap(mobileSheet === "right");
 
   useEffect(() => {
     hasOpenModalRef.current = confirmResetOpen || exportOpen || shortcutsOpen || commandPaletteOpen;
@@ -96,9 +98,9 @@ export function EditorShell() {
 
   const handleReset = useCallback(() => setConfirmResetOpen(true), []);
   const handleNewProject = useCallback(() => {
-    const id = useProjectsStore.getState().createProject("Untitled");
+    const id = useProjectsStore.getState().createProject(t("projects.untitled"));
     useProjectsStore.getState().switchProject(id);
-  }, []);
+  }, [t]);
   useEditorShortcuts({
     saveNow,
     onReset: handleReset,
@@ -229,8 +231,8 @@ export function EditorShell() {
           /* Sheet hosts are layout-transparent (`display: contents`) on
              desktop so the grid still sees the panels directly; at the
              mobile breakpoint they become fixed bottom sheets. */
-          <div className={mobileSheet === "controls" ? "sheet-host sheet-host--controls is-open" : "sheet-host sheet-host--controls"}>
-            <ErrorBoundary message={t("errors.message")}><ControlPanel /></ErrorBoundary>
+          <div ref={controlsSheetTrapRef} className={mobileSheet === "controls" ? "sheet-host sheet-host--controls is-open" : "sheet-host sheet-host--controls"}>
+            <ErrorBoundary message={t("errors.message")} retryLabel={t("errors.tryAgain")}><ControlPanel /></ErrorBoundary>
           </div>
         ) : null}
         <section
@@ -255,7 +257,7 @@ export function EditorShell() {
               <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M9 1v4h4M5 13V9H1M13 5H9V1M1 9h4v4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </button>
           ) : null}
-          <ErrorBoundary message={t("errors.message")}><PreviewCanvas scene={scene} /></ErrorBoundary>
+          <ErrorBoundary message={t("errors.message")} retryLabel={t("errors.tryAgain")}><PreviewCanvas scene={scene} /></ErrorBoundary>
           {!fullscreenPreview ? (
             <EditorToolbar
               canUndo={canUndo}
@@ -284,8 +286,8 @@ export function EditorShell() {
           ) : null}
         </section>
         {!fullscreenPreview ? (
-          <div className={mobileSheet === "right" ? "sheet-host sheet-host--right is-open" : "sheet-host sheet-host--right"}>
-            <ErrorBoundary message={t("errors.message")}>
+          <div ref={rightSheetTrapRef} className={mobileSheet === "right" ? "sheet-host sheet-host--right is-open" : "sheet-host sheet-host--right"}>
+            <ErrorBoundary message={t("errors.message")} retryLabel={t("errors.tryAgain")}>
               <RightPanel onShareTemplate={exportApi.copyTemplateUrl} />
             </ErrorBoundary>
           </div>

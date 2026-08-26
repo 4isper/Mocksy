@@ -477,7 +477,8 @@
     "saveTitle": "Save the current scene's look (without media) as a reusable template",
     "myTemplates": "My templates",
     "deleteTitle": "Delete template {name}",
-    "limitReached": "Template limit reached ({max}). Delete an older template to save a new one."
+    "limitReached": "Template limit reached ({max}). Delete an older template to save a new one.",
+    "noTemplates": "No saved templates yet."
   },
   "help": {
     "layersStack": "ಪದರಗಳು ಮೇಲಿಂದ ಕೆಳಗೆ ಪಂಚಿಸಲ್ಪಟ್ಟಿವೆ. ಅವನ್ನು ಗಾತ್ರ, ಸ್ಥಾನ ಮತ್ತು ಚಿತ್ರ ಆಯ್ಕೆಗಳನ್ನು ಬದಲಿಸಲು ಒಂದು ಪದರವನ್ನು ಆಯ್ಕೆ ಮಾಡಿ. ಅವನ್ನು ಪಂಚಿಕೆ ಬದಲಿಸಲು ಪದರವನ್ನು ಹಿಡಿಯಿಡಿ. ಸಕ್ರಿಯ ಪದರದ ಶಾರ್ಟ್‌ಕಟ್ಸ್: ⌘D ನಕಲು, ⌘↑ / ⌘↓ ಪುನಃವ್ಯವಸ್ಥಿಸಿ, ⌘[ / ⌘] ಟಾಗಲ್ ಮಾಡಿ."
@@ -638,7 +639,8 @@
     "templateError": "Could not apply that template.",
     "bundleExport": "Export with media (.zip)",
     "bundleExportLabel": "Export {name} with media (.zip)",
-    "bundleError": "Could not export that project bundle."
+    "bundleError": "Could not export that project bundle.",
+    "untitled": "Untitled"
   },
   "theme": {
     "light": "ಲೆದಮಾನ",

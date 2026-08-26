@@ -477,7 +477,8 @@
     "saveTitle": "Save the current scene's look (without media) as a reusable template",
     "myTemplates": "My templates",
     "deleteTitle": "Delete template {name}",
-    "limitReached": "Template limit reached ({max}). Delete an older template to save a new one."
+    "limitReached": "Template limit reached ({max}). Delete an older template to save a new one.",
+    "noTemplates": "No saved templates yet."
   },
   "help": {
     "layersStack": "图层从上到下堆叠。选择图层以编辑其缩放、位置和视频选项。 拖动图层以重新排序。 活动图层的快捷键：⌘D 复制，⌘↑ / ⌘↓ 重新排序，⌘[ / ⌘] 切换。"
@@ -638,7 +639,8 @@
     "templateError": "Could not apply that template.",
     "bundleExport": "Export with media (.zip)",
     "bundleExportLabel": "Export {name} with media (.zip)",
-    "bundleError": "Could not export that project bundle."
+    "bundleError": "Could not export that project bundle.",
+    "untitled": "Untitled"
   },
   "theme": {
     "light": "浅色",

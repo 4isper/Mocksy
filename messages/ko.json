@@ -477,7 +477,8 @@
     "saveTitle": "Save the current scene's look (without media) as a reusable template",
     "myTemplates": "My templates",
     "deleteTitle": "Delete template {name}",
-    "limitReached": "Template limit reached ({max}). Delete an older template to save a new one."
+    "limitReached": "Template limit reached ({max}). Delete an older template to save a new one.",
+    "noTemplates": "No saved templates yet."
   },
   "help": {
     "layersStack": "레이어는 위에서 아래로 쌓여 있습니다. 활성 레이어의 줌, 위치, 비디오 옵션을 편집합니다. 레이어를 드래그하여 재정렬하세요. 활성 레이어 단축키: ⌘D 복제, ⌘↑ / ⌘↓ 재정렬, ⌘[ / ⌘] 전환."
@@ -638,7 +639,8 @@
     "templateError": "Could not apply that template.",
     "bundleExport": "Export with media (.zip)",
     "bundleExportLabel": "Export {name} with media (.zip)",
-    "bundleError": "Could not export that project bundle."
+    "bundleError": "Could not export that project bundle.",
+    "untitled": "Untitled"
   },
   "theme": {
     "light": "밝음",

@@ -53,7 +53,7 @@ export function VideoTrimControl({ duration }: VideoTrimControlProps) {
 
   return (
     <div style={{ display: "grid", gap: 4 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--text-dim)" }}>
+      <div className="trim-label-row">
         <span>{t("videoTrim.trim")}</span>
         <span>
           {layer.videoTrimStart.toFixed(1)}s – {endValue.toFixed(1)}s

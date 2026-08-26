@@ -188,9 +188,9 @@ export function FrameSection() {
             onChange={setFrameMaterial}
           />
         ) : null}
-        <div className="field" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.frameGrid")}</span>
-          <div style={{ display: "flex", gap: 4, alignItems: "center", width: "100%" }}>
+        <div className="field field-row">
+          <span className="text-dim-sm">{t("editor.frameGrid")}</span>
+          <div className="field-row-full">
             <span style={{ fontSize: 13 }}>↔</span>
             {[2, 3, 4].map((n) => (
               <button
@@ -203,7 +203,7 @@ export function FrameSection() {
               </button>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 4, alignItems: "center", width: "100%" }}>
+          <div className="field-row-full">
             <span style={{ fontSize: 13 }}>↕</span>
             {[2, 3, 4].map((n) => (
               <button
@@ -217,8 +217,8 @@ export function FrameSection() {
             ))}
           </div>
         </div>
-        <div className="field" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.layoutLabel")}</span>
+        <div className="field field-row">
+          <span className="text-dim-sm">{t("editor.layoutLabel")}</span>
           <label style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12 }}>
             {t("editor.layoutCount")}
             <input
@@ -231,11 +231,11 @@ export function FrameSection() {
                 setLayoutCount(Number.isFinite(n) ? Math.min(12, Math.max(1, n)) : 1);
                 setCountEdited(true);
               }}
-              style={{ width: 48 }}
+              className="frame-count-input"
               aria-label={t("editor.layoutCount")}
             />
           </label>
-          <div style={{ display: "flex", gap: 4, width: "100%" }}>
+          <div className="field-row-full">
             {layoutPresets.map((layout) => {
               const disabled = scene.frameInstances.length === 0;
               const label = t(`editor.layout${layout.charAt(0).toUpperCase() + layout.slice(1)}`);
@@ -255,9 +255,9 @@ export function FrameSection() {
             })}
           </div>
         </div>
-        <div className="field" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.alignLabel")}</span>
-          <div style={{ display: "flex", gap: 4, width: "100%" }}>
+        <div className="field field-row">
+          <span className="text-dim-sm">{t("editor.alignLabel")}</span>
+          <div className="field-row-full">
             {alignModes.map((mode) => {
               const disabled = scene.frameInstances.length < 2;
               return (
@@ -316,8 +316,8 @@ export function FrameSection() {
           options={aspectRatios.map((r) => ({ value: r, label: r }))}
           onChange={setAspectRatio}
         />
-        <div className="field" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.socialPresets")}</span>
+        <div className="field field-row">
+          <span className="text-dim-sm">{t("editor.socialPresets")}</span>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap", width: "100%" }}>
             {SOCIAL_PRESETS.map((preset) => (
               <button

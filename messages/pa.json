@@ -477,7 +477,8 @@
     "saveTitle": "Save the current scene's look (without media) as a reusable template",
     "myTemplates": "My templates",
     "deleteTitle": "Delete template {name}",
-    "limitReached": "Template limit reached ({max}). Delete an older template to save a new one."
+    "limitReached": "Template limit reached ({max}). Delete an older template to save a new one.",
+    "noTemplates": "No saved templates yet."
   },
   "help": {
     "layersStack": "ਲੇਅਰਾਂ ਉੱਪਰ ਤੋਂ ਨੀਚੇ ਪਾਂਚੀਆਂ ਹਨ। ਉਹਨਾਂ ਦਾ ਸਾਈਜ਼, ਸਥਾਨ ਅਤੇ ਚਿੱਤਰ ਵਿਕਲਪ ਬਦਲਣ ਲਈ ਇੱਕ ਲੇਅਰ ਚੁਣੋ। ਉਹਨਾਂ ਦੀ ਕਰਮ-ਵਾਰੀ ਬਦਲਣ ਲਈ ਲੇਅਰ ਨੂੰ ਖਿੰਚੋ। ਸਕਿਰਤ ਲੇਅਰ ਦੇ ਸ਼ਾਰਟਕੱਟ: ⌘D ਡੁਪਲੀਕੇਟ, ⌘↑ / ⌘↓ ਪੁਨਰਵਿਆਵਸਥਾ, ⌘[ / ⌘] ਟੋਗਲ।"
@@ -638,7 +639,8 @@
     "templateError": "Could not apply that template.",
     "bundleExport": "Export with media (.zip)",
     "bundleExportLabel": "Export {name} with media (.zip)",
-    "bundleError": "Could not export that project bundle."
+    "bundleError": "Could not export that project bundle.",
+    "untitled": "Untitled"
   },
   "theme": {
     "light": "ਹਲਕਾ",

@@ -328,17 +328,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         {isMultiFrame && scene.layers.every((l) => !l.mediaUrl) ? (
           <div
             aria-hidden="true"
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              color: "var(--text-dim)",
-              fontSize: 14,
-              textAlign: "center",
-              pointerEvents: "none",
-              zIndex: 2
-            }}
+            className="drop-hint"
           >
             <span>{t("editor.dropToStart")}</span>
           </div>

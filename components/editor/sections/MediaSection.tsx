@@ -90,6 +90,7 @@ export function MediaSection() {
             disabled={!screenRecording.supported}
             title={screenRecording.supported ? t("editor.recordScreenHint") : t("editor.screenRecordUnsupported")}
             aria-label={screenRecording.recording ? t("editor.stopRecording") : t("editor.recordScreen")}
+            aria-live="polite"
             style={screenRecording.recording ? { color: "var(--danger)", borderColor: "var(--danger)" } : undefined}
             onClick={() => (screenRecording.recording ? screenRecording.stop() : screenRecording.start())}
           >
@@ -117,7 +118,7 @@ export function MediaSection() {
           </button>
         </div>
         <div className="field">
-          <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.mediaByUrl")}</span>
+          <span className="text-dim-sm">{t("editor.mediaByUrl")}</span>
           <div style={{ display: "flex", gap: 6 }}>
             <input
               type="url"

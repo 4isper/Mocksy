@@ -44,16 +44,15 @@ export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Pro
   };
 
   return (
-    <div className="templates" style={{ padding: 10, display: "grid", gap: 8, alignContent: "start" }}>
+    <div className="templates">
       <button
         type="button"
-        className="btn"
+        className="btn btn-compact"
         onClick={() => {
           const palette = useEditorStore.getState().scenePalette ?? [];
           setScene(randomSceneStyle(Math.random, palette.length ? palette : undefined), true);
         }}
         title={t("templates.surpriseTitle")}
-        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, padding: "6px 10px" }}
       >
         <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
           <rect x="1.5" y="1.5" width="11" height="11" rx="2.5" stroke="currentColor" strokeWidth="1.3"/>
@@ -66,10 +65,9 @@ export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Pro
       </button>
       <button
         type="button"
-        className="btn"
+        className="btn btn-compact"
         onClick={() => void onShareTemplate()}
         title={t("templates.copyLinkTitle")}
-        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, padding: "6px 10px" }}
       >
         <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
           <path d="M5.5 8.5 8.5 5.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
@@ -78,7 +76,7 @@ export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Pro
         {t("templates.copyLink")}
       </button>
 
-      <div style={{ display: "flex", gap: 6 }}>
+      <div className="template-save-row">
         <input
           type="text"
           value={draftName}
@@ -94,11 +92,11 @@ export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Pro
         />
         <button
           type="button"
-          className="btn"
+          className="btn btn-compact"
           onClick={handleSave}
           disabled={!hydrated}
           title={t("templates.saveTitle")}
-          style={{ fontSize: 12, padding: "6px 10px", whiteSpace: "nowrap" }}
+          style={{ whiteSpace: "nowrap" }}
         >
           {t("templates.save")}
         </button>
@@ -111,12 +109,12 @@ export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Pro
 
       {templates.length > 0 ? (
         <>
-          <div style={{ color: "var(--text-dim)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", marginTop: 4 }}>
+          <div className="text-dim-xs" style={{ marginTop: 4 }}>
             {t("templates.myTemplates")}
           </div>
-          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
+          <ul className="template-list">
             {templates.map((tpl) => (
-              <li key={tpl.id} style={{ position: "relative" }}>
+              <li key={tpl.id} className="template-item">
                 <button
                   type="button"
                   className="template-card"
@@ -127,11 +125,10 @@ export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Pro
                 </button>
                 <button
                   type="button"
-                  className="btn-icon"
+                  className="btn-icon template-delete-btn"
                   onClick={() => deleteTemplate(tpl.id)}
                   title={t("templates.deleteTitle", { name: tpl.name })}
                   aria-label={t("templates.deleteTitle", { name: tpl.name })}
-                  style={{ position: "absolute", top: 8, right: 8 }}
                 >
                   <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                     <path d="M3.5 3.5l7 7m0-7-7 7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
@@ -141,7 +138,11 @@ export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Pro
             ))}
           </ul>
         </>
-      ) : null}
+      ) : (
+        <div className="text-dim-sm" style={{ textAlign: "center", padding: "4px 0" }}>
+          {t("templates.noTemplates")}
+        </div>
+      )}
 
       {sceneStylePresets.map((preset) => (
           <button

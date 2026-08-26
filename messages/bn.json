@@ -477,7 +477,8 @@
     "saveTitle": "Save the current scene's look (without media) as a reusable template",
     "myTemplates": "My templates",
     "deleteTitle": "Delete template {name}",
-    "limitReached": "Template limit reached ({max}). Delete an older template to save a new one."
+    "limitReached": "Template limit reached ({max}). Delete an older template to save a new one.",
+    "noTemplates": "No saved templates yet."
   },
   "help": {
     "layersStack": "স্তরগুলি উপর থেকে নিচে সাজানো আছে। স্তরের আকার, অবস্থান এবং ছবি বিকল্প পরিবর্তন করতে একটি স্তর নির্বাচন করুন। স্তরের ক্রম পরিবর্তন করতে স্তরটি টেনে নিন। সক্রিয় স্তরের শর্টকাট: ⌘D প্রতিলিপি, ⌘↑ / ⌘↓ পুনর্বিন্যাস, ⌘[ / ⌘] টোগল।"
@@ -638,7 +639,8 @@
     "templateError": "Could not apply that template.",
     "bundleExport": "Export with media (.zip)",
     "bundleExportLabel": "Export {name} with media (.zip)",
-    "bundleError": "Could not export that project bundle."
+    "bundleError": "Could not export that project bundle.",
+    "untitled": "Untitled"
   },
   "theme": {
     "light": "হালকা",

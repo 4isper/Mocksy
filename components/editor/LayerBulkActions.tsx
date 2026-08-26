@@ -24,9 +24,9 @@ export function LayerBulkActions({ count, total }: { count: number; total: numbe
   const nudgeStep = 0.02;
 
   return (
-    <div style={{ display: "grid", gap: 8 }}>
-      <div className="bulk-actions" style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ fontSize: 12, color: "var(--text-dim)" }}>{t("editor.selectedCount", { count })}</span>
+    <div className="panel-grid">
+      <div className="bulk-actions-row">
+        <span className="text-dim-sm">{t("editor.selectedCount", { count })}</span>
         <button type="button" className="btn btn-sm" onClick={() => toggleLayersHidden(selectedLayerIds)}>
           {t("editor.toggleVisibility")}
         </button>
@@ -42,9 +42,9 @@ export function LayerBulkActions({ count, total }: { count: number; total: numbe
           {t("editor.deleteLayers")}
         </button>
       </div>
-      <div className="bulk-transform" style={{ display: "grid", gap: 6, padding: 8, border: "1px solid var(--panel-border)", borderRadius: 8 }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-dim)" }}>{t("editor.groupTransform")}</span>
-        <div className="nudge-pad" style={{ display: "grid", gridTemplateColumns: "repeat(3, 28px)", gridTemplateRows: "repeat(3, 28px)", justifyItems: "center", alignContent: "center", gap: 2 }}>
+      <div className="bulk-transform-card">
+        <span className="text-dim-sm" style={{ fontWeight: 600 }}>{t("editor.groupTransform")}</span>
+        <div className="nudge-pad">
           <span />
           <button type="button" className="btn btn-sm" aria-label={t("editor.nudgeUp")} onClick={() => nudgeLayers(selectedLayerIds, 0, -nudgeStep)}>↑</button>
           <span />
@@ -55,7 +55,7 @@ export function LayerBulkActions({ count, total }: { count: number; total: numbe
           <button type="button" className="btn btn-sm" aria-label={t("editor.nudgeDown")} onClick={() => nudgeLayers(selectedLayerIds, 0, nudgeStep)}>↓</button>
           <span />
         </div>
-        <label className="field" style={{ gap: 4 }}>
+        <label className="field field-compact">
           <span>{t("editor.filterOpacity", { val: Math.round((seed?.opacity ?? 100)) })}</span>
           <input
             type="range"
@@ -67,7 +67,7 @@ export function LayerBulkActions({ count, total }: { count: number; total: numbe
             onChange={(e) => transformLayers(selectedLayerIds, { opacity: Number(e.target.value) })}
           />
         </label>
-        <label className="field" style={{ gap: 4 }}>
+        <label className="field field-compact">
           <span>{t("editor.rotation")}</span>
           <input
             type="range"
@@ -79,7 +79,7 @@ export function LayerBulkActions({ count, total }: { count: number; total: numbe
             onChange={(e) => transformLayers(selectedLayerIds, { rotation: Number(e.target.value) })}
           />
         </label>
-        <label className="field" style={{ gap: 4 }}>
+        <label className="field field-compact">
           <span>{t("editor.zoom")}</span>
           <input
             type="range"

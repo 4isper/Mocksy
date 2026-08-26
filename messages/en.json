@@ -495,6 +495,7 @@
     "savePlaceholder": "Save current look as…",
     "saveTitle": "Save the current scene's look (without media) as a reusable template",
     "myTemplates": "My templates",
+    "noTemplates": "No saved templates yet.",
     "deleteTitle": "Delete template {name}",
     "limitReached": "Template limit reached ({max}). Delete an older template to save a new one."
   },
@@ -630,6 +631,7 @@
     "bundleError": "Could not export that project bundle.",
     "switch": "Switch to",
     "noProjects": "No projects yet.",
+    "untitled": "Untitled",
     "deleteConfirm_title": "Delete project",
     "deleteConfirm_message": "This action cannot be undone.",
     "deleteConfirm_cancel": "Cancel",
