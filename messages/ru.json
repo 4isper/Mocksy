@@ -158,7 +158,7 @@
     "layerLockedHint": "Слой заблокирован — разблокируйте для правки",
     "layoutCascade": "Каскад",
     "layoutFan": "Веер",
-    "layoutGrid": "Сетка",
+    "layoutGrid": "Сетка (раскладка)",
     "layoutLabel": "Раскладка:",
     "layoutCount": "Кол-во:",
     "layoutNeedsFrames": "Сначала добавьте фреймы",

@@ -16,7 +16,7 @@ export const localeCoverage: Record<string, number> = {
   "et": 53,
   "fa": 54,
   "fi": 53,
-  "fr": 52,
+  "fr": 53,
   "ga": 54,
   "gu": 54,
   "he": 54,

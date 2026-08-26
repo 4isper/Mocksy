@@ -1141,6 +1141,9 @@ test("exporting a video scene triggers a WebM download", async ({ page }) => {
 });
 
 test("animated WebP export of an image scene downloads a non-empty file", async ({ page }) => {
+  // The WebP encoder runs under SwiftShader locally; give it the same
+  // headroom as the video-export suites.
+  test.setTimeout(VIDEO_EXPORT_TIMEOUT);
   await page.goto("/");
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
     name: "sample.png",
@@ -1154,7 +1157,7 @@ test("animated WebP export of an image scene downloads a non-empty file", async 
 
   await openExportDialog(page);
   await chooseExportFormat(page, "Animated WebP");
-  const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
+  const downloadPromise = page.waitForEvent("download", { timeout: VIDEO_EXPORT_EVENT_TIMEOUT });
   await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export Animated WebP" }).click();
   const { name, buffer } = await downloadBuffer(downloadPromise);
   expect(name).toMatch(/\.webp$/);
@@ -1211,6 +1214,10 @@ test("SVG export of a video scene embeds the poster frame", async ({ page }) => 
 
 test("creating a 2-frame grid renders two mockups in the preview", async ({ page }) => {
   await page.goto("/");
+  // Layouts are non-destructive: they rearrange existing frames and fill new
+  // slots by reusing bound media round-robin. Start from a single frame so
+  // one uploaded video has to fill both grid slots.
+  await page.getByRole("button", { name: "Remove frame" }).first().click();
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles("public/sample-video.mp4");
   await expect(page.locator("#preview-canvas video")).toHaveCount(1);
 
@@ -1333,7 +1340,7 @@ test("locale switcher switches the UI language end-to-end", async ({ page }) => 
   ]);
   await expect(page.locator("html")).toHaveAttribute("lang", "ru");
   await expect(page.getByRole("button", { name: /Экспорт PNG \/ MP4/ })).toBeVisible();
-  await expect(page.getByLabel("Сетка")).toBeVisible();
+  await expect(page.getByLabel("Сетка", { exact: true })).toBeVisible();
 
   await page.waitForTimeout(1000);
   await Promise.all([
@@ -1349,7 +1356,7 @@ test("Russian locale renders translated UI strings", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("lang", "ru");
   await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
   await expect(page.getByRole("button", { name: /Экспорт PNG \/ MP4/ })).toBeVisible();
-  await expect(page.getByLabel("Сетка")).toBeVisible();
+  await expect(page.getByLabel("Сетка", { exact: true })).toBeVisible();
 });
 
 test("grid controls are translated per locale", async ({ page }) => {

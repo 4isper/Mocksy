@@ -122,7 +122,7 @@
     "layers": "Lleiniau",
     "layoutCascade": "Cascade",
     "layoutFan": "Fan",
-    "layoutGrid": "Grid",
+    "layoutGrid": "Grid layout",
     "layoutLabel": "Layout:",
     "layoutMasonry": "Masonry",
     "layoutStack": "Stack",
