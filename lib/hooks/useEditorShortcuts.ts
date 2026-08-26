@@ -4,6 +4,7 @@ import { getCopiedObject, setCopiedObject } from "@/lib/state/editorClipboard";
 import { useShortcutsStore, effectiveCombo } from "@/lib/state/shortcutsStore";
 import { SHORTCUT_DEFS, eventMatchesCombo, eventLetter, eventBracket } from "@/lib/shortcuts/shortcutConfig";
 import { resolveZoomScale, stepZoomDirection, zoomAroundCenter } from "@/lib/render/previewViewport";
+import { useLiveAnnouncer } from "@/lib/state/liveAnnouncer";
 
 /** Steps the preview view zoom by one stop around the viewport center. */
 function zoomPreview(direction: 1 | -1): void {
@@ -53,8 +54,16 @@ const HANDLERS: ActionMap = {
   "open-command-palette": (a) => (a.onOpenCommandPalette(), true),
   "new-project": (a) => (a.onNewProject(), true),
   "save-project": (a) => (a.saveNow(), true),
-  undo: () => (useEditorStore.getState().undo(), true),
-  redo: () => (useEditorStore.getState().redo(), true),
+  undo: () => {
+    useEditorStore.getState().undo();
+    useLiveAnnouncer.getState().announce("Undo");
+    return true;
+  },
+  redo: () => {
+    useEditorStore.getState().redo();
+    useLiveAnnouncer.getState().announce("Redo");
+    return true;
+  },
   "export-png": (a) => (a.onExportPng(), true),
   "copy-png": (a) => (a.onCopyPng(), true),
   "export-mp4": (a) => (a.onExportMp4(), true),
@@ -193,6 +202,7 @@ export function useEditorShortcuts(actions: EditorShortcutActions): void {
         if (letter === "y" && !event.shiftKey) {
           event.preventDefault();
           useEditorStore.getState().redo();
+          useLiveAnnouncer.getState().announce("Redo");
           return;
         }
         if (!typing && !event.shiftKey && (event.code === "Equal" || event.key === "=" || event.key === "+")) {

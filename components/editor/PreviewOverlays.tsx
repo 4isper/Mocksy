@@ -20,6 +20,7 @@ export function PreviewOverlays({
   guides,
   onSelectAnnotation,
   onUpdateAnnotation,
+  onRemoveAnnotation,
   onSelectMany,
   onGuides
 }: {
@@ -33,6 +34,7 @@ export function PreviewOverlays({
   guides: GuideLine[];
   onSelectAnnotation: (id: string | null, additive?: boolean) => void;
   onUpdateAnnotation: (id: string, patch: Partial<EditorScene["annotations"][number]>) => void;
+  onRemoveAnnotation: (id: string) => void;
   onSelectMany: (ids: string[]) => void;
   onGuides: (guides: GuideLine[]) => void;
 }) {
@@ -67,6 +69,7 @@ export function PreviewOverlays({
           onSelect={onSelectAnnotation}
           onSelectMany={onSelectMany}
           onUpdate={onUpdateAnnotation}
+          onRemove={onRemoveAnnotation}
           onGuides={onGuides}
         />
       ))}

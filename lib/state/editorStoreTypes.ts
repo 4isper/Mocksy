@@ -186,6 +186,16 @@ export interface EditorStoreState {
   updateActiveLayer: (patch: Partial<MediaLayer>) => void;
   /** Renames a layer's display label (its `mediaName`). */
   renameLayer: (id: string, name: string) => void;
+  /** Groups the given layers under a new shared groupId. Requires 2+ ids. */
+  groupLayers: (ids: string[], name?: string) => void;
+  /** Removes groupId from the given layers, dissolving the group. */
+  ungroupLayers: (ids: string[]) => void;
+  /** Renames a group (stored on the first layer's mediaName). */
+  renameGroup: (groupId: string | null, name: string) => void;
+  /** Toggles visibility for all layers in a group. */
+  toggleGroupHidden: (groupId: string | null) => void;
+  /** Toggles locked state for all layers in a group. */
+  toggleGroupLocked: (groupId: string | null) => void;
   setFrame: (frame: MockupFrame) => void;
   /** Stores a user-uploaded SVG skin and selects it as the active frame; passing
    *  null removes it (and falls back to the default frame when "custom" is

@@ -195,6 +195,9 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
       <div
         id="preview-canvas"
         ref={canvasRef}
+        tabIndex={0}
+        role="application"
+        aria-label={t("editor.canvasAria")}
         onPointerDown={(e) => {
           // Deselect any active annotation when clicking empty canvas. Clicks
           // on annotations/watermark use stopPropagation, so they won't bubble
@@ -209,6 +212,14 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         onPointerCancel={view.onPointerCancel}
         onDoubleClick={view.onDoubleClickReset}
         onContextMenu={openContextMenu}
+        onKeyDown={(e) => {
+          // Delete/Backspace removes the selected annotation when the canvas is focused.
+          if ((e.key === "Delete" || e.key === "Backspace") && selectedAnnotationId) {
+            e.preventDefault();
+            removeAnnotation(selectedAnnotationId);
+            selectAnnotation(null);
+          }
+        }}
         style={{
           // Contain inside the size container: take the larger of the two
           // axes that still fits the other, so the canvas keeps its aspect
@@ -301,6 +312,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           guides={guides}
           onSelectAnnotation={selectAnnotation}
           onUpdateAnnotation={updateAnnotation}
+          onRemoveAnnotation={removeAnnotation}
           onSelectMany={selectAnnotations}
           onGuides={setGuides}
         />

@@ -23,6 +23,7 @@ interface LayerItemProps {
   onCancelEdit: () => void;
   onDraftChange: (v: string) => void;
   onSelect: (e: React.MouseEvent<HTMLLIElement>) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLLIElement>, id: string) => void;
   onContext: (e: React.MouseEvent<HTMLLIElement>) => void;
   onMove: (id: string, dir: -1 | 1) => void;
   onDragStart: (e: DragEvent<HTMLLIElement>, id: string) => void;
@@ -48,6 +49,7 @@ export function LayerItem({
   onCancelEdit,
   onDraftChange,
   onSelect,
+  onKeyDown,
   onContext,
   onMove,
   onDragStart,
@@ -73,6 +75,9 @@ export function LayerItem({
     <li
       key={layer.id}
       className={active ? "layer-item is-active" : "layer-item"}
+      role="option"
+      aria-selected={selected}
+      tabIndex={active ? 0 : -1}
       draggable
       onDragStart={(e) => onDragStart(e, layer.id)}
       onDragOver={(e) => onDragOver(e, layer.id)}
@@ -92,8 +97,22 @@ export function LayerItem({
         ...dropStyle
       }}
       onClick={onSelect}
+      onKeyDown={(e) => onKeyDown(e, layer.id)}
       onContextMenu={onContext}
     >
+      {layer.groupId && (
+        <span
+          aria-hidden="true"
+          title={t("editor.groupedLayer")}
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: 3,
+            background: "var(--accent)",
+            flex: "0 0 auto",
+          }}
+        />
+      )}
       <span
         aria-hidden="true"
         style={{

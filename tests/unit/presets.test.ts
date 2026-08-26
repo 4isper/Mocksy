@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { applySceneStylePreset, backgroundPresets, randomSceneStyle, sceneStylePresets } from "@/lib/presets/presets";
+import { applySceneStylePreset, applySceneTemplate, backgroundPresets, randomSceneStyle, sceneStylePresets } from "@/lib/presets/presets";
+import { sceneTemplates, getSceneTemplate } from "@/lib/presets/sceneTemplates";
 import { SOCIAL_PRESETS, parseAspectRatio } from "@/lib/presets/socialPresets";
 import { initialScene } from "@/lib/state/editorStore";
 
@@ -179,5 +180,65 @@ describe("SOCIAL_PRESETS", () => {
     expect(parseAspectRatio("garbage")).toBeNull();
     expect(parseAspectRatio("1 / 0")).toBeNull();
     expect(parseAspectRatio("1")).toBeNull();
+  });
+});
+
+describe("sceneTemplates", () => {
+  it("has unique ids", () => {
+    const ids = sceneTemplates.map((t) => t.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("every template has a nameKey and scenePatch", () => {
+    for (const tpl of sceneTemplates) {
+      expect(tpl.nameKey).toBeTruthy();
+      expect(tpl.scenePatch).toBeDefined();
+    }
+  });
+
+  it("getSceneTemplate returns a template by id", () => {
+    const tpl = getSceneTemplate("iphone-dark-studio");
+    expect(tpl).toBeDefined();
+    expect(tpl!.frame).toBe("iphone");
+  });
+
+  it("getSceneTemplate returns undefined for unknown id", () => {
+    expect(getSceneTemplate("nonexistent")).toBeUndefined();
+  });
+});
+
+describe("applySceneTemplate", () => {
+  it("applies the template frame and scene patch", () => {
+    const tpl = getSceneTemplate("iphone-dark-studio")!;
+    const result = applySceneTemplate(tpl, initialScene);
+    expect(result.frame).toBe("iphone");
+    expect(result.backgroundMode).toBe("solid");
+    expect(result.backgroundColor).toBe("#09090b");
+    expect(result.stylePreset).toBe("default");
+  });
+
+  it("preserves layers and annotations from the current scene", () => {
+    const tpl = getSceneTemplate("macbook-minimal")!;
+    const scene = { ...initialScene, layers: [...initialScene.layers], annotations: [{ id: "a1", type: "text" as const, text: "Hi", x: 0, y: 0, w: 0.1, h: 0.1, color: "#fff", fontSize: 12, strokeWidth: 0 }] };
+    const result = applySceneTemplate(tpl, scene);
+    expect(result.layers).toBe(scene.layers);
+    expect(result.annotations).toHaveLength(1);
+  });
+
+  it("generates fresh frame instance ids for multi-device templates", () => {
+    const tpl = getSceneTemplate("multi-device-showcase")!;
+    const result = applySceneTemplate(tpl, initialScene);
+    expect(result.frameInstances.length).toBe(3);
+    const ids = result.frameInstances.map((fi) => fi.id);
+    expect(new Set(ids).size).toBe(3);
+    for (const id of ids) {
+      expect(id).toMatch(/^frame-/);
+    }
+  });
+
+  it("single-device templates keep existing frame instances", () => {
+    const tpl = getSceneTemplate("iphone-dark-studio")!;
+    const result = applySceneTemplate(tpl, initialScene);
+    expect(result.frameInstances).toBe(initialScene.frameInstances);
   });
 });

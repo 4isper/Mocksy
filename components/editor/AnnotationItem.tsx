@@ -23,6 +23,7 @@ interface AnnotationItemProps {
   onSelect: (id: string, additive?: boolean) => void;
   onSelectMany: (ids: string[]) => void;
   onUpdate: (id: string, patch: Partial<Annotation>) => void;
+  onRemove: (id: string) => void;
   onGuides: (guides: GuideLine[]) => void;
 }
 
@@ -33,7 +34,7 @@ interface AnnotationItemProps {
  * grid is active; smart-guide snapping to other annotations otherwise); the
  * rendered body (text/rect/circle/arrow) is delegated to AnnotationContent.
  */
-export function AnnotationItem({ annotation, selected, others, canvasRef, snapDivisions = null, onSelect, onSelectMany, onUpdate, onGuides }: AnnotationItemProps) {
+export function AnnotationItem({ annotation, selected, others, canvasRef, snapDivisions = null, onSelect, onSelectMany, onUpdate, onRemove, onGuides }: AnnotationItemProps) {
   const t = useTranslations();
   // View zoom is captured when a gesture starts: pointer deltas are screen
   // pixels while the canvas fractions below assume unscaled canvas pixels,
@@ -154,6 +155,12 @@ export function AnnotationItem({ annotation, selected, others, canvasRef, snapDi
 
   const onBoxKeyDown = (e: React.KeyboardEvent) => {
     if (editing) return;
+    if (e.key === "Delete" || e.key === "Backspace") {
+      e.preventDefault();
+      e.stopPropagation();
+      onRemove(annotation.id);
+      return;
+    }
     if (!e.key.startsWith("Arrow")) return;
     e.preventDefault();
     onSelect(annotation.id);

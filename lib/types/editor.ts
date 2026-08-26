@@ -175,6 +175,22 @@ export interface CustomFrame {
   cutout: { x: number; y: number; w: number; h: number; rx: number };
 }
 
+/** A pre-built scene layout combining frame type, background, style, and
+ *  optional multi-device arrangement. Applied with one click; media is never
+ *  stored in the template. */
+export interface SceneTemplate {
+  id: string;
+  /** Translation key for the template name. */
+  nameKey: string;
+  /** Scene-appearance fields merged on top of the current scene. */
+  scenePatch: Partial<EditorScene>;
+  /** Recommended frame type for single-frame templates. */
+  frame: MockupFrame;
+  /** Optional pre-configured frame instances for multi-device layouts.
+   *  The `id` field is regenerated on apply. */
+  frameInstances?: Array<Omit<FrameInstance, "id">>;
+}
+
 /** Subset of MediaLayer fields that can be transformed together across a
  *  multi-selection (group transform). */
 export type LayerTransformPatch = Partial<
@@ -192,6 +208,8 @@ export interface MediaLayer {
   id: string;
   /** Content kind; absent means "media". */
   kind?: LayerKind;
+  /** Group id shared among grouped layers. `null` or absent = ungrouped. */
+  groupId?: string | null;
   mediaUrl: string | null;
   mediaType: MediaType;
   mediaName: string | null;

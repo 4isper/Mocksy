@@ -15,6 +15,7 @@ import { ErrorBoundary } from "@/components/editor/ErrorBoundary";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { MobileTabBar } from "@/components/editor/MobileTabBar";
 import { PanelResizeHandles } from "@/components/editor/PanelResizeHandles";
+import { LiveAnnouncer } from "@/components/editor/LiveAnnouncer";
 import { hasSeenOnboarding } from "@/components/editor/OnboardingTour";
 import { useCommands } from "@/lib/hooks/useCommands";
 import { useTranslations } from "next-intl";
@@ -238,6 +239,7 @@ export function EditorShell() {
 
   return (
     <main className="editor-shell" id="main-content" tabIndex={-1}>
+      <LiveAnnouncer />
       {!fullscreenPreview ? (
         <div className="brand">
           <span className="brand-mark" aria-hidden="true" />

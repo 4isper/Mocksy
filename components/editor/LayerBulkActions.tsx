@@ -12,6 +12,8 @@ export function LayerBulkActions({ count, total }: { count: number; total: numbe
   const toggleLayersHidden = useEditorStore((s) => s.toggleLayersHidden);
   const duplicateLayers = useEditorStore((s) => s.duplicateLayers);
   const removeLayers = useEditorStore((s) => s.removeLayers);
+  const groupLayers = useEditorStore((s) => s.groupLayers);
+  const ungroupLayers = useEditorStore((s) => s.ungroupLayers);
   const transformLayers = useEditorStore((s) => s.transformLayers);
   const nudgeLayers = useEditorStore((s) => s.nudgeLayers);
 
@@ -22,6 +24,14 @@ export function LayerBulkActions({ count, total }: { count: number; total: numbe
     return s.scene.layers.find((l) => l.id === id);
   });
   const nudgeStep = 0.02;
+
+  // Determine group state for selected layers.
+  const selectedLayers = useEditorStore((s) =>
+    s.scene.layers.filter((l) => s.selectedLayerIds.includes(l.id))
+  );
+  const selectedGroupIds = new Set(selectedLayers.map((l) => l.groupId).filter((g): g is string => !!g));
+  const canGroup = count >= 2;
+  const canUngroup = count >= 1 && selectedGroupIds.size === 1 && selectedLayers.every((l) => l.groupId === selectedLayers[0]?.groupId);
 
   return (
     <div className="panel-grid">
@@ -35,12 +45,22 @@ export function LayerBulkActions({ count, total }: { count: number; total: numbe
         </button>
         <button
           type="button"
-          className="btn btn-sm"
-          disabled={total <= count}
+          className="btn btn-sm btn-danger"
+          disabled={count === total}
           onClick={() => removeLayers(selectedLayerIds)}
         >
           {t("editor.deleteLayers")}
         </button>
+        {canUngroup && (
+          <button type="button" className="btn btn-sm" onClick={() => ungroupLayers(selectedLayerIds)}>
+            {t("editor.ungroup")}
+          </button>
+        )}
+        {canGroup && (
+          <button type="button" className="btn btn-sm" onClick={() => groupLayers(selectedLayerIds)}>
+            {t("editor.group")}
+          </button>
+        )}
       </div>
       <div className="bulk-transform-card">
         <span className="text-dim-sm" style={{ fontWeight: 600 }}>{t("editor.groupTransform")}</span>

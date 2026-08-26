@@ -43,6 +43,7 @@ describe("PreviewOverlays", () => {
         guides={[]}
         onSelectAnnotation={vi.fn()}
         onUpdateAnnotation={vi.fn()}
+        onRemoveAnnotation={vi.fn()}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />

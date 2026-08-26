@@ -372,7 +372,18 @@
     "blendMode_luminosity": "Luminosity",
     "recentMedia": "Recent",
     "recentMediaClear": "Clear",
-    "recentMediaHint": "Right-click to remove"
+    "recentMediaHint": "Right-click to remove",
+    "canvasAria": "Mockup preview. Use arrow keys to nudge frames, Space+drag to pan, scroll to zoom.",
+    "group": "Group",
+    "groupUntitled": "Group",
+    "groupedLayer": "Grouped",
+    "collapseGroup": "Collapse group",
+    "expandGroup": "Expand group",
+    "hideGroup": "Hide group",
+    "showGroup": "Show group",
+    "lockGroup": "Lock group",
+    "unlockGroup": "Unlock group",
+    "ungroup": "Ungroup"
   },
   "frame": {
     "none": "없음",
@@ -512,7 +523,9 @@
     "myTemplates": "My templates",
     "deleteTitle": "Delete template {name}",
     "limitReached": "Template limit reached ({max}). Delete an older template to save a new one.",
-    "noTemplates": "No saved templates yet."
+    "noTemplates": "No saved templates yet.",
+    "sceneTemplates": "Scene templates",
+    "scenePresets": "Style presets"
   },
   "help": {
     "layersStack": "레이어는 위에서 아래로 쌓여 있습니다. 활성 레이어의 줌, 위치, 비디오 옵션을 편집합니다. 레이어를 드래그하여 재정렬하세요. 활성 레이어 단축키: ⌘D 복제, ⌘↑ / ⌘↓ 재정렬, ⌘[ / ⌘] 전환."
@@ -929,5 +942,22 @@
   "pwa": {
     "updateReady": "A new version is available",
     "reload": "Reload"
+  },
+  "sceneTemplateName": {
+    "iphoneDarkStudio": "iPhone Dark Studio",
+    "iphoneGlassBlue": "iPhone Glass Blue",
+    "iphoneWarmGradient": "iPhone Warm Gradient",
+    "iphoneStory": "iPhone Story Format",
+    "macbookMinimal": "MacBook Minimal",
+    "macbookDarkBrowser": "MacBook Dark Browser",
+    "browserLanding": "Browser Landing Page",
+    "ipadLandscape": "iPad Landscape",
+    "iphoneIpadPair": "iPhone + iPad",
+    "multiDeviceShowcase": "Multi-Device Showcase",
+    "desktopDual": "Dual Monitor",
+    "tvPresentation": "TV Presentation",
+    "watchCollection": "Watch Collection",
+    "galaxyModern": "Galaxy Modern",
+    "minimalNoFrame": "Minimal (No Frame)"
   }
 }

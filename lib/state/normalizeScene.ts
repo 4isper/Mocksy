@@ -134,6 +134,7 @@ function normalizeLayer(raw: unknown, fallback: MediaLayer): MediaLayer {
     // normalize (load, share import, undo) — see shareState for where the demo
     // is restored deliberately.
     kind: pick(r.kind, ["media", "text"] as const, fallback.kind ?? "media"),
+    groupId: typeof r.groupId === "string" && r.groupId.length > 0 ? r.groupId : (r.groupId === null ? null : fallback.groupId ?? null),
     // A layer with no media (the user cleared it, or a stripped demo that the
     // share/project loader chose not to restore) must stay empty. Falling back
     // to the demo data URL here would resurrect the demo phone on every

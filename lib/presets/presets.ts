@@ -1,5 +1,6 @@
-import type { EditorScene, SceneStylePreset } from "@/lib/types/editor";
+import type { EditorScene, SceneStylePreset, SceneTemplate } from "@/lib/types/editor";
 import { gradientMiddleStop, pickBestSolid, pickHarmonicPair } from "@/lib/media/palette";
+import { nextFrameInstanceId } from "@/lib/state/ids";
 
 export type BackgroundKind = "transparent" | "solid" | "gradient" | "pattern";
 
@@ -246,6 +247,27 @@ export function randomSceneStyle(
     patternId: pick(patterns, rand).patternId!,
     shadowOpacity: Math.round((0.2 + rand() * 0.4) * 100) / 100,
     borderRadius: pick(SURPRISE_RADII, rand)
+  };
+}
+
+/** Applies a scene template to the current scene. Returns a new scene with the
+ *  template's frame, style, background, and optional multi-device layout applied.
+ *  Frame instances get fresh ids so they're independent of the template source. */
+export function applySceneTemplate(
+  template: SceneTemplate,
+  currentScene: EditorScene
+): EditorScene {
+  const patch = template.scenePatch;
+  const instances = template.frameInstances?.map((inst) => ({
+    ...inst,
+    id: nextFrameInstanceId(),
+  }));
+
+  return {
+    ...currentScene,
+    ...patch,
+    frame: template.frame,
+    frameInstances: instances ?? currentScene.frameInstances,
   };
 }
 

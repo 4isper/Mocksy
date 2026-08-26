@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { TemplatesPanel } from "@/components/editor/TemplatesPanel";
 import { useEditorStore, initialScene } from "@/lib/state/editorStore";
 import { sceneStylePresets } from "@/lib/presets/presets";
+import { sceneTemplates } from "@/lib/presets/sceneTemplates";
 import { resetTemplatesStoreForTests, useTemplatesStore } from "@/lib/state/templatesStore";
 
 afterEach(() => {
@@ -34,7 +35,7 @@ describe("TemplatesPanel", () => {
   it("each preset card has template-card class", () => {
     render(<TemplatesPanel onShareTemplate={async () => {}} />);
     const cards = document.querySelectorAll(".template-card");
-    expect(cards.length).toBe(sceneStylePresets.length);
+    expect(cards.length).toBe(sceneStylePresets.length + sceneTemplates.length);
   });
 
   it("surprise button applies a valid random style in one undo step", async () => {

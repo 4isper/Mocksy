@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { sceneStylePresets, applySceneStylePreset, randomSceneStyle } from "@/lib/presets/presets";
+import { sceneStylePresets, applySceneStylePreset, randomSceneStyle, applySceneTemplate } from "@/lib/presets/presets";
+import { sceneTemplates } from "@/lib/presets/sceneTemplates";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { cloneUserScene, MAX_USER_TEMPLATES, useTemplatesStore } from "@/lib/state/templatesStore";
 
@@ -144,6 +145,44 @@ export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Pro
         </div>
       )}
 
+      <div className="text-dim-xs" style={{ marginTop: 4 }}>
+        {t("templates.sceneTemplates")}
+      </div>
+      <ul className="template-list">
+        {sceneTemplates.map((tpl) => (
+          <li key={tpl.id} className="template-item">
+            <button
+              type="button"
+              className="template-card"
+              onClick={() => {
+                const scene = useEditorStore.getState().scene;
+                setScene(applySceneTemplate(tpl, scene), true);
+              }}
+              title={t(tpl.nameKey)}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 6,
+                    flex: "0 0 auto",
+                    background: tpl.scenePatch.backgroundMode === "gradient" && tpl.scenePatch.gradientFrom && tpl.scenePatch.gradientTo
+                      ? `linear-gradient(135deg, ${tpl.scenePatch.gradientFrom}, ${tpl.scenePatch.gradientTo})`
+                      : tpl.scenePatch.backgroundColor ?? "#18181b",
+                    border: "1px solid var(--panel-border)",
+                  }}
+                />
+                <span className="t-name">{t(tpl.nameKey)}</span>
+              </div>
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <div className="text-dim-xs" style={{ marginTop: 4 }}>
+        {t("templates.scenePresets")}
+      </div>
       {sceneStylePresets.map((preset) => (
           <button
             key={preset.id}

@@ -30,3 +30,7 @@ export function nextProjectId(): string {
 export function nextTemplateId(): string {
   return makeId("tpl");
 }
+
+export function nextGroupId(): string {
+  return makeId("group");
+}

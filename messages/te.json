@@ -372,7 +372,18 @@
     "blendMode_luminosity": "Luminosity",
     "recentMedia": "Recent",
     "recentMediaClear": "Clear",
-    "recentMediaHint": "Right-click to remove"
+    "recentMediaHint": "Right-click to remove",
+    "canvasAria": "Mockup preview. Use arrow keys to nudge frames, Space+drag to pan, scroll to zoom.",
+    "group": "Group",
+    "groupUntitled": "Group",
+    "groupedLayer": "Grouped",
+    "collapseGroup": "Collapse group",
+    "expandGroup": "Expand group",
+    "hideGroup": "Hide group",
+    "showGroup": "Show group",
+    "lockGroup": "Lock group",
+    "unlockGroup": "Unlock group",
+    "ungroup": "Ungroup"
   },
   "frame": {
     "none": "ఏదీ లేదు",
@@ -512,7 +523,9 @@
     "myTemplates": "My templates",
     "deleteTitle": "Delete template {name}",
     "limitReached": "Template limit reached ({max}). Delete an older template to save a new one.",
-    "noTemplates": "No saved templates yet."
+    "noTemplates": "No saved templates yet.",
+    "sceneTemplates": "Scene templates",
+    "scenePresets": "Style presets"
   },
   "help": {
     "layersStack": "లేయర్లు పైన నుండి కిందకి అమర్చబడ్డాయి. వాటి పరిమాణాన్ని, స్థానాన్ని మరియు చిత్ర ఐచ్ఛికాలను మార్చడానికి ఒక లేయర్ ఎంచుకోండి. వాటి క్రమాన్ని మార్చడానికి లేయర్‌ను బయటకి తీయండి. క్రియాశీల లేయర్ షార్ట్‌కట్స్: ⌘D నకలు, ⌘↑ / ⌘↓ తరలుచేయండి, ⌘[ / ⌘] మార్చండి."
@@ -929,5 +942,22 @@
   "pwa": {
     "updateReady": "A new version is available",
     "reload": "Reload"
+  },
+  "sceneTemplateName": {
+    "iphoneDarkStudio": "iPhone Dark Studio",
+    "iphoneGlassBlue": "iPhone Glass Blue",
+    "iphoneWarmGradient": "iPhone Warm Gradient",
+    "iphoneStory": "iPhone Story Format",
+    "macbookMinimal": "MacBook Minimal",
+    "macbookDarkBrowser": "MacBook Dark Browser",
+    "browserLanding": "Browser Landing Page",
+    "ipadLandscape": "iPad Landscape",
+    "iphoneIpadPair": "iPhone + iPad",
+    "multiDeviceShowcase": "Multi-Device Showcase",
+    "desktopDual": "Dual Monitor",
+    "tvPresentation": "TV Presentation",
+    "watchCollection": "Watch Collection",
+    "galaxyModern": "Galaxy Modern",
+    "minimalNoFrame": "Minimal (No Frame)"
   }
 }

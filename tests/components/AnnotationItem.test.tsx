@@ -55,6 +55,7 @@ describe("AnnotationItem", () => {
         snapDivisions={10}
         onSelect={() => {}}
         onUpdate={onUpdate}
+        onRemove={vi.fn()}
         others={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
@@ -88,6 +89,7 @@ describe("AnnotationItem", () => {
         snapDivisions={null}
         onSelect={() => {}}
         onUpdate={onUpdate}
+        onRemove={vi.fn()}
         others={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
@@ -119,6 +121,7 @@ describe("AnnotationItem", () => {
         canvasRef={canvasRef}
         onSelect={() => {}}
         onUpdate={onUpdate}
+        onRemove={vi.fn()}
         others={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
@@ -150,6 +153,7 @@ describe("AnnotationItem", () => {
         snapDivisions={null}
         onSelect={() => {}}
         onUpdate={onUpdate}
+        onRemove={vi.fn()}
         others={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
@@ -173,6 +177,7 @@ describe("AnnotationItem", () => {
         canvasRef={{ current: null }}
         onSelect={() => {}}
         onUpdate={() => {}}
+        onRemove={vi.fn()}
         others={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
@@ -193,6 +198,7 @@ describe("AnnotationItem", () => {
         canvasRef={canvasRef}
         onSelect={() => {}}
         onUpdate={() => {}}
+        onRemove={vi.fn()}
         others={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
@@ -216,6 +222,7 @@ describe("AnnotationItem", () => {
         canvasRef={canvasRef}
         onSelect={() => {}}
         onUpdate={() => {}}
+        onRemove={vi.fn()}
         others={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
@@ -237,6 +244,7 @@ describe("AnnotationItem", () => {
         canvasRef={canvasRef}
         onSelect={onSelect}
         onUpdate={() => {}}
+        onRemove={vi.fn()}
         others={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
@@ -259,6 +267,7 @@ describe("AnnotationItem", () => {
         canvasRef={canvasRef}
         onSelect={() => {}}
         onUpdate={() => {}}
+        onRemove={vi.fn()}
         others={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}

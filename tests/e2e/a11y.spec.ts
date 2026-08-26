@@ -124,4 +124,58 @@ test.describe("a11y", () => {
       expect(inDialog, "focus escaped the modal").toBe(true);
     }
   });
+
+  test("layer list has proper ARIA listbox semantics", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("#preview-canvas")).toBeVisible();
+    await openRightTab(page, "Layers");
+
+    const listbox = page.getByRole("listbox", { name: /^Layers/ });
+    await expect(listbox).toBeVisible();
+    await expect(listbox).toHaveAttribute("aria-multiselectable", "true");
+
+    const options = listbox.getByRole("option");
+    await expect(options.first()).toBeVisible();
+    const count = await options.count();
+    expect(count, "should have at least one layer option").toBeGreaterThanOrEqual(1);
+  });
+
+  test("layer keyboard navigation moves focus", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("#preview-canvas")).toBeVisible();
+    await openRightTab(page, "Layers");
+
+    const options = page.getByRole("listbox", { name: /^Layers/ }).getByRole("option");
+    const first = options.first();
+    await first.click();
+    await expect(first).toHaveAttribute("tabindex", "0");
+
+    // Arrow down should move focus to the next option (if there are 2+ layers).
+    const count = await options.count();
+    if (count >= 2) {
+      await first.press("ArrowDown");
+      const second = options.nth(1);
+      await expect(second).toBeFocused();
+    }
+  });
+
+  test("preview canvas has accessible role and label", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("#preview-canvas")).toBeVisible();
+
+    const canvas = page.locator("#preview-canvas");
+    await expect(canvas).toHaveAttribute("role", "application");
+    await expect(canvas).toHaveAttribute("aria-label");
+    const label = await canvas.getAttribute("aria-label");
+    expect(label, "canvas aria-label should not be empty").toBeTruthy();
+  });
+
+  test("live announcer is present in the DOM", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("#preview-canvas")).toBeVisible();
+
+    const announcer = page.locator("[data-testid='live-announcer']");
+    await expect(announcer).toHaveAttribute("aria-live", "polite");
+    await expect(announcer).toHaveAttribute("aria-atomic", "true");
+  });
 });

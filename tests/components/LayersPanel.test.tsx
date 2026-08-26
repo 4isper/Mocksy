@@ -150,7 +150,7 @@ describe("LayersPanel", () => {
       activeLayerId: "a"
     });
     render(<LayersPanel />);
-    const items = screen.getAllByRole("listitem");
+    const items = screen.getAllByRole("option");
     const a = items[0]!;
     const b = items[1]!;
     expect(a).toHaveTextContent("A");
@@ -176,7 +176,7 @@ describe("LayersPanel", () => {
       activeLayerId: "a"
     });
     render(<LayersPanel />);
-    const items = screen.getAllByRole("listitem");
+    const items = screen.getAllByRole("option");
     const a = items[0]!;
     const b = items[1]!;
     const c = items[2]!;
@@ -205,7 +205,7 @@ describe("LayersPanel", () => {
       activeLayerId: "a"
     });
     render(<LayersPanel />);
-    const items = screen.getAllByRole("listitem");
+    const items = screen.getAllByRole("option");
     const a = items[0]!;
     const b = items[1]!;
     fireEvent.dragStart(a);
@@ -230,7 +230,7 @@ describe("LayersPanel", () => {
       activeLayerId: "a"
     });
     render(<LayersPanel />);
-    const a = screen.getAllByRole("listitem")[0]!;
+    const a = screen.getAllByRole("option")[0]!;
     fireEvent.dragStart(a);
     fireEvent.dragOver(a, { clientY: 0 });
     expect(useEditorStore.getState().scene.layers.map((l) => l.mediaName)).toEqual(["A", "B"]);

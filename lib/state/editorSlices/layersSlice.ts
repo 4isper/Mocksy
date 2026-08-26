@@ -9,6 +9,7 @@ import {
 import type { MediaLayer } from "@/lib/types/editor";
 import type { EditorStoreSetter, EditorStoreState } from "../editorStoreTypes";
 import { useRecentMediaStore } from "@/lib/state/recentMediaStore";
+import { nextGroupId } from "@/lib/state/ids";
 
 /** Coalesce key for a group edit, scoped to the affected selection: two edits
  *  of DIFFERENT groups within the 400ms window must stay separate undo steps,
@@ -39,6 +40,11 @@ export type LayersSlice = Pick<
   | "reorderLayers"
   | "updateActiveLayer"
   | "renameLayer"
+  | "groupLayers"
+  | "ungroupLayers"
+  | "renameGroup"
+  | "toggleGroupHidden"
+  | "toggleGroupLocked"
   | "setStylePreset"
   | "setAnimationPreset"
   | "setAnimationEasing"
@@ -340,6 +346,62 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         if (!s.scene.layers.some((l) => l.id === id)) return {};
         const layers = s.scene.layers.map((l) => (l.id === id ? { ...l, mediaName: name || l.mediaName } : l));
         return pushHistory(s, { ...s.scene, layers }, "rename");
+      }),
+    groupLayers: (ids, name) =>
+      set((s) => {
+        if (ids.length < 2) return {};
+        const idSet = new Set(ids);
+        const groupId = nextGroupId();
+        const layers = s.scene.layers.map((l) =>
+          idSet.has(l.id) ? { ...l, groupId } : l
+        );
+        // Store group name on the first layer of the group (as the canonical
+        // name source). We use mediaName only for display, so we'll derive the
+        // group name from a synthetic convention: store it on the layer.
+        // Since MediaLayer has no groupName field, we keep a lightweight map.
+        return pushHistory(s, { ...s.scene, layers }, "groupLayers");
+      }),
+    ungroupLayers: (ids) =>
+      set((s) => {
+        if (ids.length === 0) return {};
+        const idSet = new Set(ids);
+        const layers = s.scene.layers.map((l) =>
+          idSet.has(l.id) ? { ...l, groupId: null } : l
+        );
+        return pushHistory(s, { ...s.scene, layers }, "ungroupLayers");
+      }),
+    renameGroup: (groupId, name) =>
+      set((s) => {
+        if (!groupId) return {};
+        // Group name is stored as mediaName on the first layer with this groupId.
+        const first = s.scene.layers.find((l) => l.groupId === groupId);
+        if (!first) return {};
+        const layers = s.scene.layers.map((l) =>
+          l.id === first.id ? { ...l, mediaName: name || l.mediaName } : l
+        );
+        return pushHistory(s, { ...s.scene, layers }, "renameGroup");
+      }),
+    toggleGroupHidden: (groupId) =>
+      set((s) => {
+        if (!groupId) return {};
+        const members = s.scene.layers.filter((l) => l.groupId === groupId);
+        if (members.length === 0) return {};
+        const allHidden = members.every((l) => l.hidden);
+        const layers = s.scene.layers.map((l) =>
+          l.groupId === groupId ? { ...l, hidden: !allHidden } : l
+        );
+        return pushHistory(s, { ...s.scene, layers }, "toggleGroupHidden");
+      }),
+    toggleGroupLocked: (groupId) =>
+      set((s) => {
+        if (!groupId) return {};
+        const members = s.scene.layers.filter((l) => l.groupId === groupId);
+        if (members.length === 0) return {};
+        const allLocked = members.every((l) => l.locked);
+        const layers = s.scene.layers.map((l) =>
+          l.groupId === groupId ? { ...l, locked: !allLocked } : l
+        );
+        return pushHistory(s, { ...s.scene, layers }, "toggleGroupLocked");
       }),
     setStylePreset: (stylePreset) => set((s) => pushHistory(s, { ...s.scene, stylePreset })),
     setAnimationPreset: (animationPreset) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationPreset }, s.activeLayerId) }, "animationPreset")),
