@@ -336,7 +336,8 @@
     "zoomReset": "Reset to 100%",
     "addTextLayer": "+ Text layer",
     "text": "Text",
-    "textLabel": "Text layer"
+    "textLabel": "Text layer",
+    "addFrame": "Add frame"
   },
   "frame": {
     "none": "Keiner",

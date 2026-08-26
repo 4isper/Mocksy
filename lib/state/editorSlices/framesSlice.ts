@@ -12,6 +12,7 @@ export type FramesSlice = Pick<
   | "updateFrameInstance"
   | "setFrameMaterial"
   | "removeFrameInstance"
+  | "addFrameInstance"
   | "duplicateFrameInstance"
   | "reorderFrameInstance"
   | "layoutFrameGrid"
@@ -107,6 +108,36 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
         // 400ms window) into a single undo step, dropping the intermediate
         // state. Keying per-instance keeps each frame's drag its own step.
         return pushHistory(s, { ...s.scene, frameInstances }, coalesce ? `frameInstanceDrag:${id}` : undefined);
+      }),
+    addFrameInstance: () =>
+      set((s) => {
+        const src = s.activeFrameInstanceId
+          ? s.scene.frameInstances.find((fi) => fi.id === s.activeFrameInstanceId)
+          : s.scene.frameInstances[s.scene.frameInstances.length - 1];
+        const base = src
+          ? { frame: src.frame, layerId: src.layerId, scale: src.scale, material: src.material, orientation: src.orientation }
+          : { frame: s.scene.frame, layerId: s.activeLayerId, scale: 1, material: s.scene.frameMaterial, orientation: undefined };
+        let layers = s.scene.layers;
+        let layerId = base.layerId;
+        if (layerId) {
+          const srcLayer = layers.find((l) => l.id === layerId);
+          if (srcLayer) {
+            const clone = { ...srcLayer, id: nextLayerId() };
+            layers = [...layers, clone];
+            layerId = clone.id;
+          }
+        }
+        const copy: FrameInstance = {
+          id: nextFrameInstanceId(),
+          frame: base.frame,
+          x: Math.min(1, (src?.x ?? 0.5) + 0.08),
+          y: Math.min(1, (src?.y ?? 0.5) + 0.08),
+          scale: base.scale,
+          layerId,
+          orientation: base.orientation,
+          material: base.material
+        };
+        return pushHistory(s, { ...s.scene, layers, frameInstances: [...s.scene.frameInstances, copy] });
       }),
     duplicateFrameInstance: (id) =>
       set((s) => {

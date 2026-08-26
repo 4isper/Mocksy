@@ -93,7 +93,7 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
                   }
                 : l
             )
-          : [{ ...makeDemoLayer(), mediaUrl, mediaType, mediaName }];
+          : [...s.scene.layers, { ...makeDemoLayer(), mediaUrl, mediaType, mediaName }];
         const activeLayerId = layer?.id ?? nextLayers[0]?.id ?? null;
         return {
           ...pushHistory(s, { ...s.scene, layers: nextLayers }),
@@ -204,9 +204,12 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         if (s.scene.layers.find((l) => l.id === id)?.locked === true) return {};
         if (s.scene.layers.length <= 1) return {};
         const layers = s.scene.layers.filter((l) => l.id !== id);
+        // Drop frame instances bound to the removed layer so they don't keep
+        // rendering (via fallback) the active layer's media as a phantom frame.
+        const frameInstances = s.scene.frameInstances.filter((fi) => fi.layerId !== id);
         const activeLayerId = s.activeLayerId === id ? layers[0]?.id ?? null : s.activeLayerId;
         const selectedLayerIds = s.selectedLayerIds.filter((x) => x !== id);
-        return { ...pushHistory(s, { ...s.scene, layers }), activeLayerId, selectedLayerIds };
+        return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId, selectedLayerIds };
       }),
     duplicateLayers: (ids) =>
       set((s) => {
@@ -243,10 +246,12 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         const idSet = new Set(removable.map((l) => l.id));
         if (idSet.size === 0 || s.scene.layers.length <= idSet.size) return {};
         const layers = s.scene.layers.filter((l) => !idSet.has(l.id));
+        // Drop frame instances bound to any removed layer (see removeLayer).
+        const frameInstances = s.scene.frameInstances.filter((fi) => fi.layerId == null || !idSet.has(fi.layerId));
         const first = layers[0]?.id ?? null;
         const activeLayerId = s.activeLayerId != null && idSet.has(s.activeLayerId) ? first : s.activeLayerId;
         const selectedLayerIds = s.selectedLayerIds.filter((x) => !idSet.has(x));
-        return { ...pushHistory(s, { ...s.scene, layers }), activeLayerId, selectedLayerIds };
+        return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId, selectedLayerIds };
       }),
     transformLayers: (ids, patch) =>
       set((s) => {

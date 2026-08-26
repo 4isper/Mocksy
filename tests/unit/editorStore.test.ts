@@ -624,6 +624,40 @@ describe("annotations", () => {
     expect(store().past.length).toBe(pastBefore);
   });
 
+  it("removeLayer drops frame instances bound to the removed layer", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    const layer2 = store().scene.layers[1]!;
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0.4, y: 0.4, scale: 0.5, layerId: layer2.id },
+      { id: "fi2", frame: "iphone" as const, x: 0.6, y: 0.6, scale: 0.5, layerId: store().scene.layers[0]!.id }
+    ]);
+    store().removeLayer(layer2.id);
+    expect(store().scene.frameInstances.map((fi) => fi.id)).toEqual(["fi2"]);
+  });
+
+  it("removeLayers drops frame instances bound to any removed layer", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    store().addLayer("data:image/png;base64,l3", "image");
+    const [l1, l2, l3] = store().scene.layers;
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0.4, y: 0.4, scale: 0.5, layerId: l1!.id },
+      { id: "fi2", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 0.5, layerId: l2!.id },
+      { id: "fi3", frame: "iphone" as const, x: 0.6, y: 0.6, scale: 0.5, layerId: l3!.id }
+    ]);
+    store().removeLayers([l1!.id, l2!.id]);
+    expect(store().scene.frameInstances.map((fi) => fi.id)).toEqual(["fi3"]);
+  });
+
+  it("duplicateLayer is a no-op when the source layer does not exist", () => {
+    reset();
+    const pastBefore = store().past.length;
+    store().duplicateLayer("missing");
+    expect(store().scene.layers.length).toBe(1);
+    expect(store().past.length).toBe(pastBefore);
+  });
+
   it("selectLayer changes active layer without recording history", () => {
     reset();
     store().addLayer("data:image/png;base64,l2", "image");
@@ -905,6 +939,51 @@ describe("frame control", () => {
     const pastBefore = store().past.length;
     store().duplicateFrameInstance("nonexistent");
     expect(store().past.length).toBe(pastBefore);
+  });
+
+  it("addFrameInstance appends a clone of the active frame instance with its own layer", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    const srcLayerId = store().scene.layers[1]!.id;
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0.4, y: 0.4, scale: 0.5, layerId: srcLayerId }
+    ]);
+    store().selectFrameInstance("fi1");
+    const layersBefore = store().scene.layers.length;
+    const frameCount = store().scene.frameInstances.length;
+    store().addFrameInstance();
+    expect(store().scene.frameInstances.length).toBe(frameCount + 1);
+    const added = store().scene.frameInstances[frameCount]!;
+    expect(added.id).not.toBe("fi1");
+    expect(added.frame).toBe("iphone");
+    expect(added.scale).toBe(0.5);
+    expect(added.x).toBeCloseTo(0.48);
+    expect(added.y).toBeCloseTo(0.48);
+    expect(added.layerId).not.toBe(srcLayerId);
+    expect(store().scene.layers.length).toBe(layersBefore + 1);
+    expect(store().past.length).toBeGreaterThan(0);
+  });
+
+  it("addFrameInstance falls back to the default scene frame when no instances exist", () => {
+    reset();
+    store().setFrame("macbook");
+    store().addFrameInstance();
+    expect(store().scene.frameInstances.length).toBe(1);
+    const added = store().scene.frameInstances[0]!;
+    expect(added.frame).toBe("macbook");
+    expect(added.layerId).not.toBeNull();
+    expect(store().scene.layers.some((l) => l.id === added.layerId)).toBe(true);
+  });
+
+  it("addFrameInstance records undo history on the new instance", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0.4, y: 0.4, scale: 0.5, layerId: store().scene.layers[1]!.id }
+    ]);
+    const pastBefore = store().past.length;
+    store().addFrameInstance();
+    expect(store().past.length).toBe(pastBefore + 1);
   });
 
   it("reorderFrameInstance moves an instance to front/back of the render order", () => {

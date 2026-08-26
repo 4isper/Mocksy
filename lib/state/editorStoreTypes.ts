@@ -189,6 +189,10 @@ export interface EditorStoreState {
   setCustomFrame: (customFrame: import("@/lib/types/editor").CustomFrame | null) => void;
   setFrameInstances: (instances: FrameInstance[]) => void;
   updateFrameInstance: (id: string, patch: Partial<FrameInstance>, coalesce?: boolean) => void;
+  /** Appends a new frame instance cloned from the active one (or the default
+   *  scene frame when none exist yet), so the user can incrementally add
+   *  devices instead of only via grid/layout presets or right-click duplicate. */
+  addFrameInstance: () => void;
   removeFrameInstance: (id: string) => void;
   /** Clones a frame instance (and its layer) slightly offset from the original. */
   duplicateFrameInstance: (id: string) => void;

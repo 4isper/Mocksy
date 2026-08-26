@@ -14,6 +14,7 @@ interface FrameInstanceListProps {
   setFrameInstances: (instances: FrameInstance[]) => void;
   updateFrameInstance: (id: string, patch: Partial<FrameInstance>) => void;
   removeFrameInstance: (id: string) => void;
+  addFrameInstance: () => void;
 }
 
 export function FrameInstanceList({
@@ -23,7 +24,8 @@ export function FrameInstanceList({
   selectFrameInstance,
   setFrameInstances,
   updateFrameInstance,
-  removeFrameInstance
+  removeFrameInstance,
+  addFrameInstance
 }: FrameInstanceListProps) {
   const t = useTranslations();
 
@@ -50,9 +52,20 @@ export function FrameInstanceList({
 
   return (
     <>
+      <div className="field" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+        <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.frames")}</span>
+        <button
+          type="button"
+          className="btn btn-sm"
+          onClick={addFrameInstance}
+          aria-label={t("editor.addFrame")}
+          title={t("editor.addFrame")}
+        >
+          + {t("editor.addFrame")}
+        </button>
+      </div>
       {scene.frameInstances.length > 0 && (
         <div className="field" style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.frames")}</span>
           {scene.frameInstances.map((inst, i) => {
             const open = expandedFrameId === inst.id;
             const frameLayer = scene.layers.find((l) => l.id === inst.layerId);

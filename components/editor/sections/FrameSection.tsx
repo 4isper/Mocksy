@@ -40,6 +40,7 @@ export function FrameSection() {
     setCustomFrame,
     setFrameInstances,
     removeFrameInstance,
+    addFrameInstance,
     updateFrameInstance,
     selectFrameInstance,
     layoutFrameGrid,
@@ -61,6 +62,7 @@ export function FrameSection() {
       setCustomFrame: s.setCustomFrame,
       setFrameInstances: s.setFrameInstances,
       removeFrameInstance: s.removeFrameInstance,
+      addFrameInstance: s.addFrameInstance,
       updateFrameInstance: s.updateFrameInstance,
       selectFrameInstance: s.selectFrameInstance,
       layoutFrameGrid: s.layoutFrameGrid,
@@ -249,6 +251,7 @@ export function FrameSection() {
           setFrameInstances={setFrameInstances}
           updateFrameInstance={updateFrameInstance}
           removeFrameInstance={removeFrameInstance}
+          addFrameInstance={addFrameInstance}
         />
         <Segmented
           label={t("editor.aspectRatio")}

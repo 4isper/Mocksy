@@ -195,6 +195,7 @@
     "posTopRight": "Вверх-справа",
     "redoTitle": "Повтор (⇧⌘Z)",
     "removeBgImage": "Скрыть фоновое изображение",
+    "addFrame": "Добавить фрейм",
     "removeFrame": "Удалить фрейм",
     "removeLayer": "Удалить {label}",
     "removeMediaTitle": "Удалить медиа из выбранного слоя",

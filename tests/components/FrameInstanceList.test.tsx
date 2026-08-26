@@ -63,6 +63,7 @@ function renderList() {
   const setFrameInstances = vi.fn();
   const updateFrameInstance = vi.fn();
   const removeFrameInstance = vi.fn();
+  const addFrameInstance = vi.fn();
   const setExpandedFrameId = vi.fn();
   const utils = render(
     <FrameInstanceList
@@ -73,6 +74,7 @@ function renderList() {
       setFrameInstances={setFrameInstances}
       updateFrameInstance={updateFrameInstance}
       removeFrameInstance={removeFrameInstance}
+      addFrameInstance={addFrameInstance}
     />
   );
   return { selectFrameInstance, setFrameInstances, updateFrameInstance, removeFrameInstance, setExpandedFrameId, ...utils };
@@ -83,8 +85,8 @@ afterEach(() => {
 });
 
 describe("FrameInstanceList", () => {
-  it("renders nothing without frame instances", () => {
-    const { container } = render(
+  it("always shows the Add frame button even without frame instances", () => {
+    render(
       <FrameInstanceList
         scene={{ ...initialScene, frameInstances: [] }}
         expandedFrameId={null}
@@ -93,9 +95,10 @@ describe("FrameInstanceList", () => {
         setFrameInstances={vi.fn()}
         updateFrameInstance={vi.fn()}
         removeFrameInstance={vi.fn()}
+        addFrameInstance={vi.fn()}
       />
     );
-    expect(container.innerHTML).toBe("");
+    expect(screen.getByRole("button", { name: "editor.addFrame" })).toBeInTheDocument();
   });
 
   it("lists frame instances with device selects", () => {
@@ -128,6 +131,7 @@ describe("FrameInstanceList", () => {
         setFrameInstances={vi.fn()}
         updateFrameInstance={vi.fn()}
         removeFrameInstance={vi.fn()}
+        addFrameInstance={vi.fn()}
       />
     );
     await userEvent.click(screen.getAllByRole("button", { name: "editor.collapse" })[0]!);
@@ -180,6 +184,7 @@ describe("FrameInstanceList", () => {
         setFrameInstances={vi.fn()}
         updateFrameInstance={updateFrameInstance}
         removeFrameInstance={vi.fn()}
+        addFrameInstance={vi.fn()}
       />
     );
     fireEvent.change(screen.getByRole("slider", { name: "editor.frameX" }), { target: { value: "0.4" } });
@@ -200,6 +205,7 @@ describe("FrameInstanceList", () => {
         setFrameInstances={vi.fn()}
         updateFrameInstance={vi.fn()}
         removeFrameInstance={vi.fn()}
+        addFrameInstance={vi.fn()}
       />
     );
     expect(screen.getByText("10%")).toBeInTheDocument();
@@ -218,6 +224,7 @@ describe("FrameInstanceList", () => {
         setFrameInstances={vi.fn()}
         updateFrameInstance={updateFrameInstance}
         removeFrameInstance={vi.fn()}
+        addFrameInstance={vi.fn()}
       />
     );
     fireEvent.change(screen.getByRole("combobox", { name: "editor.frameLayer" }), { target: { value: "l2" } });

@@ -195,6 +195,7 @@
     "posTopRight": "Top right",
     "redoTitle": "Redo (⇧⌘Z)",
     "removeBgImage": "Hide background image",
+    "addFrame": "Add frame",
     "removeFrame": "Remove frame",
     "removeLayer": "Remove {label}",
     "removeMediaTitle": "Remove media from the selected layer",
