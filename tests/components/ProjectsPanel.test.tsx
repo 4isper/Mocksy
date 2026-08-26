@@ -78,7 +78,8 @@ describe("ProjectsPanel", () => {
     });
     render(<ProjectsPanel />);
     const items = document.querySelectorAll(".project-item");
-    (items[1] as HTMLElement).focus();
+    const switchBtn = items[1]!.querySelector('[role="button"]') as HTMLElement;
+    switchBtn.focus();
     await userEvent.keyboard("{Enter}");
     expect(useProjectsStore.getState().activeProjectId).toBe("p2");
   });

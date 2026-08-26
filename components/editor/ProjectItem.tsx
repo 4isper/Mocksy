@@ -44,10 +44,6 @@ export function ProjectItem({
     <li
       key={project.id}
       className={active ? "project-item is-active" : "project-item"}
-      role="button"
-      tabIndex={editing ? -1 : 0}
-      aria-pressed={active}
-      aria-label={project.name}
       style={{
         display: "flex",
         alignItems: "center",
@@ -55,18 +51,27 @@ export function ProjectItem({
         padding: "6px 8px",
         borderRadius: 8,
         border: active ? "2px solid var(--accent)" : "1px solid var(--panel-border)",
-        background: active ? "rgba(0,217,255,0.08)" : "transparent",
-        cursor: "pointer"
-      }}
-      onClick={() => !editing && onSwitch(project.id)}
-      onKeyDown={(e) => {
-        if (e.key !== "Enter" && e.key !== " ") return;
-        if (e.target !== e.currentTarget) return;
-        e.preventDefault();
-        if (!editing) onSwitch(project.id);
+        background: active ? "rgba(0,217,255,0.08)" : "transparent"
       }}
     >
-      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", fontSize: 12 }}>
+      <div
+        role={editing ? undefined : "button"}
+        tabIndex={editing ? -1 : 0}
+        aria-pressed={editing ? undefined : active}
+        aria-label={editing ? undefined : project.name}
+        style={{ flex: 1, minWidth: 0, overflow: "hidden", fontSize: 12, cursor: editing ? "default" : "pointer" }}
+        onClick={editing ? undefined : () => onSwitch(project.id)}
+        onKeyDown={
+          editing
+            ? undefined
+            : (e) => {
+                if (e.key !== "Enter" && e.key !== " ") return;
+                if (e.target !== e.currentTarget) return;
+                e.preventDefault();
+                onSwitch(project.id);
+              }
+        }
+      >
         {editing ? (
           <input
             className="project-rename"
@@ -96,7 +101,7 @@ export function ProjectItem({
           </span>
         )}
         <span style={{ fontSize: 10, color: "var(--text-dim)" }}>{relativeTime(project.updatedAt)}</span>
-      </span>
+      </div>
       <button
         type="button"
         className="btn-icon tooltip"

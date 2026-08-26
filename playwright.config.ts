@@ -48,6 +48,22 @@ export default defineConfig({
       }
     },
     {
+      name: "chromium-tablet",
+      // Tablet portrait/landscape exercise two untested responsive zones:
+      // the 769–980px stacked-but-not-bottom-sheet layout and the 981–1180px
+      // slim-panel desktop layout. The editor/visual/export suites assume a
+      // 1280px desktop or a <=768px phone, so they're excluded here; this
+      // project runs only the dedicated tablet spec.
+      testMatch: /.*tablet\.spec\.ts/,
+      use: {
+        ...devices["iPad"],
+        launchOptions: {
+          chromiumSandbox: false,
+          args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"]
+        }
+      }
+    },
+    {
       name: "chromium-vrt",
       testMatch: /.*visual\.spec\.ts/,
       use: {
