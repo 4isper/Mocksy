@@ -1,0 +1,41 @@
+/* ---- Scrollbar ---- */
+.control-panel::-webkit-scrollbar,
+.right-panel-content::-webkit-scrollbar,
+.templates::-webkit-scrollbar,
+.layers-list::-webkit-scrollbar,
+.projects-list::-webkit-scrollbar,
+.shortcut-list::-webkit-scrollbar,
+.command-palette-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.control-panel::-webkit-scrollbar-track,
+.right-panel-content::-webkit-scrollbar-track,
+.templates::-webkit-scrollbar-track,
+.layers-list::-webkit-scrollbar-track,
+.projects-list::-webkit-scrollbar-track,
+.shortcut-list::-webkit-scrollbar-track,
+.command-palette-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.control-panel::-webkit-scrollbar-thumb,
+.right-panel-content::-webkit-scrollbar-thumb,
+.templates::-webkit-scrollbar-thumb,
+.layers-list::-webkit-scrollbar-thumb,
+.projects-list::-webkit-scrollbar-thumb,
+.shortcut-list::-webkit-scrollbar-thumb,
+.command-palette-list::-webkit-scrollbar-thumb {
+  background: var(--range-track);
+  border-radius: 999px;
+}
+
+.control-panel::-webkit-scrollbar-thumb:hover,
+.right-panel-content::-webkit-scrollbar-thumb:hover,
+.templates::-webkit-scrollbar-thumb:hover,
+.layers-list::-webkit-scrollbar-thumb:hover,
+.projects-list::-webkit-scrollbar-thumb:hover,
+.shortcut-list::-webkit-scrollbar-thumb:hover,
+.command-palette-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}

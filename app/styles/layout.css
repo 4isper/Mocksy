@@ -1,0 +1,296 @@
+/* ---- App shell ---- */
+/* Layout tokens: panel widths and grid gap are overridden in the narrow
+   desktop breakpoint below, so every rule reads from the same source. */
+:root {
+  --panel-left-w: 280px;
+  --panel-right-w: 310px;
+  --grid-gap: 14px;
+}
+
+.editor-shell {
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: var(--grid-gap);
+  padding: 16px;
+  overflow: hidden;
+}
+
+.editor-grid {
+  display: grid;
+  grid-template-columns: var(--panel-left-w) minmax(0, 1fr) var(--panel-right-w);
+  gap: var(--grid-gap);
+  align-items: stretch;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Full-screen preview: the canvas column is the only grid child (the panels
+   are not rendered), so it takes the whole shell. */
+.editor-grid.fullscreen {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.fullscreen-exit {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 30;
+}
+
+/* ---- Panel resize handles ----
+   Invisible hit areas in the grid gutters flanking the preview; a thin accent
+   line appears on hover/focus/drag. Positioned from the same custom
+   properties that size the panels, so they follow live during a drag. */
+.panel-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 9px;
+  z-index: 20;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+}
+.panel-resize-handle::after {
+  content: "";
+  position: absolute;
+  top: 20%;
+  bottom: 20%;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: 1px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+.panel-resize-handle:hover::after,
+.panel-resize-handle:focus-visible::after,
+.panel-resize-handle.is-dragging::after {
+  background: var(--accent);
+}
+.panel-resize-handle[data-side="left"] {
+  left: calc(var(--panel-left-w) + var(--grid-gap) / 2 - 4.5px);
+}
+.panel-resize-handle[data-side="right"] {
+  right: calc(var(--panel-right-w) + var(--grid-gap) / 2 - 4.5px);
+}
+body.panel-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+@media (max-width: 980px) {
+  .panel-resize-handle {
+    display: none;
+  }
+}
+
+/* Narrow desktops and tablet landscape (split-view, half-screen tiling):
+   slimmer panels keep the preview usable without hiding any controls. */
+@media (min-width: 981px) and (max-width: 1180px) {
+  :root {
+    --panel-left-w: 244px;
+    --panel-right-w: 276px;
+    --grid-gap: 10px;
+  }
+  .editor-shell {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 980px) {
+  .editor-grid {
+    grid-template-columns: 1fr;
+    grid-auto-rows: min-content;
+    overflow: visible;
+  }
+  .editor-shell {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+  /* The preview column needs an explicit height when stacked: its inline
+     `1fr` row can't resolve against a content-sized grid track, so the canvas
+     would collapse to nothing on phones/tablets. */
+  .preview-column {
+    height: min(70dvh, 520px);
+  }
+  /* Panels size to their content on mobile so the document scrolls naturally
+     instead of nesting a cramped internal scroll area inside a capped height.
+     The control panel keeps its own scroll for very long content. */
+  .right-panel {
+    height: auto;
+    max-height: 80dvh;
+  }
+  .control-panel {
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+/* ---- Mobile bottom-sheet layout (<=768px) ----
+   The preview stays in flow at the top; both side panels become fixed
+   bottom sheets toggled from the tab bar, so editing controls are always
+   one tap away without scrolling past them to reach the canvas. */
+/* Desktop: the hosts are layout-transparent so the editor grid keeps seeing
+   the panels as its direct children (min-height/scroll chains stay intact). */
+.sheet-host {
+  display: contents;
+}
+
+.mobile-tabbar,
+.sheet-backdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .editor-shell {
+    /* Keep the toolbar above the fixed tab bar. */
+    padding-bottom: calc(74px + env(safe-area-inset-bottom));
+  }
+
+  .sheet-host {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 45;
+    /* Parked below the viewport; the open state slides it up. `visibility`
+       keeps the parked panel out of the tab order and off screen readers,
+       and is delayed so the slide-out animation stays visible. */
+    transform: translateY(105%);
+    visibility: hidden;
+    transition: transform 0.28s ease, visibility 0s linear 0.28s;
+    pointer-events: none;
+  }
+  .sheet-host.is-open {
+    transform: none;
+    visibility: visible;
+    transition: transform 0.28s ease;
+    pointer-events: auto;
+  }
+  .sheet-host > .panel {
+    border-radius: var(--radius) var(--radius) 0 0;
+    box-shadow: var(--shadow-pop);
+  }
+  .sheet-host--controls .control-panel {
+    height: min(72dvh, 640px);
+    max-height: none;
+    overflow-y: auto;
+  }
+  .sheet-host--right .right-panel {
+    height: min(72dvh, 640px);
+    max-height: none;
+  }
+
+  .sheet-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(0, 0, 0, 0.45);
+    animation: backdropFadeIn 0.2s ease;
+  }
+
+  .mobile-tabbar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 46;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    background: var(--toolbar-bg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--panel-border);
+  }
+
+  .mtab {
+    appearance: none;
+    font: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 48px;
+    padding: 4px 8px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .mtab:hover {
+    color: var(--text);
+  }
+  .mtab.is-active {
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .mtab:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+}
+
+/* ---- Glass panels ---- */
+.panel {
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-pop);
+  /* faint top highlight for a layered, glassy feel */
+  position: relative;
+  min-height: 0;
+}
+
+/* Side panels scroll internally when taller than the viewport so the page
+   itself never scrolls and the preview stays fully visible. */
+.control-panel,
+.templates-panel,
+.projects-panel,
+.layers-panel,
+.right-panel {
+  overflow-y: auto;
+  min-height: 0;
+  /* Let grid/flex items shrink below their content min-width on narrow
+     screens so the editor never overflows horizontally. */
+  min-width: 0;
+}
+
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--panel-highlight);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.panel-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}

@@ -7,6 +7,12 @@ test-results
 dist
 .DS_Store
 tsconfig.tsbuildinfo
+.env
+.env.local
+.env.*.local
 .qwen/
 .lighthouseci/
 public/test-photo.png
+
+*storybook.log
+storybook-static

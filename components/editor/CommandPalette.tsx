@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
-import { highlightMatch, matchQuery, scoreMatch } from "@/lib/search/matchCommand";
+import { highlightMatch, matchQuery, scoreMatch } from "@/lib/commands/matchCommand";
 import type { Command } from "@/lib/types/editor";
 
 export type { Command };

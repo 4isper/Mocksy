@@ -93,14 +93,13 @@ Scene serialized as deflate-compressed base64url JSON (`CompressionStream` with 
 app/              Next.js router ([locale]/layout, page, error boundary)
 components/editor/ 50 React components (EditorShell, ControlPanel, PreviewCanvas, ...)
 i18n/             Locale request config + canonical locale list (locales.ts)
-lib/state/        Zustand stores, normalization, id generators, share URL, projects
+lib/state/        Zustand stores, normalization, id generators, share URL, projects, relativeTime
 lib/render/       Frame specs, CSS/canvas geometry, video timeline, canvas drawing
 lib/export/       PNG/SVG/HTML/MP4-GIF export, canvas rendering, filename helpers
-lib/commands/     Command-palette command factories (per feature area)
+lib/commands/     Command-palette command factories, search/matching (per feature area)
 lib/media/        File loading, demo image, palette extraction, IndexedDB media store, AI background removal
 lib/presets/      Background swatches, scene style presets
 lib/hooks/        Client hooks (commands, focus trap, frame transform, scene palette)
-lib/search/       Frame search utilities
 lib/types/        TypeScript interfaces
 messages/         57 locale JSON files (en.json is the source of truth)
 public/devices/   SVG device skins for overlay frames

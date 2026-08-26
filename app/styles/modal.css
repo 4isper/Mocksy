@@ -1,0 +1,110 @@
+/* ---- Modals & dialogs ---- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  padding: 16px;
+  animation: backdropFadeIn 0.2s ease;
+}
+
+.modal {
+  background: var(--panel-solid);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 20px;
+  max-width: 360px;
+  width: 100%;
+  box-shadow: var(--shadow-pop);
+  animation: modalSlideIn 0.25s ease;
+}
+
+.modal h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.modal p {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Keyboard-shortcuts cheat sheet */
+.modal.shortcuts {
+  max-width: 520px;
+}
+
+/* Export dialog: two format rows (image / video) need a bit more room */
+.modal.export {
+  max-width: 420px;
+}
+
+.shortcut-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 4px 0 16px;
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.shortcut-group h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.shortcut-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shortcut-keys {
+  display: inline-flex;
+  gap: 4px;
+  min-width: 132px;
+}
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--panel-solid);
+  border: 1px solid var(--panel-border);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+}
+
+.shortcut-label {
+  font-size: 14px;
+  color: var(--text-dim);
+}

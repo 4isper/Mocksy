@@ -9,7 +9,7 @@ import { useProjectsStore } from "@/lib/state/projectsStore";
 import { exportProjectToFile, importProjectFromFile } from "@/lib/state/projectFile";
 import { exportProjectBundle, importProjectBundle, isBundleFile } from "@/lib/state/projectBundle";
 import { exportTemplateToFile, importTemplateFromFile } from "@/lib/state/templateFile";
-import { relativeTime } from "@/lib/utils/relativeTime";
+import { relativeTime } from "@/lib/state/relativeTime";
 import { ProjectItem } from "@/components/editor/ProjectItem";
 import { TrashSection } from "@/components/editor/TrashSection";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";

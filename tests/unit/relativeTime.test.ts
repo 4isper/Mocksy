@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { relativeTime } from "@/lib/utils/relativeTime";
+import { relativeTime } from "@/lib/state/relativeTime";
 
 const t = (key: string, vars?: Record<string, unknown>) => {
   const n = (vars?.n as number | undefined) ?? 0;

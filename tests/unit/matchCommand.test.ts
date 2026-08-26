@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { highlightMatch, matchQuery, scoreMatch } from "@/lib/search/matchCommand";
+import { highlightMatch, matchQuery, scoreMatch } from "@/lib/commands/matchCommand";
 import type { Command } from "@/lib/types/editor";
 
 const command: Command = {

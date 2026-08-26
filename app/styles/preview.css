@@ -1,0 +1,367 @@
+/* ---- Preview overlay chips ---- */
+.preview-chip {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 4;
+  padding: 5px 11px;
+  border-radius: 9px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12.5px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.preview-chip:hover {
+  background: var(--hover);
+  border-color: var(--accent);
+}
+
+/* Stacked corner chips: keep overlay controls in one corner instead of
+   scattering them across the canvas where they'd cover the media. */
+.preview-chip-stack {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  pointer-events: none;
+}
+
+.preview-chip-stack > .preview-chip {
+  position: static;
+  /* The stack disables pointer events so it never blocks the canvas; re-enable
+     them on the chips themselves so upload/grid controls stay clickable. */
+  pointer-events: auto;
+}
+
+/* ---- View zoom bar (- slider + % Fit) ---- */
+.preview-zoom-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 6px;
+  border-radius: 9px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  /* The chip stack disables pointer events (and the property inherits), so
+     re-enable them here for the whole bar - otherwise -/+/slider stay dead. */
+  pointer-events: auto;
+}
+
+.preview-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.preview-zoom-btn:hover {
+  background: var(--hover);
+}
+
+.preview-zoom-slider {
+  width: 84px;
+  height: 22px;
+  margin: 0 4px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.preview-zoom-value,
+.preview-zoom-fit {
+  position: static;
+  pointer-events: auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.preview-zoom-value {
+  min-width: 46px;
+  text-align: center;
+  padding: 5px 6px;
+}
+
+.preview-zoom-fit.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.preview-watermark {
+  position: absolute;
+  z-index: 3;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.preview-watermark-logo {
+  width: auto;
+  max-width: 45%;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
+}
+
+.watermark-logo-thumb {
+  display: block;
+  width: auto;
+  padding: 4px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: var(--panel-solid);
+}
+
+.preview-error {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  right: 12px;
+  z-index: 4;
+  padding: 9px 13px;
+  border-radius: 9px;
+  background: var(--danger-bg);
+  color: var(--text);
+  font-size: 13px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* Drop zone hover state */
+.drop-hover {
+  outline: 2px dashed var(--accent) !important;
+  outline-offset: -2px;
+}
+
+/* ---- Media decode spinner ---- */
+.media-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.spinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid var(--range-track);
+  border-top-color: var(--accent);
+  animation: spin 0.7s linear infinite;
+}
+
+/* ---- Export progress (video) ---- */
+.export-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 160px;
+}
+
+.export-status .label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.export-status .progress {
+  width: 100px;
+  height: 6px;
+  background: var(--range-track);
+  border-radius: 999px;
+  overflow: hidden;
+  flex: none;
+}
+
+.export-status .progress > div {
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+  transition: width 0.2s ease;
+}
+
+.export-status .pct {
+  font-size: 12px;
+  color: var(--text-dim);
+  min-width: 32px;
+  text-align: right;
+  flex: none;
+}
+
+/* ---- Custom export size (Export dialog) ---- */
+.custom-size {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.custom-size input[type="number"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 11px;
+}
+
+.custom-size input[type="number"]:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.custom-size > span {
+  flex: 0 0 auto;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+/* ---- Auto background button ---- */
+.auto-bg-btn {
+  appearance: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  cursor: pointer;
+  transition: filter 0.15s ease, opacity 0.15s ease;
+}
+
+.auto-bg-btn:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.auto-bg-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: var(--panel-border);
+  background: var(--field-bg);
+  color: var(--text-dim);
+}
+
+.auto-bg-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---- Background mode tabs & preset swatch grid ---- */
+.bg-preset-group {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bg-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+
+.bg-swatches .swatch-btn {
+  appearance: none;
+  aspect-ratio: 1;
+  width: 100%;
+  border-radius: 9px;
+  border: 1px solid var(--panel-border);
+  cursor: pointer;
+  background-position: center;
+  transition: transform 0.1s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bg-swatches .swatch-btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--panel-border-strong);
+}
+
+.bg-swatches .swatch-btn[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.bg-swatches .swatch-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---- From-media background helpers ---- */
+.bg-media-group {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding-top: 2px;
+  border-top: 1px solid var(--panel-border);
+}
+
+/* ---- Dual-range trim (video) ---- */
+.trim-range {
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.trim-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  cursor: pointer;
+}
+
+.trim-range::-moz-range-thumb {
+  pointer-events: auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  cursor: pointer;
+}
+
+.trim-range::-webkit-slider-runnable-track {
+  background: transparent;
+}
+
+.trim-range::-moz-range-track {
+  background: transparent;
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { useEditorExport } from "@/lib/hooks/useEditorExport";
 import { useAutosaveStatus } from "@/lib/hooks/useAutosaveStatus";
@@ -9,18 +9,13 @@ import { warmUpFfmpeg } from "@/lib/export/exportVideo";
 import { useEditorShortcuts } from "@/lib/hooks/useEditorShortcuts";
 import { useClipboardPaste } from "@/lib/hooks/useClipboardPaste";
 import { ControlPanel } from "@/components/editor/ControlPanel";
-import { ExportDialog } from "@/components/editor/ExportDialog";
-import { ShortcutsDialog } from "@/components/editor/ShortcutsDialog";
 import { PreviewCanvas } from "@/components/editor/PreviewCanvas";
 import { RightPanel } from "@/components/editor/RightPanel";
-import { CommandPalette } from "@/components/editor/CommandPalette";
 import { ErrorBoundary } from "@/components/editor/ErrorBoundary";
-import { ResetConfirmDialog } from "@/components/editor/ResetConfirmDialog";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { MobileTabBar } from "@/components/editor/MobileTabBar";
 import { PanelResizeHandles } from "@/components/editor/PanelResizeHandles";
-import { OnboardingTour, hasSeenOnboarding } from "@/components/editor/OnboardingTour";
-import { ShareQrDialog } from "@/components/editor/ShareQrDialog";
+import { hasSeenOnboarding } from "@/components/editor/OnboardingTour";
 import { useCommands } from "@/lib/hooks/useCommands";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
@@ -29,6 +24,25 @@ import { initHistoryPersistence, restoreHistory } from "@/lib/state/historyStora
 import { readSharedSceneFromUrl, readTemplateFromUrl, clearTemplateFromUrl } from "@/lib/state/shareState";
 import { warmProjectCache } from "@/lib/state/projectsStore";
 import type { EditorScene } from "@/lib/types/editor";
+
+const ExportDialog = React.lazy(() =>
+  import("@/components/editor/ExportDialog").then((m) => ({ default: m.ExportDialog }))
+);
+const ShortcutsDialog = React.lazy(() =>
+  import("@/components/editor/ShortcutsDialog").then((m) => ({ default: m.ShortcutsDialog }))
+);
+const CommandPalette = React.lazy(() =>
+  import("@/components/editor/CommandPalette").then((m) => ({ default: m.CommandPalette }))
+);
+const ResetConfirmDialog = React.lazy(() =>
+  import("@/components/editor/ResetConfirmDialog").then((m) => ({ default: m.ResetConfirmDialog }))
+);
+const OnboardingTour = React.lazy(() =>
+  import("@/components/editor/OnboardingTour").then((m) => ({ default: m.OnboardingTour }))
+);
+const ShareQrDialog = React.lazy(() =>
+  import("@/components/editor/ShareQrDialog").then((m) => ({ default: m.ShareQrDialog }))
+);
 
 export function EditorShell() {
   const t = useTranslations();
@@ -303,33 +317,45 @@ export function EditorShell() {
         <div className="sheet-backdrop" aria-hidden="true" onClick={() => setMobileSheet(null)} />
       ) : null}
       {!fullscreenPreview ? <MobileTabBar onExport={() => setExportOpen(true)} /> : null}
-      <ResetConfirmDialog open={confirmResetOpen} onConfirm={confirmReset} onCancel={cancelReset} />
-      <ExportDialog
-        open={exportOpen}
-        onClose={() => setExportOpen(false)}
-        scale={exportScale}
-        onScaleChange={setExportScale}
-        customSize={customExportSize}
-        onCustomSizeChange={setCustomExportSize}
-        onAspectRatioChange={setAspectRatio}
-        onExport={exportApi.handleExport}
-        onCopy={exportApi.handleCopyFromDialog}
-        onCopyJpeg={exportApi.handleCopyJpeg}
-        onCopyWebp={exportApi.handleCopyWebp}
-        onCopySvg={exportApi.handleCopySvg}
-        onCopyHtml={exportApi.handleCopyHtml}
-        busy={exportApi.isExporting}
-        onCancel={exportApi.cancelExport}
-        isMultiFrame={scene.frameInstances.length > 0}
-      />
-      <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
-      <OnboardingTour />
-      <ShareQrDialog url={exportApi.shareQrUrl} onClose={exportApi.closeShareQr} />
-      <CommandPalette
-        commands={commands}
-        isOpen={commandPaletteOpen}
-        onClose={() => setCommandPaletteOpen(false)}
-      />
+      <Suspense fallback={null}>
+        <ResetConfirmDialog open={confirmResetOpen} onConfirm={confirmReset} onCancel={cancelReset} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ExportDialog
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+          scale={exportScale}
+          onScaleChange={setExportScale}
+          customSize={customExportSize}
+          onCustomSizeChange={setCustomExportSize}
+          onAspectRatioChange={setAspectRatio}
+          onExport={exportApi.handleExport}
+          onCopy={exportApi.handleCopyFromDialog}
+          onCopyJpeg={exportApi.handleCopyJpeg}
+          onCopyWebp={exportApi.handleCopyWebp}
+          onCopySvg={exportApi.handleCopySvg}
+          onCopyHtml={exportApi.handleCopyHtml}
+          busy={exportApi.isExporting}
+          onCancel={exportApi.cancelExport}
+          isMultiFrame={scene.frameInstances.length > 0}
+        />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <OnboardingTour />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ShareQrDialog url={exportApi.shareQrUrl} onClose={exportApi.closeShareQr} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <CommandPalette
+          commands={commands}
+          isOpen={commandPaletteOpen}
+          onClose={() => setCommandPaletteOpen(false)}
+        />
+      </Suspense>
     </main>
   );
 }

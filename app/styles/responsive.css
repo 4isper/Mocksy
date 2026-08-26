@@ -1,0 +1,98 @@
+/* Coarse pointers (touch) need larger thumbs and taller hit areas so the
+   two overlapping trim sliders are easy to grab with a finger, and so every
+   primary control reaches a comfortable touch-target size (~44px). */
+@media (pointer: coarse) {
+  .trim-range {
+    height: 40px;
+  }
+  .trim-range::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+  .trim-range::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Toolbar: taller buttons and slightly larger type instead of the compact
+     28px desktop hit areas. */
+  .toolbar {
+    gap: 6px;
+    padding: 8px 12px;
+  }
+  .toolbar .btn-tb,
+  .toolbar .locale-select {
+    height: 38px;
+    font-size: 12.5px;
+  }
+  .toolbar .btn-tb-icon {
+    width: 38px;
+    min-height: 38px;
+    padding: 0;
+  }
+
+  /* Context menu and icon buttons: ensure 44px touch targets on touch devices. */
+  [role="menu"] button {
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+  .btn-icon {
+    min-width: 36px;
+    min-height: 36px;
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Segmented controls (theme switcher, export dialog, annotation tools). */
+  .segmented button {
+    min-height: 40px;
+  }
+
+  /* Accordion headers and right-panel tabs. */
+  .section-header {
+    min-height: 44px;
+  }
+  .right-panel-tabs button {
+    padding: 12px 6px;
+  }
+
+  /* Overlay chips on the canvas (upload/grid/watermark controls). */
+  .preview-chip {
+    padding: 9px 14px;
+  }
+
+  /* View zoom bar: larger targets for touch. */
+  .preview-zoom-btn {
+    width: 32px;
+    height: 32px;
+  }
+  .preview-zoom-slider {
+    width: 104px;
+    height: 32px;
+  }
+
+  /* Range sliders outside the video trimmer. */
+  .range-wrap input[type="range"]::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+  }
+  .range-wrap input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* ---- Reduced motion ---- */
+/* Users who prefer reduced motion get instant state changes instead of
+   transitions and looping UI animations (spinners, skeletons, slide-ins).
+   The preview Ken-Burns loop is JS-driven and handled in useFrameTransform. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

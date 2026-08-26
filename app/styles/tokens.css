@@ -1,0 +1,64 @@
+/* ---- Design tokens (dark theme - default) ---- */
+:root,
+.dark {
+  color-scheme: dark;
+  --bg: #07070a;
+  --panel: rgba(20, 20, 26, 0.72);
+  --panel-solid: #121217;
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --panel-border-strong: rgba(255, 255, 255, 0.14);
+  --text: #f4f4f5;
+  --text-dim: #a1a1aa;
+  --text-faint: rgba(255, 255, 255, 0.55);
+  --text-secondary: #a1a1aa;
+  --accent: #00d9ff;
+  --accent-soft: rgba(0, 217, 255, 0.14);
+  --accent-press: #00b8d9;
+  --danger: #f87171;
+  --danger-bg: rgba(127, 29, 29, 0.85);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --field-bg: #18181b;
+  --field-border: #2e2e33;
+  --hover: rgba(255, 255, 255, 0.07);
+  --shadow-pop: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --panel-highlight: linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent 35%);
+  --toolbar-bg: rgba(14, 14, 18, 0.7);
+  --range-track: rgba(255, 255, 255, 0.12);
+}
+
+/* Light theme tokens */
+.light {
+  color-scheme: light;
+  --bg: #f6f6f8;
+  --panel: rgba(255, 255, 255, 0.82);
+  --panel-solid: #ffffff;
+  --panel-border: rgba(0, 0, 0, 0.07);
+  --panel-border-strong: rgba(0, 0, 0, 0.12);
+  --text: #1a1a1e;
+  --text-dim: #6b6b78;
+  --text-faint: rgba(0, 0, 0, 0.55);
+  --text-secondary: #52525b;
+  --accent: #0077cc;
+  --accent-soft: rgba(0, 119, 204, 0.1);
+  --accent-press: #005fa3;
+  --danger: #dc2626;
+  --danger-bg: rgba(254, 226, 226, 0.9);
+  --field-bg: #ffffff;
+  --field-border: #d4d4db;
+  --hover: rgba(0, 0, 0, 0.04);
+  --shadow-pop: 0 8px 30px rgba(0, 0, 0, 0.1);
+  --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.06);
+  --panel-highlight: linear-gradient(180deg, rgba(0, 0, 0, 0.04), transparent 35%);
+  --toolbar-bg: rgba(255, 255, 255, 0.85);
+  --range-track: rgba(0, 0, 0, 0.1);
+}
+
+/* Light theme ambient backdrop */
+.light body::before {
+  background:
+    radial-gradient(900px 600px at 15% -10%, rgba(0, 119, 204, 0.06), transparent 55%),
+    radial-gradient(800px 600px at 100% 0%, rgba(124, 58, 237, 0.04), transparent 50%),
+    #f6f6f8;
+}
