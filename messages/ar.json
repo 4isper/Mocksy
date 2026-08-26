@@ -337,7 +337,8 @@
     "addTextLayer": "+ Text layer",
     "text": "Text",
     "textLabel": "Text layer",
-    "addFrame": "Add frame"
+    "addFrame": "Add frame",
+    "selectFrame": "Select frame {n}"
   },
   "frame": {
     "none": "بلا",

@@ -197,6 +197,7 @@
     "removeBgImage": "Скрыть фоновое изображение",
     "addFrame": "Добавить фрейм",
     "removeFrame": "Удалить фрейм",
+    "selectFrame": "Выбрать фрейм {n}",
     "removeLayer": "Удалить {label}",
     "removeMediaTitle": "Удалить медиа из выбранного слоя",
     "renameHint": "Двойной клик для переименования",

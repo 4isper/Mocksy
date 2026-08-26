@@ -477,6 +477,7 @@ describe("annotations", () => {
       scene: { ...initialScene },
       selectedAnnotationId: null,
       activeFrameInstanceId: null,
+      selectedFrameIds: [],
       activeLayerId: initialScene.activeLayerId,
       lastHistoryKey: null,
       lastHistoryAt: 0
@@ -745,6 +746,7 @@ describe("frame control", () => {
       scene: { ...initialScene },
       selectedAnnotationId: null,
       activeFrameInstanceId: null,
+      selectedFrameIds: [],
       activeLayerId: initialScene.activeLayerId,
       lastHistoryKey: null,
       lastHistoryAt: 0
@@ -997,6 +999,67 @@ describe("frame control", () => {
     expect(store().scene.frameInstances.map((fi) => fi.id)).toEqual(["b", "c", "a"]);
     store().reorderFrameInstance("a", "back");
     expect(store().scene.frameInstances.map((fi) => fi.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("alignFrameInstances targets the selected subset when one is active", () => {
+    reset();
+    store().selectFrameIds([]);
+    store().setFrameInstances([
+      { id: "a", frame: "none" as const, x: 0.1, y: 0.5, scale: 0.2, layerId: null },
+      { id: "b", frame: "none" as const, x: 0.9, y: 0.5, scale: 0.2, layerId: null },
+      { id: "c", frame: "none" as const, x: 0.5, y: 0.8, scale: 0.2, layerId: null }
+    ]);
+    // Select only a & b → align left should not move c.
+    store().selectFrameIds(["a", "b"]);
+    store().alignFrameInstances("left");
+    const after = store().scene.frameInstances;
+    const c = after.find((i) => i.id === "c")!;
+    expect(c.x).toBeCloseTo(0.5, 6);
+    expect(c.y).toBeCloseTo(0.8, 6);
+    // a and b share a left edge now.
+    expect(Math.abs(after[0]!.x - after[1]!.x)).toBeLessThan(1e-9);
+  });
+
+  it("alignFrameInstances falls back to all instances when nothing is selected", () => {
+    reset();
+    store().selectFrameIds([]);
+    store().setFrameInstances([
+      { id: "a", frame: "none" as const, x: 0.1, y: 0.5, scale: 0.2, layerId: null },
+      { id: "b", frame: "none" as const, x: 0.9, y: 0.5, scale: 0.2, layerId: null }
+    ]);
+    expect(store().selectedFrameIds).toEqual([]);
+    store().alignFrameInstances("centerX");
+    const xs = store().scene.frameInstances.map((i) => i.x);
+    expect(Math.abs(xs[0]! - xs[1]!)).toBeLessThan(1e-9);
+  });
+
+  it("alignFrameInstances clamps positions so frames stay on the canvas", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "a", frame: "none" as const, x: -0.5, y: 1.5, scale: 0.5, layerId: null },
+      { id: "b", frame: "none" as const, x: 0.5, y: 0.5, scale: 0.5, layerId: null }
+    ]);
+    store().selectFrameIds(["a", "b"]);
+    store().alignFrameInstances("left");
+    const a = store().scene.frameInstances.find((i) => i.id === "a")!;
+    // half-extent 0.25 → center must sit in [0.25, 0.75].
+    expect(a.x).toBeGreaterThanOrEqual(0.25);
+    expect(a.y).toBeLessThanOrEqual(0.75);
+  });
+
+  it("toggleFrameSelected adds and removes frames from the selection", () => {
+    reset();
+    store().selectFrameIds([]);
+    store().setFrameInstances([
+      { id: "a", frame: "none" as const, x: 0.1, y: 0.1, scale: 0.2, layerId: null },
+      { id: "b", frame: "none" as const, x: 0.5, y: 0.5, scale: 0.2, layerId: null }
+    ]);
+    store().toggleFrameSelected("a");
+    expect(store().selectedFrameIds).toEqual(["a"]);
+    store().toggleFrameSelected("b");
+    expect(store().selectedFrameIds).toEqual(["a", "b"]);
+    store().toggleFrameSelected("a");
+    expect(store().selectedFrameIds).toEqual(["b"]);
   });
 
   it("layoutFrameGrid creates new layers for each frame instance", () => {
@@ -1434,8 +1497,9 @@ describe("grid overlay state", () => {
       past: [],
       future: [],
       scene: { ...initialScene },
-      showGrid: false,
-      gridDivisions: 12,
+      selectedAnnotationId: null,
+      activeFrameInstanceId: null,
+      selectedFrameIds: [],
       activeLayerId: initialScene.activeLayerId,
       lastHistoryKey: null,
       lastHistoryAt: 0

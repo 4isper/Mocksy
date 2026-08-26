@@ -58,8 +58,10 @@ function makeScene(): EditorScene {
   };
 }
 
-function renderList() {
+function renderList(selectedFrameIds: string[] = []) {
   const selectFrameInstance = vi.fn();
+  const selectFrameIds = vi.fn();
+  const toggleFrameSelected = vi.fn();
   const setFrameInstances = vi.fn();
   const updateFrameInstance = vi.fn();
   const removeFrameInstance = vi.fn();
@@ -71,13 +73,16 @@ function renderList() {
       expandedFrameId={null}
       setExpandedFrameId={setExpandedFrameId}
       selectFrameInstance={selectFrameInstance}
+      selectFrameIds={selectFrameIds}
+      toggleFrameSelected={toggleFrameSelected}
+      selectedFrameIds={selectedFrameIds}
       setFrameInstances={setFrameInstances}
       updateFrameInstance={updateFrameInstance}
       removeFrameInstance={removeFrameInstance}
       addFrameInstance={addFrameInstance}
     />
   );
-  return { selectFrameInstance, setFrameInstances, updateFrameInstance, removeFrameInstance, setExpandedFrameId, ...utils };
+  return { selectFrameInstance, selectFrameIds, toggleFrameSelected, setFrameInstances, updateFrameInstance, removeFrameInstance, setExpandedFrameId, ...utils };
 }
 
 afterEach(() => {
@@ -92,6 +97,9 @@ describe("FrameInstanceList", () => {
         expandedFrameId={null}
         setExpandedFrameId={vi.fn()}
         selectFrameInstance={vi.fn()}
+        selectFrameIds={vi.fn()}
+        toggleFrameSelected={vi.fn()}
+        selectedFrameIds={[]}
         setFrameInstances={vi.fn()}
         updateFrameInstance={vi.fn()}
         removeFrameInstance={vi.fn()}
@@ -128,6 +136,9 @@ describe("FrameInstanceList", () => {
         expandedFrameId="f1"
         setExpandedFrameId={setExpandedFrameId}
         selectFrameInstance={selectFrameInstance}
+        selectFrameIds={vi.fn()}
+        toggleFrameSelected={vi.fn()}
+        selectedFrameIds={[]}
         setFrameInstances={vi.fn()}
         updateFrameInstance={vi.fn()}
         removeFrameInstance={vi.fn()}
@@ -181,6 +192,9 @@ describe("FrameInstanceList", () => {
         expandedFrameId="f1"
         setExpandedFrameId={vi.fn()}
         selectFrameInstance={vi.fn()}
+        selectFrameIds={vi.fn()}
+        toggleFrameSelected={vi.fn()}
+        selectedFrameIds={[]}
         setFrameInstances={vi.fn()}
         updateFrameInstance={updateFrameInstance}
         removeFrameInstance={vi.fn()}
@@ -202,6 +216,9 @@ describe("FrameInstanceList", () => {
         expandedFrameId="f1"
         setExpandedFrameId={vi.fn()}
         selectFrameInstance={vi.fn()}
+        selectFrameIds={vi.fn()}
+        toggleFrameSelected={vi.fn()}
+        selectedFrameIds={[]}
         setFrameInstances={vi.fn()}
         updateFrameInstance={vi.fn()}
         removeFrameInstance={vi.fn()}
@@ -221,6 +238,9 @@ describe("FrameInstanceList", () => {
         expandedFrameId="f2"
         setExpandedFrameId={vi.fn()}
         selectFrameInstance={vi.fn()}
+        selectFrameIds={vi.fn()}
+        toggleFrameSelected={vi.fn()}
+        selectedFrameIds={[]}
         setFrameInstances={vi.fn()}
         updateFrameInstance={updateFrameInstance}
         removeFrameInstance={vi.fn()}

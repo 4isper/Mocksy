@@ -11,10 +11,13 @@ interface FrameInstanceListProps {
   expandedFrameId: string | null;
   setExpandedFrameId: (id: string | null) => void;
   selectFrameInstance: (id: string | null) => void;
+  selectFrameIds: (ids: string[]) => void;
+  toggleFrameSelected: (id: string) => void;
   setFrameInstances: (instances: FrameInstance[]) => void;
   updateFrameInstance: (id: string, patch: Partial<FrameInstance>) => void;
   removeFrameInstance: (id: string) => void;
   addFrameInstance: () => void;
+  selectedFrameIds: string[];
 }
 
 export function FrameInstanceList({
@@ -22,10 +25,13 @@ export function FrameInstanceList({
   expandedFrameId,
   setExpandedFrameId,
   selectFrameInstance,
+  selectFrameIds,
+  toggleFrameSelected,
   setFrameInstances,
   updateFrameInstance,
   removeFrameInstance,
-  addFrameInstance
+  addFrameInstance,
+  selectedFrameIds
 }: FrameInstanceListProps) {
   const t = useTranslations();
 
@@ -68,10 +74,18 @@ export function FrameInstanceList({
         <div className="field" style={{ display: "flex", flexDirection: "column", gap: 3 }}>
           {scene.frameInstances.map((inst, i) => {
             const open = expandedFrameId === inst.id;
+            const selected = selectedFrameIds.includes(inst.id);
             const frameLayer = scene.layers.find((l) => l.id === inst.layerId);
             return (
-              <div key={inst.id} className="frame-card">
+              <div key={inst.id} className="frame-card" data-selected={selected || undefined}>
                 <div className="frame-card-head">
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={() => toggleFrameSelected(inst.id)}
+                    aria-label={t("editor.selectFrame", { n: i + 1 })}
+                    title={t("editor.selectFrame", { n: i + 1 })}
+                  />
                   <button
                     type="button"
                     className="btn-icon tooltip"

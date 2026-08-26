@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alignFrameInstances, distributeFrameInstances } from "@/lib/state/frameAlign";
+import { alignFrameInstances, clampFramePositions, distributeFrameInstances, targetFrameInstances } from "@/lib/state/frameAlign";
 import type { FrameInstance } from "@/lib/types/editor";
 
 function inst(id: string, x: number, y: number, scale = 0.25): FrameInstance {
@@ -91,5 +91,46 @@ describe("distributeFrameInstances", () => {
     for (const [before, after] of [[a, distributed[0]], [b, distributed[1]], [c, distributed[2]]] as const) {
       expect(after!.x).toBe(before.x);
     }
+  });
+});
+
+describe("clampFramePositions", () => {
+  it("keeps a frame center inside the canvas so the frame stays visible", () => {
+    const a = inst("a", -0.5, 1.5, 0.4); // half-extent 0.2 → must sit in [0.2, 0.8]
+    const clamped = clampFramePositions([a])[0]!;
+    expect(clamped.x).toBeCloseTo(0.2, 6);
+    expect(clamped.y).toBeCloseTo(0.8, 6);
+  });
+
+  it("leaves an already-contained frame untouched", () => {
+    const a = inst("a", 0.5, 0.5, 0.3);
+    expect(clampFramePositions([a])[0]).toBe(a);
+  });
+
+  it("centers an over-wide frame instead of clamping to an edge", () => {
+    const a = inst("a", -2, 2, 1.2); // wider than the canvas
+    const clamped = clampFramePositions([a])[0]!;
+    expect(clamped.x).toBeCloseTo(0.5, 6);
+  });
+});
+
+describe("targetFrameInstances", () => {
+  const all = [inst("a", 0.1, 0.1), inst("b", 0.5, 0.5), inst("c", 0.9, 0.9)];
+
+  it("returns all instances when nothing is selected", () => {
+    expect(targetFrameInstances(all, [])).toBe(all);
+  });
+
+  it("returns the selected subset when at least two are chosen", () => {
+    const picked = targetFrameInstances(all, ["a", "c"]);
+    expect(picked.map((i) => i.id)).toEqual(["a", "c"]);
+  });
+
+  it("falls back to all when fewer than two are selected", () => {
+    expect(targetFrameInstances(all, ["a"])).toBe(all);
+  });
+
+  it("ignores ids that no longer exist in the scene", () => {
+    expect(targetFrameInstances(all, ["a", "zzz"])).toBe(all);
   });
 });

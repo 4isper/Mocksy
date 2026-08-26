@@ -41,6 +41,9 @@ export interface EditorStoreState {
    *  of `scene` so selecting doesn't churn undo history or serialize into share
    *  URLs. */
   activeFrameInstanceId: string | null;
+  /** Ids of all currently-selected frame instances for multi-select align/
+   *  distribute. Kept out of `scene` for the same reason as `activeLayerId`. */
+  selectedFrameIds: string[];
   /** Ids of all currently-selected layers for multi-select bulk operations.
    *  Kept out of `scene` for the same reason as `activeLayerId`. */
   selectedLayerIds: string[];
@@ -264,6 +267,8 @@ export interface EditorStoreState {
   selectAnnotation: (id: string | null, additive?: boolean) => void;
   selectAnnotations: (ids: string[]) => void;
   selectFrameInstance: (id: string | null) => void;
+  selectFrameIds: (ids: string[]) => void;
+  toggleFrameSelected: (id: string) => void;
   clearAnnotations: () => void;
   setVideoMuted: (muted: boolean) => void;
   setVideoLoop: (loop: boolean) => void;

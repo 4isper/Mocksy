@@ -2,6 +2,7 @@ import { activeLayer, alignFrameInstances, buildAutoLayout, distributeFrameInsta
 import { nextFrameInstanceId } from "@/lib/state/ids";
 import type { CustomFrame, EditorScene, FrameInstance, MockupFrame } from "@/lib/types/editor";
 import type { FrameAlignMode } from "@/lib/state/frameAlign";
+import { clampFramePositions, targetFrameInstances } from "@/lib/state/frameAlign";
 import type { EditorStoreSetter, EditorStoreState } from "../editorStoreTypes";
 
 export type FramesSlice = Pick<
@@ -20,6 +21,8 @@ export type FramesSlice = Pick<
   | "alignFrameInstances"
   | "distributeFrameInstances"
   | "selectFrameInstance"
+  | "selectFrameIds"
+  | "toggleFrameSelected"
 >;
 
 /**
@@ -190,16 +193,40 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
     alignFrameInstances: (mode: FrameAlignMode) =>
       set((s) => {
         if (s.scene.frameInstances.length < 2) return {};
-        const frameInstances = alignFrameInstances(s.scene.frameInstances, mode, s.scene.aspectRatio, s.scene.customFrame);
+        const target = targetFrameInstances(s.scene.frameInstances, s.selectedFrameIds);
+        if (target.length < 2) return {};
+        const aligned = alignFrameInstances(target, mode, s.scene.aspectRatio, s.scene.customFrame);
+        const byId = new Map(aligned.map((i) => [i.id, i]));
+        const frameInstances = clampFramePositions(
+          s.scene.frameInstances.map((i) => byId.get(i.id) ?? i),
+          s.scene.aspectRatio,
+          s.scene.customFrame
+        );
         return pushHistory(s, { ...s.scene, frameInstances });
       }),
     distributeFrameInstances: (axis: "horizontal" | "vertical") =>
       set((s) => {
         if (s.scene.frameInstances.length < 3) return {};
-        const frameInstances = distributeFrameInstances(s.scene.frameInstances, axis, s.scene.aspectRatio, s.scene.customFrame);
+        const target = targetFrameInstances(s.scene.frameInstances, s.selectedFrameIds);
+        if (target.length < 3) return {};
+        const distributed = distributeFrameInstances(target, axis, s.scene.aspectRatio, s.scene.customFrame);
+        const byId = new Map(distributed.map((i) => [i.id, i]));
+        const frameInstances = clampFramePositions(
+          s.scene.frameInstances.map((i) => byId.get(i.id) ?? i),
+          s.scene.aspectRatio,
+          s.scene.customFrame
+        );
         return pushHistory(s, { ...s.scene, frameInstances });
       }),
-    selectFrameInstance: (id) => set({ activeFrameInstanceId: id }),
+    selectFrameInstance: (id) =>
+      set(id == null ? { activeFrameInstanceId: null, selectedFrameIds: [] } : { activeFrameInstanceId: id, selectedFrameIds: [id] }),
+    selectFrameIds: (ids) => set(() => ({ activeFrameInstanceId: ids[0] ?? null, selectedFrameIds: [...ids] })),
+    toggleFrameSelected: (id) =>
+      set((s) => {
+        const exists = s.selectedFrameIds.includes(id);
+        const next = exists ? s.selectedFrameIds.filter((x) => x !== id) : [...s.selectedFrameIds, id];
+        return { activeFrameInstanceId: id, selectedFrameIds: next.length > 0 ? next : [id] };
+      }),
     setFrameMaterial: (material) =>
       set((s) => {
         const nextScene: EditorScene = { ...s.scene, frameMaterial: material };

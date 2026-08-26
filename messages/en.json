@@ -197,6 +197,7 @@
     "removeBgImage": "Hide background image",
     "addFrame": "Add frame",
     "removeFrame": "Remove frame",
+    "selectFrame": "Select frame {n}",
     "removeLayer": "Remove {label}",
     "removeMediaTitle": "Remove media from the selected layer",
     "renameHint": "Double-click to rename",

@@ -36,6 +36,7 @@ export function FrameSection() {
     scene,
     activeLayerId,
     activeFrameInstanceId,
+    selectedFrameIds,
     setFrame,
     setCustomFrame,
     setFrameInstances,
@@ -43,6 +44,8 @@ export function FrameSection() {
     addFrameInstance,
     updateFrameInstance,
     selectFrameInstance,
+    selectFrameIds,
+    toggleFrameSelected,
     layoutFrameGrid,
     applyFrameLayout,
     alignFrameInstances,
@@ -58,6 +61,7 @@ export function FrameSection() {
       scene: s.scene,
       activeLayerId: s.activeLayerId,
       activeFrameInstanceId: s.activeFrameInstanceId,
+      selectedFrameIds: s.selectedFrameIds,
       setFrame: s.setFrame,
       setCustomFrame: s.setCustomFrame,
       setFrameInstances: s.setFrameInstances,
@@ -65,6 +69,8 @@ export function FrameSection() {
       addFrameInstance: s.addFrameInstance,
       updateFrameInstance: s.updateFrameInstance,
       selectFrameInstance: s.selectFrameInstance,
+      selectFrameIds: s.selectFrameIds,
+      toggleFrameSelected: s.toggleFrameSelected,
       layoutFrameGrid: s.layoutFrameGrid,
       applyFrameLayout: s.applyFrameLayout,
       alignFrameInstances: s.alignFrameInstances,
@@ -248,6 +254,9 @@ export function FrameSection() {
           expandedFrameId={expandedFrameId}
           setExpandedFrameId={setExpandedFrameId}
           selectFrameInstance={selectFrameInstance}
+          selectFrameIds={selectFrameIds}
+          toggleFrameSelected={toggleFrameSelected}
+          selectedFrameIds={selectedFrameIds}
           setFrameInstances={setFrameInstances}
           updateFrameInstance={updateFrameInstance}
           removeFrameInstance={removeFrameInstance}
