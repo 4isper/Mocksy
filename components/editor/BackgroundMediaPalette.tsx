@@ -26,11 +26,11 @@ export function BackgroundMediaPalette({
   const hasPalette = scenePalette != null && scenePalette.length > 0;
 
   // Cycle through a fixed set of angles so repeated clicks are predictable
-  // instead of jumping to a random angle each time.
+  // instead of jumping to a random angle each time. An angle outside the list
+  // (e.g. the 120° default) advances to the next listed angle above it.
   const nextAngle = () => {
     const angles = [0, 45, 90, 135, 180];
-    const currentIndex = angles.indexOf(gradientAngle);
-    return angles[(currentIndex + 1) % angles.length]!;
+    return angles.find((a) => a > gradientAngle) ?? angles[0]!;
   };
 
   return (

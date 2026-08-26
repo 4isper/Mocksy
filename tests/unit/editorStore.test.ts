@@ -125,6 +125,44 @@ describe("editorStore", () => {
     expect(store().scene.gradientAngle).toBe(45);
   });
 
+  it("setBackgroundGradient clears the middle stop when explicitly passed null", () => {
+    store().setGradientVia("#ffffff");
+    expect(store().scene.gradientVia).toBe("#ffffff");
+    store().setBackgroundGradient("#059669", "#0ea5e9", undefined, null);
+    expect(store().scene.gradientVia).toBeNull();
+  });
+
+  it("setGradientVia(null) clears the middle stop", () => {
+    store().setGradientVia("#ffffff");
+    store().setGradientVia(null);
+    expect(store().scene.gradientVia).toBeNull();
+  });
+
+  it("coalesces rapid solid color picker edits into one undo step", () => {
+    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene }, lastHistoryKey: null, lastHistoryAt: 0 });
+    store().setBackgroundSolid("#111111", true);
+    store().setBackgroundSolid("#222222", true);
+    expect(store().past).toHaveLength(1);
+    expect(store().scene.backgroundColor).toBe("#222222");
+  });
+
+  it("coalesces rapid gradient picker/slider edits into one undo step", () => {
+    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene }, lastHistoryKey: null, lastHistoryAt: 0 });
+    for (const angle of [10, 60, 120, 240, 359]) {
+      store().setBackgroundGradient("#1d4ed8", "#7c3aed", angle, undefined, undefined, true);
+    }
+    // one baseline entry for the whole drag, not one per degree
+    expect(store().past).toHaveLength(1);
+    expect(store().scene.gradientAngle).toBe(359);
+  });
+
+  it("keeps discrete gradient preset clicks as separate undo steps", () => {
+    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene }, lastHistoryKey: null, lastHistoryAt: 0 });
+    store().setBackgroundGradient("#059669", "#0ea5e9", undefined, null);
+    store().setBackgroundGradient("#f97316", "#db2777", undefined, null);
+    expect(store().past).toHaveLength(2);
+  });
+
   it("setScene merges onto the initial scene", () => {
     store().setScene({ frame: "desktop" });
     store().setZoom(1.2);

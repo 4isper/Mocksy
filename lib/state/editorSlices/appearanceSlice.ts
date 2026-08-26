@@ -41,8 +41,12 @@ export type AppearanceSlice = Pick<
 /** Background, watermark, annotation and background-audio setters. */
 export function createAppearanceSlice(set: EditorStoreSetter): AppearanceSlice {
   return {
-    setBackgroundSolid: (backgroundColor) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "solid", backgroundColor })),
-    setBackgroundGradient: (gradientFrom, gradientTo, gradientAngle, gradientVia, gradientType) =>
+    setBackgroundSolid: (backgroundColor, coalesce) =>
+      set((s) => pushHistory(s, { ...s.scene, backgroundMode: "solid", backgroundColor }, coalesce ? "backgroundColor" : undefined)),
+    // gradientVia === null clears the middle stop; undefined keeps the current
+    // value. The coalesce key collapses color-picker / angle-slider drags
+    // (which fire per-pixel) into a single undo step.
+    setBackgroundGradient: (gradientFrom, gradientTo, gradientAngle, gradientVia, gradientType, coalesce) =>
       set((s) => pushHistory(s, {
         ...s.scene,
         backgroundMode: "gradient",
@@ -51,12 +55,12 @@ export function createAppearanceSlice(set: EditorStoreSetter): AppearanceSlice {
         ...(gradientAngle !== undefined ? { gradientAngle } : {}),
         ...(gradientVia !== undefined ? { gradientVia } : {}),
         ...(gradientType !== undefined ? { gradientType } : {})
-      })),
+      }, coalesce ? "gradient" : undefined)),
     setBackgroundTransparent: () => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "transparent" })),
     setBackgroundImage: (backgroundImageUrl) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "image", backgroundImageUrl })),
     setBackgroundPattern: (patternId) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "pattern", patternId })),
     setGradientType: (gradientType) => set((s) => pushHistory(s, { ...s.scene, gradientType })),
-    setGradientVia: (gradientVia) => set((s) => pushHistory(s, { ...s.scene, gradientVia })),
+    setGradientVia: (gradientVia, coalesce) => set((s) => pushHistory(s, { ...s.scene, gradientVia }, coalesce ? "gradientVia" : undefined)),
     setBackgroundBlur: (backgroundBlur) => set((s) => pushHistory(s, { ...s.scene, backgroundBlur: Math.max(0, Math.min(40, Math.round(backgroundBlur))) }, "bgBlur")),
     toggleWatermark: (watermarkEnabled) => set((s) => pushHistory(s, { ...s.scene, watermarkEnabled })),
     setWatermarkText: (watermarkText) => set((s) => pushHistory(s, { ...s.scene, watermarkText })),

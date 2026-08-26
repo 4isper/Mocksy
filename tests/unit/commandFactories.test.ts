@@ -234,9 +234,11 @@ describe("createBackgroundCommands", () => {
         expect(setBackgroundSolid).toHaveBeenCalledWith(preset.backgroundColor);
       else if (preset.kind === "pattern")
         expect(setBackgroundPattern).toHaveBeenCalledWith(preset.patternId);
-      else expect(setBackgroundGradient).toHaveBeenCalledWith(preset.gradientFrom, preset.gradientTo);
+      // Gradient presets clear the middle stop so they render exactly as
+      // their two-stop swatch.
+      else expect(setBackgroundGradient).toHaveBeenCalledWith(preset.gradientFrom, preset.gradientTo, null);
     }
-    expect(setBackgroundGradient).not.toHaveBeenCalledWith(undefined, undefined);
+    expect(setBackgroundGradient).not.toHaveBeenCalledWith(undefined, undefined, undefined);
   });
 });
 

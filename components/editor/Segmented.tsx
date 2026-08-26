@@ -9,7 +9,7 @@ function Segmented<T extends string>({
 }: {
   label?: string;
   value: T;
-  options: { value: T; label: string }[];
+  options: { value: T; label: string; disabled?: boolean }[];
   onChange: (v: T) => void;
   disabled?: boolean;
 }) {
@@ -23,7 +23,7 @@ function Segmented<T extends string>({
             type="button"
             aria-pressed={value === opt.value}
             className={value === opt.value ? "is-active" : undefined}
-            disabled={disabled}
+            disabled={disabled || opt.disabled}
             onClick={() => onChange(opt.value)}
           >
             {opt.label}

@@ -231,13 +231,16 @@ export interface EditorStoreState {
   setBorderRadius: (radius: number) => void;
   setTiltX: (tiltX: number) => void;
   setTiltY: (tiltY: number) => void;
-  setBackgroundSolid: (color: string) => void;
-  setBackgroundGradient: (from: string, to: string, angle?: number, gradientVia?: string, gradientType?: "linear" | "radial") => void;
+  setBackgroundSolid: (color: string, coalesce?: boolean) => void;
+  /** `gradientVia` accepts an explicit `null` to clear the middle stop;
+   *  `undefined` leaves the current value untouched. */
+  setBackgroundGradient: (from: string, to: string, angle?: number, gradientVia?: string | null, gradientType?: "linear" | "radial", coalesce?: boolean) => void;
   setBackgroundTransparent: () => void;
   setBackgroundImage: (url: string) => void;
   setBackgroundPattern: (patternId: import("@/lib/types/editor").PatternId) => void;
   setGradientType: (gradientType: "linear" | "radial") => void;
-  setGradientVia: (gradientVia: string) => void;
+  /** `null` clears the middle stop so a two-stop gradient is restored. */
+  setGradientVia: (gradientVia: string | null, coalesce?: boolean) => void;
   setBackgroundBlur: (blur: number) => void;
   toggleWatermark: (enabled: boolean) => void;
   setWatermarkText: (text: string) => void;

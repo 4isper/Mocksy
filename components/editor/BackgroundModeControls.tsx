@@ -15,7 +15,7 @@ const COLOR_INPUT_STYLE: CSSProperties = {
 
 interface BackgroundSolidControlsProps {
   backgroundColor: string;
-  setBackgroundSolid: (color: string) => void;
+  setBackgroundSolid: (color: string, coalesce?: boolean) => void;
 }
 
 export function BackgroundSolidControls({ backgroundColor, setBackgroundSolid }: BackgroundSolidControlsProps) {
@@ -23,7 +23,7 @@ export function BackgroundSolidControls({ backgroundColor, setBackgroundSolid }:
   return (
     <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
       <span>{t("editor.customColor")}</span>
-      <input type="color" value={backgroundColor} onChange={(e) => setBackgroundSolid(e.target.value)} style={COLOR_INPUT_STYLE} />
+      <input type="color" value={backgroundColor} onChange={(e) => setBackgroundSolid(e.target.value, true)} style={COLOR_INPUT_STYLE} />
     </label>
   );
 }
@@ -34,9 +34,9 @@ interface BackgroundGradientControlsProps {
   gradientVia: string | null;
   gradientType: "linear" | "radial";
   gradientAngle: number;
-  setBackgroundGradient: (from: string, to: string, angle?: number, gradientVia?: string, gradientType?: "linear" | "radial") => void;
+  setBackgroundGradient: (from: string, to: string, angle?: number, gradientVia?: string | null, gradientType?: "linear" | "radial", coalesce?: boolean) => void;
   setGradientType: (gradientType: "linear" | "radial") => void;
-  setGradientVia: (gradientVia: string) => void;
+  setGradientVia: (gradientVia: string | null, coalesce?: boolean) => void;
 }
 
 export function BackgroundGradientControls({
@@ -62,34 +62,46 @@ export function BackgroundGradientControls({
           {t("editor.gradientRadial")}
         </label>
       </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+          <input type="checkbox" checked={gradientVia != null} onChange={(e) => setGradientVia(e.target.checked ? (gradientVia ?? "#ffffff") : null)} />
+          {t("editor.gradientMiddle")}
+        </label>
+        <input
+          type="color"
+          value={gradientVia ?? "#ffffff"}
+          disabled={gradientVia == null}
+          aria-label={t("editor.gradientMiddle")}
+          onChange={(e) => setGradientVia(e.target.value, true)}
+          style={COLOR_INPUT_STYLE}
+        />
+      </div>
       <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
         <span>{t("editor.gradientFrom")}</span>
-        <input type="color" value={gradientFrom} onChange={(e) => setBackgroundGradient(e.target.value, gradientTo, gradientAngle, gradientVia ?? undefined, gradientType)} style={COLOR_INPUT_STYLE} />
-      </label>
-      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-        <span>{t("editor.gradientMiddle")}</span>
-        <input type="color" value={gradientVia ?? "#ffffff"} onChange={(e) => setGradientVia(e.target.value)} style={COLOR_INPUT_STYLE} />
+        <input type="color" value={gradientFrom} onChange={(e) => setBackgroundGradient(e.target.value, gradientTo, gradientAngle, gradientVia, gradientType, true)} style={COLOR_INPUT_STYLE} />
       </label>
       <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
         <span>{t("editor.gradientTo")}</span>
-        <input type="color" value={gradientTo} onChange={(e) => setBackgroundGradient(gradientFrom, e.target.value, gradientAngle, gradientVia ?? undefined, gradientType)} style={COLOR_INPUT_STYLE} />
+        <input type="color" value={gradientTo} onChange={(e) => setBackgroundGradient(gradientFrom, e.target.value, gradientAngle, gradientVia, gradientType, true)} style={COLOR_INPUT_STYLE} />
       </label>
-      <label className="field">
-        <span>{t("editor.gradientAngle", { val: gradientAngle })}</span>
-        <div className="range-wrap">
-          <input
-            type="range"
-            min={0}
-            max={360}
-            step={1}
-            value={gradientAngle}
-            aria-label={t("editor.gradientAngle", { val: gradientAngle })}
-            aria-valuetext={`${gradientAngle}°`}
-            onChange={(e) => setBackgroundGradient(gradientFrom, gradientTo, Number(e.target.value), gradientVia ?? undefined, gradientType)}
-          />
-          <span className="range-val">{gradientAngle}°</span>
-        </div>
-      </label>
+      {gradientType === "linear" ? (
+        <label className="field">
+          <span>{t("editor.gradientAngle", { val: gradientAngle })}</span>
+          <div className="range-wrap">
+            <input
+              type="range"
+              min={0}
+              max={360}
+              step={1}
+              value={gradientAngle}
+              aria-label={t("editor.gradientAngle", { val: gradientAngle })}
+              aria-valuetext={`${gradientAngle}°`}
+              onChange={(e) => setBackgroundGradient(gradientFrom, gradientTo, Number(e.target.value), gradientVia, gradientType, true)}
+            />
+            <span className="range-val">{gradientAngle}°</span>
+          </div>
+        </label>
+      ) : null}
     </>
   );
 }
