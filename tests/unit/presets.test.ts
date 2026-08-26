@@ -119,6 +119,37 @@ describe("randomSceneStyle", () => {
   });
 });
 
+describe("randomSceneStyle from a media palette", () => {
+  const palette = ["#ff0000", "#00ff00", "#0000ff"];
+
+  it("derives a solid background from the dominant palette color", () => {
+    const patch = randomSceneStyle(() => 0.6, palette);
+    expect(patch.backgroundMode).toBe("solid");
+    expect(patch.backgroundColor).toBe("#ff0000");
+  });
+
+  it("derives a gradient background from the palette with valid stops", () => {
+    const patch = randomSceneStyle(() => 0.1, palette);
+    expect(patch.backgroundMode).toBe("gradient");
+    expect(patch.gradientFrom).toMatch(/^#/);
+    expect(patch.gradientTo).toMatch(/^#/);
+    if (patch.gradientVia != null) expect(patch.gradientVia).toMatch(/^#/);
+  });
+
+  it("falls back to canned presets when no palette is supplied", () => {
+    const patch = randomSceneStyle(() => 0.1);
+    expect(patch.backgroundMode).toBe("gradient");
+    expect(["#1d4ed8", "#7c3aed", "#f97316", "#059669", "#06b6d4", "#10b981", "#f472b6", "#ef4444", "#e0f2fe"]).toContain(
+      patch.gradientFrom
+    );
+  });
+
+  it("keeps the same palette deterministic for a fixed RNG", () => {
+    const rand = () => 0.3;
+    expect(randomSceneStyle(rand, palette)).toEqual(randomSceneStyle(rand, palette));
+  });
+});
+
 describe("SOCIAL_PRESETS", () => {
   it("has unique ids", () => {
     const ids = SOCIAL_PRESETS.map((p) => p.id);

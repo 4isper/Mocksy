@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { hexToHsl, hexToRgb, mergeWeightedPalettes, paletteColorsFlat, pickBestSolid, pickGradientPair, quantize, rgbToHex, extractPalette } from "@/lib/media/palette";
+import { hexToHsl, hexToRgb, mergeWeightedPalettes, paletteColorsFlat, pickBestSolid, pickGradientPair, gradientMiddleStop, hslToHex, rotateHue, pickHarmonicPair, quantize, rgbToHex, extractPalette } from "@/lib/media/palette";
 import type { PaletteResult, QuantizedColor } from "@/lib/media/palette";
 
 describe("rgbToHex", () => {
@@ -122,6 +122,67 @@ describe("pickGradientPair", () => {
     const [from, to] = pickGradientPair(["#111111", "#222222", "#333333"]);
     expect(from).toBe("#111111");
     expect(to).toBe("#333333");
+  });
+});
+
+describe("pickHarmonicPair", () => {
+  it("uses the analogous scheme (offset ±30°) when requested", () => {
+    // Dominant red (h=0); the closer analogous neighbor is orange (h≈30), not
+    // the green (h=120) or cyan (h=180) complementary alternative.
+    const [from, to] = pickHarmonicPair(["#ff0000", "#00ff00", "#ff8000"], "analogous");
+    expect(from).toBe("#ff0000");
+    expect(to).toBe("#ff8000");
+  });
+
+  it("uses the triadic scheme (offset ±120°)", () => {
+    // Dominant red (h=0); triadic targets are h=120/240 — here green (h=120).
+    const [from, to] = pickHarmonicPair(["#ff0000", "#00ff00", "#0000ff"], "triadic");
+    expect(from).toBe("#ff0000");
+    expect(to).toBe("#00ff00");
+  });
+
+  it("is identical to pickGradientPair for the complementary scheme", () => {
+    const colors = ["#0000ff", "#ff0000", "#ffff00"];
+    expect(pickHarmonicPair(colors, "complementary")).toEqual(pickGradientPair(colors));
+  });
+});
+
+describe("hslToHex / rotateHue", () => {
+  it("round-trips through hexToHsl within ±1 per channel", () => {
+    // HSL is lossy on 8-bit RGB, so allow a 1-unit drift per channel.
+    for (const hex of ["#1d4ed8", "#7c3aed", "#ff8000", "#222222", "#00ff88"]) {
+      const { h, s, l } = hexToHsl(hex);
+      const back = hslToHex(h, s, l);
+      const a = hexToRgb(hex)!;
+      const b = hexToRgb(back)!;
+      expect(Math.abs(a.r - b.r)).toBeLessThanOrEqual(1);
+      expect(Math.abs(a.g - b.g)).toBeLessThanOrEqual(1);
+      expect(Math.abs(a.b - b.b)).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("rotates the hue while keeping sat/light", () => {
+    const { s, l } = hexToHsl("#ff0000");
+    const rotated = rotateHue("#ff0000", 120);
+    const r = hexToHsl(rotated);
+    expect(r.s).toBe(s);
+    expect(r.l).toBe(l);
+    // red (h≈0) + 120° → green (h≈120)
+    expect(Math.round(r.h)).toBe(120);
+  });
+});
+
+describe("gradientMiddleStop", () => {
+  it("returns a valid color between two hues", () => {
+    const mid = gradientMiddleStop("#ff0000", "#0000ff");
+    expect(mid).toMatch(/^#[0-9a-f]{6}$/i);
+    // red (h=0) → blue (h=240, shorter arc -120) midway ≈ h=300 (magenta)
+    const { h } = hexToHsl(mid!);
+    expect(Math.round(h)).toBe(300);
+  });
+
+  it("falls back to null when a color is unparseable", () => {
+    expect(gradientMiddleStop("#zzzzzz", "#0000ff")).toBeNull();
   });
 });
 

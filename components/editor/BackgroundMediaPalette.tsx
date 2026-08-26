@@ -1,7 +1,10 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { pickBestSolid, pickGradientPair } from "@/lib/media/palette";
+import { gradientMiddleStop, pickBestSolid, pickHarmonicPair, type HueScheme } from "@/lib/media/palette";
+
+/** Color-harmony schemes cycled through on each "auto gradient" click. */
+const SCHEMES: HueScheme[] = ["complementary", "analogous", "triadic"];
 
 interface BackgroundMediaPaletteProps {
   scenePalette: string[] | null;
@@ -9,7 +12,7 @@ interface BackgroundMediaPaletteProps {
   backgroundMode: "solid" | "gradient" | "pattern" | "image" | "transparent";
   backgroundColor: string;
   setBackgroundSolid: (color: string) => void;
-  setBackgroundGradient: (from: string, to: string, angle?: number) => void;
+  setBackgroundGradient: (from: string, to: string, angle?: number, gradientVia?: string | null) => void;
 }
 
 /** Auto-background helpers driven by the active media's extracted palette: a
@@ -44,8 +47,9 @@ export function BackgroundMediaPalette({
           title={hasPalette ? t("editor.autoBgTooltip") : t("editor.autoBgDisabled")}
           onClick={() => {
             if (!hasPalette) return;
-            const [from, to] = pickGradientPair(scenePalette!);
-            setBackgroundGradient(from, to, nextAngle());
+            const [from, to] = pickHarmonicPair(scenePalette!, SCHEMES[Math.floor(Math.random() * SCHEMES.length)]!);
+            const via = gradientMiddleStop(from, to);
+            setBackgroundGradient(from, to, nextAngle(), via);
           }}
         >
           {t("editor.autoBackground")}

@@ -48,7 +48,10 @@ export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Pro
       <button
         type="button"
         className="btn"
-        onClick={() => setScene(randomSceneStyle(), true)}
+        onClick={() => {
+          const palette = useEditorStore.getState().scenePalette ?? [];
+          setScene(randomSceneStyle(Math.random, palette.length ? palette : undefined), true);
+        }}
         title={t("templates.surpriseTitle")}
         style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, padding: "6px 10px" }}
       >

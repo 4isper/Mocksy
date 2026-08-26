@@ -210,29 +210,85 @@ function hueDistance(a: number, b: number): number {
   return Math.min(d, 360 - d);
 }
 
+/** Interpolates two hues along the shorter arc (handles the 360° wrap). */
+function hueLerp(a: number, b: number, t: number): number {
+  const delta = ((b - a + 540) % 360) - 180;
+  return (a + delta * t + 360) % 360;
+}
+
+/** Inverse of hexToHsl. h in [0,360), s/l in [0,100]. Writes an "#rrggbb". */
+export function hslToHex(h: number, s: number, l: number): string {
+  h = ((h % 360) + 360) % 360;
+  s = Math.max(0, Math.min(100, s)) / 100;
+  l = Math.max(0, Math.min(100, l)) / 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  if (h < 60) [r, g, b] = [c, x, 0];
+  else if (h < 120) [r, g, b] = [x, c, 0];
+  else if (h < 180) [r, g, b] = [0, c, x];
+  else if (h < 240) [r, g, b] = [0, x, c];
+  else if (h < 300) [r, g, b] = [x, 0, c];
+  else [r, g, b] = [c, 0, x];
+  return rgbToHex(Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255));
+}
+
+/** Returns a copy of the color with its hue rotated by `deg` degrees. */
+export function rotateHue(hex: string, deg: number): string {
+  const { h, s, l } = hexToHsl(hex);
+  return hslToHex(h + deg, s, l);
+}
+
+/** Midpoint between two colors: averaged sat/light, hue along the shorter arc.
+ *  Produces a pleasant 3rd gradient stop that doesn't just blend in RGB. */
+export function gradientMiddleStop(from: string, to: string): string | null {
+  const a = hexToRgb(from);
+  const b = hexToRgb(to);
+  if (!a || !b) return null;
+  const ah = hexToHsl(from);
+  const bh = hexToHsl(to);
+  return hslToHex(hueLerp(ah.h, bh.h, 0.5), (ah.s + bh.s) / 2, (ah.l + bh.l) / 2);
+}
+
+export type HueScheme = "complementary" | "analogous" | "triadic";
+
+/** Hue offsets (degrees) each scheme targets relative to the dominant color. */
+const SCHEME_OFFSET: Record<HueScheme, number[]> = {
+  complementary: [180],
+  analogous: [-30, 30],
+  triadic: [-120, 120]
+};
+
 /**
- * Picks two well-separated colors from a palette to form a pleasant gradient.
- * Uses HSL to find the color closest to complementary (hue + 180°) of the
- * dominant color, preferring vibrant and balanced colors. Falls back to the
- * palette extremes when no good harmonic pair is found.
+ * Picks a two-color gradient from a palette following a color-harmony scheme.
+ * The dominant color anchors one end; the other end is the palette color whose
+ * hue best matches any of the scheme's target offsets, biased toward vibrant,
+ * balanced colors. Falls back to the brand gradient for an empty palette and to
+ * a duplicated color for a single-color palette. Deterministic for a given
+ * palette (no internal randomness) so callers can pick a scheme per click.
  */
-export function pickGradientPair(colors: string[]): [string, string] {
+export function pickHarmonicPair(colors: string[], scheme: HueScheme = "complementary"): [string, string] {
   if (colors.length === 0) return ["#1d4ed8", "#7c3aed"];
   if (colors.length === 1) return [colors[0]!, colors[0]!];
 
-  const hslList = colors.map(c => ({ hex: c, ...hexToHsl(c) }));
-  const dominant = hslList[0]!;
-  const targetHue = (dominant.h + 180) % 360;
+  const list = colors.map((c) => ({ hex: c, ...hexToHsl(c) }));
+  const dominant = list[0]!;
+  const offsets = SCHEME_OFFSET[scheme];
 
-  let best = hslList[1]!;
+  let best = list[1]!;
   let bestScore = -Infinity;
-  for (const c of hslList) {
+  for (const c of list) {
     if (c.hex === dominant.hex) continue;
-    const hueDist = hueDistance(c.h, targetHue);
-    const hueScore = 1 - hueDist / 180;
-    const satScore = c.s / 100;
-    const lightScore = 1 - Math.abs(c.l - 50) / 50;
-    const score = hueScore * 0.6 + satScore * 0.2 + lightScore * 0.2;
+    const score = Math.max(
+      ...offsets.map((o) => {
+        const target = (dominant.h + o + 360) % 360;
+        const hueScore = 1 - hueDistance(c.h, target) / 180;
+        return hueScore * 0.6 + (c.s / 100) * 0.2 + (1 - Math.abs(c.l - 50) / 50) * 0.2;
+      })
+    );
     if (score > bestScore) {
       bestScore = score;
       best = c;
@@ -241,6 +297,15 @@ export function pickGradientPair(colors: string[]): [string, string] {
 
   if (best.hex === dominant.hex) return [dominant.hex, colors[colors.length - 1]!];
   return [dominant.hex, best.hex];
+}
+
+/**
+ * Picks a complementary two-color gradient from a palette (dominant color +
+ * the hue 180° opposite). Retained for backward compatibility; it is now a thin
+ * wrapper over pickHarmonicPair with the complementary scheme.
+ */
+export function pickGradientPair(colors: string[]): [string, string] {
+  return pickHarmonicPair(colors, "complementary");
 }
 
 /**

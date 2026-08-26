@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BackgroundControls } from "@/components/editor/BackgroundControls";
-import { pickBestSolid, pickGradientPair } from "@/lib/media/palette";
+import { pickBestSolid, pickHarmonicPair } from "@/lib/media/palette";
 import { loadMediaFromFile } from "@/lib/media/loadFile";
 
 vi.mock("@/lib/media/loadFile", () => ({
@@ -12,12 +12,13 @@ vi.mock("@/lib/media/loadFile", () => ({
 
 vi.mock("@/lib/media/palette", () => ({
   pickBestSolid: vi.fn(() => "#123456"),
-  pickGradientPair: vi.fn(() => ["#111111", "#222222"]),
+  pickHarmonicPair: vi.fn(() => ["#111111", "#222222"]),
+  gradientMiddleStop: vi.fn(() => "#abcdef"),
 }));
 
 const mockLoad = vi.mocked(loadMediaFromFile);
 const mockPickBest = vi.mocked(pickBestSolid);
-const mockPickPair = vi.mocked(pickGradientPair);
+const mockPickPair = vi.mocked(pickHarmonicPair);
 
 afterEach(() => {
   cleanup();
@@ -264,8 +265,12 @@ describe("BackgroundControls", () => {
     mockPickPair.mockReturnValue(["#aa0000", "#0000aa"]);
     render(<BackgroundControls {...baseProps} scenePalette={["#aa0000", "#0000aa"]} />);
     await userEvent.click(screen.getByText("editor.autoBackground"));
-    expect(mockPickPair).toHaveBeenCalledWith(["#aa0000", "#0000aa"]);
-    expect(setters.setBackgroundGradient).toHaveBeenCalledWith("#aa0000", "#0000aa", expect.any(Number));
+    expect(mockPickPair).toHaveBeenCalledWith(["#aa0000", "#0000aa"], expect.any(String));
+    const call = setters.setBackgroundGradient.mock.calls.find((c) => c[0] === "#aa0000" && c[1] === "#0000aa");
+    expect(call).toBeDefined();
+    expect(call![2]).toEqual(expect.any(Number));
+    // A harmonic middle stop is added for a richer 3-stop blend.
+    expect(call![3]).toMatch(/^#/);
   });
 
   it("applies an auto solid from the media palette", async () => {

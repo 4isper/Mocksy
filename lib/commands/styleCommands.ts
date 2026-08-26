@@ -24,7 +24,10 @@ export function createStyleCommands(
       label: t("commandPalette.surpriseStyle"),
       description: t("commandPalette.surpriseStyleDesc"),
       keywords: ["surprise", "random", "shuffle", "dice", "style", "background", "inspiration"],
-      action: () => useEditorStore.getState().setScene(randomSceneStyle()),
+      action: () => {
+        const palette = useEditorStore.getState().scenePalette ?? [];
+        useEditorStore.getState().setScene(randomSceneStyle(Math.random, palette.length ? palette : undefined));
+      },
     },
   ];
 }
