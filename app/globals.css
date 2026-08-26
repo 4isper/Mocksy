@@ -1267,7 +1267,8 @@ body.panel-resizing {
 }
 
 .toolbar .btn-tb-icon {
-  width: 28px;
+  width: 30px;
+  min-height: 30px;
   padding: 0;
 }
 
@@ -1880,8 +1881,10 @@ body.panel-resizing {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  min-width: 28px;
+  min-height: 28px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border-radius: 6px;
   border: 1px solid transparent;
@@ -2000,7 +2003,20 @@ body.panel-resizing {
   }
   .toolbar .btn-tb-icon {
     width: 38px;
+    min-height: 38px;
     padding: 0;
+  }
+
+  /* Context menu and icon buttons: ensure 44px touch targets on touch devices. */
+  [role="menu"] button {
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+  .btn-icon {
+    min-width: 36px;
+    min-height: 36px;
+    width: 36px;
+    height: 36px;
   }
 
   /* Segmented controls (theme switcher, export dialog, annotation tools). */

@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { describeHistoryStep } from "@/lib/state/historyLabels";
 
+const HISTORY_CAP = 100;
+
 export function HistoryPanel() {
   const t = useTranslations();
   const past = useEditorStore((s) => s.past);
@@ -15,6 +17,7 @@ export function HistoryPanel() {
   // Timeline = past (done) + present (current) + future (redoable).
   const states = useMemo(() => [...past, scene, ...future], [past, scene, future]);
   const currentIndex = past.length;
+  const atCap = past.length >= HISTORY_CAP;
 
   const currentRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
@@ -49,6 +52,9 @@ export function HistoryPanel() {
       </ol>
       {states.length === 1 ? (
         <span className="history-empty">{t("history.empty")}</span>
+      ) : null}
+      {atCap ? (
+        <span className="history-empty" style={{ fontSize: 11, color: "var(--text-dim)" }}>{t("history.capReached")}</span>
       ) : null}
     </div>
   );

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useProjectsStore, resetProjectCacheForTests, warmProjectCache } from "@/lib/state/projectsStore";
+import { useProjectsStore, resetProjectCacheForTests, warmProjectCache, STORAGE_FULL_ERROR_KEY } from "@/lib/state/projectsStore";
 import { initialScene, makeDemoScene, useEditorStore } from "@/lib/state/editorStore";
 import { readSharedSceneFromUrl, sceneToShareUrl } from "@/lib/state/shareState";
 import { createFakeIndexedDB, FakeFileReader } from "./helpers/fakeIdb";
@@ -231,7 +231,7 @@ describe("projectsStore", () => {
     useProjectsStore.getState().createProject("Will fail");
     storage.setItem = origSetItem;
     expect(useProjectsStore.getState().saveError).toBe(
-      "Storage full — recent changes may not be saved"
+      STORAGE_FULL_ERROR_KEY
     );
   });
 
@@ -546,7 +546,7 @@ describe("projectsStore", () => {
     useProjectsStore.getState().createProject("Will fail");
     storage.setItem = origSetItem;
     expect(useProjectsStore.getState().saveError).toBe(
-      "Storage full — recent changes may not be saved"
+      STORAGE_FULL_ERROR_KEY
     );
   });
 });

@@ -83,7 +83,7 @@ export function EditorToolbar({
       {videoExportStatus ? (
         <div className="export-status">
           <span className="label">{videoExportStatus}</span>
-          <div className="progress">
+          <div className="progress" role="progressbar" aria-valuenow={Math.round(videoExportProgress)} aria-valuemin={0} aria-valuemax={100} aria-label={videoExportStatus}>
             <div style={{ width: `${videoExportProgress}%` }} />
           </div>
           <span className="pct">{Math.round(videoExportProgress)}%</span>
@@ -95,7 +95,7 @@ export function EditorToolbar({
       {gifExportStatus ? (
         <div className="export-status">
           <span className="label">{gifExportStatus}</span>
-          <div className="progress">
+          <div className="progress" role="progressbar" aria-valuenow={Math.round(gifExportProgress)} aria-valuemin={0} aria-valuemax={100} aria-label={gifExportStatus}>
             <div style={{ width: `${gifExportProgress}%` }} />
           </div>
           <span className="pct">{Math.round(gifExportProgress)}%</span>
@@ -105,7 +105,7 @@ export function EditorToolbar({
         </div>
       ) : null}
       {saveToast ? (
-        <span className="toast-status" role={saveStatusType === "error" ? "alert" : undefined} style={{ color: saveStatusType === "error" ? "var(--danger)" : saveStatusType === "success" ? "var(--success)" : "var(--text-secondary)", fontSize: 12, whiteSpace: "nowrap" }}>
+        <span className="toast-status" role={saveStatusType === "error" ? "alert" : "status"} style={{ color: saveStatusType === "error" ? "var(--danger)" : saveStatusType === "success" ? "var(--success)" : "var(--text-secondary)", fontSize: 12, whiteSpace: "nowrap" }}>
           {saveToast}
         </span>
       ) : null}

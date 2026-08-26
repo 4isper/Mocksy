@@ -11,6 +11,9 @@ import { decodeProjectsState, encodeProjectsState, stateNeedsMediaOffload, sweep
 const STORAGE_KEY = "mocksy-projects";
 const AUTOSAVE_KEY = "mocksy-scene";
 
+/** Well-known error key set by persist() when localStorage quota is exceeded. */
+export const STORAGE_FULL_ERROR_KEY = "editor.storageFull";
+
 /**
  * Decoded-once view of localStorage. `hydrate` must stay synchronous (the
  * editor bootstraps from its return value), so the async IndexedDB decode of
@@ -145,7 +148,7 @@ async function persist(state: ProjectsStoreState): Promise<boolean> {
       err instanceof DOMException &&
       (err.name === "QuotaExceededError" || err.name === "NS_ERROR_DOM_QUOTA_REACHED")
     ) {
-      useProjectsStore.setState({ saveError: "Storage full — recent changes may not be saved" });
+      useProjectsStore.setState({ saveError: STORAGE_FULL_ERROR_KEY });
     }
     return false;
   }

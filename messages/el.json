@@ -347,7 +347,12 @@
     "screenOsAndroid": "Android",
     "screenOsDesktop": "Desktop",
     "screenResetDefault": "Reset to default",
-    "screenApplyToAll": "Apply to all devices"
+    "screenApplyToAll": "Apply to all devices",
+    "panelsTab": "Panels",
+    "moveUpDisabled": "Already at the top",
+    "moveDownDisabled": "Already at the bottom",
+    "removeLayerLocked": "Unlock the layer to remove it",
+    "storageFull": "Storage full — recent changes may not be saved"
   },
   "frame": {
     "none": "Κανένα",
@@ -433,7 +438,8 @@
     "blur": "Blur",
     "blurStrength": "Blur strength ({val}px)",
     "stickers": "Stickers",
-    "animate": "Animate on preview"
+    "animate": "Animate on preview",
+    "distributeNeedsAnnotations": "Select 3+ annotations to distribute"
   },
   "video": {
     "options": "Ρυθμίσεις βίντεο",
@@ -536,7 +542,8 @@
     },
     "zipVideo": "Video ZIP (all frames)",
     "exportingZipVideo": "Exporting videos…",
-    "jpeg": "JPEG"
+    "jpeg": "JPEG",
+    "pdfRasterFallback": "Vector export unavailable — exported as raster image instead."
   },
   "shortcuts": {
     "title": "Συντομεύσεις πληκτρολογίου",
@@ -840,7 +847,8 @@
       "screen": "Changed screen chrome",
       "watermark": "Changed watermark",
       "canvas": "Changed canvas"
-    }
+    },
+    "capReached": "Oldest changes are dropped after 100 steps"
   },
   "text": {
     "content": "Content",

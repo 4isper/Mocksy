@@ -12,6 +12,7 @@ export interface EditorExportApi {
   gifExportStatus: string | null;
   gifExportProgress: number;
   exportError: string | null;
+  exportWarning: string | null;
   copyStatus: string | null;
   isExporting: boolean;
   copyShareUrl: () => Promise<void>;
@@ -60,6 +61,7 @@ export function useEditorExport(
   const [gifExportProgress, setGifExportProgress] = useState(0);
   const [exportError, setExportError] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [exportWarning, setExportWarning] = useState<string | null>(null);
   const [shareQrUrl, setShareQrUrl] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -85,15 +87,21 @@ export function useEditorExport(
   // stay pinned in the toolbar forever after a copy/export/share action.
   useEffect(() => {
     if (!copyStatus) return;
-    const id = setTimeout(() => setCopyStatus(null), 3200);
+    const id = setTimeout(() => setCopyStatus(null), 5000);
     return () => clearTimeout(id);
   }, [copyStatus]);
 
   useEffect(() => {
     if (!exportError) return;
-    const id = setTimeout(() => setExportError(null), 6000);
+    const id = setTimeout(() => setExportError(null), 15000);
     return () => clearTimeout(id);
   }, [exportError]);
+
+  useEffect(() => {
+    if (!exportWarning) return;
+    const id = setTimeout(() => setExportWarning(null), 10000);
+    return () => clearTimeout(id);
+  }, [exportWarning]);
 
   const copyShareUrl = useCallback(async () => {
     try {
@@ -177,9 +185,12 @@ export function useEditorExport(
 
   const handleExportPdf = useCallback(() => {
     setExportError(null);
-    void Promise.resolve(exportPdf(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId)).then(
-      () => setCopyStatus(t("editor.exported"))
-    );
+    setExportWarning(null);
+    void Promise.resolve(
+      exportPdf(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId, (key) => {
+        setExportWarning(t(key as Parameters<typeof t>[0]));
+      })
+    ).then(() => setCopyStatus(t("editor.exported")));
   }, [scene, exportScale, customExportSize, activeLayerId, t]);
 
   const handleExportZip = useCallback(async () => {
@@ -375,6 +386,7 @@ export function useEditorExport(
     gifExportStatus,
     gifExportProgress,
     exportError,
+    exportWarning,
     copyStatus,
     isExporting: videoExportStatus !== null || gifExportStatus !== null,
     copyShareUrl,

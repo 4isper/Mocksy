@@ -130,6 +130,8 @@ export function CommandPalette({
     }
   }, [filteredCommands, onClose, selectedIndex]);
 
+  const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+
   if (!isOpen) return null;
 
   return (
@@ -143,7 +145,7 @@ export function CommandPalette({
         aria-label={t("commandPalette.title")}
       >
         <div className="command-palette-header">
-          <kbd className="command-palette-kbd">⌘K</kbd>
+          <kbd className="command-palette-kbd">{isMac ? "⌘K" : "Ctrl+K"}</kbd>
           <input
             ref={inputRef}
             type="text"

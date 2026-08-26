@@ -87,7 +87,8 @@ export async function exportPdf(
   onError?: (message: string) => void,
   scale?: number,
   customSize?: ExportSize | null,
-  activeLayerId: string | null = scene.activeLayerId
+  activeLayerId: string | null = scene.activeLayerId,
+  onWarning?: (message: string) => void
 ) {
   const pageSize = pdfPageSize(scene, customSize);
   let blob: Blob | null = null;
@@ -107,6 +108,7 @@ export async function exportPdf(
     }
     if (vectorError instanceof Error && !/Preview area not found/.test(vectorError.message)) {
       console.warn("Vector PDF export failed, used raster fallback.", vectorError);
+      onWarning?.("pdfRasterFallback");
     }
   }
 

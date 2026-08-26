@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { useEditorExport } from "@/lib/hooks/useEditorExport";
 import { useAutosaveStatus } from "@/lib/hooks/useAutosaveStatus";
+import { STORAGE_FULL_ERROR_KEY } from "@/lib/state/projectsStore";
 import { warmUpFfmpeg } from "@/lib/export/exportVideo";
 import { useEditorShortcuts } from "@/lib/hooks/useEditorShortcuts";
 import { useClipboardPaste } from "@/lib/hooks/useClipboardPaste";
@@ -47,6 +48,8 @@ export function EditorShell() {
   const setCustomExportSize = useEditorStore((s) => s.setCustomExportSize);
   const setAspectRatio = useEditorStore((s) => s.setAspectRatio);
   const saveError = useProjectsStore((s) => s.saveError);
+
+  const translatedSaveError = saveError === STORAGE_FULL_ERROR_KEY ? t("editor.storageFull") : saveError;
   const fullscreenPreview = useEditorStore((s) => s.fullscreenPreview);
   const setFullscreenPreview = useEditorStore((s) => s.setFullscreenPreview);
   const mobileSheet = useEditorStore((s) => s.mobileSheet);
@@ -189,11 +192,13 @@ export function EditorShell() {
     ? { msg: exportApi.copyStatus, type: "success" as const }
     : exportApi.exportError
       ? { msg: exportApi.exportError, type: "error" as const }
-      : saveError
-        ? { msg: saveError, type: "error" as const }
-        : saveToast
-          ? { msg: saveToast, type: "info" as const }
-          : null;
+      : exportApi.exportWarning
+        ? { msg: exportApi.exportWarning, type: "info" as const }
+        : saveError
+          ? { msg: translatedSaveError, type: "error" as const }
+          : saveToast
+            ? { msg: saveToast, type: "info" as const }
+            : null;
 
   useEffect(() => () => {
     if (resetNoticeTimer.current) clearTimeout(resetNoticeTimer.current);

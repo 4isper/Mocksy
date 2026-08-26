@@ -204,7 +204,7 @@ export function LayerItem({
         type="button"
         className="btn-icon tooltip"
         aria-label={t("editor.moveUp")}
-        data-tooltip={t("editor.moveUp")}
+        data-tooltip={index === 0 ? t("editor.moveUpDisabled") : t("editor.moveUp")}
         disabled={index === 0}
         onClick={(e) => {
           e.stopPropagation();
@@ -217,7 +217,7 @@ export function LayerItem({
         type="button"
         className="btn-icon tooltip"
         aria-label={t("editor.moveDown")}
-        data-tooltip={t("editor.moveDown")}
+        data-tooltip={index === total - 1 ? t("editor.moveDownDisabled") : t("editor.moveDown")}
         disabled={index === total - 1}
         onClick={(e) => {
           e.stopPropagation();
@@ -230,7 +230,7 @@ export function LayerItem({
         type="button"
         className="btn-icon tooltip"
         aria-label={t("editor.removeLayer", { label })}
-        data-tooltip={t("editor.removeLayer", { label })}
+        data-tooltip={layer.locked ? t("editor.removeLayerLocked") : t("editor.removeLayer", { label })}
         disabled={total <= 1 || layer.locked}
         onClick={(e) => {
           e.stopPropagation();

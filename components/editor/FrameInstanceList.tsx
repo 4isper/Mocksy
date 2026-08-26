@@ -141,7 +141,7 @@ export function FrameInstanceList({
                       setFrameInstances(next);
                     }}
                     aria-label={t("editor.moveUp")}
-                    data-tooltip={t("editor.moveUp")}
+                    data-tooltip={i === 0 ? t("editor.moveUpDisabled") : t("editor.moveUp")}
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 10V2M6 2L2 6M6 2L10 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </button>
@@ -155,7 +155,7 @@ export function FrameInstanceList({
                       setFrameInstances(next);
                     }}
                     aria-label={t("editor.moveDown")}
-                    data-tooltip={t("editor.moveDown")}
+                    data-tooltip={i === scene.frameInstances.length - 1 ? t("editor.moveDownDisabled") : t("editor.moveDown")}
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M6 10l4-4M6 10l-4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </button>

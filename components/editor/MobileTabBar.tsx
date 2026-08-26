@@ -66,7 +66,7 @@ export function MobileTabBar({ onExport }: { onExport: () => void }) {
         onClick={() => toggle("right")}
       >
         {icons.layers}
-        <span>{t("editor.layers")}</span>
+        <span>{t("editor.panelsTab")}</span>
       </button>
       <button
         type="button"
