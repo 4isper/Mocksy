@@ -35,8 +35,10 @@ export function ControlPanel() {
     setWatermarkImage,
     setScreenChrome,
     setFrameInstanceScreen,
-    clearFrameInstanceScreen,
-    applyInstanceScreenToAll,
+    setFrameInstanceFloorReflection,
+    setFloorReflection,
+    clearFrameInstanceOverrides,
+    applyInstanceToAll,
     activeFrameInstanceId
   } = useEditorStore(
     useShallow((s) => ({
@@ -57,8 +59,10 @@ export function ControlPanel() {
       setWatermarkImage: s.setWatermarkImage,
       setScreenChrome: s.setScreenChrome,
       setFrameInstanceScreen: s.setFrameInstanceScreen,
-      clearFrameInstanceScreen: s.clearFrameInstanceScreen,
-      applyInstanceScreenToAll: s.applyInstanceScreenToAll,
+      setFrameInstanceFloorReflection: s.setFrameInstanceFloorReflection,
+      setFloorReflection: s.setFloorReflection,
+      clearFrameInstanceOverrides: s.clearFrameInstanceOverrides,
+      applyInstanceToAll: s.applyInstanceToAll,
       activeFrameInstanceId: s.activeFrameInstanceId
     }))
   );
@@ -70,6 +74,9 @@ export function ControlPanel() {
   const onScreenPatch = editingInstance
     ? (patch: Partial<import("@/lib/types/editor").ScreenChrome>) => setFrameInstanceScreen(editingInstance.id, patch)
     : setScreenChrome;
+  const floorReflection = editingInstance?.floorReflection ?? scene.floorReflection;
+  const onFloorReflection = (on: boolean) =>
+    editingInstance ? setFrameInstanceFloorReflection(editingInstance.id, on) : setFloorReflection(on);
 
   return (
     <div id="control-panel" className="panel control-panel" style={{ padding: 16, display: "grid", gap: 12 }}>
@@ -149,10 +156,10 @@ export function ControlPanel() {
           setScreenGlare={(on) => useEditorStore.getState().setScreenGlare(on)}
           scopeHint={editingInstance ? t("editor.screenScopeSelected") : t("editor.screenScopeAll")}
           resolvedOs={(editingInstance?.screen ?? scene.screen).os ?? frameOs(editingInstance?.frame ?? scene.frame)}
-          floorReflection={scene.floorReflection}
-          setFloorReflection={(on) => useEditorStore.getState().setFloorReflection(on)}
-          onResetScreen={editingInstance ? () => clearFrameInstanceScreen(editingInstance.id) : undefined}
-          onApplyToAll={editingInstance ? () => applyInstanceScreenToAll(editingInstance.id) : undefined}
+          floorReflection={floorReflection}
+          setFloorReflection={onFloorReflection}
+          onResetScreen={editingInstance ? () => clearFrameInstanceOverrides(editingInstance.id) : undefined}
+          onApplyToAll={editingInstance ? () => applyInstanceToAll(editingInstance.id) : undefined}
         />
       </Section>
     </div>

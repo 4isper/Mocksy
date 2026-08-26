@@ -205,7 +205,8 @@ function normalizeFrameInstance(raw: unknown, fallback: FrameInstance, sceneScre
     layerId: typeof r.layerId === "string" ? r.layerId : null,
     orientation: r.orientation === "landscape" ? "landscape" : r.orientation === "portrait" ? "portrait" : undefined,
     material: r.material === "silver" || r.material === "white" ? r.material : undefined,
-    screen: r.screen != null && typeof r.screen === "object" ? normalizeScreenChrome(r.screen, sceneScreen, r.frame as MockupFrame | undefined) : undefined
+    screen: r.screen != null && typeof r.screen === "object" ? normalizeScreenChrome(r.screen, sceneScreen, r.frame as MockupFrame | undefined) : undefined,
+    floorReflection: typeof r.floorReflection === "boolean" ? r.floorReflection : undefined
   };
 }
 

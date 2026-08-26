@@ -329,7 +329,7 @@ export function FrameInstanceGrid({
               outlineOffset: 4,
               borderRadius: 4,
               touchAction: "none",
-              ...(scene.floorReflection
+              ...(inst.floorReflection ?? scene.floorReflection
                 ? ({ WebkitBoxReflect: "below 0 linear-gradient(transparent 45%, rgba(255,255,255,0.30))" } as CSSProperties)
                 : {})
             } as CSSProperties}

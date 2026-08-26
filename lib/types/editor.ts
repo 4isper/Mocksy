@@ -139,6 +139,9 @@ export interface FrameInstance {
    *  omitted the instance inherits the scene-level `screen` default. Stored
    *  separately from the scene so each device can have its own decoration. */
   screen?: ScreenChrome;
+  /** Per-device floor reflection under the device. When omitted the instance
+   *  inherits the scene-level `floorReflection` default. */
+  floorReflection?: boolean;
 }
 
 /** A user-uploaded SVG device skin. Rendered as an overlay frame whose

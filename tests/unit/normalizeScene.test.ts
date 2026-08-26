@@ -526,4 +526,17 @@ describe("normalizeScene", () => {
     expect(s.frameInstances[0]!.screen!.theme).toBe("dark");
     expect(typeof s.frameInstances[0]!.screen!.time).toBe("string");
   });
+
+  it("preserves a per-instance floor reflection override (including an explicit false)", () => {
+    const s = normalizeScene({
+      floorReflection: true,
+      frameInstances: [
+        { id: "f1", frame: "iphone", x: 0, y: 0, scale: 1, floorReflection: false },
+        { id: "f2", frame: "iphone", x: 0.5, y: 0.5, scale: 1 }
+      ]
+    });
+    expect(s.frameInstances[0]!.floorReflection).toBe(false);
+    // f2 has no override and stays undefined (inherits the scene default).
+    expect(s.frameInstances[1]!.floorReflection).toBeUndefined();
+  });
 });

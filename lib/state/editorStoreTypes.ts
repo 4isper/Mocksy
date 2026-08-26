@@ -251,10 +251,12 @@ export interface EditorStoreState {
   setScreenChrome: (patch: Partial<import("@/lib/types/editor").ScreenChrome>) => void;
   /** Patches the screen chrome of one frame instance (independent per device). */
   setFrameInstanceScreen: (id: string, patch: Partial<import("@/lib/types/editor").ScreenChrome>) => void;
-  /** Removes a frame instance's screen override so it inherits the scene default. */
-  clearFrameInstanceScreen: (id: string) => void;
-  /** Copies a device's effective screen chrome to the scene default and clears all overrides. */
-  applyInstanceScreenToAll: (id: string) => void;
+  /** Patches the floor reflection of one frame instance (independent per device). */
+  setFrameInstanceFloorReflection: (id: string, on: boolean) => void;
+  /** Removes a frame instance's screen + floor-reflection overrides. */
+  clearFrameInstanceOverrides: (id: string) => void;
+  /** Copies a device's effective screen chrome and floor reflection to the scene defaults and clears all overrides. */
+  applyInstanceToAll: (id: string) => void;
   /** Toggles the screen-glare light sweep. */
   setScreenGlare: (on: boolean) => void;
   /** Toggles the floor reflection under the device. */

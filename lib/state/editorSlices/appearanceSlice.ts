@@ -19,8 +19,9 @@ export type AppearanceSlice = Pick<
   | "setWatermarkImage"
   | "setScreenChrome"
   | "setFrameInstanceScreen"
-  | "clearFrameInstanceScreen"
-  | "applyInstanceScreenToAll"
+  | "setFrameInstanceFloorReflection"
+  | "clearFrameInstanceOverrides"
+  | "applyInstanceToAll"
   | "setScreenGlare"
   | "setFloorReflection"
   | "setBrowserUrl"
@@ -86,29 +87,45 @@ export function createAppearanceSlice(set: EditorStoreSetter): AppearanceSlice {
           "screen"
         );
       }),
-    // Drops a device's chrome override so it inherits the scene default again.
-    clearFrameInstanceScreen: (id) =>
+    // Per-device floor reflection toggle (creates an override seeded from the
+    // current effective value so the first edit keeps the other devices' state).
+    setFrameInstanceFloorReflection: (id, on) =>
+      set((s) => {
+        const inst = s.scene.frameInstances.find((i) => i.id === id);
+        if (!inst) return {};
+        return pushHistory(
+          s,
+          { ...s.scene, frameInstances: s.scene.frameInstances.map((i) => (i.id === id ? { ...i, floorReflection: on } : i)) },
+          "screen"
+        );
+      }),
+    // Drops a device's screen + floor-reflection overrides so it inherits the
+    // scene defaults again.
+    clearFrameInstanceOverrides: (id) =>
       set((s) => {
         if (!s.scene.frameInstances.some((i) => i.id === id)) return {};
         return pushHistory(
           s,
-          { ...s.scene, frameInstances: s.scene.frameInstances.map((i) => (i.id === id ? { ...i, screen: undefined } : i)) },
+          { ...s.scene, frameInstances: s.scene.frameInstances.map((i) => (i.id === id ? { ...i, screen: undefined, floorReflection: undefined } : i)) },
           "screen"
         );
       }),
-    // Copies the selected device's effective chrome to the scene default and
-    // clears every instance override, so all devices share that configuration.
-    applyInstanceScreenToAll: (id) =>
+    // Copies the selected device's effective screen chrome and floor reflection
+    // to the scene defaults and clears every instance override, so all devices
+    // share that configuration.
+    applyInstanceToAll: (id) =>
       set((s) => {
         const inst = s.scene.frameInstances.find((i) => i.id === id);
         if (!inst) return {};
-        const effective = inst.screen ?? s.scene.screen;
+        const screen = inst.screen ?? s.scene.screen;
+        const floorReflection = inst.floorReflection ?? s.scene.floorReflection;
         return pushHistory(
           s,
           {
             ...s.scene,
-            screen: { ...effective },
-            frameInstances: s.scene.frameInstances.map((i) => ({ ...i, screen: undefined }))
+            screen: { ...screen },
+            floorReflection,
+            frameInstances: s.scene.frameInstances.map((i) => ({ ...i, screen: undefined, floorReflection: undefined }))
           },
           "screen"
         );

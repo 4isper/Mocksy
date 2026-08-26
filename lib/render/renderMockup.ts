@@ -187,12 +187,13 @@ export function renderMockupToCanvas(
       if (rotated) target.restore();
     };
 
-    if (scene.floorReflection) {
+    const reflected = visible.filter(({ inst }) => inst.floorReflection ?? scene.floorReflection);
+    if (reflected.length > 0) {
       paintFloorReflection(
         ctx,
-        visible.map(({ box }) => box),
+        reflected.map(({ box }) => box),
         (target) => {
-          for (const { box, inst } of visible) renderInstance(target, box, inst);
+          for (const { box, inst } of reflected) renderInstance(target, box, inst);
         },
         width,
         height

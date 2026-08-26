@@ -140,7 +140,7 @@ function gridItemHtml(scene: EditorScene, tiltPrefix: string, item: GridItemOpti
     `width: ${num((landscape ? inst.scale * native : inst.scale) * 100)}%;\nheight: auto;\n` +
     `aspect-ratio: ${landscape ? `${num(native)} / 1` : `1 / ${native}`};\n` +
     `transform: translate(-50%, -50%);`;
-  if (scene.floorReflection) {
+  if (inst.floorReflection ?? scene.floorReflection) {
     wrapperCss += "\n-webkit-box-reflect: below 0 linear-gradient(transparent 45%, rgba(255,255,255,0.30));";
   }
 

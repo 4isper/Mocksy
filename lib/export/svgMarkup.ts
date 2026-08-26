@@ -54,6 +54,8 @@ export interface SvgFrameGroup {
   /** On-screen chrome for this group (status bar / lock / home); per-device
    *  override when the instance sets one, else the scene default. */
   screen?: ScreenChrome;
+  /** Floor reflection for this group; per-device override else the scene default. */
+  floorReflection?: boolean;
   /** Text layer whose content fills the screen instead of media. */
   textLayer?: MediaLayer | null;
 }
@@ -407,23 +409,22 @@ export function buildSvgMarkup(scene: EditorScene, opts: SvgExportOptions): stri
       ? `<linearGradient id="glare-sweep" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.32"/><stop offset="0.3" stop-color="#fff" stop-opacity="0.14"/><stop offset="0.52" stop-color="#fff" stop-opacity="0"/></linearGradient>`
       : "",
     ...groups.map((g, i) => groupClipMarkup(g, i)),
-    ...(scene.floorReflection
-      ? groups.flatMap((g, i) => {
-          const r = i + groups.length;
-          const boxBottom = g.box.y + g.box.height;
-          const bottom = num(boxBottom);
-          return [
-            groupClipMarkup(g, r),
-            // Mirrors paintFloorReflection (renderMockup.ts): full alpha at the
-            // device's bottom edge fading to 0 by RENDER.reflectionFade of the
-            // box height BELOW it. The axis must point down into the mirrored
-            // content — pointing up would pad-clamp every sample to the first
-            // stop and hide the whole reflection.
-            `<linearGradient id="refl-fade-${r}" x1="0" y1="${bottom}" x2="0" y2="${num(boxBottom + g.box.height * RENDER.reflectionFade)}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="${RENDER.reflectionOpacity}"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>`,
-            `<mask id="refl-mask-${r}"><rect x="${num(g.box.x - g.box.width)}" y="${bottom}" width="${num(g.box.width * 3)}" height="${num(g.box.height * 2)}" fill="url(#refl-fade-${r})"/></mask>`
-          ];
-        })
-      : []),
+    ...(groups.flatMap((g, i) => {
+      if (!(g.floorReflection ?? scene.floorReflection)) return [];
+      const r = i + groups.length;
+      const boxBottom = g.box.y + g.box.height;
+      const bottom = num(boxBottom);
+      return [
+        groupClipMarkup(g, r),
+        // Mirrors paintFloorReflection (renderMockup.ts): full alpha at the
+        // device's bottom edge fading to 0 by RENDER.reflectionFade of the
+        // box height BELOW it. The axis must point down into the mirrored
+        // content — pointing up would pad-clamp every sample to the first
+        // stop and hide the whole reflection.
+        `<linearGradient id="refl-fade-${r}" x1="0" y1="${bottom}" x2="0" y2="${num(boxBottom + g.box.height * RENDER.reflectionFade)}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="${RENDER.reflectionOpacity}"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>`,
+        `<mask id="refl-mask-${r}"><rect x="${num(g.box.x - g.box.width)}" y="${bottom}" width="${num(g.box.width * 3)}" height="${num(g.box.height * 2)}" fill="url(#refl-fade-${r})"/></mask>`
+      ];
+    })),
     opts.fontCss ? `<style>${opts.fontCss}</style>` : ""
   ].filter(Boolean);
 
@@ -432,7 +433,7 @@ export function buildSvgMarkup(scene: EditorScene, opts: SvgExportOptions): stri
   const sceneBase =
     `<g id="mocksy-scene">` +
     backgroundMarkup(scene, opts) +
-    (scene.floorReflection ? groups.map((g, i) => reflectionGroupMarkup(scene, g, i, groups.length)).join("") : "") +
+    (groups.map((g, i) => (g.floorReflection ?? scene.floorReflection ? reflectionGroupMarkup(scene, g, i, groups.length) : "")).filter(Boolean).join("")) +
     groups.map((g, i) => frameGroupMarkup(scene, g, i)).join("") +
     `</g>`;
 
