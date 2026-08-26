@@ -267,4 +267,16 @@ describe("buildSceneCss", () => {
     expect(css.screenChromeStyle.height).toContain("%");
     expect(css.screenChrome).toContain('preserveAspectRatio="xMidYMid meet"');
   });
+
+  it("resolves a per-instance screen override instead of the scene default", () => {
+    // Mirrors PreviewCanvas: each instance passes its own screen (override ?? default).
+    const scene = base({ frame: "iphone15", screen: { ...initialScene.screen, enabled: true, time: "9:41", style: "home" } });
+    const instanceScreen = { ...initialScene.screen, enabled: true, time: "12:07", style: "lock" as const, showClock: true };
+    const defaultCss = buildSceneCss({ ...scene, frame: "iphone15", screen: scene.screen });
+    const overrideCss = buildSceneCss({ ...scene, frame: "iphone15", screen: instanceScreen });
+    expect(defaultCss.screenChrome).toContain("9:41");
+    expect(defaultCss.screenChrome).not.toContain("12:07");
+    expect(overrideCss.screenChrome).toContain("12:07");
+    expect(overrideCss.screenChrome).not.toContain("9:41");
+  });
 });

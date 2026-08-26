@@ -881,6 +881,67 @@ describe("frame control", () => {
     expect(store().scene.frameInstances[1]!.x).toBe(0.5);
   });
 
+  it("setFrameInstanceScreen overrides only the targeted device and seeds from the scene default", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0, scale: 1, layerId: null },
+      { id: "fi2", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }
+    ]);
+    // Start from a known scene default.
+    store().setScreenChrome({ style: "home", theme: "light", showDock: true });
+    // Editing device fi1 creates an independent override seeded from the default.
+    store().setFrameInstanceScreen("fi1", { style: "lock", showClock: true });
+    expect(store().scene.frameInstances[0]!.screen).toMatchObject({ style: "lock", showClock: true });
+    // The seed kept the default's other fields (theme, showDock).
+    expect(store().scene.frameInstances[0]!.screen).toMatchObject({ theme: "light", showDock: true });
+    // The other device still inherits the scene default (no override).
+    expect(store().scene.frameInstances[1]!.screen).toBeUndefined();
+    // Editing the scene default later doesn't bleed into the override.
+    store().setScreenChrome({ showDock: false });
+    expect(store().scene.frameInstances[0]!.screen!.showDock).toBe(true);
+  });
+
+  it("setFrameInstanceScreen is a no-op for an unknown id", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0, scale: 1, layerId: null }
+    ]);
+    const before = store().scene.frameInstances;
+    store().setFrameInstanceScreen("nope", { enabled: false });
+    expect(store().scene.frameInstances).toBe(before);
+  });
+
+  it("clearFrameInstanceScreen drops the override so the device inherits the default", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0, scale: 1, layerId: null }
+    ]);
+    store().setScreenChrome({ style: "home" });
+    store().setFrameInstanceScreen("fi1", { style: "lock" });
+    expect(store().scene.frameInstances[0]!.screen!.style).toBe("lock");
+    store().clearFrameInstanceScreen("fi1");
+    expect(store().scene.frameInstances[0]!.screen).toBeUndefined();
+    expect(store().scene.frameInstances[0]!.id).toBe("fi1");
+  });
+
+  it("applyInstanceScreenToAll copies the device chrome to the default and clears other overrides", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0, scale: 1, layerId: null },
+      { id: "fi2", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }
+    ]);
+    store().setScreenChrome({ style: "home", theme: "light" });
+    store().setFrameInstanceScreen("fi1", { style: "lock", showClock: true });
+    store().setFrameInstanceScreen("fi2", { style: "statusBar" });
+    store().applyInstanceScreenToAll("fi1");
+    // Scene default now matches fi1's effective chrome.
+    expect(store().scene.screen.style).toBe("lock");
+    expect(store().scene.screen.showClock).toBe(true);
+    // All instance overrides are cleared; they inherit the new default.
+    expect(store().scene.frameInstances[0]!.screen).toBeUndefined();
+    expect(store().scene.frameInstances[1]!.screen).toBeUndefined();
+  });
+
   it("updateFrameInstance coalesces rapid calls into a single history entry", () => {
     reset();
     vi.useFakeTimers();

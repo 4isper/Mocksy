@@ -135,6 +135,10 @@ export interface FrameInstance {
   orientation?: FrameOrientation;
   /** Body material / finish; absent = graphite (the default skin). */
   material?: FrameMaterial;
+  /** Per-device on-screen chrome override (status bar, lock clock, dock). When
+   *  omitted the instance inherits the scene-level `screen` default. Stored
+   *  separately from the scene so each device can have its own decoration. */
+  screen?: ScreenChrome;
 }
 
 /** A user-uploaded SVG device skin. Rendered as an overlay frame whose

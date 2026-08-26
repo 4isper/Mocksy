@@ -129,7 +129,7 @@ function gridItemHtml(scene: EditorScene, tiltPrefix: string, item: GridItemOpti
   const inst = item.inst;
   const layer = scene.layers.find((l) => l.id === inst.layerId) ?? scene.layers[0];
   const css = buildSceneCss(
-    { ...scene, frame: inst.frame, frameMaterial: inst.material, layers: layer ? [layer] : [] },
+    { ...scene, frame: inst.frame, frameMaterial: inst.material, screen: inst.screen ?? scene.screen, layers: layer ? [layer] : [] },
     layer?.id ?? scene.activeLayerId
   );
   const native = frameInstAr(inst.frame, scene.customFrame, scene.aspectRatio) ?? 390 / 844;

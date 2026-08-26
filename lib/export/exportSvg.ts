@@ -158,6 +158,7 @@ export async function buildStandaloneSvg(
           opacity: layer?.opacity,
           orientation: box.rotation ? (box.rotation * 180) / Math.PI : undefined,
           frame: inst.frame,
+          screen: inst.screen ?? scene.screen,
           textLayer: isTextLayer(layer) ? layer : null
         });
       }
@@ -206,6 +207,7 @@ export async function buildStandaloneSvg(
         offsetY: activeLayer?.mediaOffsetY,
         rotation: activeLayer?.rotation ?? 0,
         frame: scene.frame,
+        screen: scene.screen,
         opacity: activeLayer?.opacity,
         textLayer: isTextLayer(activeLayer) ? activeLayer : null
       });

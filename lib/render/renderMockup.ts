@@ -1,6 +1,6 @@
 "use client";
 
-import type { EditorScene, MediaLayer } from "@/lib/types/editor";
+import type { EditorScene, MediaLayer, ScreenChrome } from "@/lib/types/editor";
 import { frameViewBox, getFrameSpec } from "@/lib/render/frames";
 import { RENDER, drawAnnotations, drawFrameAndMedia, drawWatermark } from "@/lib/render/canvasDrawing";
 import { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
@@ -25,7 +25,8 @@ function drawTiltedFrame(
   dpiScale: number,
   zoom: number,
   media: CanvasImageSource | null,
-  overlay: CanvasImageSource | null
+  overlay: CanvasImageSource | null,
+  screen: ScreenChrome = scene.screen
 ) {
   const padX = RENDER.shadowBlur * dpiScale * zoom + 4;
   const padY = (RENDER.shadowBlur + RENDER.shadowOffsetY) * dpiScale * zoom + 4;
@@ -50,7 +51,7 @@ function drawTiltedFrame(
     innerY: box.innerY - dy
   };
 
-  drawFrameAndMedia(octx, scene, spec, layer, localBox, dpiScale, zoom, media, overlay);
+  drawFrameAndMedia(octx, scene, spec, layer, localBox, dpiScale, zoom, media, overlay, screen);
 
   const quad = projectTiltedRect(
     { x: box.x - padX, y: box.y - padY, width: w, height: h },
@@ -179,9 +180,9 @@ export function renderMockupToCanvas(
         target.translate(-(box.x + box.width / 2), -(box.y + box.height / 2));
       }
       if (hasTilt(scene)) {
-        drawTiltedFrame(target, scene, instSpec, layer, box, dpiScale, instZoom, frameMedia, overlay);
+        drawTiltedFrame(target, scene, instSpec, layer, box, dpiScale, instZoom, frameMedia, overlay, inst.screen ?? scene.screen);
       } else {
-        drawFrameAndMedia(target, scene, instSpec, layer, box, dpiScale, instZoom, frameMedia, overlay);
+        drawFrameAndMedia(target, scene, instSpec, layer, box, dpiScale, instZoom, frameMedia, overlay, inst.screen ?? scene.screen);
       }
       if (rotated) target.restore();
     };

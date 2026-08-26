@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/lib/state/editorStore";
+import { frameOs } from "@/lib/render/frames";
 import { BackgroundControls } from "@/components/editor/BackgroundControls";
 import { WatermarkControls } from "@/components/editor/WatermarkControls";
 import { ScreenControls } from "@/components/editor/ScreenControls";
@@ -32,7 +33,11 @@ export function ControlPanel() {
     setWatermarkPosition,
     setWatermarkSize,
     setWatermarkImage,
-    setScreenChrome
+    setScreenChrome,
+    setFrameInstanceScreen,
+    clearFrameInstanceScreen,
+    applyInstanceScreenToAll,
+    activeFrameInstanceId
   } = useEditorStore(
     useShallow((s) => ({
       scene: s.scene,
@@ -50,9 +55,21 @@ export function ControlPanel() {
       setWatermarkPosition: s.setWatermarkPosition,
       setWatermarkSize: s.setWatermarkSize,
       setWatermarkImage: s.setWatermarkImage,
-      setScreenChrome: s.setScreenChrome
+      setScreenChrome: s.setScreenChrome,
+      setFrameInstanceScreen: s.setFrameInstanceScreen,
+      clearFrameInstanceScreen: s.clearFrameInstanceScreen,
+      applyInstanceScreenToAll: s.applyInstanceScreenToAll,
+      activeFrameInstanceId: s.activeFrameInstanceId
     }))
   );
+
+  // When a specific device is selected in a multi-frame scene, the Screen
+  // controls edit that device's own chrome; otherwise they edit the scene
+  // default that every instance without an override inherits.
+  const editingInstance = scene.frameInstances.find((i) => i.id === activeFrameInstanceId) ?? null;
+  const onScreenPatch = editingInstance
+    ? (patch: Partial<import("@/lib/types/editor").ScreenChrome>) => setFrameInstanceScreen(editingInstance.id, patch)
+    : setScreenChrome;
 
   return (
     <div id="control-panel" className="panel control-panel" style={{ padding: 16, display: "grid", gap: 12 }}>
@@ -126,10 +143,16 @@ export function ControlPanel() {
         )}
       >
         <ScreenControls
-          screen={scene.screen}
-          setScreenChrome={setScreenChrome}
+          screen={editingInstance?.screen ?? scene.screen}
+          setScreenChrome={onScreenPatch}
           screenGlare={scene.screenGlare}
           setScreenGlare={(on) => useEditorStore.getState().setScreenGlare(on)}
+          scopeHint={editingInstance ? t("editor.screenScopeSelected") : t("editor.screenScopeAll")}
+          resolvedOs={(editingInstance?.screen ?? scene.screen).os ?? frameOs(editingInstance?.frame ?? scene.frame)}
+          floorReflection={scene.floorReflection}
+          setFloorReflection={(on) => useEditorStore.getState().setFloorReflection(on)}
+          onResetScreen={editingInstance ? () => clearFrameInstanceScreen(editingInstance.id) : undefined}
+          onApplyToAll={editingInstance ? () => applyInstanceScreenToAll(editingInstance.id) : undefined}
         />
       </Section>
     </div>

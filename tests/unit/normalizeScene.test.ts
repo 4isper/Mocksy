@@ -503,4 +503,27 @@ describe("normalizeScene", () => {
     const s = normalizeScene({ layers: Array.from({ length: 5 }, (_, i) => ({ id: `l${i}` })) });
     expect(s.layers.length).toBe(5);
   });
+
+  it("preserves a per-instance screen override and leaves others inheriting the default", () => {
+    const s = normalizeScene({
+      screen: { style: "home", theme: "light", showDock: true },
+      frameInstances: [
+        { id: "f1", frame: "iphone", x: 0, y: 0, scale: 1, screen: { style: "lock", showClock: true } },
+        { id: "f2", frame: "iphone", x: 0.5, y: 0.5, scale: 1 }
+      ]
+    });
+    // f1 keeps its own override (seeded with the default's missing fields).
+    expect(s.frameInstances[0]!.screen).toMatchObject({ style: "lock", showClock: true, theme: "light", showDock: true });
+    // f2 has no override and stays undefined (inherits scene.screen at render).
+    expect(s.frameInstances[1]!.screen).toBeUndefined();
+  });
+
+  it("normalizes a malformed per-instance screen override", () => {
+    const s = normalizeScene({
+      frameInstances: [{ id: "f1", frame: "iphone", x: 0, y: 0, scale: 1, screen: { style: "bogus", theme: "sepia", time: 42 } }]
+    });
+    expect(s.frameInstances[0]!.screen!.style).toBe("lock");
+    expect(s.frameInstances[0]!.screen!.theme).toBe("dark");
+    expect(typeof s.frameInstances[0]!.screen!.time).toBe("string");
+  });
 });

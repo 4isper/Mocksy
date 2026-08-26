@@ -1,4 +1,4 @@
-import type { Annotation, EditorScene, MediaLayer, StylePreset } from "@/lib/types/editor";
+import type { Annotation, EditorScene, MediaLayer, ScreenChrome, StylePreset } from "@/lib/types/editor";
 import type { FrameBox } from "./frameGeometry";
 import { getFrameSpec, frameOs } from "@/lib/render/frames";
 import { createLayerCanvas, layerContext } from "@/lib/render/canvasFactory";
@@ -326,7 +326,8 @@ export function drawFrameAndMedia(  ctx: CanvasRenderingContext2D,
   dpiScale: number,
   zoom: number,
   media: CanvasImageSource | null,
-  overlay: CanvasImageSource | null
+  overlay: CanvasImageSource | null,
+  screen: ScreenChrome = scene.screen
 ) {
   const { x, y, width: frameW, height: frameH, outerRadius, innerX, innerY, innerW, innerH, innerRadius } = box;
   // Overlay screens clip to the skin's squircle cutout so the media fills the
@@ -407,10 +408,10 @@ export function drawFrameAndMedia(  ctx: CanvasRenderingContext2D,
 
   // On-screen decoration (status bar, lock clock, home dock) sits on top of
   // the media but under the device bezel, clipped to the rounded screen.
-  if (scene.screen.enabled) {
+  if (screen.enabled) {
     ctx.save();
     clipScreen();
-    drawScreenChrome(ctx, { ...scene.screen, os: frameOs(box.frame) }, innerX, innerY, innerW, innerH);
+    drawScreenChrome(ctx, { ...screen, os: frameOs(box.frame) }, innerX, innerY, innerW, innerH);
     ctx.restore();
   }
 

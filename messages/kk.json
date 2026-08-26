@@ -339,7 +339,15 @@
     "textLabel": "Text layer",
     "addFrame": "Add frame",
     "selectFrame": "Select frame {n}",
-    "layoutCount": "Count:"
+    "layoutCount": "Count:",
+    "screenScopeAll": "Applies to all devices",
+    "screenScopeSelected": "Applies to the selected device",
+    "screenOs": "Device system",
+    "screenOsIos": "iOS",
+    "screenOsAndroid": "Android",
+    "screenOsDesktop": "Desktop",
+    "screenResetDefault": "Reset to default",
+    "screenApplyToAll": "Apply to all devices"
   },
   "frame": {
     "none": "Ешқандай",

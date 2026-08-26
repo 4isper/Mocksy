@@ -193,7 +193,7 @@ function normalizeCustomFrame(raw: unknown): CustomFrame | null {
 }
 
 /** Normalizes one raw frame instance into a valid FrameInstance. */
-function normalizeFrameInstance(raw: unknown, fallback: FrameInstance): FrameInstance {
+function normalizeFrameInstance(raw: unknown, fallback: FrameInstance, sceneScreen: ScreenChrome): FrameInstance {
   if (!raw || typeof raw !== "object") return fallback;
   const r = raw as Record<string, unknown>;
   return {
@@ -204,7 +204,8 @@ function normalizeFrameInstance(raw: unknown, fallback: FrameInstance): FrameIns
     scale: num(r.scale, fallback.scale, 0.1, 5),
     layerId: typeof r.layerId === "string" ? r.layerId : null,
     orientation: r.orientation === "landscape" ? "landscape" : r.orientation === "portrait" ? "portrait" : undefined,
-    material: r.material === "silver" || r.material === "white" ? r.material : undefined
+    material: r.material === "silver" || r.material === "white" ? r.material : undefined,
+    screen: r.screen != null && typeof r.screen === "object" ? normalizeScreenChrome(r.screen, sceneScreen, r.frame as MockupFrame | undefined) : undefined
   };
 }
 
@@ -241,13 +242,17 @@ export function normalizeScene(raw: unknown): EditorScene {
     ? initialScene.frame
     : pick(r.frame, FRAMES, initialScene.frame);
 
+  // Normalized top-level screen — the default every instance without its own
+  // override inherits (and the seed used when an instance override is created).
+  const sceneScreen = normalizeScreenChrome(r.screen, initialScene.screen, frame);
+
   return {
     layers,
     activeLayerId: typeof r.activeLayerId === "string" ? r.activeLayerId : layers[0]?.id ?? null,
     frame,
     frameMaterial: r.frameMaterial === "silver" || r.frameMaterial === "white" ? r.frameMaterial : undefined,
     frameInstances: Array.isArray(r.frameInstances) && r.frameInstances.length > 0
-      ? r.frameInstances.slice(0, MAX_FRAME_INSTANCES).map((fi) => normalizeFrameInstance(fi, fallbackFrame))
+      ? r.frameInstances.slice(0, MAX_FRAME_INSTANCES).map((fi) => normalizeFrameInstance(fi, fallbackFrame, sceneScreen))
       : [],
     customFrame,
     stylePreset: pick(r.stylePreset, STYLE_PRESETS, initialScene.stylePreset),

@@ -1,4 +1,4 @@
-import type { Annotation, EditorScene, MediaLayer, MockupFrame } from "@/lib/types/editor";
+import type { Annotation, EditorScene, MediaLayer, MockupFrame, ScreenChrome } from "@/lib/types/editor";
 import { buildTextLayerSvg } from "@/lib/render/layerText";
 import { computeFrameBox, computeFrameInstances, type FrameBox } from "@/lib/render/frameGeometry";
 import { frameViewBox, frameOs, getFrameSpec, DEFAULT_VIEWBOX } from "@/lib/render/frames";
@@ -51,6 +51,9 @@ export interface SvgFrameGroup {
   orientation?: number;
   /** The frame this group represents, so chrome can be OS-specific. */
   frame?: MockupFrame;
+  /** On-screen chrome for this group (status bar / lock / home); per-device
+   *  override when the instance sets one, else the scene default. */
+  screen?: ScreenChrome;
   /** Text layer whose content fills the screen instead of media. */
   textLayer?: MediaLayer | null;
 }
@@ -189,9 +192,10 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
   // On-screen decoration in canvas space: the geometry is expressed in units
   // of the inner screen box, so just translate to its origin. Placed inside
   // the clip group so it stays under the device bezel and follows the radius.
+  const chromeScreen = group.screen ?? scene.screen;
   const chromeMarkup =
-    scene.screen.enabled
-      ? `<g transform="translate(${num(box.innerX)} ${num(box.innerY)})">${screenChromeElements({ ...scene.screen, os: frameOs(group.frame) }, box.innerW, box.innerH, `sc-${index}`)}</g>`
+    chromeScreen.enabled
+      ? `<g transform="translate(${num(box.innerX)} ${num(box.innerY)})">${screenChromeElements({ ...chromeScreen, os: frameOs(group.frame) }, box.innerW, box.innerH, `sc-${index}`)}</g>`
       : "";
 
   // SVG has no perspective, so a tilted scene uses the affine best-fit matrix.

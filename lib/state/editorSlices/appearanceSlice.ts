@@ -18,6 +18,9 @@ export type AppearanceSlice = Pick<
   | "setWatermarkSize"
   | "setWatermarkImage"
   | "setScreenChrome"
+  | "setFrameInstanceScreen"
+  | "clearFrameInstanceScreen"
+  | "applyInstanceScreenToAll"
   | "setScreenGlare"
   | "setFloorReflection"
   | "setBrowserUrl"
@@ -68,6 +71,48 @@ export function createAppearanceSlice(set: EditorStoreSetter): AppearanceSlice {
     setWatermarkSize: (watermarkSize) => set((s) => pushHistory(s, { ...s.scene, watermarkSize: Math.max(8, Math.min(64, Math.round(watermarkSize))) }, "watermarkSize")),
     setWatermarkImage: (watermarkImageUrl) => set((s) => pushHistory(s, { ...s.scene, watermarkImageUrl })),
     setScreenChrome: (patch) => set((s) => pushHistory(s, { ...s.scene, screen: { ...s.scene.screen, ...patch } }, "screen")),
+    // Per-device screen chrome. Seeds the override from the effective screen
+    // (instance override ?? scene default) so the first edit of a device that
+    // previously inherited the default still keeps the other fields intact.
+    setFrameInstanceScreen: (id, patch) =>
+      set((s) => {
+        const inst = s.scene.frameInstances.find((i) => i.id === id);
+        if (!inst) return {};
+        const base = inst.screen ?? s.scene.screen;
+        const screen = { ...base, ...patch };
+        return pushHistory(
+          s,
+          { ...s.scene, frameInstances: s.scene.frameInstances.map((i) => (i.id === id ? { ...i, screen } : i)) },
+          "screen"
+        );
+      }),
+    // Drops a device's chrome override so it inherits the scene default again.
+    clearFrameInstanceScreen: (id) =>
+      set((s) => {
+        if (!s.scene.frameInstances.some((i) => i.id === id)) return {};
+        return pushHistory(
+          s,
+          { ...s.scene, frameInstances: s.scene.frameInstances.map((i) => (i.id === id ? { ...i, screen: undefined } : i)) },
+          "screen"
+        );
+      }),
+    // Copies the selected device's effective chrome to the scene default and
+    // clears every instance override, so all devices share that configuration.
+    applyInstanceScreenToAll: (id) =>
+      set((s) => {
+        const inst = s.scene.frameInstances.find((i) => i.id === id);
+        if (!inst) return {};
+        const effective = inst.screen ?? s.scene.screen;
+        return pushHistory(
+          s,
+          {
+            ...s.scene,
+            screen: { ...effective },
+            frameInstances: s.scene.frameInstances.map((i) => ({ ...i, screen: undefined }))
+          },
+          "screen"
+        );
+      }),
     setScreenGlare: (screenGlare) => set((s) => pushHistory(s, { ...s.scene, screenGlare })),
     setFloorReflection: (floorReflection) => set((s) => pushHistory(s, { ...s.scene, floorReflection })),
     setBrowserUrl: (browserUrl) => set((s) => pushHistory(s, { ...s.scene, browserUrl }, "browserUrl")),
