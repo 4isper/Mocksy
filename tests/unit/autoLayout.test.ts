@@ -90,6 +90,27 @@ describe("buildAutoLayout", () => {
     expect(instances.length).toBe(2);
   });
 
+  it("stack layout keeps two frames from fully overlapping", () => {
+    const instances = buildAutoLayout("iphone", 2, "stack", "16 / 9");
+    expect(instances.length).toBe(2);
+    // With a single row the two frames must be spread horizontally, not stacked
+    // on the exact same center (which would hide one behind the other).
+    const dx = Math.abs(instances[0]!.x - instances[1]!.x);
+    expect(dx).toBeGreaterThan(instances[0]!.scale / 2);
+  });
+
+  it("fan layout does not overlap frames at large counts", () => {
+    // Before the horizontal-gap cap a count of 8 piled frames on top of each
+    // other; adjacent centers must now stay apart by at least a frame width.
+    const instances = buildAutoLayout("iphone", 8, "fan", "16 / 9");
+    expect(instances.length).toBe(8);
+    const halfW = instances[0]!.scale / 2;
+    for (let i = 1; i < instances.length; i++) {
+      const gap = Math.abs(instances[i]!.x - instances[i - 1]!.x);
+      expect(gap, `adjacent fan gap @${i}`).toBeGreaterThan(halfW);
+    }
+  });
+
   it("treats a malformed aspect ratio as the default 16/9", () => {
     const instances = buildAutoLayout("iphone", 2, "grid", "16");
     expect(instances.length).toBe(2);

@@ -1062,29 +1062,44 @@ describe("frame control", () => {
     expect(store().selectedFrameIds).toEqual(["b"]);
   });
 
-  it("layoutFrameGrid creates new layers for each frame instance", () => {
+  it("layoutFrameGrid reuses existing layers and only clones the overflow", () => {
     reset();
-    const layersBefore = store().scene.layers.length;
+    const layersBefore = store().scene.layers.length; // 1 demo layer
     store().layoutFrameGrid("iphone", 3, "horizontal");
     expect(store().scene.frameInstances.length).toBe(3);
-    expect(store().scene.layers.length).toBe(layersBefore + 3);
+    // The demo layer is reused for the first instance; only 2 new clones.
+    expect(store().scene.layers.length).toBe(layersBefore + 2);
     expect(store().activeLayerId).toBe(store().scene.frameInstances[0]!.layerId);
   });
 
-  it("re-applying a layout drops layers orphaned by the previous layout", () => {
+  it("re-applying a layout preserves existing layers instead of dropping them", () => {
     reset();
-    const baseLayers = store().scene.layers;
+    const baseLayerCount = store().scene.layers.length; // 1 demo layer
     store().layoutFrameGrid("iphone", 2, "horizontal");
     const firstInstanceLayerIds = store().scene.frameInstances.map((fi) => fi.layerId);
-    expect(store().scene.layers.length).toBe(baseLayers.length + 2);
-    // Apply a different layout — the old layout's layers must be replaced,
-    // not accumulated, while the base layers survive.
+    expect(store().scene.layers.length).toBe(baseLayerCount + 1);
+    // Apply a different layout with more frames: the previously-created layers
+    // are reused and only one new clone is added (no unbounded growth, no
+    // media loss from the earlier layout).
     store().applyFrameLayout("iphone", 3, "grid");
-    expect(store().scene.layers.length).toBe(baseLayers.length + 3);
+    expect(store().scene.layers.length).toBe(baseLayerCount + 2);
     for (const id of firstInstanceLayerIds) {
-      expect(store().scene.layers.some((l) => l.id === id)).toBe(false);
+      expect(store().scene.layers.some((l) => l.id === id)).toBe(true);
     }
     expect(store().scene.frameInstances).toHaveLength(3);
+  });
+
+  it("layout reuses the scene's existing layers so their media is preserved", () => {
+    reset();
+    store().addLayer("data:image/png;base64,keep", "image");
+    store().addLayer("data:image/png;base64,keep2", "image");
+    const layerIds = store().scene.layers.map((l) => l.id);
+    store().layoutFrameGrid("iphone", 3, "horizontal");
+    const used = store().scene.frameInstances.map((fi) => fi.layerId);
+    // All three new frames bind to the existing layers — nothing is cloned and
+    // the user's uploaded media survives the layout change.
+    expect(used).toEqual(layerIds);
+    expect(store().scene.layers.length).toBe(layerIds.length);
   });
 
   it("layoutFrameGrid falls back to demo layer when no active layer", () => {

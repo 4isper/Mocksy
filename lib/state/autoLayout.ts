@@ -126,9 +126,14 @@ function buildFan(
   // The arc keeps every center below y ≈ 0.637, so the tightest margin is the
   // bottom. Cap the scale so tall portrait frames stay inside the canvas.
   const verticalMargin = 1 - (pivotY - Math.cos(startAngle) * radius * 0.6);
+  // Adjacent centers are spaced ~radius*cos(midAngle)*Δangle apart along x; cap
+  // the frame width to that gap so a large count doesn't pile frames on top of
+  // each other (the old 0.28 floor let them overlap badly past ~4 frames).
+  const step = count > 1 ? (endAngle - startAngle) / (count - 1) : 1;
+  const horizontalGap = 2 * radius * Math.cos((startAngle + endAngle) / 2) * Math.sin(step / 2);
   const scale = Math.min(
     0.28,
-    (endAngle - startAngle) / (count * 0.12),
+    Math.max(0.08, horizontalGap * 0.9),
     instAr ? (2 * verticalMargin) / (sceneRatio * instAr) : 1
   );
 
@@ -226,13 +231,19 @@ function buildStack(
   const scale = Math.min(0.38, 1.1 / count, halfCap);
   const halfH = instAr ? (scale * sceneRatio * instAr) / 2 : scale / 2;
   const rows = Math.ceil(count / 2);
-  const offset = Math.min(0.06, (1 - gap - halfH - topRoom) / Math.max(1, rows - 1));
-  // Snake pattern: right, down-left, right, down-right
+  // rows-1 is 0 when count<=2 — spread those frames horizontally instead of
+  // stacking them on the exact same y (which would fully overlap and hide all
+  // but one). When there are real rows, use the vertical step computed above.
+  const offset = rows > 1 ? Math.min(0.06, (1 - gap - halfH - topRoom) / (rows - 1)) : 0;
+  // Snake pattern: right, down-left, right, down-right. The two-per-row x
+  // split already separates frames in multi-row stacks; for a single row we
+  // widen the split so both frames stay visible.
+  const xSpread = rows > 1 ? 0.15 : Math.min(0.25, 0.5 - scale / 2 - gap);
   return Array.from({ length: count }, (_, i) => {
     const row = Math.floor(i / 2);
     const col = i % 2;
     const xDir = row % 2 === 0 ? 1 : -1;
-    const baseX = 0.5 + (col === 0 ? -0.15 : 0.15) * xDir;
+    const baseX = 0.5 + (col === 0 ? -xSpread : xSpread) * xDir;
     const baseY = 0.35 + row * offset;
     return {
       id: nextFrameInstanceId(),
