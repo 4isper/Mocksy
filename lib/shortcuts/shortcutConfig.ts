@@ -54,7 +54,10 @@ export const SHORTCUT_DEFS: ShortcutDef[] = [
   { id: "reset-scene", combo: "r", labelKey: "shortcuts.reset", section: "scene", remappable: false, allowWhileTyping: false },
   { id: "fullscreen-preview", combo: "f", labelKey: "shortcuts.fullscreenPreview", section: "scene", remappable: false, allowWhileTyping: false },
   { id: "paste-object", combo: "mod+v", labelKey: "shortcuts.pasteObject", section: "scene", remappable: false, allowWhileTyping: false },
-  { id: "nudge-frame", combo: "arrow*", labelKey: "shortcuts.nudgeFrame", section: "scene", remappable: false, allowWhileTyping: false }
+  { id: "nudge-frame", combo: "arrow*", labelKey: "shortcuts.nudgeFrame", section: "scene", remappable: false, allowWhileTyping: false },
+  { id: "go-layers", combo: "mod+1", labelKey: "shortcuts.goLayers", section: "view", remappable: false, allowWhileTyping: false },
+  { id: "go-annotations", combo: "mod+2", labelKey: "shortcuts.goAnnotations", section: "view", remappable: false, allowWhileTyping: false },
+  { id: "go-history", combo: "mod+3", labelKey: "shortcuts.goHistory", section: "view", remappable: false, allowWhileTyping: false }
 ];
 
 /** Display-only view shortcuts (handlers hardcode browser-ish combos; no

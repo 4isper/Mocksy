@@ -5,6 +5,8 @@ import type {
   BackgroundMode,
   CustomFrame,
   EditorScene,
+  EntranceAnimation,
+  BlendMode,
   FrameInstance,
   GradientType,
   MediaLayer,
@@ -30,6 +32,8 @@ const MEDIA_TYPES: MediaType[] = ["none", "image", "video"];
 const MEDIA_FITS = ["cover", "contain"] as const;
 const ANIMATIONS = ANIMATION_PRESETS;
 const ANIMATION_EASINGS: AnimationEasing[] = ["linear", "easeInOut", "easeOut", "bounce", "spring"];
+const ENTRANCE_ANIMATIONS: EntranceAnimation[] = ["none", "fadeIn", "slideUp", "slideDown", "slideLeft", "slideRight", "scaleUp"];
+const BLEND_MODES: BlendMode[] = ["normal", "multiply", "screen", "overlay", "soft-light", "hard-light", "color-dodge", "color-burn", "difference", "exclusion", "hue", "saturation", "color", "luminosity"];
 const ANNOTATION_TYPES: AnnotationType[] = ["text", "arrow", "rect", "circle", "blur"];
 const SCREEN_CHROME_STYLES: ScreenChromeStyle[] = ["lock", "home", "statusBar"];
 const SCREEN_CHROME_THEMES: ScreenChromeTheme[] = ["dark", "light"];
@@ -154,6 +158,9 @@ function normalizeLayer(raw: unknown, fallback: MediaLayer): MediaLayer {
     locked: r.locked === true,
     animationPreset: pick(r.animationPreset, ANIMATIONS, fallback.animationPreset),
     animationEasing: pick(r.animationEasing, ANIMATION_EASINGS, fallback.animationEasing ?? "easeInOut"),
+    entranceAnimation: pick(r.entranceAnimation, ENTRANCE_ANIMATIONS, fallback.entranceAnimation ?? "none"),
+    entranceDuration: num(r.entranceDuration, fallback.entranceDuration ?? 600, 200, 2000),
+    blendMode: pick(r.blendMode, BLEND_MODES, fallback.blendMode ?? "normal"),
     videoMuted: r.videoMuted !== false,
     videoLoop: r.videoLoop !== false,
     videoAutoplay: r.videoAutoplay !== false,

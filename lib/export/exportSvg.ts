@@ -252,3 +252,30 @@ export async function exportSvg(
     onError?.(err instanceof Error ? err.message : "SVG export failed.");
   }
 }
+
+/**
+ * Copies the scene as SVG markup to the system clipboard as text.
+ */
+export async function copySvgToClipboard(
+  scene: EditorScene,
+  containerId: string,
+  onError?: (message: string) => void,
+  onStatus?: (message: string) => void,
+  activeLayerId: string | null = scene.activeLayerId
+) {
+  try {
+    if (typeof navigator === "undefined" || !navigator.clipboard) {
+      onError?.("Clipboard isn't available here (open over https or localhost).");
+      return;
+    }
+    const svg = await buildStandaloneSvg(scene, containerId, activeLayerId);
+    if (!svg) {
+      onError?.("Preview area not found.");
+      return;
+    }
+    await navigator.clipboard.writeText(svg.markup);
+    onStatus?.("Copied SVG to clipboard");
+  } catch (err) {
+    onError?.(err instanceof Error ? err.message : "Could not copy SVG.");
+  }
+}

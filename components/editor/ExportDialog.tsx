@@ -27,6 +27,8 @@ export function ExportDialog({
   onCustomSizeChange,
   onExport,
   onCopy,
+  onCopySvg,
+  onCopyHtml,
   busy,
   onCancel,
   isMultiFrame = false,
@@ -40,6 +42,8 @@ export function ExportDialog({
   onCustomSizeChange: (size: ExportSize | null) => void;
   onExport: (format: ExportFormat) => void;
   onCopy: () => void;
+  onCopySvg?: () => void;
+  onCopyHtml?: () => void;
   busy?: boolean;
   onCancel?: () => void;
   /** When true (multi-frame mode), offers the per-frame ZIP batch export. */
@@ -260,6 +264,14 @@ export function ExportDialog({
         <div className="modal-actions">
           {format === "png" ? (
             <button type="button" className="btn" onClick={onCopy} disabled={busy} title={t("shortcuts.copyPng")}>
+              {t("export.copy")}
+            </button>
+          ) : format === "svg" && onCopySvg ? (
+            <button type="button" className="btn" onClick={onCopySvg} disabled={busy}>
+              {t("export.copy")}
+            </button>
+          ) : format === "html" && onCopyHtml ? (
+            <button type="button" className="btn" onClick={onCopyHtml} disabled={busy}>
               {t("export.copy")}
             </button>
           ) : null}

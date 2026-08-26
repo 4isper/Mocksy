@@ -91,6 +91,8 @@ export function EditorShell() {
     exportApi.handleExportWebpAnim,
     exportApi.handleExportZipVideo,
     exportApi.handleCopyPng,
+    exportApi.handleCopySvg,
+    exportApi.handleCopyHtml,
     exportApi.copyShareUrl,
     saveNow,
     () => setFullscreenPreview(!fullscreenPreview)
@@ -309,6 +311,8 @@ export function EditorShell() {
         onAspectRatioChange={setAspectRatio}
         onExport={exportApi.handleExport}
         onCopy={exportApi.handleCopyFromDialog}
+        onCopySvg={exportApi.handleCopySvg}
+        onCopyHtml={exportApi.handleCopyHtml}
         busy={exportApi.isExporting}
         onCancel={exportApi.cancelExport}
         isMultiFrame={scene.frameInstances.length > 0}

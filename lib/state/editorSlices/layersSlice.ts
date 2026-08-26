@@ -42,6 +42,9 @@ export type LayersSlice = Pick<
   | "setAnimationPreset"
   | "setAnimationEasing"
   | "setAnimationDuration"
+  | "setEntranceAnimation"
+  | "setEntranceDuration"
+  | "setBlendMode"
   | "setZoom"
   | "setMediaOffsetX"
   | "setMediaOffsetY"
@@ -337,6 +340,9 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
     setAnimationPreset: (animationPreset) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationPreset }, s.activeLayerId) }, "animationPreset")),
     setAnimationEasing: (animationEasing) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { animationEasing }, s.activeLayerId) }, "animationEasing")),
     setAnimationDuration: (animationDurationMs) => set((s) => pushHistory(s, { ...s.scene, animationDurationMs: Math.max(500, Math.min(20000, Math.round(animationDurationMs))) }, "animationDuration")),
+    setEntranceAnimation: (entranceAnimation) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { entranceAnimation }, s.activeLayerId) }, "entranceAnimation")),
+    setEntranceDuration: (entranceDuration) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { entranceDuration: Math.max(200, Math.min(2000, Math.round(entranceDuration))) }, s.activeLayerId) }, "entranceDuration")),
+    setBlendMode: (blendMode) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { blendMode }, s.activeLayerId) }, "blendMode")),
     setZoom: (zoom) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { zoom }, s.activeLayerId) }, "zoom")),
     setMediaOffsetX: (mediaOffsetX) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetX }, s.activeLayerId) }, "mediaOffset")),
     setMediaOffsetY: (mediaOffsetY) => set((s) => locked(s) ? {} : pushHistory(s, { ...s.scene, layers: patchActive(s.scene, { mediaOffsetY }, s.activeLayerId) }, "mediaOffset")),

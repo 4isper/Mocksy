@@ -90,7 +90,10 @@ const HANDLERS: ActionMap = {
     else if (layerId) setCopiedObject({ kind: "layer", id: layerId });
     else return false;
     return true;
-  }
+  },
+  "go-layers": () => { const st = useEditorStore.getState(); st.setFullscreenPreview(false); st.setRightTab("layers"); return true; },
+  "go-annotations": () => { const st = useEditorStore.getState(); st.setFullscreenPreview(false); st.setRightTab("annotations"); return true; },
+  "go-history": () => { const st = useEditorStore.getState(); st.setFullscreenPreview(false); st.setRightTab("history"); return true; }
 };
 
 function moveLayer(dir: -1 | 1): boolean {

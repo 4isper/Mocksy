@@ -56,6 +56,8 @@ function makeFileCallbacks() {
     onExportWebpAnim: vi.fn(),
     onExportZipVideo: vi.fn(),
     onCopyPng: vi.fn(),
+    onCopySvg: vi.fn(),
+    onCopyHtml: vi.fn(),
     onCopyShareUrl: vi.fn(),
     onSave: vi.fn()
   };
@@ -116,7 +118,7 @@ describe("createFileCommands", () => {
     expect(cmds.map((c) => c.id)).toEqual([
       "record-screen", "new-project", "save-project", "export-png", "export-jpeg", "export-mp4", "export-webm",
       "export-webp", "export-webp-anim", "export-svg", "export-html", "export-pdf",
-      "export-gif", "export-video-zip", "copy-png", "copy-share-url"
+      "export-gif", "export-video-zip", "copy-png", "copy-svg", "copy-html", "copy-share-url"
     ]);
     cmds.find((c) => c.id === "save-project")!.action();
     cmds.find((c) => c.id === "export-png")!.action();
@@ -131,6 +133,8 @@ describe("createFileCommands", () => {
     cmds.find((c) => c.id === "export-gif")!.action();
     cmds.find((c) => c.id === "export-video-zip")!.action();
     cmds.find((c) => c.id === "copy-png")!.action();
+    cmds.find((c) => c.id === "copy-svg")!.action();
+    cmds.find((c) => c.id === "copy-html")!.action();
     cmds.find((c) => c.id === "copy-share-url")!.action();
     expect(cb.onSave).toHaveBeenCalledTimes(1);
     expect(cb.onExportPng).toHaveBeenCalledTimes(1);
@@ -145,6 +149,8 @@ describe("createFileCommands", () => {
     expect(cb.onExportGif).toHaveBeenCalledTimes(1);
     expect(cb.onExportZipVideo).toHaveBeenCalledTimes(1);
     expect(cb.onCopyPng).toHaveBeenCalledTimes(1);
+    expect(cb.onCopySvg).toHaveBeenCalledTimes(1);
+    expect(cb.onCopyHtml).toHaveBeenCalledTimes(1);
     expect(cb.onCopyShareUrl).toHaveBeenCalledTimes(1);
   });
 
@@ -458,7 +464,7 @@ describe("createCommands", () => {
       "dark", a.setThemeMode,
       a.onExportPng, a.onExportJpeg, a.onExportWebp, a.onExportSvg, a.onExportHtml, a.onExportPdf,
       a.onExportMp4, a.onExportWebm, a.onExportGif, a.onExportWebpAnim, a.onExportZipVideo,
-      a.onCopyPng, a.onCopyShareUrl, a.onSave, a.onToggleFullscreen
+      a.onCopyPng, a.onCopySvg, a.onCopyHtml, a.onCopyShareUrl, a.onSave, a.onToggleFullscreen
     );
 
     expect(cmds.find((c) => c.id === "export-png")).toBeDefined();

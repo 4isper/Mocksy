@@ -4,7 +4,7 @@ import { useEffect, type ChangeEvent } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { buildTextLayerSvg, isTextLayer } from "@/lib/render/layerText";
-import type { SceneCss } from "@/lib/render/mockupRenderer";
+import { buildEntranceAnimationCss, buildEntranceKeyframesStyle, type SceneCss } from "@/lib/render/mockupRenderer";
 import type { CSSProperties } from "react";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
@@ -98,69 +98,78 @@ export function SingleFrameView({
       onPointerUp={onPanUp}
       onPointerCancel={onPanUp}
     >
+      <style dangerouslySetInnerHTML={{ __html: buildEntranceKeyframesStyle(scene.layers) }} />
       <FrameContent
         css={sceneCss}
         media={
           scene.layers
             .filter((layer) => !layer.hidden)
-            .map((layer) =>
-            layer.mediaUrl ? (
-            isVideoLayer(layer) ? (              <video
-                key={layer.id}
-                ref={videoRef}
-                src={layer.mediaUrl}
-                muted={layer.videoMuted}
-                loop={layer.videoLoop}
-                autoPlay={layer.videoAutoplay}
-                playsInline
-                controls
-                crossOrigin="anonymous"
-                // Tags this element as the layer's media so the export pipeline
-                // can resolve it by identity instead of DOM order (the preview
-                // container also holds skins, the watermark and other layers).
-                data-layer-media={layer.id}
-                style={{ ...sceneCss.mediaStyle, objectFit: "contain", backgroundColor: "var(--panel-solid)" }}
-                onPointerDown={() => selectLayer(layer.id)}
-                onLoadedMetadata={(e) => {
-                  const duration = e.currentTarget.duration || 0;
-                  setVideoDuration(duration, layer.id);
-                  const current = Math.min(layer.videoPosterTime, duration);
-                  e.currentTarget.currentTime = current;
-                  setVideoCurrentTime(current);
-                  e.currentTarget.playbackRate = Math.max(0.5, Math.min(2, layer.playbackSpeed ?? 1));
-                }}
-                onTimeUpdate={(e) => {
-                  const t = e.currentTarget.currentTime;
-                  if (Math.abs(t - videoCurrentTime) >= 0.1) setVideoCurrentTime(t);
-                }}
-                onLoadedData={(ev) => {
-                  setMediaLoading(false);
-                  analyzeMedia(ev.currentTarget);
-                }}
-              />
-            ) : (
-              <img
-                key={layer.id}
-                src={layer.mediaUrl}
-                alt={t("editor.uploadedMediaAlt")}
-                data-layer-media={layer.id}
-                style={sceneCss.mediaStyle}
-                onPointerDown={() => selectLayer(layer.id)}
-                onLoad={(e) => {
-                  setMediaLoading(false);
-                  analyzeMedia(e.currentTarget);
-                }}
-              />
-            )
-            ) : isTextLayer(layer) ? (
-              <div
-                key={layer.id}
-                style={sceneCss.textStyle}
-                onPointerDown={() => selectLayer(layer.id)}
-                dangerouslySetInnerHTML={{ __html: buildTextLayerSvg(layer, sceneCss.screenAspect) ?? "" }}
-              />
-            ) : null
-          )
+            .map((layer) => {
+              const entranceStyle = buildEntranceAnimationCss(layer);
+              const hasEntrance = layer.entranceAnimation && layer.entranceAnimation !== "none";
+              const blendCss = layer.blendMode && layer.blendMode !== "normal" ? { mixBlendMode: layer.blendMode } : {};
+              const wrapper: CSSProperties = hasEntrance
+                ? { position: "relative", width: "100%", height: "100%", ...entranceStyle }
+                : {};
+              const wrap = (el: React.ReactNode) =>
+                hasEntrance
+                  ? <div key={`${layer.id}-${layer.entranceAnimation}`} style={wrapper}>{el}</div>
+                  : el;
+              return layer.mediaUrl ? (
+                isVideoLayer(layer) ? wrap(
+                  <video
+                    key={layer.id}
+                    ref={videoRef}
+                    src={layer.mediaUrl}
+                    muted={layer.videoMuted}
+                    loop={layer.videoLoop}
+                    autoPlay={layer.videoAutoplay}
+                    playsInline
+                    controls
+                    crossOrigin="anonymous"
+                    data-layer-media={layer.id}
+                    style={{ ...sceneCss.mediaStyle, objectFit: "contain", backgroundColor: "var(--panel-solid)", ...blendCss }}
+                    onPointerDown={() => selectLayer(layer.id)}
+                    onLoadedMetadata={(e) => {
+                      const duration = e.currentTarget.duration || 0;
+                      setVideoDuration(duration, layer.id);
+                      const current = Math.min(layer.videoPosterTime, duration);
+                      e.currentTarget.currentTime = current;
+                      setVideoCurrentTime(current);
+                      e.currentTarget.playbackRate = Math.max(0.5, Math.min(2, layer.playbackSpeed ?? 1));
+                    }}
+                    onTimeUpdate={(e) => {
+                      const t = e.currentTarget.currentTime;
+                      if (Math.abs(t - videoCurrentTime) >= 0.1) setVideoCurrentTime(t);
+                    }}
+                    onLoadedData={(ev) => {
+                      setMediaLoading(false);
+                      analyzeMedia(ev.currentTarget);
+                    }}
+                  />
+                ) : wrap(
+                  <img
+                    key={layer.id}
+                    src={layer.mediaUrl}
+                    alt={t("editor.uploadedMediaAlt")}
+                    data-layer-media={layer.id}
+                    style={{ ...sceneCss.mediaStyle, ...blendCss }}
+                    onPointerDown={() => selectLayer(layer.id)}
+                    onLoad={(e) => {
+                      setMediaLoading(false);
+                      analyzeMedia(e.currentTarget);
+                    }}
+                  />
+                )
+              ) : isTextLayer(layer) ? wrap(
+                <div
+                  key={layer.id}
+                  style={sceneCss.textStyle}
+                  onPointerDown={() => selectLayer(layer.id)}
+                  dangerouslySetInnerHTML={{ __html: buildTextLayerSvg(layer, sceneCss.screenAspect) ?? "" }}
+                />
+              ) : null;
+            })
         }
         emptyMedia={
           scene.layers.every((l) => !l.mediaUrl) && !scene.layers.some(isTextLayer) ? (

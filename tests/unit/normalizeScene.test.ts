@@ -307,6 +307,30 @@ describe("normalizeScene", () => {
     expect(normalizeScene({ layers: [{}] }).layers[0]!.animationEasing).toBe("easeInOut");
   });
 
+  it("keeps valid entrance animation and falls back for invalid ones", () => {
+    expect(normalizeScene({ layers: [{ entranceAnimation: "fadeIn" }] }).layers[0]!.entranceAnimation).toBe("fadeIn");
+    expect(normalizeScene({ layers: [{ entranceAnimation: "slideUp" }] }).layers[0]!.entranceAnimation).toBe("slideUp");
+    expect(normalizeScene({ layers: [{ entranceAnimation: "scaleUp" }] }).layers[0]!.entranceAnimation).toBe("scaleUp");
+    expect(normalizeScene({ layers: [{ entranceAnimation: "bogus" }] }).layers[0]!.entranceAnimation).toBe("none");
+    expect(normalizeScene({ layers: [{}] }).layers[0]!.entranceAnimation).toBe("none");
+  });
+
+  it("clamps entrance duration into range and falls back for invalid input", () => {
+    expect(normalizeScene({ layers: [{ entranceDuration: 800 }] }).layers[0]!.entranceDuration).toBe(800);
+    expect(normalizeScene({ layers: [{ entranceDuration: 50 }] }).layers[0]!.entranceDuration).toBe(200);
+    expect(normalizeScene({ layers: [{ entranceDuration: 5000 }] }).layers[0]!.entranceDuration).toBe(2000);
+    expect(normalizeScene({ layers: [{ entranceDuration: Number.NaN }] }).layers[0]!.entranceDuration).toBe(600);
+    expect(normalizeScene({ layers: [{}] }).layers[0]!.entranceDuration).toBe(600);
+  });
+
+  it("keeps valid blend mode and falls back for invalid ones", () => {
+    expect(normalizeScene({ layers: [{ blendMode: "multiply" }] }).layers[0]!.blendMode).toBe("multiply");
+    expect(normalizeScene({ layers: [{ blendMode: "overlay" }] }).layers[0]!.blendMode).toBe("overlay");
+    expect(normalizeScene({ layers: [{ blendMode: "soft-light" }] }).layers[0]!.blendMode).toBe("soft-light");
+    expect(normalizeScene({ layers: [{ blendMode: "bogus" }] }).layers[0]!.blendMode).toBe("normal");
+    expect(normalizeScene({ layers: [{}] }).layers[0]!.blendMode).toBe("normal");
+  });
+
   it("normalizes text annotation typography with defaults for missing values", () => {
     const s = normalizeScene({
       annotations: [{ id: "a1", type: "text", x: 0.1, y: 0.1, w: 0.2, h: 0.1, text: "Hi", color: "#fff", fontSize: 24, strokeWidth: 0 }]

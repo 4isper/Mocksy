@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChangeEvent } from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { Project } from "@/lib/types/editor";
 import { useEditorStore } from "@/lib/state/editorStore";
@@ -12,6 +12,7 @@ import { exportTemplateToFile, importTemplateFromFile } from "@/lib/state/templa
 import { relativeTime } from "@/lib/utils/relativeTime";
 import { ProjectItem } from "@/components/editor/ProjectItem";
 import { TrashSection } from "@/components/editor/TrashSection";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 
 export function ProjectsPanel() {
   const t = useTranslations();
@@ -38,6 +39,8 @@ export function ProjectsPanel() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [pendingSwitchId, setPendingSwitchId] = useState<string | null>(null);
+  const trapRef = useFocusTrap(!!pendingSwitchId);
 
   const activeProjects = projects.filter((p) => p.deletedAt == null);
   const trashedProjects = projects.filter((p) => p.deletedAt != null);
@@ -48,6 +51,21 @@ export function ProjectsPanel() {
     createProject(undefined, currentScene);
     setError(null);
   };
+
+  const handleSwitch = useCallback((id: string) => {
+    if (id === activeProjectId) return;
+    const hasUndo = useEditorStore.getState().past.length > 0;
+    if (hasUndo) {
+      setPendingSwitchId(id);
+    } else {
+      switchProject(id);
+    }
+  }, [activeProjectId, switchProject]);
+
+  const confirmSwitch = useCallback(() => {
+    if (pendingSwitchId) switchProject(pendingSwitchId);
+    setPendingSwitchId(null);
+  }, [pendingSwitchId, switchProject]);
 
   const startRename = (id: string, name: string) => {
     setEditingId(id);
@@ -165,7 +183,7 @@ export function ProjectsPanel() {
               editing={editingId === project.id}
               draftName={draftName}
               relativeTime={relTime}
-              onSwitch={switchProject}
+              onSwitch={handleSwitch}
               onStartRename={startRename}
               onCommitRename={commitRename}
               onDraftChange={setDraftName}
@@ -182,6 +200,18 @@ export function ProjectsPanel() {
       <p style={{ color: "var(--text-dim)", fontSize: 12, margin: 0 }}>
         {t("projects.autosaveNote")}
       </p>
+      {pendingSwitchId && (
+        <div className="modal-backdrop" role="presentation" onClick={() => setPendingSwitchId(null)}>
+          <div className="modal" ref={trapRef} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <h3>{t("projects.switchConfirmTitle")}</h3>
+            <p>{t("projects.switchConfirmMessage")}</p>
+            <div className="modal-actions">
+              <button type="button" className="btn" onClick={() => setPendingSwitchId(null)} autoFocus>{t("projects.switchConfirmCancel")}</button>
+              <button type="button" className="btn btn-primary" onClick={confirmSwitch}>{t("projects.switchConfirmDiscard")}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

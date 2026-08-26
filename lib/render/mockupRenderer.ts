@@ -338,3 +338,57 @@ function buildScreenGlareStyle(scene: EditorScene, spec: FrameSpec): CSSProperti
   }
   return { ...base, inset: 0, borderRadius: "inherit" };
 }
+
+/* ── Entrance animations ─────────────────────────────────────────────── */
+
+import type { EntranceAnimation, MediaLayer } from "@/lib/types/editor";
+
+const ENTRANCE_KEYFRAMES: Record<Exclude<EntranceAnimation, "none">, string> = {
+  fadeIn: "from{opacity:0}to{opacity:1}",
+  slideUp: "from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}",
+  slideDown: "from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}",
+  slideLeft: "from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}",
+  slideRight: "from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}",
+  scaleUp: "from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}"
+};
+
+const ENTRANCE_EASING: Record<Exclude<EntranceAnimation, "none">, string> = {
+  fadeIn: "ease-out",
+  slideUp: "cubic-bezier(0.16,1,0.3,1)",
+  slideDown: "cubic-bezier(0.16,1,0.3,1)",
+  slideLeft: "cubic-bezier(0.16,1,0.3,1)",
+  slideRight: "cubic-bezier(0.16,1,0.3,1)",
+  scaleUp: "cubic-bezier(0.34,1.56,0.64,1)"
+};
+
+/** Returns CSS animation properties for a layer's entrance animation, or an
+ *  empty object when the animation is "none". The animation plays once on
+ *  mount and fills forward so the element stays in its final state. */
+export function buildEntranceAnimationCss(layer: MediaLayer): CSSProperties {
+  const anim = layer.entranceAnimation;
+  if (!anim || anim === "none") return {};
+  const duration = Math.max(200, Math.min(2000, layer.entranceDuration ?? 600));
+  const name = `mockup-entrance-${layer.id}`;
+  return {
+    animation: `${name} ${duration}ms ${ENTRANCE_EASING[anim]} both`,
+  };
+}
+
+/** Returns a CSS @keyframes rule string for the given layer's entrance
+ *  animation, or null when the animation is "none". */
+export function buildEntranceKeyframeCss(layer: MediaLayer): string | null {
+  const anim = layer.entranceAnimation;
+  if (!anim || anim === "none") return null;
+  const name = `mockup-entrance-${layer.id}`;
+  return `@keyframes ${name}{${ENTRANCE_KEYFRAMES[anim]}}`;
+}
+
+/** Collects all unique @keyframes rules for visible layers that have an
+ *  entrance animation. Returns a single <style> tag content string. */
+export function buildEntranceKeyframesStyle(layers: MediaLayer[]): string {
+  return layers
+    .filter((l) => !l.hidden)
+    .map((l) => buildEntranceKeyframeCss(l))
+    .filter((css): css is string => css !== null)
+    .join("\n");
+}

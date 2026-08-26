@@ -18,11 +18,13 @@ export function createFileCommands(
     onExportWebpAnim: () => void;
     onExportZipVideo: () => void;
     onCopyPng: () => void;
+    onCopySvg: () => void;
+    onCopyHtml: () => void;
     onCopyShareUrl: () => void;
     onSave: () => void;
   }
 ): Command[] {
-  const { onExportPng, onExportJpeg, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onExportZipVideo, onCopyPng, onCopyShareUrl, onSave } = callbacks;
+  const { onExportPng, onExportJpeg, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onExportZipVideo, onCopyPng, onCopySvg, onCopyHtml, onCopyShareUrl, onSave } = callbacks;
   const recording = isScreenRecordingActive();
   return [
     {
@@ -177,6 +179,22 @@ export function createFileCommands(
       shortcut: "⇧⌘C",
       keywords: ["copy", "clipboard", "png", "image"],
       action: onCopyPng,
+    },
+    {
+      id: "copy-svg",
+      category: "export",
+      label: t("commandPalette.copySvg"),
+      description: t("commandPalette.copySvgDesc"),
+      keywords: ["copy", "clipboard", "svg", "vector"],
+      action: onCopySvg,
+    },
+    {
+      id: "copy-html",
+      category: "export",
+      label: t("commandPalette.copyHtml"),
+      description: t("commandPalette.copyHtmlDesc"),
+      keywords: ["copy", "clipboard", "html", "embed"],
+      action: onCopyHtml,
     },
     {
       id: "copy-share-url",

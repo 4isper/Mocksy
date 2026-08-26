@@ -352,7 +352,24 @@
     "moveUpDisabled": "Already at the top",
     "moveDownDisabled": "Already at the bottom",
     "removeLayerLocked": "Unlock the layer to remove it",
-    "storageFull": "Storage full — recent changes may not be saved"
+    "storageFull": "Storage full — recent changes may not be saved",
+    "entranceAnimation": "Entrance",
+    "entranceDuration": "Duration ({val}s)",
+    "blendMode": "Blend mode",
+    "blendMode_normal": "Normal",
+    "blendMode_multiply": "Multiply",
+    "blendMode_screen": "Screen",
+    "blendMode_overlay": "Overlay",
+    "blendMode_soft-light": "Soft light",
+    "blendMode_hard-light": "Hard light",
+    "blendMode_color-dodge": "Color dodge",
+    "blendMode_color-burn": "Color burn",
+    "blendMode_difference": "Difference",
+    "blendMode_exclusion": "Exclusion",
+    "blendMode_hue": "Hue",
+    "blendMode_saturation": "Saturation",
+    "blendMode_color": "Color",
+    "blendMode_luminosity": "Luminosity"
   },
   "frame": {
     "none": "Yoxdur",
@@ -395,7 +412,13 @@
     "easingBounce": "Bounce",
     "easingSpring": "Spring",
     "float": "Float",
-    "sway": "Sway"
+    "sway": "Sway",
+    "fadeIn": "Fade in",
+    "slideUp": "Slide up",
+    "slideDown": "Slide down",
+    "slideLeft": "Slide left",
+    "slideRight": "Slide right",
+    "scaleUp": "Scale up"
   },
   "annotation": {
     "text": "Mətn",
@@ -597,7 +620,10 @@
     "recording": "…",
     "recordingHint": "Press the new key combination (Esc to cancel).",
     "conflict": "Already used by “{label}”",
-    "resetAll": "Reset all shortcuts"
+    "resetAll": "Reset all shortcuts",
+    "goLayers": "Go to Layers",
+    "goAnnotations": "Go to Annotations",
+    "goHistory": "Go to History"
   },
   "projects": {
     "title": "Layihələr",
@@ -640,7 +666,11 @@
     "bundleExport": "Export with media (.zip)",
     "bundleExportLabel": "Export {name} with media (.zip)",
     "bundleError": "Could not export that project bundle.",
-    "untitled": "Untitled"
+    "untitled": "Untitled",
+    "switchConfirmTitle": "Unsaved changes",
+    "switchConfirmMessage": "You have unsaved changes in this project. Switching will discard them.",
+    "switchConfirmCancel": "Cancel",
+    "switchConfirmDiscard": "Switch anyway"
   },
   "theme": {
     "light": "Aydın",
@@ -778,7 +808,11 @@
     "exportJpeg": "Export JPEG",
     "exportJpegDesc": "Export current scene as JPEG image",
     "addTextLayer": "Add Text Layer",
-    "addTextLayerDesc": "Add a new text layer inside the device screen"
+    "addTextLayerDesc": "Add a new text layer inside the device screen",
+    "copySvg": "Copy SVG to Clipboard",
+    "copySvgDesc": "Copy current scene as SVG markup to clipboard",
+    "copyHtml": "Copy HTML to Clipboard",
+    "copyHtmlDesc": "Copy current scene as self-contained HTML to clipboard"
   },
   "errors": {
     "title": "Bir şey səhv oldu",

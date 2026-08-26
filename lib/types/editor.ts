@@ -55,6 +55,10 @@ export type StylePreset = "default" | "glassLight" | "glassDark" | "outline";
 export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax" | "panLeft" | "panRight" | "breathe" | "float" | "sway";
 /** Easing curve applied between animation keyframes. */
 export type AnimationEasing = "linear" | "easeInOut" | "easeOut" | "bounce" | "spring";
+/** One-shot entrance animation played when a layer becomes visible. */
+export type EntranceAnimation = "none" | "fadeIn" | "slideUp" | "slideDown" | "slideLeft" | "slideRight" | "scaleUp";
+/** CSS mix-blend-mode for layer compositing. */
+export type BlendMode = "normal" | "multiply" | "screen" | "overlay" | "soft-light" | "hard-light" | "color-dodge" | "color-burn" | "difference" | "exclusion" | "hue" | "saturation" | "color" | "luminosity";
 /** Screen decoration style rendered over the media (lock screen, home screen). */
 export type ScreenChromeStyle = "lock" | "home" | "statusBar";
 /** Accent theme of the screen decoration (text, status bar, dock). */
@@ -223,6 +227,12 @@ export interface MediaLayer {
   animationPreset: AnimationPreset;
   /** Easing curve between animation keyframes (default "easeInOut"). */
   animationEasing?: AnimationEasing;
+  /** One-shot entrance animation played when the layer becomes visible. */
+  entranceAnimation?: EntranceAnimation;
+  /** Duration of the entrance animation in ms, [200, 2000] (default 600). */
+  entranceDuration?: number;
+  /** CSS mix-blend-mode for compositing this layer over layers below. */
+  blendMode?: BlendMode;
   videoMuted: boolean;
   videoLoop: boolean;
   videoAutoplay: boolean;

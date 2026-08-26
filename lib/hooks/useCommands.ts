@@ -19,6 +19,8 @@ export function useCommands(
   onExportWebpAnim: () => void,
   onExportZipVideo: () => void,
   onCopyPng: () => void,
+  onCopySvg: () => void,
+  onCopyHtml: () => void,
   onCopyShareUrl: () => void,
   onSave: () => void,
   onToggleFullscreenPreview: () => void
@@ -70,11 +72,11 @@ export function useCommands(
     activeProjectId, projects, switchProject,
     themeMode, setThemeMode,
     onExportPng, onExportJpeg, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onExportZipVideo,
-    onCopyPng, onCopyShareUrl, onSave, onToggleFullscreenPreview
+    onCopyPng, onCopySvg, onCopyHtml, onCopyShareUrl, onSave, onToggleFullscreenPreview
   ), [
     t, scene, activeLayerId, pastLength, futureLength, activeProjectId, projects, themeMode, exportScale,
     onExportPng, onExportJpeg, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onExportZipVideo,
-    onCopyPng, onCopyShareUrl, onSave, onToggleFullscreenPreview,
+    onCopyPng, onCopySvg, onCopyHtml, onCopyShareUrl, onSave, onToggleFullscreenPreview,
     undo, redo, resetScene,
     setFrame, setStylePreset, setAnimationPreset,
     setBackgroundSolid, setBackgroundGradient, setBackgroundPattern, setBackgroundTransparent, setBackgroundImage,

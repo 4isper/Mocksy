@@ -31,6 +31,8 @@ export interface EditorExportApi {
   handleExportGif: () => void;
   handleExportZipVideo: () => void;
   handleCopyPng: () => Promise<void>;
+  handleCopySvg: () => Promise<void>;
+  handleCopyHtml: () => Promise<void>;
   copyTemplateUrl: () => Promise<void>;
   /** URL currently shown in the share-QR dialog, or null when closed. */
   shareQrUrl: string | null;
@@ -146,6 +148,26 @@ export function useEditorExport(
     setExportError(null);
     await copyPngToClipboard(scene, "preview-canvas", setExportError, setCopyStatus, exportScale, customExportSize, activeLayerId);
   }, [scene, exportScale, customExportSize, activeLayerId]);
+
+  const handleCopySvg = useCallback(async () => {
+    setExportError(null);
+    try {
+      const { copySvgToClipboard } = await import("@/lib/export/exportSvg");
+      await copySvgToClipboard(scene, "preview-canvas", setExportError, setCopyStatus, activeLayerId);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "Could not copy SVG.");
+    }
+  }, [scene, activeLayerId]);
+
+  const handleCopyHtml = useCallback(async () => {
+    setExportError(null);
+    try {
+      const { copyHtmlToClipboard } = await import("@/lib/export/exportHtml");
+      await copyHtmlToClipboard(scene, "preview-canvas", setExportError, setCopyStatus, activeLayerId);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "Could not copy HTML.");
+    }
+  }, [scene, activeLayerId]);
 
   const handleExportJpeg = useCallback(() => {
     setExportError(null);
@@ -408,6 +430,8 @@ export function useEditorExport(
     handleExportGif,
     handleExportZipVideo,
     handleCopyPng,
+    handleCopySvg,
+    handleCopyHtml,
     cancelExport
   };
 }

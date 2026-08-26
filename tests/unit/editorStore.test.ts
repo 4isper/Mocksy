@@ -1385,6 +1385,33 @@ describe("scene-wide settings", () => {
     expect(store().scene.animationDurationMs).toBe(20000);
   });
 
+  it("setEntranceAnimation updates the active layer entrance animation and coalesces", () => {
+    reset();
+    store().setEntranceAnimation("fadeIn");
+    expect(store().scene.layers[0]!.entranceAnimation).toBe("fadeIn");
+    store().setEntranceAnimation("slideUp");
+    expect(store().past.length).toBe(1);
+  });
+
+  it("setEntranceDuration updates the entrance duration and clamps into range", () => {
+    reset();
+    store().setEntranceDuration(800);
+    expect(store().scene.layers[0]!.entranceDuration).toBe(800);
+    store().setEntranceDuration(50);
+    expect(store().scene.layers[0]!.entranceDuration).toBe(200);
+    store().setEntranceDuration(5000);
+    expect(store().scene.layers[0]!.entranceDuration).toBe(2000);
+  });
+
+  it("setBlendMode updates the active layer blend mode and coalesces", () => {
+    reset();
+    store().setBlendMode("multiply");
+    expect(store().scene.layers[0]!.blendMode).toBe("multiply");
+    store().setBlendMode("overlay");
+    expect(store().past.length).toBe(1);
+    expect(store().scene.layers[0]!.blendMode).toBe("overlay");
+  });
+
   it("setZoom coalesces rapid calls", () => {
     reset();
     store().setZoom(1.1);

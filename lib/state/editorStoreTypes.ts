@@ -5,6 +5,8 @@ import type {
   AnimationEasing,
   AnimationPreset,
   EditorScene,
+  EntranceAnimation,
+  BlendMode,
   ExportSize,
   FrameInstance,
   LayerTransformPatch,
@@ -216,6 +218,9 @@ export interface EditorStoreState {
   setAnimationPreset: (animationPreset: AnimationPreset) => void;
   setAnimationEasing: (animationEasing: AnimationEasing) => void;
   setAnimationDuration: (durationMs: number) => void;
+  setEntranceAnimation: (entranceAnimation: EntranceAnimation) => void;
+  setEntranceDuration: (entranceDuration: number) => void;
+  setBlendMode: (blendMode: BlendMode) => void;
   setZoom: (zoom: number) => void;
   setMediaOffsetX: (offset: number) => void;
   setMediaOffsetY: (offset: number) => void;

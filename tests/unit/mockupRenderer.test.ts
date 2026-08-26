@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSceneCss } from "@/lib/render/mockupRenderer";
+import { buildSceneCss, buildEntranceAnimationCss, buildEntranceKeyframeCss, buildEntranceKeyframesStyle } from "@/lib/render/mockupRenderer";
 import { FRAME_SPECS } from "@/lib/render/frames";
 import { initialScene } from "@/lib/state/editorStore";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
@@ -278,5 +278,85 @@ describe("buildSceneCss", () => {
     expect(defaultCss.screenChrome).not.toContain("12:07");
     expect(overrideCss.screenChrome).toContain("12:07");
     expect(overrideCss.screenChrome).not.toContain("9:41");
+  });
+});
+
+describe("buildEntranceAnimationCss", () => {
+  it("returns empty object for none animation", () => {
+    const css = buildEntranceAnimationCss(layer({ entranceAnimation: "none" }));
+    expect(css).toEqual({});
+  });
+
+  it("returns empty object when entranceAnimation is undefined", () => {
+    const css = buildEntranceAnimationCss(layer({ entranceAnimation: undefined }));
+    expect(css).toEqual({});
+  });
+
+  it("returns animation property for fadeIn", () => {
+    const css = buildEntranceAnimationCss(layer({ id: "l1", entranceAnimation: "fadeIn", entranceDuration: 600 }));
+    expect(css.animation).toContain("mockup-entrance-l1");
+    expect(css.animation).toContain("600ms");
+  });
+
+  it("clamps entrance duration to valid range", () => {
+    const short = buildEntranceAnimationCss(layer({ id: "l2", entranceAnimation: "slideUp", entranceDuration: 50 }));
+    expect(short.animation).toContain("200ms");
+    const long = buildEntranceAnimationCss(layer({ id: "l3", entranceAnimation: "scaleUp", entranceDuration: 5000 }));
+    expect(long.animation).toContain("2000ms");
+  });
+
+  it("uses default duration of 600ms when not specified", () => {
+    const css = buildEntranceAnimationCss(layer({ id: "l4", entranceAnimation: "slideDown", entranceDuration: undefined }));
+    expect(css.animation).toContain("600ms");
+  });
+});
+
+describe("buildEntranceKeyframeCss", () => {
+  it("returns null for none animation", () => {
+    expect(buildEntranceKeyframeCss(layer({ entranceAnimation: "none" }))).toBeNull();
+  });
+
+  it("returns a @keyframes rule for fadeIn", () => {
+    const css = buildEntranceKeyframeCss(layer({ id: "k1", entranceAnimation: "fadeIn" }));
+    expect(css).toContain("@keyframes mockup-entrance-k1");
+    expect(css).toContain("opacity:0");
+    expect(css).toContain("opacity:1");
+  });
+
+  it("returns a @keyframes rule with transform for slideUp", () => {
+    const css = buildEntranceKeyframeCss(layer({ id: "k2", entranceAnimation: "slideUp" }));
+    expect(css).toContain("translateY(20px)");
+  });
+});
+
+describe("buildEntranceKeyframesStyle", () => {
+  it("returns empty string when no layers have entrance animations", () => {
+    const layers = [
+      layer({ id: "a", entranceAnimation: "none" }),
+      layer({ id: "b", entranceAnimation: undefined })
+    ];
+    expect(buildEntranceKeyframesStyle(layers)).toBe("");
+  });
+
+  it("collects keyframes for multiple layers with entrance animations", () => {
+    const layers = [
+      layer({ id: "x", entranceAnimation: "fadeIn" }),
+      layer({ id: "y", entranceAnimation: "slideUp" }),
+      layer({ id: "z", entranceAnimation: "none" })
+    ];
+    const css = buildEntranceKeyframesStyle(layers);
+    expect(css).toContain("@keyframes mockup-entrance-x");
+    expect(css).toContain("@keyframes mockup-entrance-y");
+    expect(css).not.toContain("mockup-entrance-z");
+  });
+
+  it("excludes hidden layers", () => {
+    const layers = [
+      layer({ id: "h", entranceAnimation: "fadeIn", hidden: true }),
+      layer({ id: "v", entranceAnimation: "scaleUp", hidden: false })
+    ];
+    const css = buildEntranceKeyframesStyle(layers);
+    expect(css).not.toContain("mockup-entrance-h");
+    expect(css).toContain("@keyframes mockup-entrance-v");
   });
 });
