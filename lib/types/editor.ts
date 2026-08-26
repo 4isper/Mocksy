@@ -46,6 +46,17 @@ export interface Annotation {
    *  shapes/arrows, typewriter for text) in the live preview. Export renders
    *  the final state regardless. */
   animated?: boolean;
+  /** Gradient start color (hex). When both gradientFrom and gradientTo are set,
+   *  the annotation uses a gradient instead of the flat `color` value. */
+  gradientFrom?: string;
+  /** Gradient end color (hex). */
+  gradientTo?: string;
+  /** Optional mid-point color for a three-stop gradient. */
+  gradientVia?: string;
+  /** Gradient type (default "linear"). Ignored when gradientFrom/gradientTo are absent. */
+  gradientType?: "linear" | "radial";
+  /** Gradient angle in degrees for linear gradients (default 135). */
+  gradientAngle?: number;
 }
 export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "pixel8pro" | "galaxy24" | "iphoneSE" | "ipad" | "galaxyTab" | "desktop" | "tablet" | "macbook" | "imac" | "notebook" | "browser" | "tv" | "watchUltra" | "watch" | "custom";
 
@@ -97,7 +108,7 @@ export type WatermarkPosition = "bottom-right" | "bottom-left" | "top-right" | "
 export type LayoutPreset = "grid" | "fan" | "cascade" | "masonry" | "stack";
 
 /** Formats offered by the export dialog (raster, vector, video, batch zip). */
-export type ExportFormat = "png" | "jpeg" | "webp" | "svg" | "html" | "mp4" | "webm" | "gif" | "webpAnim" | "pdf" | "zip" | "zipVideo";
+export type ExportFormat = "png" | "jpeg" | "webp" | "avif" | "svg" | "html" | "mp4" | "webm" | "gif" | "webpAnim" | "pdf" | "zip" | "zipVideo";
 
 /** A named snapshot of export-dialog settings (format + scale/size), stored
  *  outside the scene in localStorage so it survives reloads and projects. */

@@ -6,6 +6,7 @@ import { useEditorStore } from "@/lib/state/editorStore";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import type { AnnotationType } from "@/lib/types/editor";
 import { alignAnnotations, distributeAnnotations, type AlignOp, type DistributeOp } from "@/lib/render/annotationAlign";
+import { annotationGradientCSS } from "@/lib/render/annotationGradient";
 import { AnnotationEditor } from "@/components/editor/AnnotationEditor";
 import { ClearAnnotationsDialog } from "@/components/editor/ClearAnnotationsDialog";
 
@@ -119,7 +120,7 @@ export function AnnotationsPanel() {
                   }
                 }}
               >
-                <span className="anno-swatch" style={{ background: a.color }} aria-hidden="true" />
+                <span className="anno-swatch" style={{ background: annotationGradientCSS(a) ?? a.color }} aria-hidden="true" />
                 {TYPE_LABELS[a.type]} {i + 1}
               </button>
             );

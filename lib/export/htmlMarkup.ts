@@ -8,6 +8,7 @@ import { frameInstAr } from "@/lib/render/frames";
 import { RENDER } from "@/lib/render/canvasDrawing";
 import { escapeMarkup, round2 } from "@/lib/export/markupUtils";
 import { collectOverlayClipDefs } from "@/lib/render/squircle";
+import { annotationGradientCSS } from "@/lib/render/annotationGradient";
 
 const UNITLESS = new Set(["opacity", "zIndex", "flexGrow", "flexShrink", "aspectRatio", "fontWeight", "lineHeight", "tabSize"]);
 
@@ -57,7 +58,7 @@ export function buildAnimationCss(layer: MediaLayer | undefined, durationSec = 3
 function annotationsHtml(scene: EditorScene, arW: number, arH: number): string {
   if (scene.annotations.length === 0) return "";
   let out = "";
-  for (const a of scene.annotations) {
+  for (const [i, a] of scene.annotations.entries()) {
     const bx = Math.min(a.x, a.x + a.w) * 100;
     const by = Math.min(a.y, a.y + a.h) * 100;
     const bw = Math.abs(a.w) * 100;
@@ -66,10 +67,18 @@ function annotationsHtml(scene: EditorScene, arW: number, arH: number): string {
        const weight = a.fontWeight === "normal" ? 400 : "bold";
       const style = a.fontStyle === "italic" ? "italic" : "normal";
       const align = a.textAlign ?? "left";
-       const bgStyle = a.bgColor ? `;background:${a.bgColor};padding:${a.bgPadding ?? 0}px;border-radius:${a.bgRadius ?? 0}px` : "";
-       out += `<div class="anno anno-text" style="left:${num(bx)}%;top:${num(by)}%;width:${num(bw)}%;font-size:${num(a.fontSize)}px;color:${a.color};font-family:${a.fontFamily ?? "Inter, system-ui, sans-serif"};font-weight:${weight};font-style:${style};text-align:${align}${bgStyle}">${escapeHtml(a.text)}</div>`;
+      const gradientCSS = annotationGradientCSS(a);
+      const textColor = gradientCSS ? "transparent" : a.color;
+      const bgStyle = gradientCSS
+        ? `;background:${gradientCSS};-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none`
+        : a.bgColor ? `;background:${a.bgColor};padding:${a.bgPadding ?? 0}px;border-radius:${a.bgRadius ?? 0}px` : "";
+       out += `<div class="anno anno-text" style="left:${num(bx)}%;top:${num(by)}%;width:${num(bw)}%;font-size:${num(a.fontSize)}px;color:${textColor};font-family:${a.fontFamily ?? "Inter, system-ui, sans-serif"};font-weight:${weight};font-style:${style};text-align:${align}${bgStyle}">${escapeHtml(a.text)}</div>`;
     } else     if (a.type === "rect") {
-      out += `<div class="anno" style="left:${num(bx)}%;top:${num(by)}%;width:${num(bw)}%;height:${num(bh)}%;border:${Math.max(1, a.strokeWidth)}px solid ${a.color}"></div>`;
+      const gradientCSS = annotationGradientCSS(a);
+      const borderStyle = gradientCSS
+        ? `border:none;background:${gradientCSS} padding-box,${gradientCSS} border-box;-webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;padding:${Math.max(1, a.strokeWidth)}px`
+        : `border:${Math.max(1, a.strokeWidth)}px solid ${a.color}`;
+      out += `<div class="anno" style="left:${num(bx)}%;top:${num(by)}%;width:${num(bw)}%;height:${num(bh)}%;${borderStyle}"></div>`;
     } else if (a.type === "blur") {
       // Frosted-glass region: blurs whatever the page paints beneath it —
       // mirrors backdrop-filter in the live preview and the canvas export's
@@ -88,7 +97,21 @@ function annotationsHtml(scene: EditorScene, arW: number, arH: number): string {
       const p1y = num(ey + head * Math.sin(a1));
       const p2x = num(ex + head * Math.cos(a2));
       const p2y = num(ey + head * Math.sin(a2));
-      out += `<svg class="anno" viewBox="0 0 ${num(arW)} ${num(arH)}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="position:absolute;inset:0"><line x1="${num(sx)}" y1="${num(sy)}" x2="${num(ex)}" y2="${num(ey)}" stroke="${a.color}" stroke-width="${Math.max(1, a.strokeWidth)}" stroke-linecap="round"/><polygon points="${num(ex)},${num(ey)} ${p1x},${p1y} ${p2x},${p2y}" fill="${a.color}"/></svg>`;
+      const gradCSS = annotationGradientCSS(a);
+      const strokeColor = gradCSS ? `url(#html-anno-grad-${i})` : a.color;
+      const gradDef = gradCSS ? (() => {
+        if (a.gradientType === "radial") {
+          return `<radialGradient id="html-anno-grad-${i}" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="${a.gradientFrom}"/>${a.gradientVia ? `<stop offset="50%" stop-color="${a.gradientVia}"/>` : ""}<stop offset="100%" stop-color="${a.gradientTo}"/></radialGradient>`;
+        }
+        const ang = a.gradientAngle ?? 135;
+        const rad = (ang * Math.PI) / 180;
+        const x1 = (50 - Math.cos(rad) * 50).toFixed(1);
+        const y1 = (50 - Math.sin(rad) * 50).toFixed(1);
+        const x2 = (50 + Math.cos(rad) * 50).toFixed(1);
+        const y2 = (50 + Math.sin(rad) * 50).toFixed(1);
+        return `<linearGradient id="html-anno-grad-${i}" x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%"><stop offset="0%" stop-color="${a.gradientFrom}"/>${a.gradientVia ? `<stop offset="50%" stop-color="${a.gradientVia}"/>` : ""}<stop offset="100%" stop-color="${a.gradientTo}"/></linearGradient>`;
+      })() : "";
+      out += `<svg class="anno" viewBox="0 0 ${num(arW)} ${num(arH)}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="position:absolute;inset:0">${gradDef ? `<defs>${gradDef}</defs>` : ""}<line x1="${num(sx)}" y1="${num(sy)}" x2="${num(ex)}" y2="${num(ey)}" stroke="${strokeColor}" stroke-width="${Math.max(1, a.strokeWidth)}" stroke-linecap="round"/><polygon points="${num(ex)},${num(ey)} ${p1x},${p1y} ${p2x},${p2y}" fill="${strokeColor}"/></svg>`;
     }
   }
   return out;

@@ -8,6 +8,7 @@ import {
 } from "@/lib/state/editorHelpers";
 import type { MediaLayer } from "@/lib/types/editor";
 import type { EditorStoreSetter, EditorStoreState } from "../editorStoreTypes";
+import { useRecentMediaStore } from "@/lib/state/recentMediaStore";
 
 /** Coalesce key for a group edit, scoped to the affected selection: two edits
  *  of DIFFERENT groups within the 400ms window must stay separate undo steps,
@@ -78,7 +79,7 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
   // (returning {}) instead of pushing a do-nothing undo entry.
   const locked = (s: EditorStoreState) => isLayerLocked(s.scene, s.activeLayerId);
   return {
-    setMedia: (mediaUrl, mediaType, mediaName = null) =>
+    setMedia: (mediaUrl, mediaType, mediaName = null) => {
       set((s) => {
         if (locked(s)) return {};
         const layer = activeLayer(s.scene, s.activeLayerId);
@@ -105,7 +106,11 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
           // A real upload decodes asynchronously; clear media stops loading.
           isMediaLoading: mediaUrl != null
         };
-      }),
+      });
+      if (mediaUrl && mediaType && mediaType !== "none") {
+        useRecentMediaStore.getState().addEntry(mediaUrl, mediaType, mediaName);
+      }
+    },
     setMediaOnLayer: (layerId, mediaUrl, mediaType, mediaName = null) =>
       set((s) => {
         if (s.scene.layers.find((l) => l.id === layerId)?.locked === true) return {};

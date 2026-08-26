@@ -113,7 +113,12 @@ function normalizeAnnotation(raw: unknown, fallback: Annotation): Annotation {
     bgColor: colorStr(r.bgColor, null),
     bgPadding: num(r.bgPadding, fallback.bgPadding ?? 0, 0, 100),
     bgRadius: num(r.bgRadius, fallback.bgRadius ?? 0, 0, 200),
-    animated: r.animated === true
+    animated: r.animated === true,
+    gradientFrom: colorStr(r.gradientFrom, null) ?? undefined,
+    gradientTo: colorStr(r.gradientTo, null) ?? undefined,
+    gradientVia: colorStr(r.gradientVia, null) ?? undefined,
+    gradientType: r.gradientType === "linear" || r.gradientType === "radial" ? r.gradientType : undefined,
+    gradientAngle: typeof r.gradientAngle === "number" ? num(r.gradientAngle, 135, 0, 360) : undefined
   };
 }
 

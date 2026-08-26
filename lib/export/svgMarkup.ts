@@ -3,6 +3,7 @@ import { buildTextLayerSvg } from "@/lib/render/layerText";
 import { computeFrameBox, computeFrameInstances, type FrameBox } from "@/lib/render/frameGeometry";
 import { frameViewBox, frameOs, getFrameSpec, DEFAULT_VIEWBOX } from "@/lib/render/frames";
 import { tiltMatrixSvg } from "@/lib/render/tilt";
+import { hasAnnotationGradient, annotationSvgGradientDef } from "@/lib/render/annotationGradient";
 import { RENDER, resolveFrameStyle } from "@/lib/render/canvasDrawing";
 import { watermarkEdges } from "@/lib/render/watermark";
 import { overlayScaleFor } from "@/lib/render/overlayMetrics";
@@ -280,11 +281,16 @@ function annotationsMarkup(scene: EditorScene, width: number, height: number, bl
   // matching the canvas export and the live preview.
   const s = overlayScaleFor(width);
   let out = "";
+  let gradDefs = "";
   for (const [i, a] of scene.annotations.entries()) {
     const bx = Math.min(a.x, a.x + a.w) * width;
     const by = Math.min(a.y, a.y + a.h) * height;
     const bw = Math.abs(a.w) * width;
     const bh = Math.abs(a.h) * height;
+    const gradId = `anno-svg-grad-${i}`;
+    const grad = annotationSvgGradientDef(a, gradId, bx, by, bw, bh);
+    if (grad) gradDefs += grad.def;
+    const strokeRef = grad?.ref;
     if (a.type === "blur") {
       // Frosted region: replay the scene group through a Gaussian blur,
       // clipped to the rect. The scene is emitted once as #mocksy-scene and
@@ -314,9 +320,14 @@ function annotationsMarkup(scene: EditorScene, width: number, height: number, bl
          const radius = (a.bgRadius ?? 0) * s;
          bg = `<rect x="${num(boxX)}" y="${num(boxY)}" width="${num(boxW)}" height="${num(boxH)}" rx="${num(radius)}" fill="${a.bgColor}"/>`;
        }
-       out += `${bg}<text x="${num(textX)}" y="${num(by)}" font-size="${num(a.fontSize * s)}" font-weight="${weight}" fill="${a.color}" font-family="${a.fontFamily ?? "Inter, system-ui, sans-serif"}" text-anchor="${anchor}" dominant-baseline="hanging"${style} filter="url(#anno-shadow)">${tspans}</text>`;
+       const fillAttr = strokeRef ? `fill="${strokeRef}"` : `fill="${a.color}"`;
+       out += `${bg}<text x="${num(textX)}" y="${num(by)}" font-size="${num(a.fontSize * s)}" font-weight="${weight}" ${fillAttr} font-family="${a.fontFamily ?? "Inter, system-ui, sans-serif"}" text-anchor="${anchor}" dominant-baseline="hanging"${style} filter="url(#anno-shadow)">${tspans}</text>`;
     } else if (a.type === "rect") {
-      out += `<rect x="${num(bx)}" y="${num(by)}" width="${num(bw)}" height="${num(bh)}" fill="none" stroke="${a.color}" stroke-width="${Math.max(1, a.strokeWidth * s)}"/>`;
+      const strokeAttr = strokeRef ? `stroke="${strokeRef}"` : `stroke="${a.color}"`;
+      out += `<rect x="${num(bx)}" y="${num(by)}" width="${num(bw)}" height="${num(bh)}" fill="none" ${strokeAttr} stroke-width="${Math.max(1, a.strokeWidth * s)}"/>`;
+    } else if (a.type === "circle") {
+      const strokeAttr = strokeRef ? `stroke="${strokeRef}"` : `stroke="${a.color}"`;
+      out += `<ellipse cx="${num(bx + bw / 2)}" cy="${num(by + bh / 2)}" rx="${num(bw / 2)}" ry="${num(bh / 2)}" fill="none" ${strokeAttr} stroke-width="${Math.max(1, a.strokeWidth * s)}"/>`;
     } else {
       const startX = a.x * width;
       const startY = a.y * height;
@@ -330,11 +341,13 @@ function annotationsMarkup(scene: EditorScene, width: number, height: number, bl
       const p1y = num(endY + head * Math.sin(a1));
       const p2x = num(endX + head * Math.cos(a2));
       const p2y = num(endY + head * Math.sin(a2));
-      out += `<line x1="${num(startX)}" y1="${num(startY)}" x2="${num(endX)}" y2="${num(endY)}" stroke="${a.color}" stroke-width="${Math.max(1, a.strokeWidth * s)}" stroke-linecap="round"/>`;
-      out += `<polygon points="${num(endX)},${num(endY)} ${p1x},${p1y} ${p2x},${p2y}" fill="${a.color}"/>`;
+      const strokeAttr = strokeRef ? `stroke="${strokeRef}"` : `stroke="${a.color}"`;
+      const fillAttr = strokeRef ? `fill="${strokeRef}"` : `fill="${a.color}"`;
+      out += `<line x1="${num(startX)}" y1="${num(startY)}" x2="${num(endX)}" y2="${num(endY)}" ${strokeAttr} stroke-width="${Math.max(1, a.strokeWidth * s)}" stroke-linecap="round"/>`;
+      out += `<polygon points="${num(endX)},${num(endY)} ${p1x},${p1y} ${p2x},${p2y}" ${fillAttr}/>`;
     }
   }
-  return out;
+  return gradDefs ? `<defs>${gradDefs}</defs>${out}` : out;
 }
 
 function watermarkMarkup(scene: EditorScene, opts: SvgExportOptions): string {

@@ -82,6 +82,7 @@ export function EditorShell() {
     exportApi.handleExportPng,
     exportApi.handleExportJpeg,
     exportApi.handleExportWebp,
+    exportApi.handleExportAvif,
     exportApi.handleExportSvg,
     exportApi.handleExportHtml,
     exportApi.handleExportPdf,
@@ -91,6 +92,8 @@ export function EditorShell() {
     exportApi.handleExportWebpAnim,
     exportApi.handleExportZipVideo,
     exportApi.handleCopyPng,
+    exportApi.handleCopyJpeg,
+    exportApi.handleCopyWebp,
     exportApi.handleCopySvg,
     exportApi.handleCopyHtml,
     exportApi.copyShareUrl,
@@ -311,6 +314,8 @@ export function EditorShell() {
         onAspectRatioChange={setAspectRatio}
         onExport={exportApi.handleExport}
         onCopy={exportApi.handleCopyFromDialog}
+        onCopyJpeg={exportApi.handleCopyJpeg}
+        onCopyWebp={exportApi.handleCopyWebp}
         onCopySvg={exportApi.handleCopySvg}
         onCopyHtml={exportApi.handleCopyHtml}
         busy={exportApi.isExporting}

@@ -47,6 +47,7 @@ function makeFileCallbacks() {
     onExportPng: vi.fn(),
     onExportJpeg: vi.fn(),
     onExportWebp: vi.fn(),
+    onExportAvif: vi.fn(),
     onExportSvg: vi.fn(),
     onExportHtml: vi.fn(),
     onExportPdf: vi.fn(),
@@ -56,6 +57,8 @@ function makeFileCallbacks() {
     onExportWebpAnim: vi.fn(),
     onExportZipVideo: vi.fn(),
     onCopyPng: vi.fn(),
+    onCopyJpeg: vi.fn(),
+    onCopyWebp: vi.fn(),
     onCopySvg: vi.fn(),
     onCopyHtml: vi.fn(),
     onCopyShareUrl: vi.fn(),
@@ -116,9 +119,9 @@ describe("createFileCommands", () => {
     const cb = makeFileCallbacks();
     const cmds = createFileCommands(t, cb);
     expect(cmds.map((c) => c.id)).toEqual([
-      "record-screen", "new-project", "save-project", "export-png", "export-jpeg", "export-mp4", "export-webm",
+      "record-screen", "new-project", "save-project", "export-png", "export-jpeg", "export-avif", "export-mp4", "export-webm",
       "export-webp", "export-webp-anim", "export-svg", "export-html", "export-pdf",
-      "export-gif", "export-video-zip", "copy-png", "copy-svg", "copy-html", "copy-share-url"
+      "export-gif", "export-video-zip", "copy-png", "copy-jpeg", "copy-webp", "copy-svg", "copy-html", "copy-share-url"
     ]);
     cmds.find((c) => c.id === "save-project")!.action();
     cmds.find((c) => c.id === "export-png")!.action();
@@ -339,9 +342,13 @@ describe("createAnnotationCommands", () => {
     cmds.find((c) => c.id === "anno-text")!.action();
     cmds.find((c) => c.id === "anno-arrow")!.action();
     cmds.find((c) => c.id === "anno-rect")!.action();
+    cmds.find((c) => c.id === "anno-circle")!.action();
+    cmds.find((c) => c.id === "anno-blur")!.action();
     expect(addAnnotation).toHaveBeenNthCalledWith(1, "text");
     expect(addAnnotation).toHaveBeenNthCalledWith(2, "arrow");
     expect(addAnnotation).toHaveBeenNthCalledWith(3, "rect");
+    expect(addAnnotation).toHaveBeenNthCalledWith(4, "circle");
+    expect(addAnnotation).toHaveBeenNthCalledWith(5, "blur");
 
     const withAnnotations = createAnnotationCommands(t, {
       ...scene,
@@ -462,9 +469,9 @@ describe("createCommands", () => {
       a.setExportScale, 2,
       "p1", [makeProject("p1", "One")], a.switchProject,
       "dark", a.setThemeMode,
-      a.onExportPng, a.onExportJpeg, a.onExportWebp, a.onExportSvg, a.onExportHtml, a.onExportPdf,
+      a.onExportPng, a.onExportJpeg, a.onExportWebp, a.onExportAvif, a.onExportSvg, a.onExportHtml, a.onExportPdf,
       a.onExportMp4, a.onExportWebm, a.onExportGif, a.onExportWebpAnim, a.onExportZipVideo,
-      a.onCopyPng, a.onCopySvg, a.onCopyHtml, a.onCopyShareUrl, a.onSave, a.onToggleFullscreen
+      a.onCopyPng, a.onCopyJpeg, a.onCopyWebp, a.onCopySvg, a.onCopyHtml, a.onCopyShareUrl, a.onSave, a.onToggleFullscreen
     );
 
     expect(cmds.find((c) => c.id === "export-png")).toBeDefined();

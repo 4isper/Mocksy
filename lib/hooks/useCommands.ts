@@ -10,6 +10,7 @@ export function useCommands(
   onExportPng: () => void,
   onExportJpeg: () => void,
   onExportWebp: () => void,
+  onExportAvif: () => void,
   onExportSvg: () => void,
   onExportHtml: () => void,
   onExportPdf: () => void,
@@ -19,6 +20,8 @@ export function useCommands(
   onExportWebpAnim: () => void,
   onExportZipVideo: () => void,
   onCopyPng: () => void,
+  onCopyJpeg: () => void,
+  onCopyWebp: () => void,
   onCopySvg: () => void,
   onCopyHtml: () => void,
   onCopyShareUrl: () => void,
@@ -71,12 +74,12 @@ export function useCommands(
     toggleWatermark, setExportScale, exportScale,
     activeProjectId, projects, switchProject,
     themeMode, setThemeMode,
-    onExportPng, onExportJpeg, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onExportZipVideo,
-    onCopyPng, onCopySvg, onCopyHtml, onCopyShareUrl, onSave, onToggleFullscreenPreview
+    onExportPng, onExportJpeg, onExportWebp, onExportAvif, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onExportZipVideo,
+    onCopyPng, onCopyJpeg, onCopyWebp, onCopySvg, onCopyHtml, onCopyShareUrl, onSave, onToggleFullscreenPreview
   ), [
     t, scene, activeLayerId, pastLength, futureLength, activeProjectId, projects, themeMode, exportScale,
-    onExportPng, onExportJpeg, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onExportZipVideo,
-    onCopyPng, onCopySvg, onCopyHtml, onCopyShareUrl, onSave, onToggleFullscreenPreview,
+    onExportPng, onExportJpeg, onExportWebp, onExportAvif, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onExportZipVideo,
+    onCopyPng, onCopyJpeg, onCopyWebp, onCopySvg, onCopyHtml, onCopyShareUrl, onSave, onToggleFullscreenPreview,
     undo, redo, resetScene,
     setFrame, setStylePreset, setAnimationPreset,
     setBackgroundSolid, setBackgroundGradient, setBackgroundPattern, setBackgroundTransparent, setBackgroundImage,

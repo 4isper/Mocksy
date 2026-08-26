@@ -8,6 +8,7 @@ import { drawTextLayer, isTextLayer } from "@/lib/render/layerText";
 import { drawScreenChrome } from "@/lib/render/screenChrome";
 import { drawBrowserUrl } from "@/lib/render/browserChrome";
 import { CORNER_POWER_CIRCLE, traceSquirclePath } from "@/lib/render/squircle";
+import { annotationCanvasGradient } from "@/lib/render/annotationGradient";
 import { overlayScaleFor } from "@/lib/render/overlayMetrics";
 
 export const RENDER = {
@@ -116,6 +117,8 @@ export function drawAnnotations(
         ctx.restore();
       }
       ctx.fillStyle = a.color;
+      const textGrad = annotationCanvasGradient(ctx, a, bx, by, bw, bh);
+      if (textGrad) ctx.fillStyle = textGrad;
       ctx.shadowColor = "rgba(0,0,0,0.5)";
       ctx.shadowBlur = RENDER.annoShadowBlur * s;
       ctx.shadowOffsetX = 0;
@@ -125,7 +128,8 @@ export function drawAnnotations(
       const textTop = by + (a.bgColor ? padding : 0);
       lines.forEach((line, i) => ctx.fillText(line, textX, textTop + i * lineHeight));
     } else if (a.type === "rect") {
-      ctx.strokeStyle = a.color;
+      const rectGrad = annotationCanvasGradient(ctx, a, bx, by, bw, bh);
+      ctx.strokeStyle = rectGrad ?? a.color;
       const sw = Math.max(1, a.strokeWidth * s);
       ctx.lineWidth = sw;
       // Match the preview's `border-box`: the outer edge of the stroke sits on
@@ -133,7 +137,8 @@ export function drawAnnotations(
       // the stroke width instead of stroking centered on the path.
       ctx.strokeRect(bx + sw / 2, by + sw / 2, Math.max(0, bw - sw), Math.max(0, bh - sw));
     } else if (a.type === "circle") {
-      ctx.strokeStyle = a.color;
+      const circleGrad = annotationCanvasGradient(ctx, a, bx, by, bw, bh);
+      ctx.strokeStyle = circleGrad ?? a.color;
       const sw = Math.max(1, a.strokeWidth * s);
       ctx.lineWidth = sw;
       ctx.beginPath();
@@ -167,6 +172,14 @@ export function drawAnnotations(
       const head = RENDER.arrowHead * s;
       const a1 = angle + Math.PI - 0.45;
       const a2 = angle + Math.PI + 0.45;
+      const arrowGrad = annotationCanvasGradient(ctx, a, startX, startY, endX - startX, endY - startY);
+      if (arrowGrad) {
+        ctx.strokeStyle = arrowGrad;
+        ctx.fillStyle = arrowGrad;
+      } else {
+        ctx.strokeStyle = a.color;
+        ctx.fillStyle = a.color;
+      }
       ctx.beginPath();
       ctx.moveTo(startX, startY);
       ctx.lineTo(endX, endY);

@@ -369,7 +369,10 @@
     "blendMode_hue": "Hue",
     "blendMode_saturation": "Saturation",
     "blendMode_color": "Color",
-    "blendMode_luminosity": "Luminosity"
+    "blendMode_luminosity": "Luminosity",
+    "recentMedia": "Recent",
+    "recentMediaClear": "Clear",
+    "recentMediaHint": "Right-click to remove"
   },
   "frame": {
     "none": "없음",
@@ -462,7 +465,15 @@
     "blurStrength": "Blur strength ({val}px)",
     "stickers": "Stickers",
     "animate": "Animate on preview",
-    "distributeNeedsAnnotations": "Select 3+ annotations to distribute"
+    "distributeNeedsAnnotations": "Select 3+ annotations to distribute",
+    "gradient": "Gradient",
+    "gradientFrom": "From",
+    "gradientTo": "To",
+    "gradientVia": "Mid color",
+    "gradientType": "Type",
+    "gradientLinear": "Linear",
+    "gradientRadial": "Radial",
+    "gradientAngle": "Angle ({val}°)"
   },
   "video": {
     "options": "비디오 옵션",
@@ -567,7 +578,8 @@
     "zipVideo": "Video ZIP (all frames)",
     "exportingZipVideo": "Exporting videos…",
     "jpeg": "JPEG",
-    "pdfRasterFallback": "Vector export unavailable — exported as raster image instead."
+    "pdfRasterFallback": "Vector export unavailable — exported as raster image instead.",
+    "avif": "AVIF"
   },
   "shortcuts": {
     "title": "키보드 단축키",
@@ -623,7 +635,12 @@
     "resetAll": "Reset all shortcuts",
     "goLayers": "Go to Layers",
     "goAnnotations": "Go to Annotations",
-    "goHistory": "Go to History"
+    "goHistory": "Go to History",
+    "addTextAnnotation": "Add text annotation",
+    "addArrowAnnotation": "Add arrow annotation",
+    "addRectAnnotation": "Add rectangle annotation",
+    "addCircleAnnotation": "Add circle annotation",
+    "addBlurAnnotation": "Add blur annotation"
   },
   "projects": {
     "title": "프로젝트",
@@ -812,7 +829,17 @@
     "copySvg": "Copy SVG to Clipboard",
     "copySvgDesc": "Copy current scene as SVG markup to clipboard",
     "copyHtml": "Copy HTML to Clipboard",
-    "copyHtmlDesc": "Copy current scene as self-contained HTML to clipboard"
+    "copyHtmlDesc": "Copy current scene as self-contained HTML to clipboard",
+    "exportAvif": "Export AVIF",
+    "exportAvifDesc": "Export current scene as AVIF image (Chromium only)",
+    "copyJpeg": "Copy JPEG to Clipboard",
+    "copyJpegDesc": "Copy current scene as JPEG to clipboard",
+    "copyWebp": "Copy WebP to Clipboard",
+    "copyWebpDesc": "Copy current scene as WebP to clipboard",
+    "addCircleAnnotation": "Add Circle Annotation",
+    "addCircleAnnotationDesc": "Add circle / ellipse overlay",
+    "addBlurAnnotation": "Add Blur Annotation",
+    "addBlurAnnotationDesc": "Add blur / censor overlay"
   },
   "errors": {
     "title": "문제가 발생했습니다",

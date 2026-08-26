@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { exportImage, copyPngToClipboard, exportWebp, exportJpeg } from "@/lib/export/exportImage";
+import { exportImage, copyPngToClipboard, copyJpegToClipboard, copyWebpToClipboard, exportWebp, exportJpeg, exportAvif } from "@/lib/export/exportImage";
 import { exportPdf } from "@/lib/export/exportPdf";
 import type { ExportFormat } from "@/components/editor/ExportDialog";
 import { sceneToShareUrl, sceneToTemplateUrl, ShareUrlTooLarge } from "@/lib/state/shareState";
@@ -21,6 +21,7 @@ export interface EditorExportApi {
   handleExportPng: () => void;
   handleExportJpeg: () => void;
   handleExportWebp: () => void;
+  handleExportAvif: () => void;
   handleExportSvg: () => void;
   handleExportHtml: () => void;
   handleExportPdf: () => void;
@@ -31,6 +32,8 @@ export interface EditorExportApi {
   handleExportGif: () => void;
   handleExportZipVideo: () => void;
   handleCopyPng: () => Promise<void>;
+  handleCopyJpeg: () => Promise<void>;
+  handleCopyWebp: () => Promise<void>;
   handleCopySvg: () => Promise<void>;
   handleCopyHtml: () => Promise<void>;
   copyTemplateUrl: () => Promise<void>;
@@ -149,6 +152,16 @@ export function useEditorExport(
     await copyPngToClipboard(scene, "preview-canvas", setExportError, setCopyStatus, exportScale, customExportSize, activeLayerId);
   }, [scene, exportScale, customExportSize, activeLayerId]);
 
+  const handleCopyJpeg = useCallback(async () => {
+    setExportError(null);
+    await copyJpegToClipboard(scene, "preview-canvas", setExportError, setCopyStatus, exportScale, customExportSize, activeLayerId);
+  }, [scene, exportScale, customExportSize, activeLayerId]);
+
+  const handleCopyWebp = useCallback(async () => {
+    setExportError(null);
+    await copyWebpToClipboard(scene, "preview-canvas", setExportError, setCopyStatus, exportScale, customExportSize, activeLayerId);
+  }, [scene, exportScale, customExportSize, activeLayerId]);
+
   const handleCopySvg = useCallback(async () => {
     setExportError(null);
     try {
@@ -179,6 +192,13 @@ export function useEditorExport(
   const handleExportWebp = useCallback(() => {
     setExportError(null);
     void Promise.resolve(exportWebp(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId)).then(
+      () => setCopyStatus(t("editor.exported"))
+    );
+  }, [scene, exportScale, customExportSize, activeLayerId, t]);
+
+  const handleExportAvif = useCallback(() => {
+    setExportError(null);
+    void Promise.resolve(exportAvif(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId)).then(
       () => setCopyStatus(t("editor.exported"))
     );
   }, [scene, exportScale, customExportSize, activeLayerId, t]);
@@ -343,6 +363,9 @@ export function useEditorExport(
         case "webp":
           handleExportWebp();
           break;
+        case "avif":
+          handleExportAvif();
+          break;
         case "svg":
           void handleExportSvg();
           break;
@@ -377,6 +400,7 @@ export function useEditorExport(
       handleExportPng,
       handleExportJpeg,
       handleExportWebp,
+      handleExportAvif,
       handleExportSvg,
       handleExportHtml,
       handleExportPdf,
@@ -420,6 +444,7 @@ export function useEditorExport(
     handleExportPng,
     handleExportJpeg,
     handleExportWebp,
+    handleExportAvif,
     handleExportSvg,
     handleExportHtml,
     handleExportPdf,
@@ -430,6 +455,8 @@ export function useEditorExport(
     handleExportGif,
     handleExportZipVideo,
     handleCopyPng,
+    handleCopyJpeg,
+    handleCopyWebp,
     handleCopySvg,
     handleCopyHtml,
     cancelExport

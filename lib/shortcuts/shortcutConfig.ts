@@ -55,6 +55,11 @@ export const SHORTCUT_DEFS: ShortcutDef[] = [
   { id: "fullscreen-preview", combo: "f", labelKey: "shortcuts.fullscreenPreview", section: "scene", remappable: false, allowWhileTyping: false },
   { id: "paste-object", combo: "mod+v", labelKey: "shortcuts.pasteObject", section: "scene", remappable: false, allowWhileTyping: false },
   { id: "nudge-frame", combo: "arrow*", labelKey: "shortcuts.nudgeFrame", section: "scene", remappable: false, allowWhileTyping: false },
+  { id: "add-text-annotation", combo: "mod+shift+t", labelKey: "shortcuts.addTextAnnotation", section: "scene", remappable: true, allowWhileTyping: false },
+  { id: "add-arrow-annotation", combo: "mod+shift+i", labelKey: "shortcuts.addArrowAnnotation", section: "scene", remappable: true, allowWhileTyping: false },
+  { id: "add-rect-annotation", combo: "mod+shift+r", labelKey: "shortcuts.addRectAnnotation", section: "scene", remappable: true, allowWhileTyping: false },
+  { id: "add-circle-annotation", combo: "mod+shift+o", labelKey: "shortcuts.addCircleAnnotation", section: "scene", remappable: true, allowWhileTyping: false },
+  { id: "add-blur-annotation", combo: "mod+shift+b", labelKey: "shortcuts.addBlurAnnotation", section: "scene", remappable: true, allowWhileTyping: false },
   { id: "go-layers", combo: "mod+1", labelKey: "shortcuts.goLayers", section: "view", remappable: false, allowWhileTyping: false },
   { id: "go-annotations", combo: "mod+2", labelKey: "shortcuts.goAnnotations", section: "view", remappable: false, allowWhileTyping: false },
   { id: "go-history", combo: "mod+3", labelKey: "shortcuts.goHistory", section: "view", remappable: false, allowWhileTyping: false }

@@ -12,7 +12,7 @@ import type { ExportFormat } from "@/lib/types/editor";
 
 /** Raster formats honor the 1×/2×/4× scale control (and custom size); vector
  *  formats don't. */
-const RASTER_FORMATS: ExportFormat[] = ["png", "jpeg", "webp", "mp4", "webm", "gif", "webpAnim", "zip", "zipVideo"];
+const RASTER_FORMATS: ExportFormat[] = ["png", "jpeg", "webp", "avif", "mp4", "webm", "gif", "webpAnim", "zip", "zipVideo"];
 const VECTOR_FORMATS: ExportFormat[] = ["svg", "html", "pdf"];
 
 /** Fallback size offered when the user first enables the custom-size option. */
@@ -27,6 +27,8 @@ export function ExportDialog({
   onCustomSizeChange,
   onExport,
   onCopy,
+  onCopyJpeg,
+  onCopyWebp,
   onCopySvg,
   onCopyHtml,
   busy,
@@ -42,6 +44,8 @@ export function ExportDialog({
   onCustomSizeChange: (size: ExportSize | null) => void;
   onExport: (format: ExportFormat) => void;
   onCopy: () => void;
+  onCopyJpeg?: () => void;
+  onCopyWebp?: () => void;
   onCopySvg?: () => void;
   onCopyHtml?: () => void;
   busy?: boolean;
@@ -56,6 +60,7 @@ export function ExportDialog({
     { value: "png", label: t("export.png") },
     { value: "jpeg", label: t("export.jpeg") },
     { value: "webp", label: t("export.webp") },
+    { value: "avif", label: t("export.avif") },
     ...(isMultiFrame ? [{ value: "zip" as ExportFormat, label: t("export.zip") }] : []),
     { value: "svg", label: t("export.svg") },
     { value: "html", label: t("export.html") },
@@ -264,6 +269,14 @@ export function ExportDialog({
         <div className="modal-actions">
           {format === "png" ? (
             <button type="button" className="btn" onClick={onCopy} disabled={busy} title={t("shortcuts.copyPng")}>
+              {t("export.copy")}
+            </button>
+          ) : format === "jpeg" && onCopyJpeg ? (
+            <button type="button" className="btn" onClick={onCopyJpeg} disabled={busy}>
+              {t("export.copy")}
+            </button>
+          ) : format === "webp" && onCopyWebp ? (
+            <button type="button" className="btn" onClick={onCopyWebp} disabled={busy}>
               {t("export.copy")}
             </button>
           ) : format === "svg" && onCopySvg ? (

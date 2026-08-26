@@ -17,6 +17,7 @@ const FORMAT_LABELS: Record<ExportFormat, string> = {
   png: "PNG",
   jpeg: "JPEG",
   webp: "WebP",
+  avif: "AVIF",
   svg: "SVG",
   html: "HTML",
   mp4: "MP4",

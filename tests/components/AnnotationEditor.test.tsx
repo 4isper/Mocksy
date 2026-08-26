@@ -86,18 +86,21 @@ describe("AnnotationEditor", () => {
     it("renders animated checkbox", () => {
       const ann = makeAnnotation({ type: "text" });
       render(<AnnotationEditor annotation={ann} />);
-      expect(screen.getByRole("checkbox")).toBeInTheDocument();
+      expect(screen.getAllByRole("checkbox").length).toBeGreaterThanOrEqual(1);
     });
 
     it("checkbox reflects annotation.animated prop", () => {
       const checked = makeAnnotation({ type: "text", animated: true });
       const unchecked = makeAnnotation({ type: "text", animated: false });
+      const getAnimateCheckbox = () => screen.getAllByRole("checkbox").find(
+        (el) => el.parentElement?.textContent?.includes("annotation.animate")
+      )!;
       const { unmount } = render(<AnnotationEditor annotation={checked} />);
-      expect(screen.getByRole("checkbox")).toBeChecked();
+      expect(getAnimateCheckbox()).toBeChecked();
       unmount();
 
       render(<AnnotationEditor annotation={unchecked} />);
-      expect(screen.getByRole("checkbox")).not.toBeChecked();
+      expect(getAnimateCheckbox()).not.toBeChecked();
     });
 
     it("renders delete button", () => {
@@ -317,7 +320,9 @@ describe("AnnotationEditor", () => {
       setAnnotations([ann]);
       render(<AnnotationEditor annotation={ann} />);
 
-      const checkbox = screen.getByRole("checkbox");
+      const checkbox = screen.getAllByRole("checkbox").find(
+        (el) => el.parentElement?.textContent?.includes("annotation.animate")
+      ) ?? screen.getAllByRole("checkbox").at(-1)!;
       fireEvent.click(checkbox);
 
       const updated = useEditorStore.getState().scene.annotations.find((a) => a.id === "a1");

@@ -93,7 +93,12 @@ const HANDLERS: ActionMap = {
   },
   "go-layers": () => { const st = useEditorStore.getState(); st.setFullscreenPreview(false); st.setRightTab("layers"); return true; },
   "go-annotations": () => { const st = useEditorStore.getState(); st.setFullscreenPreview(false); st.setRightTab("annotations"); return true; },
-  "go-history": () => { const st = useEditorStore.getState(); st.setFullscreenPreview(false); st.setRightTab("history"); return true; }
+  "go-history": () => { const st = useEditorStore.getState(); st.setFullscreenPreview(false); st.setRightTab("history"); return true; },
+  "add-text-annotation": () => { useEditorStore.getState().addAnnotation("text"); return true; },
+  "add-arrow-annotation": () => { useEditorStore.getState().addAnnotation("arrow"); return true; },
+  "add-rect-annotation": () => { useEditorStore.getState().addAnnotation("rect"); return true; },
+  "add-circle-annotation": () => { useEditorStore.getState().addAnnotation("circle"); return true; },
+  "add-blur-annotation": () => { useEditorStore.getState().addAnnotation("blur"); return true; }
 };
 
 function moveLayer(dir: -1 | 1): boolean {

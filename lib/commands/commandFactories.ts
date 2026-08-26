@@ -67,6 +67,7 @@ export function createCommands(
   onExportPng: () => void,
   onExportJpeg: () => void,
   onExportWebp: () => void,
+  onExportAvif: () => void,
   onExportSvg: () => void,
   onExportHtml: () => void,
   onExportPdf: () => void,
@@ -76,6 +77,8 @@ export function createCommands(
   onExportWebpAnim: () => void,
   onExportZipVideo: () => void,
   onCopyPng: () => void,
+  onCopyJpeg: () => void,
+  onCopyWebp: () => void,
   onCopySvg: () => void,
   onCopyHtml: () => void,
   onCopyShareUrl: () => void,
@@ -83,7 +86,7 @@ export function createCommands(
   toggleFullscreenPreview: () => void,
 ): Command[] {
   return [
-    ...createFileCommands(t, { onExportPng, onExportJpeg, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onExportZipVideo, onCopyPng, onCopySvg, onCopyHtml, onCopyShareUrl, onSave }),
+    ...createFileCommands(t, { onExportPng, onExportJpeg, onExportWebp, onExportAvif, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onExportZipVideo, onCopyPng, onCopyJpeg, onCopyWebp, onCopySvg, onCopyHtml, onCopyShareUrl, onSave }),
     ...createEditCommands(t, { undo, redo, pastLength, futureLength, resetScene }),
     ...createFrameCommands(t, { setFrame }),
     ...createFrameAlignCommands(t, scene),

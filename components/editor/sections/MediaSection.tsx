@@ -10,6 +10,7 @@ import { isVideoLayer } from "@/lib/render/mediaKind";
 import { useScreenRecording } from "@/lib/hooks/useScreenRecording";
 import { VideoOptions } from "@/components/editor/VideoOptions";
 import { Section } from "@/components/editor/Section";
+import { useRecentMediaStore } from "@/lib/state/recentMediaStore";
 
 function formatElapsed(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
@@ -143,7 +144,71 @@ export function MediaSection() {
           </span>
         ) : null}
         {activeLayer && isVideoLayer(activeLayer) && <VideoOptions />}
+        <RecentMediaGrid />
       </div>
     </Section>
+  );
+}
+
+function RecentMediaGrid() {
+  const t = useTranslations();
+  const entries = useRecentMediaStore((s) => s.entries);
+  const clearAll = useRecentMediaStore((s) => s.clearAll);
+  const removeEntry = useRecentMediaStore((s) => s.removeEntry);
+  const setMedia = useEditorStore((s) => s.setMedia);
+  const setScenePalette = useEditorStore((s) => s.setScenePalette);
+
+  if (entries.length === 0) return null;
+
+  return (
+    <div className="field">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span className="text-dim-sm">{t("editor.recentMedia")}</span>
+        <button type="button" className="btn btn-sm" onClick={clearAll}>
+          {t("editor.recentMediaClear")}
+        </button>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, marginTop: 4 }}>
+        {entries.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            title={entry.mediaName ?? t("editor.recentMedia")}
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: 4,
+              padding: 0,
+              overflow: "hidden",
+              cursor: "pointer",
+              background: "transparent",
+              aspectRatio: "1",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            }}
+            onClick={() => {
+              setScenePalette(null);
+              setMedia(entry.dataUrl, entry.mediaType, entry.mediaName);
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              removeEntry(entry.id);
+            }}
+          >
+            {entry.mediaType === "video" ? (
+              <span style={{ fontSize: 18 }}>▶</span>
+            ) : (
+              <img
+                src={entry.dataUrl}
+                alt={entry.mediaName ?? ""}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                loading="lazy"
+              />
+            )}
+          </button>
+        ))}
+      </div>
+      <p className="text-dim-sm" style={{ marginTop: 2 }}>{t("editor.recentMediaHint")}</p>
+    </div>
   );
 }

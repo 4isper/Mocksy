@@ -68,7 +68,7 @@ export async function decodeSvgAssetsForWorker(payload: RenderWorkerPayload): Pr
 export async function renderSceneToImageBlob(
   scene: EditorScene,
   containerId: string,
-  mimeType: "image/png" | "image/webp" | "image/jpeg",
+  mimeType: "image/png" | "image/webp" | "image/jpeg" | "image/avif",
   onError?: (message: string) => void,
   /** Pixel ratio for the export. Defaults to `Math.max(2, devicePixelRatio)`
    *  when omitted so existing callers keep 2× output on standard displays. */
@@ -325,6 +325,28 @@ export async function exportJpeg(
 }
 
 /**
+ * Exports the scene as a static AVIF image. AVIF encoding via canvas is only
+ * supported in Chromium-based browsers (Chrome 121+); other browsers will fail
+ * gracefully with an error message through `onError`.
+ */
+export async function exportAvif(
+  scene: EditorScene,
+  containerId: string,
+  filename: string,
+  onError?: (message: string) => void,
+  scale?: number,
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
+) {
+  const blob = await renderSceneToImageBlob(scene, containerId, "image/avif", onError, scale, customSize, activeLayerId);
+  if (!blob) {
+    onError?.("AVIF export is not supported in this browser. Try Chrome or Edge.");
+    return;
+  }
+  downloadBlob(blob, `${filename}.avif`);
+}
+
+/**
  * Copies a PNG snapshot of the scene to the system clipboard. Handy for pasting
  * a mockup straight into Slack/Notion without a file download. Needs a secure
  * context (https or localhost) and the Clipboard Image write permission; falls
@@ -350,6 +372,55 @@ export async function copyPngToClipboard(
     if (!blob) return;
     await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
     onStatus?.("Copied PNG to clipboard");
+  } catch (err) {
+    onError?.(err instanceof Error ? err.message : "Could not copy the image.");
+  }
+}
+
+/** Copies a JPEG snapshot to the clipboard. Transparent backgrounds are
+ *  flattened onto white because JPEG has no alpha channel. */
+export async function copyJpegToClipboard(
+  scene: EditorScene,
+  containerId: string,
+  onError?: (message: string) => void,
+  onStatus?: (message: string) => void,
+  scale?: number,
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
+) {
+  try {
+    if (typeof navigator === "undefined" || !navigator.clipboard || typeof ClipboardItem === "undefined") {
+      onError?.("Clipboard isn't available here (open over https or localhost).");
+      return;
+    }
+    const blob = await renderSceneToImageBlob(scene, containerId, "image/jpeg", onError, scale, customSize, activeLayerId);
+    if (!blob) return;
+    await navigator.clipboard.write([new ClipboardItem({ "image/jpeg": blob })]);
+    onStatus?.("Copied JPEG to clipboard");
+  } catch (err) {
+    onError?.(err instanceof Error ? err.message : "Could not copy the image.");
+  }
+}
+
+/** Copies a WebP snapshot to the clipboard. */
+export async function copyWebpToClipboard(
+  scene: EditorScene,
+  containerId: string,
+  onError?: (message: string) => void,
+  onStatus?: (message: string) => void,
+  scale?: number,
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
+) {
+  try {
+    if (typeof navigator === "undefined" || !navigator.clipboard || typeof ClipboardItem === "undefined") {
+      onError?.("Clipboard isn't available here (open over https or localhost).");
+      return;
+    }
+    const blob = await renderSceneToImageBlob(scene, containerId, "image/webp", onError, scale, customSize, activeLayerId);
+    if (!blob) return;
+    await navigator.clipboard.write([new ClipboardItem({ "image/webp": blob })]);
+    onStatus?.("Copied WebP to clipboard");
   } catch (err) {
     onError?.(err instanceof Error ? err.message : "Could not copy the image.");
   }

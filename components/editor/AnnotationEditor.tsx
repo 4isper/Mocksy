@@ -37,8 +37,79 @@ export function AnnotationEditor({ annotation }: AnnotationEditorProps) {
       {!isBlur ? (
         <label className="field">
           <span>{t("annotation.color")}</span>
-          <input type="color" value={annotation.color} onChange={(e) => updateAnnotation(annotation.id, { color: e.target.value })} />
+          <input type="color" value={annotation.color} onChange={(e) => updateAnnotation(annotation.id, { color: e.target.value, gradientFrom: undefined, gradientTo: undefined, gradientVia: undefined, gradientType: undefined, gradientAngle: undefined })} />
         </label>
+      ) : null}
+      {!isBlur ? (
+        <label className="field field-inline">
+          <input
+            type="checkbox"
+            checked={!!annotation.gradientFrom && !!annotation.gradientTo}
+            onChange={(e) => {
+              if (e.target.checked) {
+                updateAnnotation(annotation.id, { gradientFrom: annotation.gradientFrom ?? annotation.color, gradientTo: annotation.gradientTo ?? "#ffffff", gradientType: "linear", gradientAngle: 135 });
+              } else {
+                updateAnnotation(annotation.id, { gradientFrom: undefined, gradientTo: undefined, gradientVia: undefined, gradientType: undefined, gradientAngle: undefined });
+              }
+            }}
+          />
+          <span>{t("annotation.gradient")}</span>
+        </label>
+      ) : null}
+      {!isBlur && annotation.gradientFrom && annotation.gradientTo ? (
+        <>
+          <label className="field">
+            <span>{t("annotation.gradientFrom")}</span>
+            <input type="color" value={annotation.gradientFrom} onChange={(e) => updateAnnotation(annotation.id, { gradientFrom: e.target.value })} />
+          </label>
+          <label className="field">
+            <span>{t("annotation.gradientTo")}</span>
+            <input type="color" value={annotation.gradientTo} onChange={(e) => updateAnnotation(annotation.id, { gradientTo: e.target.value })} />
+          </label>
+          <label className="field">
+            <span>{t("annotation.gradientVia")}</span>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                type="color"
+                value={annotation.gradientVia || "#ffffff"}
+                onChange={(e) => updateAnnotation(annotation.id, { gradientVia: e.target.value })}
+                style={{ flex: 1 }}
+              />
+              {annotation.gradientVia ? (
+                <button type="button" className="btn btn-sm" onClick={() => updateAnnotation(annotation.id, { gradientVia: undefined })}>
+                  {t("annotation.bgClear")}
+                </button>
+              ) : null}
+            </div>
+          </label>
+          <label className="field">
+            <span>{t("annotation.gradientType")}</span>
+            <div className="segmented" role="group" aria-label={t("annotation.gradientType")}>
+              <button type="button" className={annotation.gradientType === "linear" ? "is-active" : ""} onClick={() => updateAnnotation(annotation.id, { gradientType: "linear" })}>
+                {t("annotation.gradientLinear")}
+              </button>
+              <button type="button" className={annotation.gradientType === "radial" ? "is-active" : ""} onClick={() => updateAnnotation(annotation.id, { gradientType: "radial" })}>
+                {t("annotation.gradientRadial")}
+              </button>
+            </div>
+          </label>
+          {annotation.gradientType === "linear" ? (
+            <label className="field">
+              <span>{t("annotation.gradientAngle", { val: annotation.gradientAngle ?? 135 })}</span>
+              <input
+                className="range"
+                type="range"
+                min={0}
+                max={360}
+                step={1}
+                value={annotation.gradientAngle ?? 135}
+                aria-label={t("annotation.gradientAngle", { val: annotation.gradientAngle ?? 135 })}
+                aria-valuetext={`${annotation.gradientAngle ?? 135} degrees`}
+                onChange={(e) => updateAnnotation(annotation.id, { gradientAngle: Number(e.target.value) })}
+              />
+            </label>
+          ) : null}
+        </>
       ) : null}
       {isBlur ? (
         <label className="field">
