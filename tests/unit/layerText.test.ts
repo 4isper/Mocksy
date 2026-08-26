@@ -104,6 +104,12 @@ describe("buildTextLayerSvg", () => {
     expect(svg).toContain(`font-family="${TEXT_LAYER_FONT_FALLBACK.replace(/"/g, "&quot;")}"`);
     expect(svg).toContain("a&lt;b &amp; c&gt;");
   });
+
+  it("escapes attribute-breaking colors so fill cannot break out", () => {
+    const svg = buildTextLayerSvg(textLayer({ textColor: '#fff" onload="alert(1)' }), 2)!;
+    expect(svg).toContain('fill="#fff&quot; onload=&quot;alert(1)"');
+    expect(svg).not.toContain('" onload="');
+  });
 });
 
 describe("drawTextLayer", () => {

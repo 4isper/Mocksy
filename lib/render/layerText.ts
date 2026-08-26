@@ -86,7 +86,7 @@ export function buildTextLayerSvg(layer: MediaLayer | null | undefined, screenAs
   const tspans = L.lines
     .map((line, i) => `<tspan x="${num(anchor === "middle" ? L.anchorX.middle : anchor === "end" ? L.anchorX.end : L.anchorX.start)}" y="${num(L.firstBaselineY + i * L.lineHeight)}">${escapeMarkup(line)}</tspan>`)
     .join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VB_W} ${num(vbH)}" preserveAspectRatio="none" style="width:100%;height:100%;display:block"><text font-size="${num(L.fontSize)}" font-weight="${L.weight}" fill="${L.fill}" font-family="${escapeAttr(L.fontFamily)}" text-anchor="${anchor}">${tspans}</text></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VB_W} ${num(vbH)}" preserveAspectRatio="none" style="width:100%;height:100%;display:block"><text font-size="${num(L.fontSize)}" font-weight="${L.weight}" fill="${escapeAttr(L.fill)}" font-family="${escapeAttr(L.fontFamily)}" text-anchor="${anchor}">${tspans}</text></svg>`;
 }
 
 /**

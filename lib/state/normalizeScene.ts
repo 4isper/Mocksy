@@ -74,6 +74,17 @@ function str(value: unknown, fallback: string | null): string | null {
   return typeof value === "string" && value.length > 0 ? value : fallback;
 }
 
+// Color fields are embedded verbatim into inline styles and generated SVG/HTML
+// attributes (e.g. fill="…" in the text-layer SVG), so an arbitrary string from
+// a share URL could break out of the attribute and inject markup. Only strict
+// CSS color notations — hex and rgb()/rgba() with plain numeric components —
+// pass through; anything else falls back like a missing field.
+const CSS_COLOR_RE = /^(?:#[0-9a-f]{3}|#[0-9a-f]{4}|#[0-9a-f]{6}|#[0-9a-f]{8}|rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(?:,\s*(?:0?\.\d+|1)\s*)?\))$/i;
+
+function colorStr(value: unknown, fallback: string | null): string | null {
+  return typeof value === "string" && CSS_COLOR_RE.test(value) ? value : fallback;
+}
+
 /** Normalizes one raw annotation-shaped object into a valid Annotation. */
 function normalizeAnnotation(raw: unknown, fallback: Annotation): Annotation {
   if (!raw || typeof raw !== "object") return fallback;
@@ -88,14 +99,14 @@ function normalizeAnnotation(raw: unknown, fallback: Annotation): Annotation {
     w: num(r.w, fallback.w, -2, 2),
     h: num(r.h, fallback.h, -2, 2),
     text: str(r.text, fallback.text) ?? "",
-    color: str(r.color, fallback.color) ?? fallback.color,
+    color: colorStr(r.color, fallback.color) ?? fallback.color,
     strokeWidth: num(r.strokeWidth, fallback.strokeWidth, 0, 40),
     fontSize: num(r.fontSize, fallback.fontSize, 8, 200),
     fontFamily: str(r.fontFamily, null) ?? fallback.fontFamily,
     fontWeight: pick(r.fontWeight, ["normal", "bold"] as const, fallback.fontWeight ?? "bold"),
     fontStyle: pick(r.fontStyle, ["normal", "italic"] as const, fallback.fontStyle ?? "normal"),
     textAlign: pick(r.textAlign, ["left", "center", "right"] as const, fallback.textAlign ?? "left"),
-    bgColor: str(r.bgColor, null),
+    bgColor: colorStr(r.bgColor, null),
     bgPadding: num(r.bgPadding, fallback.bgPadding ?? 0, 0, 100),
     bgRadius: num(r.bgRadius, fallback.bgRadius ?? 0, 0, 200),
     animated: r.animated === true
@@ -123,7 +134,7 @@ function normalizeLayer(raw: unknown, fallback: MediaLayer): MediaLayer {
     mediaType: pick(r.mediaType, MEDIA_TYPES, fallback.mediaType),
     mediaName: str(r.mediaName, fallback.mediaName),
     textContent: str(r.textContent, "") ?? "",
-    textColor: str(r.textColor, null) ?? "#ffffff",
+    textColor: colorStr(r.textColor, null) ?? "#ffffff",
     textSize: num(r.textSize, fallback.textSize ?? 0.12, 0.01, 0.6),
     textAlign: pick(r.textAlign, ["left", "center", "right"] as const, fallback.textAlign ?? "center"),
     fontWeight: pick(r.fontWeight, ["normal", "bold"] as const, fallback.fontWeight ?? "bold"),
@@ -245,10 +256,10 @@ export function normalizeScene(raw: unknown): EditorScene {
     tiltX: num(r.tiltX, initialScene.tiltX, -25, 25),
     tiltY: num(r.tiltY, initialScene.tiltY, -25, 25),
     backgroundMode: pick(r.backgroundMode, BACKGROUND_MODES, initialScene.backgroundMode),
-    backgroundColor: str(r.backgroundColor, initialScene.backgroundColor) ?? initialScene.backgroundColor,
-    gradientFrom: str(r.gradientFrom, initialScene.gradientFrom) ?? initialScene.gradientFrom,
-    gradientTo: str(r.gradientTo, initialScene.gradientTo) ?? initialScene.gradientTo,
-    gradientVia: str(r.gradientVia, initialScene.gradientVia) ?? initialScene.gradientVia,
+    backgroundColor: colorStr(r.backgroundColor, initialScene.backgroundColor) ?? initialScene.backgroundColor,
+    gradientFrom: colorStr(r.gradientFrom, initialScene.gradientFrom) ?? initialScene.gradientFrom,
+    gradientTo: colorStr(r.gradientTo, initialScene.gradientTo) ?? initialScene.gradientTo,
+    gradientVia: colorStr(r.gradientVia, initialScene.gradientVia) ?? initialScene.gradientVia,
     gradientType: pick(r.gradientType, GRADIENT_TYPES, initialScene.gradientType),
     gradientAngle: num(r.gradientAngle, initialScene.gradientAngle, 0, 360),
     patternId: r.patternId != null && PATTERN_IDS.includes(r.patternId as PatternId)

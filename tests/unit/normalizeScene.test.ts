@@ -91,6 +91,42 @@ describe("normalizeScene", () => {
     expect(s.layers[0]!.fontWeight).toBe("bold");
   });
 
+  it("keeps strict CSS color notations (hex, rgb, rgba)", () => {
+    const s = normalizeScene({
+      layers: [{ kind: "text", textColor: "#0Ff" }],
+      annotations: [{ type: "text", color: "rgb(1, 2, 3)", bgColor: "rgba(0,0,0,0.5)" }],
+      backgroundColor: "#11223344",
+      gradientFrom: "#a1B2c3",
+      gradientTo: "#D4D",
+      gradientVia: "rgba(9, 9, 9, 1)"
+    });
+    expect(s.layers[0]!.textColor).toBe("#0Ff");
+    expect(s.annotations[0]!.color).toBe("rgb(1, 2, 3)");
+    expect(s.annotations[0]!.bgColor).toBe("rgba(0,0,0,0.5)");
+    expect(s.backgroundColor).toBe("#11223344");
+    expect(s.gradientFrom).toBe("#a1B2c3");
+    expect(s.gradientTo).toBe("#D4D");
+    expect(s.gradientVia).toBe("rgba(9, 9, 9, 1)");
+  });
+
+  it("falls back for color payloads that could break out of attributes or styles", () => {
+    const s = normalizeScene({
+      layers: [{ kind: "text", textColor: '#fff" onload="alert(1)' }],
+      annotations: [{ type: "text", color: 'red;} *{display:none} .x{color:"', bgColor: '" onmouseover="x' }],
+      backgroundColor: '#111827"><img src=x onerror=alert(1)>',
+      gradientFrom: "url(javascript:alert(1))",
+      gradientTo: "expression(alert(1))",
+      gradientVia: "red"
+    });
+    expect(s.layers[0]!.textColor).toBe("#ffffff");
+    expect(s.annotations[0]!.color).toBe("#00d9ff");
+    expect(s.annotations[0]!.bgColor).toBeNull();
+    expect(s.backgroundColor).toBe(initialScene.backgroundColor);
+    expect(s.gradientFrom).toBe(initialScene.gradientFrom);
+    expect(s.gradientTo).toBe(initialScene.gradientTo);
+    expect(s.gradientVia).toBe(initialScene.gradientVia);
+  });
+
   it("accepts image background mode, url and blur within range", () => {
     const s = normalizeScene({
       backgroundMode: "image",

@@ -1,13 +1,13 @@
 /**
  * Mocksy PWA Service Worker — template.
- * scripts/generate-sw.mjs stamps mt7nqjar into a build-time cache version
+ * scripts/generate-sw.mjs stamps mt9r3409 into a build-time cache version
  * and writes the result to public/sw.js. Do not edit public/sw.js directly;
  * edit this template and run `npm run build` (or `node scripts/generate-sw.mjs`).
  * Strategy: navigation = network-first, Next.js chunks = network-first + background cache update,
  * immutable static assets + AI runtime CDN (jsdelivr) = stale-while-revalidate.
  * Using a versioned cache name so activate purges stale chunks on every deploy.
  */
-const CACHE = "mocksy-sw-mt7nqjar";
+const CACHE = "mocksy-sw-mt9r3409";
 
 const PRECACHE_URLS = [
   "/",
