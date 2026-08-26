@@ -338,7 +338,8 @@
     "text": "Text",
     "textLabel": "Text layer",
     "addFrame": "Add frame",
-    "selectFrame": "Select frame {n}"
+    "selectFrame": "Select frame {n}",
+    "layoutCount": "Count:"
   },
   "frame": {
     "none": "Egyik sem",

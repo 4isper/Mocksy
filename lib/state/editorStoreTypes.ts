@@ -202,6 +202,10 @@ export interface EditorStoreState {
   /** Moves a frame instance to the top ("front") or bottom ("back") of the
    *  render order — later instances draw on top. */
   reorderFrameInstance: (id: string, to: "front" | "back") => void;
+  /** Reorders frame instances to match the given id order (used by drag-and-drop
+   *  in the frame list). Unknown/missing ids are ignored; every existing id must
+   *  appear exactly once in `orderedIds`. */
+  reorderFrameInstances: (orderedIds: string[]) => void;
   layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") => void;
   applyFrameLayout: (frame: MockupFrame, count: number, layout: import("@/lib/types/editor").LayoutPreset) => void;
   /** Aligns all frame instances to a shared edge/center (one undo step). */

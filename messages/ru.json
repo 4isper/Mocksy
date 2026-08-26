@@ -160,6 +160,7 @@
     "layoutFan": "Веер",
     "layoutGrid": "Сетка",
     "layoutLabel": "Раскладка:",
+    "layoutCount": "Кол-во:",
     "layoutNeedsFrames": "Сначала добавьте фреймы",
     "layoutMasonry": "Мозаика",
     "layoutStack": "Стопка",

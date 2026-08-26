@@ -1001,6 +1001,28 @@ describe("frame control", () => {
     expect(store().scene.frameInstances.map((fi) => fi.id)).toEqual(["a", "b", "c"]);
   });
 
+  it("reorderFrameInstances reorders by the given id order (drag-and-drop)", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "a", frame: "none" as const, x: 0.3, y: 0.5, scale: 0.4, layerId: null },
+      { id: "b", frame: "none" as const, x: 0.5, y: 0.5, scale: 0.4, layerId: null },
+      { id: "c", frame: "none" as const, x: 0.7, y: 0.5, scale: 0.4, layerId: null }
+    ]);
+    store().reorderFrameInstances(["c", "a", "b"]);
+    expect(store().scene.frameInstances.map((fi) => fi.id)).toEqual(["c", "a", "b"]);
+  });
+
+  it("reorderFrameInstances is a no-op when the id list is incomplete", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "a", frame: "none" as const, x: 0.3, y: 0.5, scale: 0.4, layerId: null },
+      { id: "b", frame: "none" as const, x: 0.5, y: 0.5, scale: 0.4, layerId: null }
+    ]);
+    const before = store().scene.frameInstances.map((fi) => fi.id);
+    store().reorderFrameInstances(["a"]); // missing b
+    expect(store().scene.frameInstances.map((fi) => fi.id)).toEqual(before);
+  });
+
   it("alignFrameInstances targets the selected subset when one is active", () => {
     reset();
     store().selectFrameIds([]);
@@ -1062,14 +1084,15 @@ describe("frame control", () => {
     expect(store().selectedFrameIds).toEqual(["b"]);
   });
 
-  it("layoutFrameGrid reuses existing layers and only clones the overflow", () => {
+  it("layoutFrameGrid reuses the existing layer when there is only one", () => {
     reset();
     const layersBefore = store().scene.layers.length; // 1 demo layer
     store().layoutFrameGrid("iphone", 3, "horizontal");
     expect(store().scene.frameInstances.length).toBe(3);
-    // The demo layer is reused for the first instance; only 2 new clones.
-    expect(store().scene.layers.length).toBe(layersBefore + 2);
-    expect(store().activeLayerId).toBe(store().scene.frameInstances[0]!.layerId);
+    // All three frames bind to the single demo layer (round-robin reuse); no
+    // new layers are created, so the scene's media is never duplicated.
+    expect(store().scene.layers.length).toBe(layersBefore);
+    expect(store().scene.frameInstances.every((fi) => fi.layerId === store().scene.layers[0]!.id)).toBe(true);
   });
 
   it("re-applying a layout preserves existing layers instead of dropping them", () => {
@@ -1077,12 +1100,11 @@ describe("frame control", () => {
     const baseLayerCount = store().scene.layers.length; // 1 demo layer
     store().layoutFrameGrid("iphone", 2, "horizontal");
     const firstInstanceLayerIds = store().scene.frameInstances.map((fi) => fi.layerId);
-    expect(store().scene.layers.length).toBe(baseLayerCount + 1);
-    // Apply a different layout with more frames: the previously-created layers
-    // are reused and only one new clone is added (no unbounded growth, no
-    // media loss from the earlier layout).
+    expect(store().scene.layers.length).toBe(baseLayerCount);
+    // Apply a different layout with more frames: the existing layer is reused,
+    // nothing is dropped and no clones are added.
     store().applyFrameLayout("iphone", 3, "grid");
-    expect(store().scene.layers.length).toBe(baseLayerCount + 2);
+    expect(store().scene.layers.length).toBe(baseLayerCount);
     for (const id of firstInstanceLayerIds) {
       expect(store().scene.layers.some((l) => l.id === id)).toBe(true);
     }
@@ -1111,11 +1133,74 @@ describe("frame control", () => {
     expect(store().scene.layers[0]!.mediaUrl).toContain("data:image/svg");
   });
 
+  it("applying a layout preserves each frame's type and media, not just the scene frame", () => {
+    reset();
+    store().addLayer("data:image/png;base64,a", "image");
+    store().addLayer("data:image/png;base64,b", "image");
+    store().addLayer("data:image/png;base64,c", "image");
+    store().setFrameInstances([
+      { id: "f1", frame: "iphone16pro" as const, x: 0.1, y: 0.1, scale: 0.3, layerId: store().scene.layers[0]!.id },
+      { id: "f2", frame: "iphone15" as const, x: 0.5, y: 0.5, scale: 0.3, layerId: store().scene.layers[1]!.id },
+      { id: "f3", frame: "none" as const, x: 0.9, y: 0.9, scale: 0.3, layerId: store().scene.layers[2]!.id }
+    ]);
+    // A 3-frame layout must reposition all three without dropping the "none"
+    // frame or converting every instance to the scene's current frame.
+    store().applyFrameLayout("iphone", 3, "grid");
+    const byId = Object.fromEntries(store().scene.frameInstances.map((fi) => [fi.id, fi]));
+    expect(byId.f1!.frame).toBe("iphone16pro");
+    expect(byId.f2!.frame).toBe("iphone15");
+    expect(byId.f3!.frame).toBe("none");
+    expect(byId.f3!.layerId).toBe(store().scene.layers[2]!.id);
+    expect(store().scene.frameInstances).toHaveLength(3);
+  });
+
+  it("applying a layout with count matching the scene keeps every existing frame", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "f1", frame: "iphone" as const, x: 0.1, y: 0.1, scale: 0.3, layerId: null },
+      { id: "f2", frame: "none" as const, x: 0.5, y: 0.5, scale: 0.3, layerId: null }
+    ]);
+    store().applyFrameLayout("iphone", 2, "grid");
+    const ids = store().scene.frameInstances.map((fi) => fi.id);
+    expect(ids).toEqual(["f1", "f2"]);
+  });
+
   it("layoutFrameGrid with count=0 adds no layers and keeps activeLayerId", () => {
     reset();
     store().layoutFrameGrid("iphone", 0, "horizontal");
     expect(store().scene.frameInstances).toHaveLength(0);
     expect(store().activeLayerId).toBe(store().scene.layers[0]!.id);
+  });
+
+  it("layout reuses every existing layer cyclically instead of repeating the last", () => {
+    reset();
+    const before = store().scene.layers.length; // 1 demo layer
+    store().addLayer("data:image/png;base64,a", "image");
+    store().addLayer("data:image/png;base64,b", "image");
+    store().addLayer("data:image/png;base64,c", "image");
+    const addedIds = store().scene.layers.slice(before).map((l) => l.id);
+    const layerCountBefore = store().scene.layers.length;
+    // 6 frames over the 4 existing layers (demo + 3 added) round-robin: each
+    // added layer is bound at least once, and no new layers are cloned.
+    store().applyFrameLayout("iphone", 6, "grid");
+    expect(store().scene.layers.length).toBe(layerCountBefore);
+    const used = store().scene.frameInstances.map((fi) => fi.layerId);
+    for (const id of addedIds) expect(used).toContain(id);
+    // No layer should be used far more than the others (the old bug repeated
+    // only the last layer); with 6 frames / 4 layers the spread is even.
+    const counts = new Map(used.map((id) => [id, 0]));
+    for (const id of used) counts.set(id, (counts.get(id) ?? 0) + 1);
+    const max = Math.max(...counts.values());
+    const min = Math.min(...counts.values());
+    expect(max - min).toBeLessThanOrEqual(1);
+  });
+
+  it("applying a layout selects the freshly created frame instances", () => {
+    reset();
+    store().selectFrameIds([]);
+    store().applyFrameLayout("iphone", 4, "grid");
+    expect(store().selectedFrameIds).toEqual(store().scene.frameInstances.map((fi) => fi.id));
+    expect(store().activeFrameInstanceId).toBe(store().scene.frameInstances[0]!.id);
   });
 
   it("selectFrameInstance sets activeFrameInstanceId without history", () => {

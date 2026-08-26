@@ -160,6 +160,7 @@
     "layoutFan": "Fan",
     "layoutGrid": "Grid",
     "layoutLabel": "Layout:",
+    "layoutCount": "Count:",
     "layoutNeedsFrames": "Add frames first",
     "layoutMasonry": "Masonry",
     "layoutStack": "Stack",

@@ -16,6 +16,7 @@ export type FramesSlice = Pick<
   | "addFrameInstance"
   | "duplicateFrameInstance"
   | "reorderFrameInstance"
+  | "reorderFrameInstances"
   | "layoutFrameGrid"
   | "applyFrameLayout"
   | "alignFrameInstances"
@@ -26,21 +27,34 @@ export type FramesSlice = Pick<
 >;
 
 /**
- * Turns laid-out frame instances into a real multi-frame scene without
- * destroying the user's existing media: every new instance is bound to an
- * existing scene layer when one is available (so its picture survives), and
- * only extra instances beyond the layer count get a fresh clone of the active
- * (or demo) layer. All previously-existing layers are kept — none are dropped
- * — so applying a layout never wipes a user's uploaded images; frames that the
- * new layout doesn't reference simply remain in the Layers panel to re-attach.
+ * Lays out the scene's EXISTING frame instances (preserving each one's frame
+ * type, bound layer and media) onto the positions computed by a layout
+ * algorithm. Instances beyond `count` are dropped, and if the layout needs more
+ * slots than the scene has instances, the surplus frames are added by reusing
+ * existing layers round-robin (never cloning a single layer N times, so no
+ * picture is duplicated) or, when there are no layers at all, cloning the
+ * active/demo layer. This is why applying a layout never wipes a user's
+ * uploaded images or silently drops a distinct frame such as "none".
  */
-function materializeLayout(instances: FrameInstance[], scene: EditorScene, activeLayerId: string | null) {
+function applyLayoutPositions(
+  positions: FrameInstance[],
+  scene: EditorScene,
+  activeLayerId: string | null
+): { layers: EditorScene["layers"]; frameInstances: FrameInstance[]; activeLayerId: string | null } {
+  const existing = scene.frameInstances;
   const existingIds = scene.layers.map((l) => l.id);
   const activeLayerData = activeLayer(scene, activeLayerId);
   const newLayers: EditorScene["layers"] = [];
-  const frameInstances = instances.map((inst, i) => {
-    const reuseId = existingIds[i];
-    if (reuseId) return { ...inst, layerId: reuseId };
+  const frameInstances = positions.map((pos, i) => {
+    const keep = existing[i];
+    if (keep) {
+      // Preserve the user's frame type, layer binding and media; only move it.
+      return { ...keep, x: pos.x, y: pos.y, scale: pos.scale };
+    }
+    // Extra slot: bind to an existing layer round-robin, else clone a new one.
+    const cycleIndex = i % Math.max(1, existingIds.length);
+    const reuseId = existingIds.length > 0 ? existingIds[cycleIndex] : undefined;
+    if (reuseId) return { ...pos, id: nextFrameInstanceId(), layerId: reuseId };
     const clone = {
       ...(activeLayerData ?? makeDemoLayer()),
       id: nextLayerId(),
@@ -48,7 +62,7 @@ function materializeLayout(instances: FrameInstance[], scene: EditorScene, activ
       animationPreset: "none" as const
     };
     newLayers.push(clone);
-    return { ...inst, layerId: clone.id };
+    return { ...pos, id: nextFrameInstanceId(), layerId: clone.id };
   });
   const layers = [...scene.layers, ...newLayers];
   return {
@@ -174,17 +188,26 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
         else frameInstances.unshift(item);
         return pushHistory(s, { ...s.scene, frameInstances });
       }),
+    reorderFrameInstances: (orderedIds) =>
+      set((s) => {
+        const byId = new Map(s.scene.frameInstances.map((fi) => [fi.id, fi]));
+        const reordered = orderedIds.map((id) => byId.get(id)).filter((fi): fi is (typeof s.scene.frameInstances)[number] => Boolean(fi));
+        // Ignore invalid input that doesn't cover every existing instance.
+        if (reordered.length !== s.scene.frameInstances.length) return {};
+        return pushHistory(s, { ...s.scene, frameInstances: reordered });
+      }),
     layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") =>
       set((s) => {
-        const instances = layoutFrameGrid(frame, count, direction, s.scene.aspectRatio, s.scene.customFrame);
-        const { layers, frameInstances, activeLayerId } = materializeLayout(instances, s.scene, s.activeLayerId);
-        return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId };
+        const positions = layoutFrameGrid(frame, count, direction, s.scene.aspectRatio, s.scene.customFrame);
+        const { layers, frameInstances, activeLayerId } = applyLayoutPositions(positions, s.scene, s.activeLayerId);
+        // Selecting the laid-out frames lets the user immediately align/distribute.
+        return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId, activeFrameInstanceId: frameInstances[0]?.id ?? null, selectedFrameIds: frameInstances.map((i) => i.id) };
       }),
     applyFrameLayout: (frame: MockupFrame, count: number, layout: import("@/lib/types/editor").LayoutPreset) =>
       set((s) => {
-        const instances = buildAutoLayout(frame, count, layout, s.scene.aspectRatio, s.scene.customFrame);
-        const { layers, frameInstances, activeLayerId } = materializeLayout(instances, s.scene, s.activeLayerId);
-        return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId };
+        const positions = buildAutoLayout(frame, count, layout, s.scene.aspectRatio, s.scene.customFrame);
+        const { layers, frameInstances, activeLayerId } = applyLayoutPositions(positions, s.scene, s.activeLayerId);
+        return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId, activeFrameInstanceId: frameInstances[0]?.id ?? null, selectedFrameIds: frameInstances.map((i) => i.id) };
       }),
     alignFrameInstances: (mode: FrameAlignMode) =>
       set((s) => {

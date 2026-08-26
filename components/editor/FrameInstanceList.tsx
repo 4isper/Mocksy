@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { EditorScene, FrameInstance, MockupFrame } from "@/lib/types/editor";
 import { FRAME_ORDER } from "@/lib/render/frames";
@@ -17,6 +18,7 @@ interface FrameInstanceListProps {
   updateFrameInstance: (id: string, patch: Partial<FrameInstance>) => void;
   removeFrameInstance: (id: string) => void;
   addFrameInstance: () => void;
+  reorderFrameInstances: (orderedIds: string[]) => void;
   selectedFrameIds: string[];
 }
 
@@ -31,9 +33,12 @@ export function FrameInstanceList({
   updateFrameInstance,
   removeFrameInstance,
   addFrameInstance,
+  reorderFrameInstances,
   selectedFrameIds
 }: FrameInstanceListProps) {
   const t = useTranslations();
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
 
   const frameLabels: Record<Exclude<MockupFrame, "custom">, string> = {
     none: t("frame.none"),
@@ -77,7 +82,29 @@ export function FrameInstanceList({
             const selected = selectedFrameIds.includes(inst.id);
             const frameLayer = scene.layers.find((l) => l.id === inst.layerId);
             return (
-              <div key={inst.id} className="frame-card" data-selected={selected || undefined}>
+              <div
+                key={inst.id}
+                className="frame-card"
+                data-selected={selected || undefined}
+                data-drag-over={overId === inst.id || undefined}
+                draggable
+                onDragStart={() => setDragId(inst.id)}
+                onDragEnd={() => { setDragId(null); setOverId(null); }}
+                onDragOver={(e) => { e.preventDefault(); if (overId !== inst.id) setOverId(inst.id); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const from = dragId;
+                  setDragId(null);
+                  setOverId(null);
+                  if (!from || from === inst.id) return;
+                  const ids = scene.frameInstances.map((f) => f.id);
+                  const fromIndex = ids.indexOf(from);
+                  const toIndex = ids.indexOf(inst.id);
+                  if (fromIndex < 0 || toIndex < 0) return;
+                  ids.splice(toIndex, 0, ids.splice(fromIndex, 1)[0]!);
+                  reorderFrameInstances(ids);
+                }}
+              >
                 <div className="frame-card-head">
                   <input
                     type="checkbox"
