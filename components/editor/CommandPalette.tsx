@@ -116,7 +116,8 @@ export function CommandPalette({
     }
     if (e.key === "Enter") {
       e.preventDefault();
-      const cmd = filteredCommands[selectedIndex];
+      const idx = Math.min(selectedIndex, filteredCommands.length - 1);
+      const cmd = filteredCommands[idx];
       if (cmd) {
         cmd.action();
         onClose();
@@ -125,12 +126,13 @@ export function CommandPalette({
     }
     if (e.key === "Tab") {
       e.preventDefault();
+      if (filteredCommands.length === 0) return;
       setSelectedIndex((selectedIndex + 1) % filteredCommands.length);
       return;
     }
   }, [filteredCommands, onClose, selectedIndex]);
 
-  const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+  const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
 
   if (!isOpen) return null;
 

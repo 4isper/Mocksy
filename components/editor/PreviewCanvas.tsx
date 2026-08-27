@@ -16,7 +16,6 @@ import { useCanvasGestures } from "@/lib/hooks/useCanvasGestures";
 import { useCanvasDrop } from "@/lib/hooks/useCanvasDrop";
 import { useCanvasViewport } from "@/lib/hooks/useCanvasViewport";
 import { ContextMenu, type ContextMenuItem } from "@/components/editor/ContextMenu";
-import { AnnotationItem } from "@/components/editor/AnnotationItem";
 import { FrameInstanceGrid } from "@/components/editor/FrameInstanceGrid";
 import { SingleFrameView } from "@/components/editor/SingleFrameView";
 import { PreviewBackground } from "@/components/editor/PreviewBackground";
@@ -183,7 +182,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         // page scrolling when the user drags on the canvas margins on mobile,
         // so the editor page isn't trapped behind a scroll-blocking panel.
         touchAction: "pan-y",
-        outline: isDragging ? "2px dashed #00d9ff" : "2px dashed transparent"
+        outline: isDragging ? "2px dashed var(--accent)" : "2px dashed transparent"
       }}
       onDragEnter={onDragEnter}
       onDragOver={onDragOver}
@@ -196,7 +195,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         id="preview-canvas"
         ref={canvasRef}
         tabIndex={0}
-        role="application"
+        role="group"
         aria-label={t("editor.canvasAria")}
         onPointerDown={(e) => {
           // Deselect any active annotation when clicking empty canvas. Clicks
@@ -339,7 +338,6 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         )}
         {isMultiFrame && scene.layers.every((l) => !l.mediaUrl) ? (
           <div
-            aria-hidden="true"
             className="drop-hint"
           >
             <span>{t("editor.dropToStart")}</span>

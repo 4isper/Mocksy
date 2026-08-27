@@ -63,7 +63,7 @@ export function PreviewOverlays({
           key={a.id}
           annotation={a}
           selected={selectedAnnotationIds.includes(a.id)}
-          others={scene.annotations.filter((o) => o.id !== a.id)}
+          all={scene.annotations}
           canvasRef={canvasRef}
           snapDivisions={showGrid ? gridDivisions : null}
           onSelect={onSelectAnnotation}

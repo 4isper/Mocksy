@@ -218,7 +218,7 @@ describe("PreviewCanvas media upload", () => {
     renderScene();
     const panel = document.querySelector(".panel") as HTMLElement;
     fireEvent.dragEnter(panel);
-    expect(panel.style.outline).toContain("#00d9ff");
+    expect(panel.style.outline).toContain("var(--accent)");
     fireEvent.dragLeave(panel);
     expect(panel.style.outline).toContain("transparent");
   });

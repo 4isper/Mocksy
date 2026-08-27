@@ -5,7 +5,7 @@ import type { CSSProperties, ReactNode } from "react";
 import type { Annotation } from "@/lib/types/editor";
 import { computeArrowGeometry } from "@/lib/render/annotationArrow";
 import { annotationPreviewAnimation } from "@/lib/render/annotationAnimation";
-import { hasAnnotationGradient, annotationGradientCSS } from "@/lib/render/annotationGradient";
+import { annotationGradientCSS, annotationSvgGradientDef } from "@/lib/render/annotationGradient";
 
 interface AnnotationContentProps {
   annotation: Annotation;
@@ -67,6 +67,8 @@ export function AnnotationContent({
         ref={editRef as React.RefObject<HTMLDivElement>}
         contentEditable
         suppressContentEditableWarning
+        role="textbox"
+        aria-multiline="true"
         style={{ ...textStyle, outline: "none", minWidth: 24, cursor: "text" }}
         onPointerDown={(e) => e.stopPropagation()}
         onInput={(e) => onTextInput(e.currentTarget.textContent ?? "")}
@@ -162,26 +164,11 @@ export function AnnotationContent({
   const bh = Math.abs(annotation.h) || 1e-4;
   const { startX, startY, endX, endY, points } = computeArrowGeometry(annotation, size.w, size.h, bx, by, scale);
   const gradId = `anno-grad-${annotation.id}`;
-  const gradDef = (() => {
-    if (!hasAnnotationGradient(annotation)) return null;
-    const from = annotation.gradientFrom!;
-    const to = annotation.gradientTo!;
-    const via = annotation.gradientVia;
-    if (annotation.gradientType === "radial") {
-      return `<radialGradient id="${gradId}" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="${from}"/>${via ? `<stop offset="50%" stop-color="${via}"/>` : ""}<stop offset="100%" stop-color="${to}"/></radialGradient>`;
-    }
-    const angle = annotation.gradientAngle ?? 135;
-    const rad = (angle * Math.PI) / 180;
-    const x1 = (50 - Math.cos(rad) * 50).toFixed(1);
-    const y1 = (50 - Math.sin(rad) * 50).toFixed(1);
-    const x2 = (50 + Math.cos(rad) * 50).toFixed(1);
-    const y2 = (50 + Math.sin(rad) * 50).toFixed(1);
-    return `<linearGradient id="${gradId}" x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%"><stop offset="0%" stop-color="${from}"/>${via ? `<stop offset="50%" stop-color="${via}"/>` : ""}<stop offset="100%" stop-color="${to}"/></linearGradient>`;
-  })();
-  const strokeColor = hasAnnotationGradient(annotation) ? `url(#${gradId})` : annotation.color;
+  const grad = annotationSvgGradientDef(annotation, gradId, 0, 0, bw * (size.w || 1), bh * (size.h || 1));
+  const strokeColor = grad ? grad.ref : annotation.color;
   return (
     <svg className={annotationPreviewAnimation(annotation)?.className} width={bw * (size.w || 1)} height={bh * (size.h || 1)} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-      {gradDef ? <defs dangerouslySetInnerHTML={{ __html: gradDef }} /> : null}
+      {grad ? <defs dangerouslySetInnerHTML={{ __html: grad.def }} /> : null}
       <line pathLength={1} x1={startX} y1={startY} x2={endX} y2={endY} stroke={strokeColor} strokeWidth={Math.max(0.5, annotation.strokeWidth * scale)} strokeLinecap="round" />
       <polygon points={points} fill={strokeColor} />
     </svg>

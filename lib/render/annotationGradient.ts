@@ -1,4 +1,5 @@
 import type { Annotation } from "@/lib/types/editor";
+import { escapeAttr } from "@/lib/export/markupUtils";
 
 /** Returns true when the annotation has both gradientFrom and gradientTo set. */
 export function hasAnnotationGradient(a: Annotation): boolean {
@@ -68,9 +69,9 @@ export function annotationSvgGradientDef(
   h: number
 ): { def: string; ref: string } | null {
   if (!hasAnnotationGradient(a)) return null;
-  const from = a.gradientFrom!;
-  const to = a.gradientTo!;
-  const via = a.gradientVia;
+  const from = escapeAttr(a.gradientFrom!);
+  const to = escapeAttr(a.gradientTo!);
+  const via = a.gradientVia ? escapeAttr(a.gradientVia) : null;
   if (a.gradientType === "radial") {
     const def = `<radialGradient id="${id}" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="${from}"/>${via ? `<stop offset="50%" stop-color="${via}"/>` : ""}<stop offset="100%" stop-color="${to}"/></radialGradient>`;
     return { def, ref: `url(#${id})` };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { Annotation } from "@/lib/types/editor";
 import { useTranslations } from "next-intl";
@@ -15,8 +15,9 @@ import { AnnotationContent } from "@/components/editor/AnnotationContent";
 interface AnnotationItemProps {
   annotation: Annotation;
   selected: boolean;
-  /** Other annotations on the canvas, used for smart-guide snapping. */
-  others: Annotation[];
+  /** All annotations on the canvas; this one is excluded for smart-guide
+   *  snapping so the dragged box doesn't snap to itself. */
+  all: Annotation[];
   canvasRef: React.RefObject<HTMLDivElement | null>;
   /** Grid divisions per axis to snap to, or null to move freely. */
   snapDivisions?: number | null;
@@ -34,8 +35,9 @@ interface AnnotationItemProps {
  * grid is active; smart-guide snapping to other annotations otherwise); the
  * rendered body (text/rect/circle/arrow) is delegated to AnnotationContent.
  */
-export function AnnotationItem({ annotation, selected, others, canvasRef, snapDivisions = null, onSelect, onSelectMany, onUpdate, onRemove, onGuides }: AnnotationItemProps) {
+export function AnnotationItem({ annotation, selected, all, canvasRef, snapDivisions = null, onSelect, onSelectMany, onUpdate, onRemove, onGuides }: AnnotationItemProps) {
   const t = useTranslations();
+  const others = useMemo(() => all.filter((o) => o.id !== annotation.id), [all, annotation.id]);
   // View zoom is captured when a gesture starts: pointer deltas are screen
   // pixels while the canvas fractions below assume unscaled canvas pixels,
   // so the deltas are divided back down by this factor in the move handlers.
@@ -227,7 +229,7 @@ export function AnnotationItem({ annotation, selected, others, canvasRef, snapDi
             height: 12,
             borderRadius: "50%",
             background: "var(--accent)",
-            border: "2px solid #07070a",
+            border: "2px solid var(--bg)",
             cursor: "nwse-resize",
             touchAction: "none"
           }}

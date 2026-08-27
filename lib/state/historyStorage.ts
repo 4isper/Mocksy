@@ -44,7 +44,12 @@ export function trimHistoryForStorage(
   // even for very large payloads. Stop at a single snapshot — dropping it too
   // would lose the undo stack entirely.
   while (p.length > 1 && payloadSize(p, f) > budget) p = p.slice(Math.floor(p.length / 2));
-  if (payloadSize(p, f) > budget) return null;
+  if (payloadSize(p, f) > budget) {
+    // Keep at least one snapshot so the user always has a minimal undo after
+    // reload, even if it alone exceeds the budget.
+    if (p.length > 1) p = p.slice(-1);
+    if (payloadSize(p, f) > budget) return null;
+  }
   return { past: p, future: f };
 }
 

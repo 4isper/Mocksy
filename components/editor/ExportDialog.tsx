@@ -10,10 +10,9 @@ import { PLATFORM_PRESETS, closestAspectRatio } from "@/lib/export/platformPrese
 export type { ExportFormat } from "@/lib/types/editor";
 import type { ExportFormat } from "@/lib/types/editor";
 
-/** Raster formats honor the 1×/2×/4× scale control (and custom size); vector
- *  formats don't. */
-const RASTER_FORMATS: ExportFormat[] = ["png", "jpeg", "webp", "avif", "mp4", "webm", "gif", "webpAnim", "zip", "zipVideo"];
-const VECTOR_FORMATS: ExportFormat[] = ["svg", "html", "pdf"];
+/** Image raster formats honor the 1×/2×/4× scale control (and custom size);
+ *  video, batch, and vector formats don't. */
+const IMAGE_SCALE_FORMATS: ExportFormat[] = ["png", "jpeg", "webp", "avif"];
 
 /** Fallback size offered when the user first enables the custom-size option. */
 const DEFAULT_CUSTOM_SIZE: ExportSize = { width: 1280, height: 720 };
@@ -193,7 +192,7 @@ export function ExportDialog({
               ))}
             </div>
           </label>
-          {RASTER_FORMATS.includes(format) ? (
+          {IMAGE_SCALE_FORMATS.includes(format) ? (
             <label className="field">
               <span>{t("export.size")}</span>
               <div className="segmented" role="group" aria-label={t("export.size")}>

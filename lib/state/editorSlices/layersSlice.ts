@@ -282,9 +282,10 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
       set((s) => {
         if (ids.length === 0) return {};
         const idSet = new Set(ids);
+        const clamp01 = (v: number) => Math.max(-1, Math.min(1, v));
         const layers = s.scene.layers.map((l) =>
           idSet.has(l.id) && !l.locked
-            ? { ...l, mediaOffsetX: l.mediaOffsetX + dx, mediaOffsetY: l.mediaOffsetY + dy }
+            ? { ...l, mediaOffsetX: clamp01(l.mediaOffsetX + dx), mediaOffsetY: clamp01(l.mediaOffsetY + dy) }
             : l
         );
         const changed = layers.some((l, i) => l !== s.scene.layers[i]);

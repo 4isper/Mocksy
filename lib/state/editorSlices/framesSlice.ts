@@ -244,7 +244,12 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
       set((s) => {
         const exists = s.selectedFrameIds.includes(id);
         const next = exists ? s.selectedFrameIds.filter((x) => x !== id) : [...s.selectedFrameIds, id];
-        return { activeFrameInstanceId: id, selectedFrameIds: next.length > 0 ? next : [id] };
+        // When deselecting, keep the active indicator on the last remaining
+        // selection (or null if the selection is now empty after the forced [id]).
+        const activeFrameInstanceId = exists
+          ? (next[next.length - 1] ?? null)
+          : id;
+        return { activeFrameInstanceId, selectedFrameIds: next.length > 0 ? next : [id] };
       }),
     setFrameMaterial: (material) =>
       set((s) => {

@@ -171,24 +171,32 @@ export function EditorShell() {
     // restored scene is not a user edit, so don't push it onto the undo stack
     // (also keeps StrictMode's double-mount from recording a duplicate entry).
     let alive = true;
-    void Promise.all([readTemplateFromUrl(), readSharedSceneFromUrl(), warmProjectCache()]).then(
-      ([template, shared]) => {
+    void Promise.all([readTemplateFromUrl(), readSharedSceneFromUrl(), warmProjectCache()])
+      .then(
+        ([template, shared]) => {
+          if (!alive) return;
+          // Template links win over share scenes: both params in one URL is a
+          // hand-made edge case, and the template is the more specific intent.
+          if (template) clearTemplateFromUrl();
+          const restored = useProjectsStore.getState().hydrate(template ?? shared);
+          // The restored scene already matches what's persisted, so treat it as the
+          // saved baseline. `setScene` merges into a fresh object, so sync the ref
+          // to the live scene afterwards — the autosave watcher won't flag it
+          // "unsaved" on load.
+          setScene(restored, false);
+          savedSceneRef.current = useEditorStore.getState().scene;
+          bootstrapped.current = true;
+          // Bring back the undo/redo stacks saved by the last session (also not an
+          // edit — it only fills `past`/`future`), then start watching for changes
+          // so every subsequent edit persists across reloads.
+          restoreHistory();
+          historyCleanupRef.current = initHistoryPersistence();
+        })
+      .catch((err) => {
         if (!alive) return;
-        // Template links win over share scenes: both params in one URL is a
-        // hand-made edge case, and the template is the more specific intent.
-        if (template) clearTemplateFromUrl();
-        const restored = useProjectsStore.getState().hydrate(template ?? shared);
-        // The restored scene already matches what's persisted, so treat it as the
-        // saved baseline. `setScene` merges into a fresh object, so sync the ref
-        // to the live scene afterwards — the autosave watcher won't flag it
-        // "unsaved" on load.
-        setScene(restored, false);
-        savedSceneRef.current = useEditorStore.getState().scene;
+        console.error("Editor bootstrap failed:", err);
+        // Mark bootstrapped so autosave starts — the default scene is usable.
         bootstrapped.current = true;
-        // Bring back the undo/redo stacks saved by the last session (also not an
-        // edit — it only fills `past`/`future`), then start watching for changes
-        // so every subsequent edit persists across reloads.
-        restoreHistory();
         historyCleanupRef.current = initHistoryPersistence();
       });
     return () => {

@@ -52,7 +52,7 @@ export function BackgroundGradientControls({
   const t = useTranslations();
   return (
     <>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+      <div role="radiogroup" aria-label={t("editor.gradientType")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
         <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
           <input type="radio" name="grad-type" checked={gradientType === "linear"} onChange={() => setGradientType("linear")} />
           {t("editor.gradientLinear")}

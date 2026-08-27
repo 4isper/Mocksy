@@ -55,5 +55,7 @@ export function useFrameTransform(
     return () => cancelAnimationFrame(raf);
     // Re-seed when the preset, zoom, or pan changes so the static branch
     // re-applies, and the rAF loop picks up fresh values.
-  }, [node, animates, durationMs, tiltPrefix, layer?.animationPreset, layer?.zoom, layer?.mediaOffsetX, layer?.mediaOffsetY]);
+  // mediaOffsetX/Y are intentionally excluded: panning updates them via the
+  // ref, so the rAF loop always reads fresh values without restarting.
+  }, [node, animates, durationMs, tiltPrefix, layer?.animationPreset, layer?.zoom]);
 }

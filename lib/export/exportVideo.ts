@@ -94,7 +94,7 @@ export async function exportVideo(
   link.href = URL.createObjectURL(blob);
   link.download = `${exportBaseName(scene, activeLayerId)}.mp4`;
   link.click();
-  setTimeout(() => URL.revokeObjectURL(link.href), 200);
+  setTimeout(() => URL.revokeObjectURL(link.href), 5000);
   // Cleanup after the download is best-effort: a failed deleteFile must not
   // mask the successful export with an error toast.
   await cleanupFfmpegTempFiles(ffmpeg, [inputName, outputName]);
@@ -254,7 +254,7 @@ export async function exportGif(
     link.href = URL.createObjectURL(blob);
     link.download = `${exportBaseName(scene, activeLayerId)}.gif`;
     link.click();
-    setTimeout(() => URL.revokeObjectURL(link.href), 200);
+    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
     // The single-pass palettegen/paletteuse filter graph keeps the palette in
     // an in-memory label — no palette file is ever written, so only the input
     // and output need cleanup. Best-effort: a failed deleteFile must not mask

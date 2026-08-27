@@ -164,7 +164,7 @@ export function renderMockupToCanvas(
       const layer = scene.layers.find((l) => l.id === inst.layerId) ?? activeLayerForRender;
       const instSpec = getFrameSpec(inst.frame, scene.customFrame);
       const isActiveInstance = !!layer && layer.id === activeLayerId;
-      const instZoom = isActiveInstance ? (transform?.zoom ?? layer?.zoom ?? 1) : (layer?.zoom ?? 1);
+      const instZoom = isActiveInstance ? Math.max(RENDER.minZoom, transform?.zoom ?? layer?.zoom ?? 1) : Math.max(RENDER.minZoom, layer?.zoom ?? 1);
 
       const frameMedia = layer?.id ? (layerMedias?.get(layer.id) ?? null) : media;
       const overlay = layer?.id && instSpec.isOverlay ? (frameOverlays?.get(layer.id) ?? null) : null;

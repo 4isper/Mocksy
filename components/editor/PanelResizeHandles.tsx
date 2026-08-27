@@ -136,6 +136,10 @@ export function PanelResizeHandles() {
         writePanelWidth(grid, side, next);
       };
       const onPointerUp = () => {
+        // Clean up pointermove — it uses { once: false } so a missing
+        // pointerup/pointercancel (edge-case: contextmenu, alert dialog)
+        // would leak it.
+        e.currentTarget.removeEventListener("pointermove", onPointerMove);
         const state = dragRef.current;
         if (state) {
           const finalWidth = clampPanelWidth(

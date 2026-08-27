@@ -40,7 +40,7 @@ export function VideoTrimControl({ duration }: VideoTrimControlProps) {
     right: 0,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.12)"
+    backgroundColor: "var(--range-track)"
   };
   const selectedStyle: React.CSSProperties = {
     position: "absolute",

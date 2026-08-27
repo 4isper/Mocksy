@@ -18,3 +18,8 @@ export function escapeMarkup(text: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 }
+
+/** Escapes a value for safe use inside an XML/SVG attribute (double-quoted). */
+export function escapeAttr(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { useTranslations } from "next-intl";
 import { renderSVG } from "uqr";
 
@@ -11,14 +12,15 @@ import { renderSVG } from "uqr";
  */
 export function ShareQrDialog({ url, onClose }: { url: string | null; onClose: () => void }) {
   const t = useTranslations();
+  const trapRef = useFocusTrap(!!url);
 
   useEffect(() => {
     if (!url) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, [url, onClose]);
 
   if (!url) return null;
@@ -29,6 +31,7 @@ export function ShareQrDialog({ url, onClose }: { url: string | null; onClose: (
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 1200, display: "grid", placeItems: "center" }}
     >
       <div
+        ref={trapRef}
         role="dialog"
         aria-modal="true"
         aria-label={t("editor.qrTitle")}
@@ -45,7 +48,7 @@ export function ShareQrDialog({ url, onClose }: { url: string | null; onClose: (
         <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)", textAlign: "center" }}>
           {t("editor.qrCopiedHint")}
         </p>
-        <button type="button" className="btn" onClick={onClose}>
+        <button type="button" className="btn" onClick={onClose} autoFocus>
           {t("editor.qrClose")}
         </button>
       </div>

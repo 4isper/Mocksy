@@ -135,7 +135,7 @@ export function LayerItem({
           flex: "0 0 auto",
           borderRadius: 5,
           overflow: "hidden",
-          background: "#0a0a0a",
+          background: "var(--panel-solid)",
           display: "grid",
           placeItems: "center",
           border: "1px solid var(--panel-border)"

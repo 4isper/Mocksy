@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 
 export interface ContextMenuItem {
@@ -29,10 +29,10 @@ export function ContextMenu({ x, y, items, onClose }: { x: number; y: number; it
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<Positioned>({ x, y });
 
-  const enabledIndices = items.reduce<number[]>((acc, item, i) => {
+  const enabledIndices = useMemo(() => items.reduce<number[]>((acc, item, i) => {
     if (!item.disabled) acc.push(i);
     return acc;
-  }, []);
+  }, []), [items]);
 
   const firstEnabled = enabledIndices[0];
   const [focusIndex, setFocusIndex] = useState(firstEnabled ?? 0);

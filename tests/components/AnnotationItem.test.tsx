@@ -29,7 +29,7 @@ function makeAnnotation(overrides: Partial<Annotation> = {}): Annotation {
  *  out of each individual test. */
 function baseProps(overrides: Record<string, unknown> = {}) {
   return {
-    others: [],
+    all: [],
     onSelect: () => {},
     onSelectMany: vi.fn(),
     onGuides: vi.fn(),
@@ -56,7 +56,7 @@ describe("AnnotationItem", () => {
         onSelect={() => {}}
         onUpdate={onUpdate}
         onRemove={vi.fn()}
-        others={[]}
+        all={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />
@@ -90,7 +90,7 @@ describe("AnnotationItem", () => {
         onSelect={() => {}}
         onUpdate={onUpdate}
         onRemove={vi.fn()}
-        others={[]}
+        all={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />
@@ -122,7 +122,7 @@ describe("AnnotationItem", () => {
         onSelect={() => {}}
         onUpdate={onUpdate}
         onRemove={vi.fn()}
-        others={[]}
+        all={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />
@@ -154,7 +154,7 @@ describe("AnnotationItem", () => {
         onSelect={() => {}}
         onUpdate={onUpdate}
         onRemove={vi.fn()}
-        others={[]}
+        all={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />
@@ -178,7 +178,7 @@ describe("AnnotationItem", () => {
         onSelect={() => {}}
         onUpdate={() => {}}
         onRemove={vi.fn()}
-        others={[]}
+        all={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />
@@ -199,7 +199,7 @@ describe("AnnotationItem", () => {
         onSelect={() => {}}
         onUpdate={() => {}}
         onRemove={vi.fn()}
-        others={[]}
+        all={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />
@@ -223,7 +223,7 @@ describe("AnnotationItem", () => {
         onSelect={() => {}}
         onUpdate={() => {}}
         onRemove={vi.fn()}
-        others={[]}
+        all={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />
@@ -245,7 +245,7 @@ describe("AnnotationItem", () => {
         onSelect={onSelect}
         onUpdate={() => {}}
         onRemove={vi.fn()}
-        others={[]}
+        all={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />
@@ -268,7 +268,7 @@ describe("AnnotationItem", () => {
         onSelect={() => {}}
         onUpdate={() => {}}
         onRemove={vi.fn()}
-        others={[]}
+        all={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />

@@ -64,9 +64,13 @@ export async function inlineSvgAsset(asset: string): Promise<string | null> {
   try {
     const res = await fetch(asset);
     const text = await res.text();
+    // Strip XML declarations, the <svg> root wrapper and closing tag so the
+    // inner markup can be inlined into a <g>. The replacement is deliberately
+    // simple — device skins are authored in-house and never contain nested
+    // <svg> elements or CDATA sections.
     return text
-      .replace(/<\?xml[^>]*\?>/i, "")
-      .replace(/^[\s\S]*?<svg[^>]*>/i, "<g>")
+      .replace(/<\?xml[^>]*\?>/gi, "")
+      .replace(/<svg[\s\S]*?>/i, "<g>")
       .replace(/<\/svg>\s*$/i, "</g>")
       .trim();
   } catch {

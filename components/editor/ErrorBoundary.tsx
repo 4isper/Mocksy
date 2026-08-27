@@ -2,6 +2,7 @@
 
 import { Component } from "react";
 import type { ErrorInfo, ReactNode } from "react";
+import { useTranslations } from "next-intl";
 
 interface Props {
   children: ReactNode;
@@ -57,4 +58,19 @@ export class ErrorBoundary extends Component<Props, State> {
     }
     return this.props.children;
   }
+}
+
+/**
+ * Localized ErrorBoundary for use inside a NextIntl provider. Reads the
+ * `errors` namespace and passes translated strings down; the raw
+ * `ErrorBoundary` keeps static English defaults so it stays usable without a
+ * translation context (tests, isolated embeds).
+ */
+export function LocalizedErrorBoundary({ children }: { children: ReactNode }) {
+  const t = useTranslations("errors");
+  return (
+    <ErrorBoundary message={t("message")} retryLabel={t("tryAgain")}>
+      {children}
+    </ErrorBoundary>
+  );
 }

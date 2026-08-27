@@ -219,10 +219,15 @@ export function createAppearanceSlice(set: EditorStoreSetter): AppearanceSlice {
         };
       });
     },
-    selectAnnotations: (ids) => set({
-      selectedAnnotationIds: [...new Set(ids)],
-      selectedAnnotationId: ids.length > 0 ? ids[ids.length - 1]! : null
-    }),
+    selectAnnotations: (ids) =>
+      set((s) => {
+        const annotationIds = new Set(s.scene.annotations.map((a) => a.id));
+        const valid = ids.filter((id) => annotationIds.has(id));
+        return {
+          selectedAnnotationIds: [...new Set(valid)],
+          selectedAnnotationId: valid.length > 0 ? valid[valid.length - 1]! : null
+        };
+      }),
     clearAnnotations: () => set((s) => ({ ...pushHistory(s, { ...s.scene, annotations: [] }), selectedAnnotationId: null })),
     setBackgroundAudio: (backgroundAudioUrl, backgroundAudioName) =>
       set((s) => pushHistory(s, { ...s.scene, backgroundAudioUrl, backgroundAudioName })),

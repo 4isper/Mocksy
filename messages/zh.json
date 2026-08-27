@@ -383,7 +383,8 @@
     "showGroup": "Show group",
     "lockGroup": "Lock group",
     "unlockGroup": "Unlock group",
-    "ungroup": "Ungroup"
+    "ungroup": "Ungroup",
+    "gradientType": "Gradient type"
   },
   "frame": {
     "none": "无",

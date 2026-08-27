@@ -18,6 +18,7 @@ export function detectMediaType(file: File): MediaType {
   if (file.type.startsWith("video/")) return "video";
   if (file.type.includes("mp4") || file.type.includes("quicktime") || file.type.includes("webm")) return "video";
   if (VIDEO_EXT.test(file.name)) return "video";
+  if (file.type.startsWith("audio/") || AUDIO_EXT.test(file.name)) return "image";
   return "image";
 }
 
@@ -151,7 +152,11 @@ export async function loadMediaFromUrl(inputUrl: string): Promise<LoadedMedia> {
     throw new UnsupportedMediaUrlError(trimmed);
   }
   if (!response.ok) throw new UnsupportedMediaUrlError(trimmed);
+  const contentLength = Number(response.headers?.get?.("content-length"));
+  const MAX_URL_MEDIA_BYTES = 50 * 1024 * 1024;
+  if (contentLength > MAX_URL_MEDIA_BYTES) throw new UnsupportedMediaUrlError(trimmed);
   const blob = await response.blob();
+  if (blob.size > MAX_URL_MEDIA_BYTES) throw new UnsupportedMediaUrlError(trimmed);
   if (!blob.type.startsWith("image/") && !blob.type.startsWith("video/")) {
     throw new UnsupportedMediaUrlError(trimmed);
   }
