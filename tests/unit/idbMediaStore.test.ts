@@ -78,8 +78,7 @@ describe("idbMediaStore failure modes", () => {
     installWindow(undefined);
     await expect(putMediaBlob("k", pngBlob(1))).resolves.toBe(false);
     await expect(getMediaBlob("k")).resolves.toBeNull();
-    // Callers rely on list/get for correctness, not the delete boolean.
-    await expect(deleteMediaBlob("k")).resolves.toBe(true);
+    await expect(deleteMediaBlob("k")).resolves.toBe(false);
     await expect(listMediaKeys()).resolves.toEqual([]);
   });
 
@@ -93,6 +92,28 @@ describe("idbMediaStore failure modes", () => {
     });
     await expect(putMediaBlob("k", pngBlob(1))).resolves.toBe(false);
     await expect(listMediaKeys()).resolves.toEqual([]);
+  });
+
+  it("does not permanently degrade after a blocked open (retries later)", async () => {
+    // First open is stalled by onblocked, subsequent opens succeed.
+    let firstOpen = true;
+    const healthy = createFakeIndexedDB();
+    installWindow({
+      open() {
+        if (firstOpen) {
+          firstOpen = false;
+          const req: { onblocked?: () => void; onsuccess?: () => void } = {};
+          queueMicrotask(() => req.onblocked?.());
+          return req;
+        }
+        return healthy.open();
+      }
+    });
+    // The initial blocked attempt degrades gracefully...
+    await expect(putMediaBlob("k", pngBlob(1))).resolves.toBe(false);
+    // ...but the cached null handle is dropped, so the next call re-opens and works.
+    await expect(putMediaBlob("k", pngBlob(1))).resolves.toBe(true);
+    await expect(getMediaBlob("k")).resolves.toEqual(pngBlob(1));
   });
 
   it("reports false when the transaction aborts after the write (quota)", async () => {

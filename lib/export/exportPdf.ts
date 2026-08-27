@@ -8,7 +8,9 @@ import { buildStandaloneSvg } from "@/lib/export/exportSvg";
 
 export function pdfPageSize(scene: EditorScene, customSize?: ExportSize | null): { width: number; height: number } {
   const base = intrinsicExportSize(scene, 1);
-  if (!customSize?.width && !customSize?.height) return base;
+  // A custom size is only meaningful when both dimensions are present; a
+  // partial size would yield a degenerate fitRatio (0) and a 1x1pt page.
+  if (!customSize?.width || !customSize?.height) return base;
   const ratio = fitRatioForCustomSize(scene, customSize);
   const width = Math.max(1, Math.round(base.width * ratio));
   const height = Math.max(1, Math.round(base.height * ratio));

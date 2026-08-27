@@ -69,7 +69,10 @@ export function createSceneSlice(set: EditorStoreSetter): SceneSlice {
         const previous = s.past[s.past.length - 1];
         // Playback position lives outside the scene, so re-sync it to the
         // restored scene's poster time instead of leaving the timeline slider
-        // pointing at a moment that no longer matches the video.
+        // pointing at a moment that no longer matches the video. Must use the
+        // reconciled selection (not the scene snapshot) so the scrubber tracks
+        // whichever layer stays active after the undo.
+        const activeLayerId = reconcileActiveLayerId(previous ?? s.scene, s.activeLayerId);
         return {
           scene: previous,
           past: s.past.slice(0, -1),
@@ -79,22 +82,23 @@ export function createSceneSlice(set: EditorStoreSetter): SceneSlice {
           // into the just-undone one.
           lastHistoryKey: null,
           lastHistoryAt: 0,
-          videoCurrentTime: activePosterTime(previous ?? s.scene),
-          activeLayerId: reconcileActiveLayerId(previous ?? s.scene, s.activeLayerId)
+          videoCurrentTime: activePosterTime(previous ?? s.scene, activeLayerId),
+          activeLayerId
         };
       }),
     redo: () =>
       set((s) => {
         if (s.future.length === 0) return {};
         const next = s.future[0];
+        const activeLayerId = reconcileActiveLayerId(next ?? s.scene, s.activeLayerId);
         return {
           scene: next,
           past: [...s.past, s.scene],
           future: s.future.slice(1),
           lastHistoryKey: null,
           lastHistoryAt: 0,
-          videoCurrentTime: activePosterTime(next ?? s.scene),
-          activeLayerId: reconcileActiveLayerId(next ?? s.scene, s.activeLayerId)
+          videoCurrentTime: activePosterTime(next ?? s.scene, activeLayerId),
+          activeLayerId
         };
       }),
     jumpToHistory: (index) =>

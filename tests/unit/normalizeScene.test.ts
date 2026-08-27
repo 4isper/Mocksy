@@ -272,6 +272,16 @@ describe("normalizeScene", () => {
     expect(s.activeLayerId).toBe("my-layer");
   });
 
+  it("activeLayerId falls back to first layer id when it names no layer", () => {
+    const s = normalizeScene({ layers: [{ id: "my-layer" }], activeLayerId: "ghost-layer" });
+    expect(s.activeLayerId).toBe("my-layer");
+  });
+
+  it("keeps a valid activeLayerId", () => {
+    const s = normalizeScene({ layers: [{ id: "my-layer" }, { id: "other" }], activeLayerId: "other" });
+    expect(s.activeLayerId).toBe("other");
+  });
+
   it("accepts explicit string values for background and watermark fields", () => {
     const s = normalizeScene({
       backgroundColor: "#ff0000",

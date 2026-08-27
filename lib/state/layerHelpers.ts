@@ -111,6 +111,12 @@ export function isLayerLocked(scene: EditorScene, layerId: string | null = scene
  *  guard with `isLayerLocked` first to avoid no-op undo entries. */
 export function patchActive(scene: EditorScene, patch: Partial<MediaLayer>, activeLayerId: string | null = scene.activeLayerId): MediaLayer[] {
   const id = activeLayerId ?? scene.layers[0]?.id;
-  if (id != null && scene.layers.find((l) => l.id === id)?.locked === true) return scene.layers;
+  if (id == null) return scene.layers;
+  // Locked layers are left untouched, and a target that no longer exists is a
+  // no-op too — in both cases return the SAME array reference so callers can
+  // detect that nothing changed and avoid recording a spurious undo entry.
+  if (scene.layers.find((l) => l.id === id)?.locked === true || !scene.layers.some((l) => l.id === id)) {
+    return scene.layers;
+  }
   return scene.layers.map((l) => (l.id === id ? { ...l, ...patch } : l));
 }

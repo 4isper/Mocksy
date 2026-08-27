@@ -450,6 +450,9 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
               ? {
                   ...l,
                   videoDuration,
+                  // Keep trimStart ≤ trimEnd: a shorter clip may invalidate an
+                  // existing trim range, so pull start down with the new duration.
+                  videoTrimStart: Math.min(l.videoTrimStart, videoDuration),
                   videoTrimEnd: l.videoTrimEnd > 0 ? Math.min(l.videoTrimEnd, videoDuration) : videoDuration
                 }
               : l

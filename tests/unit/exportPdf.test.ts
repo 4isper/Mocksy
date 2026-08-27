@@ -91,6 +91,12 @@ describe("pdfPageSize", () => {
     const { pdfPageSize } = await import("@/lib/export/exportPdf");
     expect(pdfPageSize(sceneWith(), { width: 0, height: 0 })).toEqual({ width: 800, height: 450 });
   });
+
+  it("ignores a partial custom size (missing dimension) instead of a 1x1 page", async () => {
+    const { pdfPageSize } = await import("@/lib/export/exportPdf");
+    expect(pdfPageSize(sceneWith(), { width: 1200, height: 0 })).toEqual({ width: 800, height: 450 });
+    expect(pdfPageSize(sceneWith(), { width: 0, height: 1200 })).toEqual({ width: 800, height: 450 });
+  });
 });
 
 describe("exportPdf", () => {

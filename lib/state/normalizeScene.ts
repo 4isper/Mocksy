@@ -260,9 +260,15 @@ export function normalizeScene(raw: unknown): EditorScene {
   // override inherits (and the seed used when an instance override is created).
   const sceneScreen = normalizeScreenChrome(r.screen, initialScene.screen, frame);
 
+  // Trusted active layer: only keep an id that actually names a normalized
+  // layer, otherwise fall back to the first layer (never persist a dangling id).
+  const activeLayerId = typeof r.activeLayerId === "string" && layers.some((l) => l.id === r.activeLayerId)
+    ? r.activeLayerId
+    : layers[0]?.id ?? null;
+
   return {
     layers,
-    activeLayerId: typeof r.activeLayerId === "string" ? r.activeLayerId : layers[0]?.id ?? null,
+    activeLayerId,
     frame,
     frameMaterial: r.frameMaterial === "silver" || r.frameMaterial === "white" ? r.frameMaterial : undefined,
     frameInstances: Array.isArray(r.frameInstances) && r.frameInstances.length > 0

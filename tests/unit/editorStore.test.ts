@@ -47,6 +47,20 @@ describe("editorStore", () => {
     expect(store().scene.layers[0]!.videoTrimEnd).toBe(6);
   });
 
+  it("setVideoDuration keeps trimStart <= trimEnd when a shorter clip loads", () => {
+    useEditorStore.setState({ scene: { ...initialScene } });
+    store().setVideoDuration(10);
+    store().setVideoTrimStart(7);
+    store().setVideoTrimEnd(8);
+    store().setVideoDuration(3);
+    const l = store().scene.layers[0]!;
+    // Lookout: the new duration is shorter than the current trim start.
+    expect(l.videoDuration).toBe(3);
+    expect(l.videoTrimStart).toBeLessThanOrEqual(l.videoTrimEnd);
+    expect(l.videoTrimStart).toBe(3);
+    expect(l.videoTrimEnd).toBe(3);
+  });
+
   it("setVideoTrimEnd(0) clamps to the full duration instead of a 0 sentinel", () => {
     store().setVideoDuration(8);
     store().setVideoTrimEnd(0);
@@ -217,6 +231,25 @@ describe("editorStore", () => {
     store().setZoom(1.5);
     expect(store().future.length).toBe(0);
     expect(store().scene.layers[0]!.zoom).toBe(1.5);
+  });
+
+  it("undo/redo sync videoCurrentTime to the reconciled active layer", () => {
+    const l1 = { ...initialScene.layers[0]!, id: "L1", videoPosterTime: 1, videoDuration: 10 };
+    const l2 = { ...initialScene.layers[0]!, id: "L2", videoPosterTime: 7, videoDuration: 10 };
+    // Restored scene's snapshot points at L1, but the live selection is L2.
+    const previous = { ...initialScene, layers: [l1, l2], activeLayerId: "L1" };
+    const current = { ...initialScene, layers: [l1, l2], activeLayerId: "L1", tiltX: 5 };
+    useEditorStore.setState({
+      past: [previous],
+      scene: current,
+      activeLayerId: "L2",
+      videoCurrentTime: 0
+    });
+    store().undo();
+    // L2 still exists in the restored scene, so it stays active — the scrubber
+    // must reflect L2's poster time, not the snapshot's L1.
+    expect(store().activeLayerId).toBe("L2");
+    expect(store().videoCurrentTime).toBe(7);
   });
 
   it("an edit of the same field right after undo starts a fresh history entry", () => {

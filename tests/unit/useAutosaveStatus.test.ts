@@ -27,6 +27,22 @@ describe("useAutosaveStatus", () => {
     act(() => result.current.saveNow());
     expect(updateSpy).toHaveBeenCalled();
     expect(result.current.saved).toBe(true);
+    // The autosave watcher must not flip it back to "unsaved" on the next tick.
+    await new Promise((r) => setTimeout(r, 10));
+    expect(result.current.saved).toBe(true);
+  });
+
+  it("markSaved clears the unsaved indicator without flipping back", async () => {
+    const bootstrapped = { current: true };
+    const { result } = renderHook(() => useAutosaveStatus(initialScene, null, bootstrapped));
+    // Simulate an unsaved edit
+    act(() => result.current.saveNow());
+    await new Promise((r) => setTimeout(r, 10));
+    act(() => result.current.markSaved());
+    expect(result.current.saved).toBe(true);
+    await new Promise((r) => setTimeout(r, 10));
+    expect(result.current.saved).toBe(true);
+    expect(result.current.saveToast).toBeNull();
   });
 
   it("does not flag unsaved before bootstrap completes", async () => {
