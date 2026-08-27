@@ -116,7 +116,7 @@ describe("CommandPalette", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("wraps selection with Tab", async () => {
+  it("does not hijack Tab — selection stays put (native navigation)", async () => {
     const cmds: Command[] = [
       { id: "a", label: "Alpha", keywords: [], category: "test", action: vi.fn() },
       { id: "b", label: "Beta", keywords: [], category: "test", action: vi.fn() },
@@ -124,8 +124,6 @@ describe("CommandPalette", () => {
     render(<CommandPalette commands={cmds} isOpen={true} onClose={vi.fn()} />);
     const input = screen.getByRole("textbox");
     const items = screen.getAllByRole("option");
-    await userEvent.type(input, "{Tab}");
-    expect(items[1]).toHaveAttribute("aria-selected", "true");
     await userEvent.type(input, "{Tab}");
     expect(items[0]).toHaveAttribute("aria-selected", "true");
   });

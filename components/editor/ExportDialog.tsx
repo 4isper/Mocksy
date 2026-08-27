@@ -93,23 +93,28 @@ export function ExportDialog({
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      // While an export is running, ESC must not silently close the dialog and
+      // orphan the job (which would continue invisible); route it to the same
+      // cancel the toolbar/button uses.
+      if (e.key === "Escape") {
+        if (busy && onCancel) onCancel();
+        else onClose();
+      }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, onClose, busy, onCancel]);
 
   if (!open) return null;
   const formatLabel = t(`export.${format}`);
   return (
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+    <div className="modal-backdrop" role="presentation" onClick={() => (busy && onCancel ? onCancel() : onClose())}>
       <div
         className="modal export"
         ref={trapRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="export-title"
-        aria-describedby="export-title"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 id="export-title">{t("export.title")}</h3>

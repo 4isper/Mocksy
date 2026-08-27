@@ -40,7 +40,17 @@ export function ProjectsPanel() {
   const [draftName, setDraftName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pendingSwitchId, setPendingSwitchId] = useState<string | null>(null);
+  const [busyExportId, setBusyExportId] = useState<string | null>(null);
   const trapRef = useFocusTrap(!!pendingSwitchId);
+
+  useEffect(() => {
+    if (!pendingSwitchId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPendingSwitchId(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [pendingSwitchId]);
 
   const activeProjects = projects.filter((p) => p.deletedAt == null);
   const trashedProjects = projects.filter((p) => p.deletedAt != null);
@@ -77,6 +87,10 @@ export function ProjectsPanel() {
     setEditingId(null);
   };
 
+  const cancelRename = () => {
+    setEditingId(null);
+  };
+
   const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -94,10 +108,13 @@ export function ProjectsPanel() {
 
   const handleExportBundle = async (project: Project) => {
     try {
+      setBusyExportId(project.id);
       await exportProjectBundle(project);
       setError(null);
     } catch {
       setError(t("projects.bundleError"));
+    } finally {
+      setBusyExportId(null);
     }
   };
 
@@ -186,10 +203,12 @@ export function ProjectsPanel() {
               onSwitch={handleSwitch}
               onStartRename={startRename}
               onCommitRename={commitRename}
+              onCancelRename={cancelRename}
               onDraftChange={setDraftName}
               onDuplicate={duplicateProject}
               onExport={exportProjectToFile}
               onExportBundle={handleExportBundle}
+              bundleBusy={busyExportId === project.id}
               onDelete={deleteProject}
               disableDelete={activeProjects.length <= 1}
             />
@@ -206,8 +225,8 @@ export function ProjectsPanel() {
             <h3>{t("projects.switchConfirmTitle")}</h3>
             <p>{t("projects.switchConfirmMessage")}</p>
             <div className="modal-actions">
-              <button type="button" className="btn" onClick={() => setPendingSwitchId(null)} autoFocus>{t("projects.switchConfirmCancel")}</button>
-              <button type="button" className="btn btn-primary" onClick={confirmSwitch}>{t("projects.switchConfirmDiscard")}</button>
+              <button type="button" className="btn btn-primary" onClick={() => setPendingSwitchId(null)} autoFocus>{t("projects.switchConfirmCancel")}</button>
+              <button type="button" className="btn btn-danger" onClick={confirmSwitch}>{t("projects.switchConfirmDiscard")}</button>
             </div>
           </div>
         </div>

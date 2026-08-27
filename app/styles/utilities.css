@@ -1,5 +1,9 @@
 /* ---- Utility classes ---- */
 
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
 .text-dim-sm {
   color: var(--text-dim);
   font-size: 12px;

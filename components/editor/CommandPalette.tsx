@@ -124,12 +124,6 @@ export function CommandPalette({
       }
       return;
     }
-    if (e.key === "Tab") {
-      e.preventDefault();
-      if (filteredCommands.length === 0) return;
-      setSelectedIndex((selectedIndex + 1) % filteredCommands.length);
-      return;
-    }
   }, [filteredCommands, onClose, selectedIndex]);
 
   const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);

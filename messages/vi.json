@@ -526,7 +526,11 @@
     "limitReached": "Template limit reached ({max}). Delete an older template to save a new one.",
     "noTemplates": "No saved templates yet.",
     "sceneTemplates": "Scene templates",
-    "scenePresets": "Style presets"
+    "scenePresets": "Style presets",
+    "deleteConfirmTitle": "Delete template?",
+    "deleteConfirmMessage": "The saved template \"{name}\" will be permanently deleted. This can't be undone.",
+    "deleteConfirmCancel": "Cancel",
+    "deleteConfirmConfirm": "Delete"
   },
   "help": {
     "layersStack": "Các lớp được xếp chồng lên nhau từ trên xuống dưới. Chọn một lớp để thay đổi kích thước, vị trí và tùy chọn hình ảnh. Kéo lớp để thay đổi thứ tự. Phím tắt lớp: ⌘D nhân đôi, ⌘↑ / ⌘↓ hoàn tác, ⌘[ / ⌘] di chuyển."
@@ -701,7 +705,8 @@
     "switchConfirmTitle": "Unsaved changes",
     "switchConfirmMessage": "You have unsaved changes in this project. Switching will discard them.",
     "switchConfirmCancel": "Cancel",
-    "switchConfirmDiscard": "Switch anyway"
+    "switchConfirmDiscard": "Switch anyway",
+    "bundleExporting": "Exporting…"
   },
   "theme": {
     "light": "Sáng",

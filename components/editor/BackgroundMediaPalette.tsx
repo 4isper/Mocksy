@@ -6,6 +6,15 @@ import { gradientMiddleStop, pickBestSolid, pickHarmonicPair, type HueScheme } f
 /** Color-harmony schemes cycled through on each "auto gradient" click. */
 const SCHEMES: HueScheme[] = ["complementary", "analogous", "triadic"];
 
+// Advance through SCHEMES predictably so repeated clicks cycle instead of
+// jumping to a random scheme — matching the deterministic angle cycle below.
+let schemeCursor = 0;
+const nextScheme = (): HueScheme => {
+  const scheme = SCHEMES[schemeCursor % SCHEMES.length] ?? SCHEMES[0]!;
+  schemeCursor += 1;
+  return scheme;
+};
+
 interface BackgroundMediaPaletteProps {
   scenePalette: string[] | null;
   gradientAngle: number;
@@ -47,7 +56,7 @@ export function BackgroundMediaPalette({
           title={hasPalette ? t("editor.autoBgTooltip") : t("editor.autoBgDisabled")}
           onClick={() => {
             if (!hasPalette) return;
-            const [from, to] = pickHarmonicPair(scenePalette!, SCHEMES[Math.floor(Math.random() * SCHEMES.length)]!);
+            const [from, to] = pickHarmonicPair(scenePalette!, nextScheme());
             const via = gradientMiddleStop(from, to);
             setBackgroundGradient(from, to, nextAngle(), via);
           }}

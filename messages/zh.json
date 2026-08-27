@@ -526,7 +526,11 @@
     "limitReached": "Template limit reached ({max}). Delete an older template to save a new one.",
     "noTemplates": "No saved templates yet.",
     "sceneTemplates": "Scene templates",
-    "scenePresets": "Style presets"
+    "scenePresets": "Style presets",
+    "deleteConfirmTitle": "Delete template?",
+    "deleteConfirmMessage": "The saved template \"{name}\" will be permanently deleted. This can't be undone.",
+    "deleteConfirmCancel": "Cancel",
+    "deleteConfirmConfirm": "Delete"
   },
   "help": {
     "layersStack": "图层从上到下堆叠。选择图层以编辑其缩放、位置和视频选项。 拖动图层以重新排序。 活动图层的快捷键：⌘D 复制，⌘↑ / ⌘↓ 重新排序，⌘[ / ⌘] 切换。"
@@ -701,7 +705,8 @@
     "switchConfirmTitle": "Unsaved changes",
     "switchConfirmMessage": "You have unsaved changes in this project. Switching will discard them.",
     "switchConfirmCancel": "Cancel",
-    "switchConfirmDiscard": "Switch anyway"
+    "switchConfirmDiscard": "Switch anyway",
+    "bundleExporting": "Exporting…"
   },
   "theme": {
     "light": "浅色",

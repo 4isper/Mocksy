@@ -543,6 +543,10 @@
     "myTemplates": "Мои шаблоны",
     "noTemplates": "Пока нет сохранённых шаблонов.",
     "deleteTitle": "Удалить шаблон {name}",
+    "deleteConfirmTitle": "Удалить шаблон?",
+    "deleteConfirmMessage": "Сохранённый шаблон \"{name}\" будет удалён навсегда. Это действие нельзя отменить.",
+    "deleteConfirmCancel": "Отмена",
+    "deleteConfirmConfirm": "Удалить",
     "limitReached": "Достигнут лимит шаблонов ({max}). Удалите старый шаблон, чтобы сохранить новый.",
     "sceneTemplates": "Шаблоны сцен",
     "scenePresets": "Стили"
@@ -702,6 +706,7 @@
     "export": "Экспорт проекта",
     "bundleExport": "Экспорт с медиа (.zip)",
     "bundleExportLabel": "Экспортировать «{name}» с медиа (.zip)",
+    "bundleExporting": "Экспорт…",
     "bundleError": "Не удалось экспортировать бандл проекта.",
     "switch": "Переключиться на",
     "noProjects": "Пока нет проектов.",

@@ -59,6 +59,21 @@
   border-color: var(--panel-border);
 }
 
+/* Destructive action button: visually muted so the safe/cancel action stands
+   out as the default; used for irreversible actions (reset, clear, delete). */
+.btn-danger {
+  background: var(--danger-bg);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 18%, var(--field-bg));
+  border-color: var(--danger);
+  box-shadow: none;
+}
+
 /* ---- Icon button (small square icon action) ---- */
 .btn-icon {
   appearance: none;

@@ -526,7 +526,11 @@
     "limitReached": "Template limit reached ({max}). Delete an older template to save a new one.",
     "noTemplates": "No saved templates yet.",
     "sceneTemplates": "Scene templates",
-    "scenePresets": "Style presets"
+    "scenePresets": "Style presets",
+    "deleteConfirmTitle": "Delete template?",
+    "deleteConfirmMessage": "The saved template \"{name}\" will be permanently deleted. This can't be undone.",
+    "deleteConfirmCancel": "Cancel",
+    "deleteConfirmConfirm": "Delete"
   },
   "help": {
     "layersStack": "ਲੇਅਰਾਂ ਉੱਪਰ ਤੋਂ ਨੀਚੇ ਪਾਂਚੀਆਂ ਹਨ। ਉਹਨਾਂ ਦਾ ਸਾਈਜ਼, ਸਥਾਨ ਅਤੇ ਚਿੱਤਰ ਵਿਕਲਪ ਬਦਲਣ ਲਈ ਇੱਕ ਲੇਅਰ ਚੁਣੋ। ਉਹਨਾਂ ਦੀ ਕਰਮ-ਵਾਰੀ ਬਦਲਣ ਲਈ ਲੇਅਰ ਨੂੰ ਖਿੰਚੋ। ਸਕਿਰਤ ਲੇਅਰ ਦੇ ਸ਼ਾਰਟਕੱਟ: ⌘D ਡੁਪਲੀਕੇਟ, ⌘↑ / ⌘↓ ਪੁਨਰਵਿਆਵਸਥਾ, ⌘[ / ⌘] ਟੋਗਲ।"
@@ -701,7 +705,8 @@
     "switchConfirmTitle": "Unsaved changes",
     "switchConfirmMessage": "You have unsaved changes in this project. Switching will discard them.",
     "switchConfirmCancel": "Cancel",
-    "switchConfirmDiscard": "Switch anyway"
+    "switchConfirmDiscard": "Switch anyway",
+    "bundleExporting": "Exporting…"
   },
   "theme": {
     "light": "ਹਲਕਾ",

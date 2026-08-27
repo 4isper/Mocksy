@@ -526,7 +526,11 @@
     "limitReached": "Template limit reached ({max}). Delete an older template to save a new one.",
     "noTemplates": "No saved templates yet.",
     "sceneTemplates": "Scene templates",
-    "scenePresets": "Style presets"
+    "scenePresets": "Style presets",
+    "deleteConfirmTitle": "Delete template?",
+    "deleteConfirmMessage": "The saved template \"{name}\" will be permanently deleted. This can't be undone.",
+    "deleteConfirmCancel": "Cancel",
+    "deleteConfirmConfirm": "Delete"
   },
   "help": {
     "layersStack": "లేయర్లు పైన నుండి కిందకి అమర్చబడ్డాయి. వాటి పరిమాణాన్ని, స్థానాన్ని మరియు చిత్ర ఐచ్ఛికాలను మార్చడానికి ఒక లేయర్ ఎంచుకోండి. వాటి క్రమాన్ని మార్చడానికి లేయర్‌ను బయటకి తీయండి. క్రియాశీల లేయర్ షార్ట్‌కట్స్: ⌘D నకలు, ⌘↑ / ⌘↓ తరలుచేయండి, ⌘[ / ⌘] మార్చండి."
@@ -701,7 +705,8 @@
     "switchConfirmTitle": "Unsaved changes",
     "switchConfirmMessage": "You have unsaved changes in this project. Switching will discard them.",
     "switchConfirmCancel": "Cancel",
-    "switchConfirmDiscard": "Switch anyway"
+    "switchConfirmDiscard": "Switch anyway",
+    "bundleExporting": "Exporting…"
   },
   "theme": {
     "light": "లేతం",

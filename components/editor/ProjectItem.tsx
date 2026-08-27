@@ -13,10 +13,12 @@ interface ProjectItemProps {
   onSwitch: (id: string) => void;
   onStartRename: (id: string, name: string) => void;
   onCommitRename: () => void;
+  onCancelRename: () => void;
   onDraftChange: (v: string) => void;
   onDuplicate: (id: string) => void;
   onExport: (project: Project) => void;
   onExportBundle: (project: Project) => void | Promise<void>;
+  bundleBusy: boolean;
   onDelete: (id: string) => void;
   disableDelete: boolean;
 }
@@ -32,10 +34,12 @@ export function ProjectItem({
   onSwitch,
   onStartRename,
   onCommitRename,
+  onCancelRename,
   onDraftChange,
   onDuplicate,
   onExport,
   onExportBundle,
+  bundleBusy,
   onDelete,
   disableDelete
 }: ProjectItemProps) {
@@ -81,7 +85,7 @@ export function ProjectItem({
             onBlur={onCommitRename}
             onKeyDown={(e) => {
               if (e.key === "Enter") onCommitRename();
-              if (e.key === "Escape") onCommitRename();
+              if (e.key === "Escape") onCancelRename();
             }}
             onClick={(e) => e.stopPropagation()}
             style={{ width: "100%", background: "transparent", border: "none", color: "inherit", fontSize: "inherit" }}
@@ -143,13 +147,22 @@ export function ProjectItem({
         type="button"
         className="btn-icon tooltip"
         aria-label={t("projects.bundleExportLabel", { name: project.name })}
-        data-tooltip={t("projects.bundleExport")}
+        data-tooltip={t("projects.bundleExporting")}
+        disabled={bundleBusy}
+        aria-busy={bundleBusy}
         onClick={(e) => {
           e.stopPropagation();
           void onExportBundle(project);
         }}
       >
-        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M1.5 4 6 1.5 10.5 4 6 6.5 1.5 4zM1.5 4v4L6 10.5V6.5M10.5 4v4L6 10.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        {bundleBusy ? (
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true" className="spin">
+            <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.4" opacity="0.3" />
+            <path d="M10.5 6a4.5 4.5 0 00-4.5-4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+          </svg>
+        ) : (
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M1.5 4 6 1.5 10.5 4 6 6.5 1.5 4zM1.5 4v4L6 10.5V6.5M10.5 4v4L6 10.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        )}
       </button>
       <button
         type="button"

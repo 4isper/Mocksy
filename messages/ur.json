@@ -526,7 +526,11 @@
     "limitReached": "Template limit reached ({max}). Delete an older template to save a new one.",
     "noTemplates": "No saved templates yet.",
     "sceneTemplates": "Scene templates",
-    "scenePresets": "Style presets"
+    "scenePresets": "Style presets",
+    "deleteConfirmTitle": "Delete template?",
+    "deleteConfirmMessage": "The saved template \"{name}\" will be permanently deleted. This can't be undone.",
+    "deleteConfirmCancel": "Cancel",
+    "deleteConfirmConfirm": "Delete"
   },
   "help": {
     "layersStack": "لیئرز اوپر سے نیچے تک پے ہیں۔ اپنے سائز، پوزیشن اور تصویری اختیارات تبدیل کرنے کے لیے ایک لیئر منتخب کریں۔ لیئر کو کھینچ کر اس کا نظم بدلیں۔ فعال لیئر کے شارٹ کٹس: ⌘D ڈیوپلیکیٹ، ⌘↑ / ⌘↓ دوبارہ ترتیب دیں، ⌘[ / ⌘] تبدیل کریں۔"
@@ -701,7 +705,8 @@
     "switchConfirmTitle": "Unsaved changes",
     "switchConfirmMessage": "You have unsaved changes in this project. Switching will discard them.",
     "switchConfirmCancel": "Cancel",
-    "switchConfirmDiscard": "Switch anyway"
+    "switchConfirmDiscard": "Switch anyway",
+    "bundleExporting": "Exporting…"
   },
   "theme": {
     "light": "ہلکا",

@@ -526,7 +526,11 @@
     "limitReached": "Template limit reached ({max}). Delete an older template to save a new one.",
     "noTemplates": "No saved templates yet.",
     "sceneTemplates": "Scene templates",
-    "scenePresets": "Style presets"
+    "scenePresets": "Style presets",
+    "deleteConfirmTitle": "Delete template?",
+    "deleteConfirmMessage": "The saved template \"{name}\" will be permanently deleted. This can't be undone.",
+    "deleteConfirmCancel": "Cancel",
+    "deleteConfirmConfirm": "Delete"
   },
   "help": {
     "layersStack": "அட்டைகள் மேலிருந்து கீழாக அமைந்துள்ளன. அவற்றின் அளவு, நிலையிடம் மற்றும் பட விருப்பங்களை மாற்ற ஒரு அட்டையைத் தேர்ந்தெடுக்கவும். அவற்றின் வரிசையை மாற்ற அட்டையை இழுக்கவும். செயல்படும் அட்டையின் விரைவுக் குறியீடுகள்: ⌘D நகல், ⌘↑ / ⌘↓ வரிசை மாற்று, ⌘[ / ⌘] மாற்று."
@@ -701,7 +705,8 @@
     "switchConfirmTitle": "Unsaved changes",
     "switchConfirmMessage": "You have unsaved changes in this project. Switching will discard them.",
     "switchConfirmCancel": "Cancel",
-    "switchConfirmDiscard": "Switch anyway"
+    "switchConfirmDiscard": "Switch anyway",
+    "bundleExporting": "Exporting…"
   },
   "theme": {
     "light": "ஒளிமயம்",

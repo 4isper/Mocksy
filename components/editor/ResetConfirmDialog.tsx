@@ -40,10 +40,10 @@ export function ResetConfirmDialog({
         <h3 id="reset-title">{t("editor.resetTitle")}</h3>
         <p id="reset-desc">{t("editor.resetMessage")}</p>
         <div className="modal-actions">
-          <button type="button" className="btn" onClick={onCancel} autoFocus>
+          <button type="button" className="btn btn-primary" onClick={onCancel} autoFocus>
             {t("editor.resetCancel")}
           </button>
-          <button type="button" className="btn btn-primary" onClick={onConfirm}>
+          <button type="button" className="btn btn-danger" onClick={onConfirm}>
             {t("editor.resetConfirm")}
           </button>
         </div>

@@ -83,6 +83,9 @@ describe("TemplatesPanel", () => {
     await userEvent.click(
       screen.getByRole("button", { name: "templates.deleteTitle" })
     );
+    // Deletion is confirmed first.
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "templates.deleteConfirmConfirm" }));
     expect(useTemplatesStore.getState().templates).toHaveLength(0);
     expect(screen.queryByText("Untitled")).not.toBeInTheDocument();
   });

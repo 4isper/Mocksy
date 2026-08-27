@@ -6,6 +6,7 @@ import { sceneStylePresets, applySceneStylePreset, randomSceneStyle, applySceneT
 import { sceneTemplates } from "@/lib/presets/sceneTemplates";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { cloneUserScene, MAX_USER_TEMPLATES, useTemplatesStore } from "@/lib/state/templatesStore";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 
 export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Promise<void> }) {
   const t = useTranslations();
@@ -18,6 +19,8 @@ export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Pro
 
   const [draftName, setDraftName] = useState("");
   const [limitHit, setLimitHit] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
+  const deleteTrapRef = useFocusTrap(!!pendingDelete);
 
   useEffect(() => {
     hydrate();
@@ -127,7 +130,7 @@ export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Pro
                 <button
                   type="button"
                   className="btn-icon template-delete-btn"
-                  onClick={() => deleteTemplate(tpl.id)}
+                  onClick={() => setPendingDelete({ id: tpl.id, name: tpl.name })}
                   title={t("templates.deleteTitle", { name: tpl.name })}
                   aria-label={t("templates.deleteTitle", { name: tpl.name })}
                 >
@@ -195,6 +198,37 @@ export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Pro
             <div className="t-name">{t(`preset.${preset.id}`)}</div>
           </button>
           ))}
+      {pendingDelete ? (
+        <div className="modal-backdrop" role="presentation" onClick={() => setPendingDelete(null)}>
+          <div
+            className="modal"
+            ref={deleteTrapRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="template-delete-title"
+            aria-describedby="template-delete-desc"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="template-delete-title">{t("templates.deleteConfirmTitle")}</h3>
+            <p id="template-delete-desc">{t("templates.deleteConfirmMessage", { name: pendingDelete.name })}</p>
+            <div className="modal-actions">
+              <button type="button" className="btn btn-primary" onClick={() => setPendingDelete(null)} autoFocus>
+                {t("templates.deleteConfirmCancel")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => {
+                  deleteTemplate(pendingDelete.id);
+                  setPendingDelete(null);
+                }}
+              >
+                {t("templates.deleteConfirmConfirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       </div>
     );
   }

@@ -526,7 +526,11 @@
     "limitReached": "Template limit reached ({max}). Delete an older template to save a new one.",
     "noTemplates": "No saved templates yet.",
     "sceneTemplates": "Scene templates",
-    "scenePresets": "Style presets"
+    "scenePresets": "Style presets",
+    "deleteConfirmTitle": "Delete template?",
+    "deleteConfirmMessage": "The saved template \"{name}\" will be permanently deleted. This can't be undone.",
+    "deleteConfirmCancel": "Cancel",
+    "deleteConfirmConfirm": "Delete"
   },
   "help": {
     "layersStack": "परतहरू माथिबाट तलसम्म थपिएका छन्। तिनीहरूको आकार, स्थान र तस्वीर विकल्पहरू परिवर्तन गर्न एउटा परत छान्नुहोस्। परतको क्रम परिवर्तन गर्न परतलाई तान्नुहोस्। सक्रिय परतका सर्टकटहरू: ⌘D प्रतिलिपि, ⌘↑ / ⌘↓ पुनर्व्यवस्था, ⌘[ / ⌘] टोगल।"
@@ -701,7 +705,8 @@
     "switchConfirmTitle": "Unsaved changes",
     "switchConfirmMessage": "You have unsaved changes in this project. Switching will discard them.",
     "switchConfirmCancel": "Cancel",
-    "switchConfirmDiscard": "Switch anyway"
+    "switchConfirmDiscard": "Switch anyway",
+    "bundleExporting": "Exporting…"
   },
   "theme": {
     "light": "हल्को",
