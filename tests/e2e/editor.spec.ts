@@ -392,9 +392,9 @@ test("duplicating a layer clones it with the same media", async ({ page }) => {
   // The default demo is a 2-frame grid, so two layers to start.
   await expect(page.locator(".layer-item")).toHaveCount(2);
 
-  // Duplicate the selected layer from the layers panel. The clone keeps the
-  // same media, so the layer list grows to three.
-  await page.locator(".layer-item.is-active").getByRole("button", { name: "Duplicate layer" }).click();
+  // Duplicate the selected layer from the layers-panel toolbar. The clone
+  // keeps the same media, so the layer list grows to three.
+  await page.getByRole("button", { name: "Duplicate layer" }).click();
   await expect(page.locator(".layer-item")).toHaveCount(3);
   // Only the two grid frames render; the duplicated layer has no frame slot.
   await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(2);
@@ -575,13 +575,14 @@ test("toggling layer visibility hides and shows it in the preview", async ({ pag
   });
   await expect(previewMedia(page)).toBeVisible();
 
-  // Hide the active layer via the eye toggle in the layers panel; the preview
-  // drops its media without deleting the layer (the grid's other frame stays).
-  await page.locator(".layer-item.is-active").getByTitle("Hide layer").click();
+  // Hide the active layer via the eye toggle in the layers-panel toolbar; the
+  // preview drops its media without deleting the layer (the grid's other frame
+  // stays).
+  await page.getByTitle("Hide layer").click();
   await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(1);
 
   // Show it again; the media returns to the preview.
-  await page.locator(".layer-item.is-active").getByTitle("Show layer").click();
+  await page.getByTitle("Show layer").click();
   await expect(previewMedia(page)).toBeVisible();
 });
 

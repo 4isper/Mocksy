@@ -184,6 +184,7 @@
     "hideLayer": "Скрыть слой",
     "imageLabel": "Изображение",
     "layers": "Слои",
+    "layerActions": "Действия со слоем",
     "layerLockedHint": "Слой заблокирован — разблокируйте для правки",
     "layoutCascade": "Каскад",
     "layoutFan": "Веер",

@@ -384,7 +384,8 @@
     "lockGroup": "Lock group",
     "unlockGroup": "Unlock group",
     "ungroup": "Ungroup",
-    "gradientType": "Gradient type"
+    "gradientType": "Gradient type",
+    "layerActions": "Layer actions"
   },
   "frame": {
     "none": "بلا",

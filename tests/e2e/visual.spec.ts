@@ -34,7 +34,7 @@ test("iphone16pro overlay renders consistently", async ({ page }) => {
 test("dark studio preset renders consistently", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("tab", { name: "Scene presets" }).click();
-  await page.getByRole("button", { name: "Dark Studio" }).click();
+  await page.getByRole("button", { name: "Dark Studio", exact: true }).click();
   await waitForStable(page);
   await expect(page).toHaveScreenshot("dark-studio-preset.png", {
     maxDiffPixels: 80,

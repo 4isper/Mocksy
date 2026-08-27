@@ -9,6 +9,7 @@ import { useAutoDismissError } from "@/lib/hooks/useAutoDismissError";
 import { useLayerReorder } from "@/lib/hooks/useLayerReorder";
 import { ContextMenu, type ContextMenuItem } from "@/components/editor/ContextMenu";
 import { LayerItem } from "@/components/editor/LayerItem";
+import { LayerActions } from "@/components/editor/LayerActions";
 import { LayerBulkActions } from "@/components/editor/LayerBulkActions";
 import { Eye, EyeOff, Lock, LockOpen } from "lucide-react";
 
@@ -94,7 +95,7 @@ export function LayersPanel() {
       if (!id) return;
       selectLayer(id);
       // Move roving tabindex to the newly focused item.
-      const items = e.currentTarget.parentElement?.querySelectorAll('[role="option"]');
+      const items = e.currentTarget.closest('ul.layers-list')?.querySelectorAll('[role="option"]');
       (items?.[nextIdx] as HTMLElement | undefined)?.focus();
     };
 
@@ -181,14 +182,21 @@ export function LayersPanel() {
           <p className="empty-state-text" style={{ fontSize: 11, color: "var(--text-dim)" }}>{t("help.layersStack")}</p>
         </div>
       ) : (
-        <ul
-          className="layers-list"
-          role="listbox"
-          aria-label={t("editor.layers")}
-          aria-multiselectable="true"
-          style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 6, minWidth: 0 }}
-        >
-          {scene.layers.map((layer, index) => {
+        <>
+          <LayerActions
+            layer={activeLayer}
+            index={activeLayer ? scene.layers.findIndex((l) => l.id === activeLayer.id) : -1}
+            total={scene.layers.length}
+            onMove={move}
+          />
+          <ul
+            className="layers-list"
+            role="listbox"
+            aria-label={t("editor.layers")}
+            aria-multiselectable="true"
+            style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 6, minWidth: 0 }}
+          >
+            {scene.layers.map((layer, index) => {
             const active = layer.id === activeLayerId;
             const isDragging = dragId === layer.id;
             const isSelected = selectedSet.has(layer.id);
@@ -282,8 +290,6 @@ export function LayersPanel() {
               <LayerItem
                 key={layer.id}
                 layer={layer}
-                index={index}
-                total={scene.layers.length}
                 active={active}
                 selected={isSelected}
                 isDragging={isDragging}
@@ -304,7 +310,6 @@ export function LayersPanel() {
                 }}
                 onKeyDown={handleLayerKeyDown}
                 onContext={(e) => openLayerContextMenu(e, layer.id)}
-                onMove={move}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
@@ -319,7 +324,8 @@ export function LayersPanel() {
               <span className="skeleton" style={{ flex: 1, height: 14, borderRadius: 6 }} />
             </li>
           ) : null}
-        </ul>
+          </ul>
+        </>
       )}
       {selectedLayerIds.length > 1 ? (
         <LayerBulkActions count={selectedLayerIds.length} total={scene.layers.length} />

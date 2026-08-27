@@ -184,6 +184,7 @@
     "hideLayer": "Hide layer",
     "imageLabel": "Image",
     "layers": "Layers",
+    "layerActions": "Layer actions",
     "layerLockedHint": "Layer is locked — unlock it to edit",
     "layoutCascade": "Cascade",
     "layoutFan": "Fan",
