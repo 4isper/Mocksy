@@ -164,7 +164,7 @@ test.describe("a11y", () => {
     await expect(page.locator("#preview-canvas")).toBeVisible();
 
     const canvas = page.locator("#preview-canvas");
-    await expect(canvas).toHaveAttribute("role", "application");
+    await expect(canvas).toHaveAttribute("role", "group");
     await expect(canvas).toHaveAttribute("aria-label");
     const label = await canvas.getAttribute("aria-label");
     expect(label, "canvas aria-label should not be empty").toBeTruthy();
