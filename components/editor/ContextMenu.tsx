@@ -37,24 +37,45 @@ export function ContextMenu({ x, y, items, onClose }: { x: number; y: number; it
   const firstEnabled = enabledIndices[0];
   const [focusIndex, setFocusIndex] = useState(firstEnabled ?? 0);
 
+  // Element focused just before the menu opened, so we can hand focus back on
+  // close (standard menu-button behaviour). Right-click alone doesn't move
+  // focus, so without this keyboard users can lose their place entirely.
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
+
+  const closeMenu = useCallback(
+    (restoreFocus: boolean) => {
+      const source = restoreFocusRef.current;
+      onClose();
+      if (restoreFocus && source && source.isConnected && typeof source.focus === "function") {
+        source.focus({ preventScroll: true });
+      }
+    },
+    [onClose]
+  );
+
   // Clamp into the viewport once the menu has been measured (flips up/left
   // when opened near the bottom/right edge). Also reset focus to the first
   // enabled item each time the menu opens (x/y change = new open).
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // Snapshot the focus target before we move focus into the menu.
+    restoreFocusRef.current = document.activeElement as HTMLElement | null;
     const r = el.getBoundingClientRect();
     setPos({
       x: Math.max(8, Math.min(x, window.innerWidth - r.width - 8)),
       y: Math.max(8, Math.min(y, window.innerHeight - r.height - 8))
     });
     if (firstEnabled !== undefined) setFocusIndex(firstEnabled);
+    // roving-tabindex: the focused item has tabindex=0. Focus it directly so
+    // arrow keys work immediately after a right-click (which doesn't focus).
+    el.querySelector<HTMLElement>('[tabindex="0"]')?.focus();
   }, [x, y, firstEnabled]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        closeMenu(true);
         return;
       }
       if (e.key === "ArrowDown") {
@@ -77,34 +98,36 @@ export function ContextMenu({ x, y, items, onClose }: { x: number; y: number; it
         e.preventDefault();
         const item = items[focusIndex];
         if (item && !item.disabled) {
-          onClose();
+          closeMenu(true);
           item.onSelect();
         }
         return;
       }
     },
-    [enabledIndices, focusIndex, items, onClose]
+    [enabledIndices, focusIndex, items, closeMenu]
   );
 
   useEffect(() => {
     const onDown = (e: PointerEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+      if (ref.current && !ref.current.contains(e.target as Node)) closeMenu(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") closeMenu(true);
     };
     // Close on outside pointer-down and resize only — scroll is intentionally
     // excluded so touch-initiated scrolls (momentum, virtual keyboard) do not
-    // dismiss the menu mid-interaction.
+    // dismiss the menu mid-interaction. Outside pointer-down does NOT restore
+    // focus (it belongs to whatever the user just clicked); keyboard/resize
+    // closes do.
     window.addEventListener("pointerdown", onDown, true);
     window.addEventListener("keydown", onKey);
-    window.addEventListener("resize", onClose);
+    window.addEventListener("resize", () => closeMenu(true));
     return () => {
       window.removeEventListener("pointerdown", onDown, true);
       window.removeEventListener("keydown", onKey);
-      window.removeEventListener("resize", onClose);
+      window.removeEventListener("resize", () => closeMenu(true));
     };
-  }, [onClose]);
+  }, [closeMenu]);
 
   const style: CSSProperties = {
     position: "fixed",
@@ -129,7 +152,7 @@ export function ContextMenu({ x, y, items, onClose }: { x: number; y: number; it
             tabIndex={i === focusIndex ? 0 : -1}
             onClick={() => {
               if (!item.disabled) {
-                onClose();
+                closeMenu(true);
                 item.onSelect();
               }
             }}

@@ -59,4 +59,21 @@ describe("ContextMenu", () => {
     fireEvent.click(btn);
     expect(onSelect).not.toHaveBeenCalled();
   });
+
+  it("moves focus to the first enabled item on open so arrow keys work immediately", () => {
+    render(<ContextMenu x={0} y={0} items={items} onClose={() => {}} />);
+    expect(screen.getByRole("menuitem", { name: "Duplicate" })).toHaveFocus();
+  });
+
+  it("skips disabled items when choosing the initial focus target", () => {
+    render(
+      <ContextMenu
+        x={0}
+        y={0}
+        items={[{ id: "a", label: "Blocked", disabled: true, onSelect: vi.fn() }, { id: "b", label: "Enabled", onSelect: vi.fn() }]}
+        onClose={() => {}}
+      />
+    );
+    expect(screen.getByRole("menuitem", { name: "Enabled" })).toHaveFocus();
+  });
 });

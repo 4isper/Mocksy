@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Minus, Plus } from "lucide-react";
-import type { ChangeEvent } from "react";
+import { useRef, type ChangeEvent } from "react";
 import { useTranslations } from "next-intl";
 import { GRID_DIVISION_OPTIONS } from "@/lib/render/grid";
 import {
@@ -39,10 +39,7 @@ export function PreviewChips({
   if (!isMultiFrame) {
     return (
       <div className="preview-chip-stack" style={{ top: 8, left: 8 }}>
-        <label className="preview-chip">
-          <span>{t("editor.uploadMedia")}</span>
-          <input type="file" accept="image/*,video/*" onChange={(e) => onFile(e)} key={fileInputKey} style={{ display: "none" }} />
-        </label>
+        <UploadChip label={t("editor.uploadMedia")} fileInputKey={fileInputKey} onFile={onFile} />
         {canClearActive ? (
           <button type="button" className="preview-chip" onClick={() => setMedia(null, "none", null)}>
             {t("editor.clearMedia")}
@@ -55,16 +52,7 @@ export function PreviewChips({
   return (
     <div className="preview-chip-stack" style={{ top: 8, left: 8 }}>
       {!canClearActive ? (
-        <label className="preview-chip">
-          <span>{t("editor.uploadMedia")}</span>
-          <input
-            type="file"
-            accept="image/*,video/*"
-            onChange={(e) => onFile(e, targetLayerId ?? undefined)}
-            key={fileInputKey}
-            style={{ display: "none" }}
-          />
-        </label>
+        <UploadChip label={t("editor.uploadMedia")} fileInputKey={fileInputKey} targetLayerId={targetLayerId ?? undefined} onFile={onFile} />
       ) : (
         <button
           type="button"
@@ -75,6 +63,45 @@ export function PreviewChips({
         </button>
       )}
     </div>
+  );
+}
+
+/**
+ * Upload chip for the preview canvas. A native <label>+hidden-input pairing
+ * wasn't keyboard-focusable (the styled input is display:none), so instead the
+ * visible chip is a real button that programmatically opens the file dialog —
+ * this keeps it in the tab order and activates with Enter/Space like any other
+ * control.
+ */
+function UploadChip({
+  label,
+  fileInputKey,
+  targetLayerId,
+  onFile
+}: {
+  label: string;
+  fileInputKey: number;
+  targetLayerId?: string;
+  onFile: (event: ChangeEvent<HTMLInputElement>, layerId?: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const openFileDialog = () => inputRef.current?.click();
+  return (
+    <>
+      <button type="button" className="preview-chip" onClick={openFileDialog}>
+        <span>{label}</span>
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*,video/*"
+        onChange={(e) => onFile(e, targetLayerId)}
+        key={fileInputKey}
+        style={{ display: "none" }}
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+    </>
   );
 }
 
