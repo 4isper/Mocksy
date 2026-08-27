@@ -100,6 +100,19 @@ export function restoreHistory(): void {
   });
 }
 
+/** Drops the persisted undo stack. Used when bootstrap replaces the scene with
+ *  an unrelated one (a share/template link): the stored stack belongs to a
+ *  different scene, so restoring it later would let one ⌘Z revert into that
+ *  scene and the autosave would persist it over the newly-opened one. */
+export function clearPersistedHistory(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Best-effort persistence: storage failures are non-actionable here.
+  }
+}
+
 /** Watches the editor store for undo/redo-stack changes and writes a trimmed,
  *  debounced copy to localStorage. Flushes synchronously on pagehide so a quick
  *  tab close doesn't lose the most recent undo steps. Returns an unsubscribe. */

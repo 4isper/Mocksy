@@ -716,6 +716,85 @@ describe("renderSceneToPngBlob single-frame video fallback", () => {  it("loads 
     expect(videoEl.currentTime).toBe(2);
     expect(videoEl.pause).toHaveBeenCalled();
   });
+
+  it("loads the poster frame even when the preview video is already decoded", async () => {
+    const videoEl: Record<string, unknown> = {
+      src: "",
+      crossOrigin: "",
+      muted: false,
+      playsInline: false,
+      videoWidth: 320,
+      videoHeight: 240,
+      duration: 5,
+      pause: vi.fn()
+    };
+    const autoFire = (name: string) =>
+      Object.defineProperty(videoEl, name, {
+        configurable: true,
+        get: () => videoEl[`_${name}`],
+        set(fn: unknown) {
+          (videoEl as Record<string, unknown>)[`_${name}`] = fn;
+          if (fn) queueMicrotask(() => (fn as () => void)());
+        }
+      });
+    autoFire("onloadedmetadata");
+    autoFire("onloadeddata");
+    autoFire("onseeked");
+    Object.defineProperty(videoEl, "onerror", {
+      configurable: true,
+      get: () => videoEl._onerror,
+      set(fn: unknown) {
+        (videoEl as Record<string, unknown>)._onerror = fn;
+      }
+    });
+
+    vi.stubGlobal("HTMLVideoElement", class {});
+    vi.stubGlobal("HTMLImageElement", class {});
+    // The preview <video> already decoded a frame, so a naive exporter would
+    // snapshot whatever frame the playhead is sitting on. The exporter must
+    // still seek a fresh element to the poster time.
+    const decoded = Object.assign(new (vi.mocked(globalThis.HTMLVideoElement))(), { readyState: 2 });
+    const container = {
+      clientWidth: 800,
+      clientHeight: 600,
+      querySelector: (sel: string) => {
+        if (sel.startsWith("[data-layer-media=")) return decoded;
+        if (sel === "[data-mockup-frame]") return { offsetWidth: 400, offsetHeight: 300 };
+        return null;
+      }
+    };
+    const mockCanvas = {
+      width: 800,
+      height: 600,
+      getContext: () => null,
+      toBlob: (cb: (b: Blob | null) => void) => cb(new Blob(["png"]))
+    } as unknown as HTMLCanvasElement;
+    vi.stubGlobal("document", {
+      getElementById: (id: string) => (id === "preview" ? container : null),
+      createElement: (tag: string) => (tag === "canvas" ? mockCanvas : tag === "video" ? videoEl : null)
+    });
+    vi.stubGlobal("window", { devicePixelRatio: 2 });
+
+    const videoLayer = {
+      ...initialScene.layers[0]!,
+      id: "vlayer",
+      mediaUrl: "blob:vid",
+      mediaType: "video",
+      mediaName: "clip.mp4",
+      videoPosterTime: 2
+    } as MediaLayer;
+    const scene: EditorScene = { ...initialScene, layers: [videoLayer], activeLayerId: "vlayer" };
+
+    const { renderSceneToPngBlob } = await import("@/lib/export/exportImage");
+    const errors: string[] = [];
+    const blob = await renderSceneToPngBlob(scene, "preview", (m) => errors.push(m));
+    expect(errors, errors.join(" | ")).toEqual([]);
+    expect(blob).toBeInstanceOf(Blob);
+    // The ready preview element must NOT be reused at its current playhead:
+    // a fresh element was seeked to the poster time instead.
+    expect(videoEl.currentTime).toBe(2);
+    expect(videoEl.pause).toHaveBeenCalled();
+  });
 });
 
 describe("renderSceneToImageBlob jpeg flatten", () => {

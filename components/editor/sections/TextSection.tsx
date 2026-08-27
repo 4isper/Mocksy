@@ -21,6 +21,9 @@ export function TextSection() {
     })
   );
   if (!layer || !isTextLayer(layer)) return null;
+  // A locked layer rejects every edit; the controls say so instead of silently
+  // swallowing the input (updateActiveLayer no-ops on locked layers).
+  const layerLocked = layer.locked === true;
 
   const aligns: { value: TextAlign; labelKey: string }[] = [
     { value: "left", labelKey: "text.alignLeft" },
@@ -37,12 +40,14 @@ export function TextSection() {
       }
     >
       <div className="field-group">
+        {layerLocked ? <span role="status" style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.layerLockedHint")}</span> : null}
         <label className="field">
           <span>{t("text.content")}</span>
           <textarea
             rows={2}
             value={layer.textContent ?? ""}
             aria-label={t("text.content")}
+            disabled={layerLocked}
             onChange={(e) => updateActiveLayer({ textContent: e.target.value })}
             style={{ resize: "vertical" }}
           />
@@ -53,6 +58,7 @@ export function TextSection() {
             type="color"
             value={layer.textColor ?? "#ffffff"}
             aria-label={t("text.color")}
+            disabled={layerLocked}
             onChange={(e) => updateActiveLayer({ textColor: e.target.value })}
           />
         </div>
@@ -66,6 +72,7 @@ export function TextSection() {
             value={layer.textSize ?? 0.12}
             aria-label={t("text.size")}
             aria-valuetext={`${Math.round((layer.textSize ?? 0.12) * 100)}%`}
+            disabled={layerLocked}
             onChange={(e) => updateActiveLayer({ textSize: Number(e.target.value) })}
           />
         </label>
@@ -78,6 +85,7 @@ export function TextSection() {
                 type="button"
                 aria-pressed={(layer.textAlign ?? "center") === a.value}
                 className={(layer.textAlign ?? "center") === a.value ? "is-active" : undefined}
+                disabled={layerLocked}
                 onClick={() => updateActiveLayer({ textAlign: a.value })}
               >
                 {t(a.labelKey)}
@@ -94,6 +102,7 @@ export function TextSection() {
                 type="button"
                 aria-pressed={(layer.fontWeight ?? "bold") === w}
                 className={(layer.fontWeight ?? "bold") === w ? "is-active" : undefined}
+                disabled={layerLocked}
                 onClick={() => updateActiveLayer({ fontWeight: w })}
               >
                 {t(w === "bold" ? "text.bold" : "text.regular")}

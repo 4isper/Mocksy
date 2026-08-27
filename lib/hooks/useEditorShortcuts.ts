@@ -224,6 +224,12 @@ export function useEditorShortcuts(actions: EditorShortcutActions): void {
 
       // Plain arrow keys nudge the selected frame instance on the canvas.
       if (!(event.metaKey || event.ctrlKey) && !typing && event.key.startsWith("Arrow")) {
+        // A focusable frame-instance div owns arrow handling while focused
+        // (including Shift+Up/Down resizing with its own step semantics), so
+        // the global handler must not apply on top of it — otherwise a single
+        // keypress would nudge (and possibly resize) twice.
+        const target = event.target instanceof Element ? event.target : null;
+        if (target?.closest("[data-frame-instance-id]")) return;
         const st = useEditorStore.getState();
         let id = st.activeFrameInstanceId;
         if (!id && st.scene.frameInstances.length > 0) {

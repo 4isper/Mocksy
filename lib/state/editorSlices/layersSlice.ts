@@ -85,10 +85,17 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
   // (returning {}) instead of pushing a do-nothing undo entry.
   const locked = (s: EditorStoreState) => isLayerLocked(s.scene, s.activeLayerId);
   return {
-    setMedia: (mediaUrl, mediaType, mediaName = null) => {
+    setMedia: (mediaUrl, mediaType, mediaName = null, targetLayerId = null) => {
       set((s) => {
-        if (locked(s)) return {};
-        const layer = activeLayer(s.scene, s.activeLayerId);
+        // A pinned target layer (captured before an async decode) wins even if
+        // the user switched the active layer while the media loaded — otherwise
+        // the upload would land in whatever layer is active at completion, or
+        // silently vanish when that layer is locked. Locked targets reject the
+        // swap exactly like locked active layers do.
+        const pinned = targetLayerId != null ? s.scene.layers.find((l) => l.id === targetLayerId) : undefined;
+        if (pinned?.locked === true) return {};
+        if (!pinned && locked(s)) return {};
+        const layer = pinned ?? activeLayer(s.scene, s.activeLayerId);
         const nextLayers = layer
           ? s.scene.layers.map((l) =>
               l.id === layer.id
@@ -104,7 +111,9 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
                 : l
             )
           : [...s.scene.layers, { ...makeDemoLayer(), mediaUrl, mediaType, mediaName }];
-        const activeLayerId = layer?.id ?? nextLayers[0]?.id ?? null;
+        // A pinned target doesn't steal the selection the user moved to
+        // mid-load; a newly created fallback layer still becomes active.
+        const activeLayerId = pinned ? s.activeLayerId : layer?.id ?? nextLayers[0]?.id ?? null;
         return {
           ...pushHistory(s, { ...s.scene, layers: nextLayers }),
           activeLayerId,

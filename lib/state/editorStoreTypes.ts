@@ -138,7 +138,7 @@ export interface EditorStoreState {
    *  the target become the redo stack. */
   jumpToHistory: (index: number) => void;
   /** Replaces the active layer's media (or seeds the first layer). */
-  setMedia: (mediaUrl: string | null, mediaType: MediaType, mediaName?: string | null) => void;
+  setMedia: (mediaUrl: string | null, mediaType: MediaType, mediaName?: string | null, targetLayerId?: string | null) => void;
   /** Replaces media on a specific layer id (used by the multi-frame preview,
    *  where the visible frame isn't necessarily the globally-active layer). */
   setMediaOnLayer: (layerId: string, mediaUrl: string | null, mediaType: MediaType, mediaName?: string | null) => void;

@@ -33,6 +33,11 @@ export function useClipboardPaste(): void {
       }
       event.preventDefault();
       const { setMediaUploadError } = useEditorStore.getState();
+      // Pin the active layer before decoding: decoding can outlive the paste
+      // event, and a layer switch (or lock) in that window would otherwise put
+      // the media into the wrong layer or drop it silently.
+      const st = useEditorStore.getState();
+      const targetLayerId = st.activeLayerId ?? st.scene.layers[0]?.id ?? null;
       try {
         const loaded = payload.kind === "file"
           ? await loadMediaFromFile(payload.file)
@@ -41,7 +46,7 @@ export function useClipboardPaste(): void {
         // Drop any palette from the previous media; a fresh one is computed
         // once the new file decodes in the preview.
         useEditorStore.getState().setScenePalette(null);
-        useEditorStore.getState().setMedia(loaded.url, loaded.mediaType, loaded.mediaName);
+        useEditorStore.getState().setMedia(loaded.url, loaded.mediaType, loaded.mediaName, targetLayerId);
       } catch (err) {
         if (err instanceof UnsupportedMediaError || err instanceof UnsupportedMediaUrlError) setMediaUploadError(err.message);
         else setMediaUploadError(t("editor.uploadError"));

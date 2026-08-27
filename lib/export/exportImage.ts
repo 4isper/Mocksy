@@ -99,11 +99,12 @@ export async function renderSceneToImageBlob(
       // querySelector would export with this layer's fit/filters applied.
       const el = node.querySelector(layerMediaSelector(active.id));
       if (el instanceof HTMLVideoElement) {
-        if (el.readyState >= 2) {
-          media = el;
-        } else if (isVideoLayer(active) && active.mediaUrl) {
-          // Export fired before the preview video decoded; load a frame
-          // explicitly instead of drawing an empty screen.
+        // Always capture the layer's poster frame for a video layer: reusing
+        // the preview element would snapshot whatever frame its playhead
+        // happens to be on, making the export depend on transient preview
+        // state (and differ from the multi-frame path, which always loads the
+        // poster frame).
+        if (isVideoLayer(active) && active.mediaUrl) {
           try {
             media = await loadVideoFrame(active.mediaUrl, active.videoPosterTime ?? 0);
           } catch {

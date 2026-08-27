@@ -7,6 +7,26 @@ import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { chooseWebmMimeType, computeCaptureDuration } from "@/lib/export/videoExportHelpers";
 import { loadExportAssets } from "@/lib/export/exportAssets";
 
+/** Waits until every given <video> has decoded a frame (readyState >= 2) so a
+ *  recording doesn't open with black frames. Never rejects: unplayable sources
+ *  give up after `timeoutMs` and the exporter falls back to today's head-black
+ *  behavior instead of hanging. */
+export async function waitForDecodedFrame(videos: HTMLVideoElement[], timeoutMs = 2000): Promise<void> {
+  const pending = videos.filter((v) => v.readyState < 2);
+  if (pending.length === 0) return;
+  const deadline = performance.now() + timeoutMs;
+  await new Promise<void>((resolve) => {
+    const poll = () => {
+      if (pending.every((v) => v.readyState >= 2) || performance.now() >= deadline) {
+        resolve();
+        return;
+      }
+      setTimeout(poll, 50);
+    };
+    poll();
+  });
+}
+
 export async function recordCanvasToWebm(
   scene: EditorScene,
   canvas: HTMLCanvasElement,
@@ -149,6 +169,23 @@ export async function recordCanvasToWebm(
     const isVideo = media instanceof HTMLVideoElement;
     const duration = computeCaptureDuration(scene, activeLayerId);
 
+    if (media instanceof HTMLVideoElement) {
+      media.currentTime = start;
+      media.playbackRate = Math.max(0.5, Math.min(2, activeForCapture?.playbackSpeed ?? 1));
+      media.muted = activeForCapture?.videoMuted !== false;
+    }
+
+    // Ensure every video source that will be drawn has decoded a frame BEFORE
+    // the recorder starts. MediaRecorder begins capturing the live stream the
+    // moment start() is called, and drawImage of an undecoded <video> renders
+    // a black rectangle — the "black flash" at the head of video exports (for
+    // short clips, plainly wrong leading frames). Loading is already kicked off
+    // by the caller; this only waits for it to land. The cap keeps a damaged
+    // file from hanging the export — it degrades to today's head-black output.
+    await waitForDecodedFrame(
+      [media, ...(layerMedias?.values() ?? [])].filter((m): m is HTMLVideoElement => m instanceof HTMLVideoElement)
+    );
+
     await new Promise<void>((resolve, reject) => {
       let raf = 0;
       let bgTimer: ReturnType<typeof setTimeout> | null = null;
@@ -184,9 +221,6 @@ export async function recordCanvasToWebm(
 
       const startedAt = performance.now();
       if (media instanceof HTMLVideoElement) {
-        media.currentTime = start;
-        media.playbackRate = Math.max(0.5, Math.min(2, activeForCapture?.playbackSpeed ?? 1));
-        media.muted = activeForCapture?.videoMuted !== false;
         media.play().catch(() => null);
       }
 

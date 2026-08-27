@@ -173,7 +173,7 @@ describe("PreviewCanvas media upload", () => {
     });
     renderScene();
     const activeId = useEditorStore.getState().activeLayerId;
-    const input = document.querySelector('.preview-chip input[type="file"]') as HTMLInputElement;
+    const input = document.querySelector('.preview-chip-stack input[type="file"]') as HTMLInputElement;
     expect(input).not.toBeNull();
     fireEvent.change(input, { target: { files: [file] } });
     await vi.waitFor(() => {

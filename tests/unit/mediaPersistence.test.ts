@@ -123,6 +123,29 @@ describe("media persistence codec", () => {
     );
     expect(decodedKeep?.projects[0]?.scene.layers[0]?.mediaUrl).toBe(keep);
   });
+
+  it("keeps in-flight offload blobs referenced during a sweep (persist write race)", async () => {
+    const { encodeProjectsState, sweepOrphanedMedia, beginMediaOffload, endMediaOffload } = await import("@/lib/state/mediaPersistence");
+    // The blob lands in IndexedDB, but persist hasn't committed its
+    // placeholder to localStorage yet — the exact window the sweep races.
+    const big = makeBigDataUrl("r");
+    const json = await encodeProjectsState({ projects: [makeProject(makeScene(big))], activeProjectId: "p1" });
+    const key = (json!.match(/@idb:[a-f0-9]+/) ?? [""])[0].slice(5);
+    expect(idb._store.has(key)).toBe(true);
+    beginMediaOffload([key]);
+
+    // Sweeping against a pre-offload decoded state and a raw snapshot without
+    // the placeholder must not treat the fresh blob as an orphan.
+    const removed = await sweepOrphanedMedia(null, () => "{}");
+    expect(removed).toBe(0);
+    expect(idb._store.has(key)).toBe(true);
+
+    // Once the write commits (endMediaOffload), the key is a true orphan again.
+    endMediaOffload([key]);
+    const removedAfter = await sweepOrphanedMedia(null, () => "{}");
+    expect(removedAfter).toBe(1);
+    expect(idb._store.has(key)).toBe(false);
+  });
   it("does not mutate the caller's scenes while encoding", async () => {
     const { encodeProjectsState } = await import("@/lib/state/mediaPersistence");
     const big = makeBigDataUrl("m");

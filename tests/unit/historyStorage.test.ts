@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { initialScene, makeDemoScene, useEditorStore } from "@/lib/state/editorStore";
 import {
+  clearPersistedHistory,
   initHistoryPersistence,
   persistHistory,
   readHistory,
@@ -148,6 +149,18 @@ describe("persistHistory / readHistory", () => {
     const state = useEditorStore.getState();
     expect(state.past.map((s) => s.layers[0]?.mediaName)).toEqual(["scene-a", "scene-b"]);
     expect(state.future.map((s) => s.layers[0]?.mediaName)).toEqual(["scene-c"]);
+  });
+
+  it("clearPersistedHistory drops the stored stack so it can't be restored later", () => {
+    persistHistory([scene("a")], []);
+    expect(readHistory()?.past).toHaveLength(1);
+    clearPersistedHistory();
+    expect(readHistory()).toBeNull();
+  });
+
+  it("clearPersistedHistory is a no-op when nothing was stored", () => {
+    expect(() => clearPersistedHistory()).not.toThrow();
+    expect(readHistory()).toBeNull();
   });
 
   it("initHistoryPersistence debounces writes on stack changes", () => {

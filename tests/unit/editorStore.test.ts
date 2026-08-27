@@ -1684,6 +1684,40 @@ describe("scene-wide settings", () => {
     expect(store().scene.layers.find((l) => l.id === l2Id)!.mediaUrl).toBe("data:image/png;base64,l2");
   });
 
+  it("setMedia with a pinned target applies to that layer even when another is active", () => {
+    useEditorStore.setState({ scene: { ...initialScene } });
+    store().addLayer("data:image/png;base64,l2", "image");
+    const l1Id = store().scene.layers[0]!.id;
+    const l2Id = store().scene.layers[1]!.id;
+    // The user picked a file while l1 was active, then switched to l2 before
+    // the decode finished — the media must still land on l1 (the pinned target).
+    store().selectLayer(l2Id);
+    store().setMedia("data:image/png;base64,new", "image", "new.png", l1Id);
+    expect(store().scene.layers.find((l) => l.id === l1Id)!.mediaUrl).toBe("data:image/png;base64,new");
+    expect(store().scene.layers.find((l) => l.id === l2Id)!.mediaUrl).toBe("data:image/png;base64,l2");
+    // Selection is not yanked back to the pinned layer.
+    expect(store().activeLayerId).toBe(l2Id);
+  });
+
+  it("setMedia with a pinned target that got locked silently declines", () => {
+    useEditorStore.setState({ scene: { ...initialScene } });
+    store().addLayer("data:image/png;base64,l2", "image");
+    const l1Id = store().scene.layers[0]!.id;
+    store().toggleLayersLocked([l1Id]);
+    const before = store().scene.layers.find((l) => l.id === l1Id)!.mediaUrl;
+    store().setMedia("data:image/png;base64,new", "image", "new.png", l1Id);
+    expect(store().scene.layers.find((l) => l.id === l1Id)!.mediaUrl).toBe(before);
+  });
+
+  it("setMedia with a pinned target that no longer exists falls back to the active layer", () => {
+    useEditorStore.setState({ scene: { ...initialScene } });
+    store().addLayer("data:image/png;base64,l2", "image");
+    const l2Id = store().scene.layers[1]!.id;
+    store().selectLayer(l2Id);
+    store().setMedia("data:image/png;base64,new", "image", "new.png", "ghost-layer");
+    expect(store().scene.layers.find((l) => l.id === l2Id)!.mediaUrl).toBe("data:image/png;base64,new");
+  });
+
   it("setVideoDuration only updates the target layer", () => {
     useEditorStore.setState({ scene: { ...initialScene, layers: [], activeLayerId: null } });
     store().addLayer("data:image/png;base64,l1", "image");

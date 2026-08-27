@@ -21,7 +21,7 @@ import { useCommands } from "@/lib/hooks/useCommands";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { useProjectsStore } from "@/lib/state/projectsStore";
-import { initHistoryPersistence, restoreHistory } from "@/lib/state/historyStorage";
+import { clearPersistedHistory, initHistoryPersistence, restoreHistory } from "@/lib/state/historyStorage";
 import { readSharedSceneFromUrl, readTemplateFromUrl, clearTemplateFromUrl } from "@/lib/state/shareState";
 import { warmProjectCache } from "@/lib/state/projectsStore";
 import type { EditorScene } from "@/lib/types/editor";
@@ -84,12 +84,16 @@ export function EditorShell() {
   const controlsSheetTrapRef = useFocusTrap(mobileSheet === "controls");
   const rightSheetTrapRef = useFocusTrap(mobileSheet === "right");
 
-  useEffect(() => {
-    hasOpenModalRef.current = confirmResetOpen || exportOpen || shortcutsOpen || commandPaletteOpen;
-  }, [confirmResetOpen, exportOpen, shortcutsOpen, commandPaletteOpen]);
-
   const closeExportDialog = useCallback(() => setExportOpen(false), []);
   const exportApi = useEditorExport(scene, exportScale, customExportSize, closeExportDialog, activeLayerId);
+
+  // Every shortcut-gated dialog is routed through this gate: while any of them
+  // is open the global shortcuts are parked so keystrokes land in the dialog,
+  // not the editor. The Share-QR dialog is stateful inside exportApi, so it's
+  // folded in here as a final boolean rather than a separate local state.
+  useEffect(() => {
+    hasOpenModalRef.current = confirmResetOpen || exportOpen || shortcutsOpen || commandPaletteOpen || exportApi.shareQrUrl !== null;
+  }, [confirmResetOpen, exportOpen, shortcutsOpen, commandPaletteOpen, exportApi.shareQrUrl]);
 
   const { saved, saveToast, savedSceneRef, saveNow, markSaved } = useAutosaveStatus(scene, activeLayerId, bootstrapped);
 
@@ -178,6 +182,13 @@ export function EditorShell() {
           // Template links win over share scenes: both params in one URL is a
           // hand-made edge case, and the template is the more specific intent.
           if (template) clearTemplateFromUrl();
+          // A share or template link replaces the scene wholesale: the undo
+          // stack persisted by the previous session belongs to a different
+          // scene and must not be restored (⌘Z would swap the opened scene
+          // for an old project's snapshot, which the autosave would then
+          // persist over the new project). Continuations of the same session
+          // (no URL scene) restore the stack so Ctrl+Z works after a reload.
+          const fromShareOrTemplate = !!(template ?? shared);
           const restored = useProjectsStore.getState().hydrate(template ?? shared);
           // The restored scene already matches what's persisted, so treat it as the
           // saved baseline. `setScene` merges into a fresh object, so sync the ref
@@ -189,7 +200,12 @@ export function EditorShell() {
           // Bring back the undo/redo stacks saved by the last session (also not an
           // edit — it only fills `past`/`future`), then start watching for changes
           // so every subsequent edit persists across reloads.
-          restoreHistory();
+          if (fromShareOrTemplate) {
+            useEditorStore.getState().clearHistory();
+            clearPersistedHistory();
+          } else {
+            restoreHistory();
+          }
           historyCleanupRef.current = initHistoryPersistence();
         })
       .catch((err) => {

@@ -38,13 +38,17 @@ export function MediaSection() {
   const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    // Pin the target layer before the async decode: the user may switch the
+    // active layer (or lock it) while the file loads, and landing on whatever
+    // is active at completion would drop the media into the wrong layer.
+    const targetLayerId = activeLayerId ?? scene.layers[0]?.id ?? null;
     try {
       const { url, mediaType, mediaName } = await loadMediaFromFile(file);
       setMediaUploadError(null);
       // Drop any palette from the previous media; a fresh one is computed once
       // the new file decodes in the preview.
       setScenePalette(null);
-      setMedia(url, mediaType, mediaName);
+      setMedia(url, mediaType, mediaName, targetLayerId);
     } catch (err) {
       if (err instanceof UnsupportedMediaError) setMediaUploadError(err.message);
       else setMediaUploadError(t("editor.uploadError"));
@@ -58,10 +62,13 @@ export function MediaSection() {
     if (!value || mediaUrlBusy) return;
     setMediaUrlBusy(true);
     setMediaUploadError(null);
+    // Same pinning as handleFile: URL fetches are slow, so the active layer
+    // can change (or lock) while the network round-trip is in flight.
+    const targetLayerId = activeLayerId ?? scene.layers[0]?.id ?? null;
     try {
       const { url, mediaType, mediaName } = await loadMediaFromUrl(value);
       setScenePalette(null);
-      setMedia(url, mediaType, mediaName);
+      setMedia(url, mediaType, mediaName, targetLayerId);
       setMediaUrlInput("");
     } catch (err) {
       if (err instanceof UnsupportedMediaUrlError) setMediaUploadError(err.message);

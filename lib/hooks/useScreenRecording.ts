@@ -37,11 +37,16 @@ function useElapsed(active: boolean): number {
  *  decode/encode failure so callers can surface a translated message. */
 export async function loadRecordedClip(blob: Blob | null): Promise<void> {
   if (!blob) return;
+  // Pin the layer active when the recording finished: decoding can outlive the
+  // callback, and a layer switch (or lock) in that window would otherwise put
+  // the clip into the wrong layer or drop it silently.
+  const st = useEditorStore.getState();
+  const targetLayerId = st.activeLayerId ?? st.scene.layers[0]?.id ?? null;
   const file = new File([blob], "Screen recording.webm", { type: "video/webm" });
   const { url, mediaType, mediaName } = await loadMediaFromFile(file);
   useEditorStore.getState().setMediaUploadError(null);
   useEditorStore.getState().setScenePalette(null);
-  useEditorStore.getState().setMedia(url, mediaType, mediaName);
+  useEditorStore.getState().setMedia(url, mediaType, mediaName, targetLayerId);
 }
 
 /**

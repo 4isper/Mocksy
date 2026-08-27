@@ -6,7 +6,7 @@ import { makeDemoScene, useEditorStore } from "@/lib/state/editorStore";
 import { normalizeScene } from "@/lib/state/normalizeScene";
 import { readSceneFromUrl, clearSceneFromUrl } from "@/lib/state/shareState";
 import { nextProjectId } from "@/lib/state/ids";
-import { decodeProjectsState, encodeProjectsState, stateNeedsMediaOffload, sweepOrphanedMedia, type PersistedProjectsState } from "@/lib/state/mediaPersistence";
+import { beginMediaOffload, decodeProjectsState, encodeProjectsState, endMediaOffload, stateNeedsMediaOffload, sweepOrphanedMedia, type PersistedProjectsState } from "@/lib/state/mediaPersistence";
 
 const STORAGE_KEY = "mocksy-projects";
 const AUTOSAVE_KEY = "mocksy-scene";
@@ -130,7 +130,17 @@ async function persist(state: ProjectsStoreState): Promise<boolean> {
       // breaks (large media just costs localStorage quota, as before).
       json = JSON.stringify({ projects: state.projects, activeProjectId: state.activeProjectId });
     }
-    window.localStorage.setItem(STORAGE_KEY, json);
+    // The blobs behind these placeholders are already in IndexedDB, but their
+    // markers aren't in localStorage yet. A sweep landing in that window would
+    // delete the fresh blobs as orphans, stranding the placeholders: mark the
+    // keys until the write is committed (setItem may throw; always release).
+    const placeholderKeys = [...json.matchAll(/@idb:([0-9a-f]+)/g)].map((match) => match[1]!);
+    beginMediaOffload(placeholderKeys);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, json);
+    } finally {
+      endMediaOffload(placeholderKeys);
+    }
     // Keep the decode-once cache in sync so later reads see this write even
     // if they happen before the next warm-up.
     decodedCache = { projects: state.projects, activeProjectId: state.activeProjectId };

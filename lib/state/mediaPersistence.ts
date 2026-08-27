@@ -144,6 +144,22 @@ export interface PersistedProjectsState {
   activeProjectId: string | null;
 }
 
+/** Content-hash keys whose blobs are already in IndexedDB but whose `@idb:`
+ *  placeholders haven't been committed to localStorage yet. A sweep running in
+ *  that window must not delete them as orphans — the next reload would find
+ *  the placeholder with no blob behind it and silently lose the media. */
+const inFlightOffloads = new Set<string>();
+
+/** Registers offload keys as referenced until the persist write lands. */
+export function beginMediaOffload(keys: Iterable<string>): void {
+  for (const key of keys) inFlightOffloads.add(key);
+}
+
+/** Releases previously registered keys once their placeholders are persisted. */
+export function endMediaOffload(keys: Iterable<string>): void {
+  for (const key of keys) inFlightOffloads.delete(key);
+}
+
 /**
  * Encodes the whole projects state for localStorage. Returns null when any
  * part could not be offloaded (no IndexedDB, conversion failure) so the caller
@@ -251,6 +267,10 @@ export async function sweepOrphanedMedia(
       }
     }
   }
+  // A persist may have written blobs to IndexedDB while the placeholders for
+  // them aren't in localStorage yet — those keys are protected until the
+  // caller reports the write landed.
+  for (const key of inFlightOffloads) referenced.add(key);
   const orphans = keys.filter((k) => !referenced.has(k));
   for (const key of orphans) await deleteMediaBlob(key);
   return orphans.length;
