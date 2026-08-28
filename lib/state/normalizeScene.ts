@@ -20,7 +20,10 @@ import type {
 } from "@/lib/types/editor";
 import { ALL_FRAMES, ANIMATION_PRESETS, frameOs } from "@/lib/render/frames";
 import { LAYER_FILTER_DEFAULTS } from "@/lib/render/layerFilters";
-import { initialScene } from "@/lib/state/editorStore";
+// Import from the defining module, not the editorStore barrel: initialScene is
+// mutated after its first assignment (activeLayerId is set a line later), and
+// a re-exported snapshot can drop fields in Turbopack's server bundles.
+import { initialScene } from "@/lib/state/editorScene";
 import { nextAnnotationId, nextFrameInstanceId, nextLayerId } from "@/lib/state/ids";
 
 const FRAMES = ALL_FRAMES;
