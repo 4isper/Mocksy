@@ -67,4 +67,10 @@ describe("layerHelpers", () => {
     expect(scene.layers[0]!.zoom).toBe(1);
     expect(patched).not.toBe(scene.layers);
   });
+
+  it("patchActive returns the same array when the target layer is missing", () => {
+    const layer = makeDemoLayer();
+    const scene = { ...initialScene, layers: [layer], activeLayerId: "ghost-layer" };
+    expect(patchActive(scene, { zoom: 2 }, "ghost-layer")).toBe(scene.layers);
+  });
 });

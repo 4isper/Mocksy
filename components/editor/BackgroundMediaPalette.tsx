@@ -1,7 +1,19 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { pickBestSolid, pickGradientPair } from "@/lib/media/palette";
+import { gradientMiddleStop, pickBestSolid, pickHarmonicPair, type HueScheme } from "@/lib/media/palette";
+
+/** Color-harmony schemes cycled through on each "auto gradient" click. */
+const SCHEMES: HueScheme[] = ["complementary", "analogous", "triadic"];
+
+// Advance through SCHEMES predictably so repeated clicks cycle instead of
+// jumping to a random scheme — matching the deterministic angle cycle below.
+let schemeCursor = 0;
+const nextScheme = (): HueScheme => {
+  const scheme = SCHEMES[schemeCursor % SCHEMES.length] ?? SCHEMES[0]!;
+  schemeCursor += 1;
+  return scheme;
+};
 
 interface BackgroundMediaPaletteProps {
   scenePalette: string[] | null;
@@ -9,7 +21,7 @@ interface BackgroundMediaPaletteProps {
   backgroundMode: "solid" | "gradient" | "pattern" | "image" | "transparent";
   backgroundColor: string;
   setBackgroundSolid: (color: string) => void;
-  setBackgroundGradient: (from: string, to: string, angle?: number) => void;
+  setBackgroundGradient: (from: string, to: string, angle?: number, gradientVia?: string | null) => void;
 }
 
 /** Auto-background helpers driven by the active media's extracted palette: a
@@ -26,11 +38,11 @@ export function BackgroundMediaPalette({
   const hasPalette = scenePalette != null && scenePalette.length > 0;
 
   // Cycle through a fixed set of angles so repeated clicks are predictable
-  // instead of jumping to a random angle each time.
+  // instead of jumping to a random angle each time. An angle outside the list
+  // (e.g. the 120° default) advances to the next listed angle above it.
   const nextAngle = () => {
     const angles = [0, 45, 90, 135, 180];
-    const currentIndex = angles.indexOf(gradientAngle);
-    return angles[(currentIndex + 1) % angles.length]!;
+    return angles.find((a) => a > gradientAngle) ?? angles[0]!;
   };
 
   return (
@@ -44,8 +56,9 @@ export function BackgroundMediaPalette({
           title={hasPalette ? t("editor.autoBgTooltip") : t("editor.autoBgDisabled")}
           onClick={() => {
             if (!hasPalette) return;
-            const [from, to] = pickGradientPair(scenePalette!);
-            setBackgroundGradient(from, to, nextAngle());
+            const [from, to] = pickHarmonicPair(scenePalette!, nextScheme());
+            const via = gradientMiddleStop(from, to);
+            setBackgroundGradient(from, to, nextAngle(), via);
           }}
         >
           {t("editor.autoBackground")}

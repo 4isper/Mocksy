@@ -69,6 +69,64 @@ describe("normalizeScene", () => {
     expect(s.layers[0]!.videoLoop).toBe(true);
   });
 
+  it("defaults text-layer fields for legacy layers without kind", () => {
+    const s = normalizeScene({ layers: [{}] });
+    expect(s.layers[0]!.kind).toBe("media");
+    expect(s.layers[0]!.textContent).toBe("");
+    expect(s.layers[0]!.textColor).toBe("#ffffff");
+    expect(s.layers[0]!.textSize).toBe(0.12);
+    expect(s.layers[0]!.textAlign).toBe("center");
+    expect(s.layers[0]!.fontWeight).toBe("bold");
+  });
+
+  it("normalizes a text layer, clamping size and rejecting bad enums", () => {
+    const s = normalizeScene({
+      layers: [{ kind: "text", textContent: "Hello", textColor: "#ff0000", textSize: 5, textAlign: "diagonal", fontWeight: "black" }]
+    });
+    expect(s.layers[0]!.kind).toBe("text");
+    expect(s.layers[0]!.textContent).toBe("Hello");
+    expect(s.layers[0]!.textColor).toBe("#ff0000");
+    expect(s.layers[0]!.textSize).toBe(0.6); // clamped to the max
+    expect(s.layers[0]!.textAlign).toBe("center"); // fallback enum
+    expect(s.layers[0]!.fontWeight).toBe("bold");
+  });
+
+  it("keeps strict CSS color notations (hex, rgb, rgba)", () => {
+    const s = normalizeScene({
+      layers: [{ kind: "text", textColor: "#0Ff" }],
+      annotations: [{ type: "text", color: "rgb(1, 2, 3)", bgColor: "rgba(0,0,0,0.5)" }],
+      backgroundColor: "#11223344",
+      gradientFrom: "#a1B2c3",
+      gradientTo: "#D4D",
+      gradientVia: "rgba(9, 9, 9, 1)"
+    });
+    expect(s.layers[0]!.textColor).toBe("#0Ff");
+    expect(s.annotations[0]!.color).toBe("rgb(1, 2, 3)");
+    expect(s.annotations[0]!.bgColor).toBe("rgba(0,0,0,0.5)");
+    expect(s.backgroundColor).toBe("#11223344");
+    expect(s.gradientFrom).toBe("#a1B2c3");
+    expect(s.gradientTo).toBe("#D4D");
+    expect(s.gradientVia).toBe("rgba(9, 9, 9, 1)");
+  });
+
+  it("falls back for color payloads that could break out of attributes or styles", () => {
+    const s = normalizeScene({
+      layers: [{ kind: "text", textColor: '#fff" onload="alert(1)' }],
+      annotations: [{ type: "text", color: 'red;} *{display:none} .x{color:"', bgColor: '" onmouseover="x' }],
+      backgroundColor: '#111827"><img src=x onerror=alert(1)>',
+      gradientFrom: "url(javascript:alert(1))",
+      gradientTo: "expression(alert(1))",
+      gradientVia: "red"
+    });
+    expect(s.layers[0]!.textColor).toBe("#ffffff");
+    expect(s.annotations[0]!.color).toBe("#00d9ff");
+    expect(s.annotations[0]!.bgColor).toBeNull();
+    expect(s.backgroundColor).toBe(initialScene.backgroundColor);
+    expect(s.gradientFrom).toBe(initialScene.gradientFrom);
+    expect(s.gradientTo).toBe(initialScene.gradientTo);
+    expect(s.gradientVia).toBe(initialScene.gradientVia);
+  });
+
   it("accepts image background mode, url and blur within range", () => {
     const s = normalizeScene({
       backgroundMode: "image",
@@ -214,6 +272,16 @@ describe("normalizeScene", () => {
     expect(s.activeLayerId).toBe("my-layer");
   });
 
+  it("activeLayerId falls back to first layer id when it names no layer", () => {
+    const s = normalizeScene({ layers: [{ id: "my-layer" }], activeLayerId: "ghost-layer" });
+    expect(s.activeLayerId).toBe("my-layer");
+  });
+
+  it("keeps a valid activeLayerId", () => {
+    const s = normalizeScene({ layers: [{ id: "my-layer" }, { id: "other" }], activeLayerId: "other" });
+    expect(s.activeLayerId).toBe("other");
+  });
+
   it("accepts explicit string values for background and watermark fields", () => {
     const s = normalizeScene({
       backgroundColor: "#ff0000",
@@ -247,6 +315,30 @@ describe("normalizeScene", () => {
     expect(normalizeScene({ layers: [{ animationEasing: "spring" }] }).layers[0]!.animationEasing).toBe("spring");
     expect(normalizeScene({ layers: [{ animationEasing: "bogus" }] }).layers[0]!.animationEasing).toBe("easeInOut");
     expect(normalizeScene({ layers: [{}] }).layers[0]!.animationEasing).toBe("easeInOut");
+  });
+
+  it("keeps valid entrance animation and falls back for invalid ones", () => {
+    expect(normalizeScene({ layers: [{ entranceAnimation: "fadeIn" }] }).layers[0]!.entranceAnimation).toBe("fadeIn");
+    expect(normalizeScene({ layers: [{ entranceAnimation: "slideUp" }] }).layers[0]!.entranceAnimation).toBe("slideUp");
+    expect(normalizeScene({ layers: [{ entranceAnimation: "scaleUp" }] }).layers[0]!.entranceAnimation).toBe("scaleUp");
+    expect(normalizeScene({ layers: [{ entranceAnimation: "bogus" }] }).layers[0]!.entranceAnimation).toBe("none");
+    expect(normalizeScene({ layers: [{}] }).layers[0]!.entranceAnimation).toBe("none");
+  });
+
+  it("clamps entrance duration into range and falls back for invalid input", () => {
+    expect(normalizeScene({ layers: [{ entranceDuration: 800 }] }).layers[0]!.entranceDuration).toBe(800);
+    expect(normalizeScene({ layers: [{ entranceDuration: 50 }] }).layers[0]!.entranceDuration).toBe(200);
+    expect(normalizeScene({ layers: [{ entranceDuration: 5000 }] }).layers[0]!.entranceDuration).toBe(2000);
+    expect(normalizeScene({ layers: [{ entranceDuration: Number.NaN }] }).layers[0]!.entranceDuration).toBe(600);
+    expect(normalizeScene({ layers: [{}] }).layers[0]!.entranceDuration).toBe(600);
+  });
+
+  it("keeps valid blend mode and falls back for invalid ones", () => {
+    expect(normalizeScene({ layers: [{ blendMode: "multiply" }] }).layers[0]!.blendMode).toBe("multiply");
+    expect(normalizeScene({ layers: [{ blendMode: "overlay" }] }).layers[0]!.blendMode).toBe("overlay");
+    expect(normalizeScene({ layers: [{ blendMode: "soft-light" }] }).layers[0]!.blendMode).toBe("soft-light");
+    expect(normalizeScene({ layers: [{ blendMode: "bogus" }] }).layers[0]!.blendMode).toBe("normal");
+    expect(normalizeScene({ layers: [{}] }).layers[0]!.blendMode).toBe("normal");
   });
 
   it("normalizes text annotation typography with defaults for missing values", () => {
@@ -444,5 +536,41 @@ describe("normalizeScene", () => {
   it("keeps all items when collections are within the cap", () => {
     const s = normalizeScene({ layers: Array.from({ length: 5 }, (_, i) => ({ id: `l${i}` })) });
     expect(s.layers.length).toBe(5);
+  });
+
+  it("preserves a per-instance screen override and leaves others inheriting the default", () => {
+    const s = normalizeScene({
+      screen: { style: "home", theme: "light", showDock: true },
+      frameInstances: [
+        { id: "f1", frame: "iphone", x: 0, y: 0, scale: 1, screen: { style: "lock", showClock: true } },
+        { id: "f2", frame: "iphone", x: 0.5, y: 0.5, scale: 1 }
+      ]
+    });
+    // f1 keeps its own override (seeded with the default's missing fields).
+    expect(s.frameInstances[0]!.screen).toMatchObject({ style: "lock", showClock: true, theme: "light", showDock: true });
+    // f2 has no override and stays undefined (inherits scene.screen at render).
+    expect(s.frameInstances[1]!.screen).toBeUndefined();
+  });
+
+  it("normalizes a malformed per-instance screen override", () => {
+    const s = normalizeScene({
+      frameInstances: [{ id: "f1", frame: "iphone", x: 0, y: 0, scale: 1, screen: { style: "bogus", theme: "sepia", time: 42 } }]
+    });
+    expect(s.frameInstances[0]!.screen!.style).toBe("lock");
+    expect(s.frameInstances[0]!.screen!.theme).toBe("dark");
+    expect(typeof s.frameInstances[0]!.screen!.time).toBe("string");
+  });
+
+  it("preserves a per-instance floor reflection override (including an explicit false)", () => {
+    const s = normalizeScene({
+      floorReflection: true,
+      frameInstances: [
+        { id: "f1", frame: "iphone", x: 0, y: 0, scale: 1, floorReflection: false },
+        { id: "f2", frame: "iphone", x: 0.5, y: 0.5, scale: 1 }
+      ]
+    });
+    expect(s.frameInstances[0]!.floorReflection).toBe(false);
+    // f2 has no override and stays undefined (inherits the scene default).
+    expect(s.frameInstances[1]!.floorReflection).toBeUndefined();
   });
 });

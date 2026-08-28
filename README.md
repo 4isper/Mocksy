@@ -125,7 +125,7 @@ npm start
 - Video playback speed per layer (0.5×–2×) — preview, exports and HTML embed stay in sync
 - Layer management: add, duplicate, hide/show, reorder, remove
 - Multi-select layers (⌘/Ctrl/Shift-click) with bulk hide/duplicate/delete and group transform (nudge, opacity, rotation, zoom applied to the whole selection)
-- AI background removal (runs fully in-browser via Transformers.js)
+- AI background removal (runs fully in-browser via Transformers.js; model and wasm runtime are cached after first use, so it keeps working offline)
 - Unsupported file types rejected with inline error
 - Opens with an offline demo image
 
@@ -178,12 +178,12 @@ npm start
 | PNG | 1x, 2x, 4x | Pixel-for-pixel match with preview; copy to clipboard |
 | WebP | 1x, 2x, 4x | Static WebP at ~half the PNG size |
 | SVG | — | Vector export: media, skins, annotations and watermark embedded as data URLs |
-| HTML | — | Self-contained snippet: live CSS mockup (animation preserved) or embedded raster for multi-frame scenes |
+| HTML | — | Self-contained live-CSS mockup for single-frame and multi-frame scenes alike |
 | MP4 | 1x, 2x, 4x | In-browser MediaRecorder + FFmpeg WebM→MP4 |
 | WebM | 1x, 2x, 4x | Direct MediaRecorder capture, no encode — fastest, best quality |
 | GIF | 1x, 2x, 4x | Palette generation for accurate colors |
 | Animated WebP | 1x, 2x, 4x | FFmpeg libwebp_anim at 15fps — fraction of the MP4/GIF size |
-| PDF | 1x, 2x, 4x | Single-page PDF via pdf-lib |
+| PDF | 1x, 2x, 4x | Single-page vector PDF via jsPDF + svg2pdf (same geometry as the SVG export); raster fallback |
 | ZIP | — | Batch export: every frame instance of a multi-frame scene rendered as its own PNG |
 
 - Reusable export presets (format + scale/size) stored in localStorage
@@ -290,6 +290,7 @@ npm run test:vrt:update # Update visual regression baselines
 npm run test:lhci       # Lighthouse CI (requires built app + server)
 npm run og              # Generate the Open Graph preview image
 npm run i18n:sync       # Backfill English fallback into all locales
+npm run i18n:report     # Untranslated key counts per locale (-- --keys for the list)
 npm run audit           # Dependency + license audit check
 npm run lint            # ESLint (Next.js core-web-vitals)
 ```

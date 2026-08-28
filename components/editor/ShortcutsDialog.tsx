@@ -1,88 +1,111 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
+import {
+  SHORTCUT_DEFS,
+  VIEW_SHORTCUTS,
+  comboToDisplayTokens,
+  comboFromEvent,
+  eventLetter,
+  eventBracket,
+  isModifierKey
+} from "@/lib/shortcuts/shortcutConfig";
+import { useShortcutsStore, effectiveCombo, findConflict } from "@/lib/state/shortcutsStore";
 
-type Shortcut = { keys: string[]; label: string };
-type ShortcutGroup = { title: string; items: Shortcut[] };
+type SectionKey = "edit" | "export" | "layers" | "scene" | "view";
 
-// Mirror of the handlers registered in EditorShell's keydown listener. ⌘ is
-// Cmd on macOS; Ctrl is accepted everywhere (event.metaKey || event.ctrlKey).
+const SECTION_ORDER: SectionKey[] = ["edit", "export", "layers", "scene", "view"];
+const SECTION_TITLES: Record<SectionKey, string> = {
+  edit: "shortcuts.edit",
+  export: "shortcuts.export",
+  layers: "shortcuts.layers",
+  scene: "shortcuts.scene",
+  view: "shortcuts.view"
+};
+
+/**
+ * Keyboard cheat sheet rendered from SHORTCUT_DEFS — the same list the global
+ * keydown handler matches against, so the dialog can't drift from behavior.
+ * Remappable rows offer click-to-record rebinding; overrides persist in
+ * shortcutsStore and take effect immediately.
+ */
 export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useTranslations();
-  const GROUPS: ShortcutGroup[] = [
-    {
-      title: t("shortcuts.edit"),
-      items: [
-        { keys: ["⌘", "N"], label: t("shortcuts.newProject") },
-        { keys: ["⌘", "V"], label: t("shortcuts.pasteMedia") },
-        { keys: ["⌘", "Z"], label: t("shortcuts.undo") },
-        { keys: ["⇧", "⌘", "Z"], label: t("shortcuts.redo") },
-        { keys: ["⌘", "S"], label: t("shortcuts.saveLocalStorage") }
-      ]
-    },
-    {
-      title: t("shortcuts.export"),
-      items: [
-        { keys: ["⌘", "E"], label: t("shortcuts.exportPng") },
-        { keys: ["⇧", "⌘", "C"], label: t("shortcuts.copyPng") },
-        { keys: ["⇧", "⌘", "E"], label: t("shortcuts.exportMp4") },
-        { keys: ["⇧", "⌘", "W"], label: t("shortcuts.exportWebm") },
-        { keys: ["⇧", "⌘", "P"], label: t("shortcuts.exportWebp") },
-        { keys: ["⇧", "⌘", "A"], label: t("shortcuts.exportWebpAnim") },
-        { keys: ["⇧", "⌘", "S"], label: t("shortcuts.exportSvg") },
-        { keys: ["⇧", "⌘", "H"], label: t("shortcuts.exportHtml") },
-        { keys: ["⇧", "⌘", "F"], label: t("shortcuts.exportPdf") },
-        { keys: ["⇧", "⌘", "G"], label: t("shortcuts.exportGif") }
-      ]
-    },
-    {
-      title: t("shortcuts.layers"),
-      items: [
-        { keys: ["⌘", "D"], label: t("shortcuts.duplicateActiveLayer") },
-        { keys: ["⌘", "↑"], label: t("shortcuts.moveLayerUp") },
-        { keys: ["⌘", "↓"], label: t("shortcuts.moveLayerDown") },
-        { keys: ["⌘", "["], label: t("shortcuts.selectPrevLayer") },
-        { keys: ["⌘", "]"], label: t("shortcuts.selectNextLayer") }
-      ]
-    },
-    {
-      title: t("shortcuts.scene"),
-      items: [
-        { keys: ["⌘", "C"], label: t("shortcuts.copyObject") },
-        { keys: ["⌘", "V"], label: t("shortcuts.pasteObject") },
-        { keys: ["R"], label: t("shortcuts.reset") },
-        { keys: ["F"], label: t("shortcuts.fullscreenPreview") },
-        { keys: ["↑", "↓", "←", "→"], label: t("shortcuts.nudgeFrame") }
-      ]
-    },
-    {
-      title: t("shortcuts.view"),
-      items: [
-        { keys: ["⌘", "+"], label: t("shortcuts.zoomIn") },
-        { keys: ["⌘", "−"], label: t("shortcuts.zoomOut") },
-        { keys: ["⌘", "0"], label: t("shortcuts.zoomFit") },
-        { keys: ["Space", "drag"], label: t("shortcuts.panCanvas") },
-        { keys: ["Scroll"], label: t("shortcuts.zoomCursor") }
-      ]
-    }
-  ];
+  const overrides = useShortcutsStore((s) => s.overrides);
+  const setOverride = useShortcutsStore((s) => s.setOverride);
+  const clearOverride = useShortcutsStore((s) => s.clearOverride);
+  const resetAll = useShortcutsStore((s) => s.resetAll);
+
+  // Id of the row currently waiting for a key press, plus the last conflict.
+  const [recordingId, setRecordingId] = useState<string | null>(null);
+  const [conflict, setConflict] = useState<string | null>(null);
 
   const trapRef = useFocusTrap(open);
+
+  // Single close path resets transient UI state (no effects needed).
+  const handleClose = useCallback(() => {
+    setRecordingId(null);
+    setConflict(null);
+    onClose();
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (recordingId) return; // capture listener below owns the keyboard
+      if (e.key === "Escape") handleClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, handleClose, recordingId]);
+
+  // While recording, the next keydown becomes the new binding. Escape cancels.
+  useEffect(() => {
+    // While recording, the next keydown becomes the new binding. Escape cancels.
+    if (!open || !recordingId) return;
+    const onCapture = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (isModifierKey(e.key)) return;
+      if (e.key === "Escape") {
+        setRecordingId(null);
+        setConflict(null);
+        return;
+      }
+      const combo = comboFromEvent(e, eventLetter(e), eventBracket(e));
+      if (!combo) return;
+      const other = findConflict(combo, recordingId, useShortcutsStore.getState().overrides);
+      if (other) {
+        const def = SHORTCUT_DEFS.find((d) => d.id === other.otherId);
+        setConflict(t("shortcuts.conflict", { label: t(def?.labelKey ?? other.otherId) }));
+        return;
+      }
+      setOverride(recordingId, combo);
+      setRecordingId(null);
+      setConflict(null);
+    };
+    window.addEventListener("keydown", onCapture, true);
+    return () => window.removeEventListener("keydown", onCapture, true);
+  }, [open, recordingId, setOverride, t]);
 
   if (!open) return null;
+
+  const hasOverrides = Object.keys(overrides).length > 0;
+  const sections: Record<SectionKey, typeof SHORTCUT_DEFS> = {
+    edit: [],
+    export: [],
+    layers: [],
+    scene: [],
+    view: []
+  };
+  for (const def of [...SHORTCUT_DEFS, ...VIEW_SHORTCUTS]) {
+    sections[def.section].push(def);
+  }
+
   return (
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+    <div className="modal-backdrop" role="presentation" onClick={handleClose}>
       <div
         className="modal shortcuts"
         ref={trapRef}
@@ -94,28 +117,89 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
         <h3 id="shortcuts-title">{t("shortcuts.title")}</h3>
         <p>{t("shortcuts.cmdHint")}</p>
         <div className="shortcut-list">
-          {GROUPS.map((group) => (
-            <section key={group.title} className="shortcut-group">
-              <h4>{group.title}</h4>
-              <ul>
-                {group.items.map((item) => (
-                  <li key={item.label} className="shortcut-row">
-                    <span className="shortcut-keys">
-                      {item.keys.map((key, i) => (
-                        <kbd key={i} className="kbd">
-                          {key}
-                        </kbd>
-                      ))}
-                    </span>
-                    <span className="shortcut-label">{item.label}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
+          {SECTION_ORDER.map((section) =>
+            sections[section].length === 0 ? null : (
+              <section key={section} className="shortcut-group">
+                <h4>{t(SECTION_TITLES[section])}</h4>
+                <ul>
+                  {sections[section].map((def) => {
+                    const combo = effectiveCombo(def, overrides);
+                    const overridden = combo !== def.combo;
+                    const recording = recordingId === def.id;
+                    return (
+                      <li key={def.id} className="shortcut-row">
+                        <span className="shortcut-keys">
+                          {recording ? (
+                            <kbd className="kbd">{t("shortcuts.recording")}</kbd>
+                          ) : (
+                            comboToDisplayTokens(combo).map((key, i) => (
+                              <kbd key={i} className="kbd" style={overridden ? { color: "var(--accent)" } : undefined}>
+                                {key}
+                              </kbd>
+                            ))
+                          )}
+                        </span>
+                        <span className="shortcut-label">{t(def.labelKey)}</span>
+                        {def.remappable ? (
+                          <>
+                            <button
+                              type="button"
+                              className="btn-icon"
+                              aria-label={t("shortcuts.rebind")}
+                              title={t("shortcuts.rebind")}
+                              onClick={() => {
+                                setRecordingId(recording ? null : def.id);
+                                setConflict(null);
+                              }}
+                            >
+                              ✎
+                            </button>
+                            {overridden ? (
+                              <button
+                                type="button"
+                                className="btn-icon"
+                                aria-label={t("shortcuts.rebindReset")}
+                                title={t("shortcuts.rebindReset")}
+                                onClick={() => {
+                                  clearOverride(def.id);
+                                  setRecordingId(null);
+                                  setConflict(null);
+                                }}
+                              >
+                                ×
+                              </button>
+                            ) : null}
+                          </>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )
+          )}
         </div>
+        {recordingId ? <p role="status">{t("shortcuts.recordingHint")}</p> : null}
+        {conflict ? (
+          <p role="alert" style={{ color: "var(--danger)" }}>
+            {conflict}
+          </p>
+        ) : null}
         <div className="modal-actions">
-          <button type="button" className="btn" onClick={onClose}>
+          {hasOverrides ? (
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                resetAll();
+                setRecordingId(null);
+                setConflict(null);
+              }}
+            >
+              {t("shortcuts.resetAll")}
+            </button>
+          ) : null}
+          <button type="button" className="btn" onClick={handleClose}>
             {t("shortcuts.close")}
           </button>
         </div>

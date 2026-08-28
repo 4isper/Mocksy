@@ -63,7 +63,8 @@ export function projectPoint(dx: number, dy: number, tiltX: number, tiltY: numbe
   // rotateY (around vertical axis): matches CSS rotateY(θ): z' = -x·sinθ + z·cosθ
   const x1 = xr * Math.cos(rotY) + zr * Math.sin(rotY);
   const z2 = -xr * Math.sin(rotY) + zr * Math.cos(rotY);
-  const scale = perspective / (perspective - z2);
+  const denom = perspective - z2;
+  const scale = Math.abs(denom) < 1e-6 ? perspective : perspective / denom;
   return { x: x1 * scale, y: yr * scale };
 }
 

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "pinDigests": true,
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "description": "Batch minor+patch dependency updates into one weekly PR",
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "minor and patch dependencies",
+      "groupSlug": "minor-patch",
+      "schedule": ["before 6am on monday"]
+    },
+    {
+      "description": "Major bumps stay individual PRs so breaking changes get reviewed alone",
+      "matchUpdateTypes": ["major"],
+      "schedule": ["before 6am on monday"]
+    },
+    {
+      "description": "Next.js majors touch app-router internals; review them separately and late",
+      "matchPackageNames": ["next", "next-intl"],
+      "matchUpdateTypes": ["major"],
+      "schedule": ["before 6am on monday"],
+      "labels": ["dependencies", "breaking"]
+    }
+  ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  },
+  "vulnerabilityAlerts": {
+    "labels": ["security"]
+  },
+  "osvVulnerabilityAlerts": true
+}

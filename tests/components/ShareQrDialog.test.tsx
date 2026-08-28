@@ -22,7 +22,7 @@ describe("ShareQrDialog", () => {
   it("closes on Escape", () => {
     const onClose = vi.fn();
     render(<ShareQrDialog url="https://mocksy.test/" onClose={onClose} />);
-    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent.keyDown(document, { key: "Escape" });
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

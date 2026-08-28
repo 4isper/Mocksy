@@ -4,8 +4,14 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/lib/state/editorStore";
+import type { BlendMode } from "@/lib/types/editor";
 import { Section } from "@/components/editor/Section";
 import { canRemoveBackground, cutoutMediaName, removeImageBackground } from "@/lib/media/backgroundRemoval";
+
+const BLEND_MODE_OPTIONS: BlendMode[] = [
+  "normal", "multiply", "screen", "overlay", "soft-light", "hard-light",
+  "color-dodge", "color-burn", "difference", "exclusion", "hue", "saturation", "color", "luminosity"
+];
 
 function FilterSlider({
   label,
@@ -56,6 +62,7 @@ export function FiltersSection() {
     setBlur,
     setGrayscale,
     setOpacity,
+    setBlendMode,
     isRemovingBackground,
     setRemovingBackground,
     setMediaOnLayer,
@@ -70,6 +77,7 @@ export function FiltersSection() {
       setBlur: s.setBlur,
       setGrayscale: s.setGrayscale,
       setOpacity: s.setOpacity,
+      setBlendMode: s.setBlendMode,
       isRemovingBackground: s.isRemovingBackground,
       setRemovingBackground: s.setRemovingBackground,
       setMediaOnLayer: s.setMediaOnLayer,
@@ -119,6 +127,20 @@ export function FiltersSection() {
         <FilterSlider label={t("editor.filterBlur", { val: activeLayer?.blur ?? 0 })} value={activeLayer?.blur ?? 0} min={0} max={20} suffix="px" disabled={layerLocked} onChange={setBlur} />
         <FilterSlider label={t("editor.filterGrayscale", { val: Math.round(activeLayer?.grayscale ?? 0) })} value={activeLayer?.grayscale ?? 0} min={0} max={100} suffix="%" disabled={layerLocked} onChange={setGrayscale} />
         <FilterSlider label={t("editor.filterOpacity", { val: Math.round(activeLayer?.opacity ?? 100) })} value={activeLayer?.opacity ?? 100} min={0} max={100} suffix="%" disabled={layerLocked} onChange={setOpacity} />
+        <label className="field">
+          <span>{t("editor.blendMode")}</span>
+          <select
+            value={activeLayer?.blendMode ?? "normal"}
+            disabled={layerLocked}
+            aria-label={t("editor.blendMode")}
+            onChange={(e) => setBlendMode(e.target.value as BlendMode)}
+            style={{ width: "100%" }}
+          >
+            {BLEND_MODE_OPTIONS.map((value) => (
+              <option key={value} value={value}>{t(`editor.blendMode_${value}`)}</option>
+            ))}
+          </select>
+        </label>
         <button
           type="button"
           className="btn btn-sm"

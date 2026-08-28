@@ -27,6 +27,7 @@ export const useEditorStore = create<EditorStoreState>()((set) => ({
   selectedAnnotationIds: [],
   activeLayerId: initialScene.activeLayerId ?? null,
   activeFrameInstanceId: null,
+  selectedFrameIds: [],
   selectedLayerIds: [],
   lastHistoryKey: null,
   lastHistoryAt: 0,

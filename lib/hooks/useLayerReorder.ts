@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { DragEvent } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { useEditorStore } from "@/lib/state/editorStore";
@@ -21,6 +21,7 @@ export function useLayerReorder(scene: EditorScene) {
   const reorderLayers = useEditorStore((s) => s.reorderLayers);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
+  const lastReorderRef = useRef<string | null>(null);
 
   const reorderByDrag = (targetId: string, pos: "above" | "below") => {
     if (!dragId || dragId === targetId) return;
@@ -42,6 +43,7 @@ export function useLayerReorder(scene: EditorScene) {
 
   const handleDragStart = (e: DragEvent<HTMLLIElement>, id: string) => {
     setDragId(id);
+    lastReorderRef.current = null;
     e.dataTransfer?.setData("text/plain", id);
     if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
   };
@@ -51,8 +53,12 @@ export function useLayerReorder(scene: EditorScene) {
     e.preventDefault();
     if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
     const pos = posFor(e, id);
+    const key = `${id}:${pos}`;
     setDropTarget((cur) => (cur && cur.id === id && cur.pos === pos ? cur : { id, pos }));
-    reorderByDrag(id, pos);
+    if (lastReorderRef.current !== key) {
+      lastReorderRef.current = key;
+      reorderByDrag(id, pos);
+    }
   };
 
   const handleDrop = (e: DragEvent<HTMLLIElement>, id: string) => {
@@ -61,11 +67,13 @@ export function useLayerReorder(scene: EditorScene) {
     reorderByDrag(id, posFor(e, id));
     setDragId(null);
     setDropTarget(null);
+    lastReorderRef.current = null;
   };
 
   const handleDragEnd = () => {
     setDragId(null);
     setDropTarget(null);
+    lastReorderRef.current = null;
   };
 
   return {

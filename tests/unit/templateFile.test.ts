@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EditorScene } from "@/lib/types/editor";
 import { initialScene } from "@/lib/state/editorStore";
-import { stripSceneMedia, importTemplateFromFile } from "@/lib/state/templateFile";
+import { stripSceneMedia, importTemplateFromFile, exportTemplateToFile } from "@/lib/state/templateFile";
 import { normalizeScene } from "@/lib/state/normalizeScene";
+import { sanitizeFilename } from "@/lib/export/filename";
 
 function scene(overrides: Partial<EditorScene> = {}): EditorScene {
   return {
@@ -85,5 +86,50 @@ describe("importTemplateFromFile", () => {
     const file = new File([JSON.stringify(scene())], "scene.json", { type: "application/json" });
     const out = await importTemplateFromFile(file);
     expect(out.layers[0]!.mediaUrl).toBeNull();
+  });
+
+  it("rejects a null payload", async () => {
+    const file = new File(["null"], "t.mocksy.json", { type: "application/json" });
+    await expect(importTemplateFromFile(file)).rejects.toThrow(/not a valid template file/i);
+  });
+
+  it("rejects a non-object scalar payload", async () => {
+    const file = new File(['"just a string"'], "t.mocksy.json", { type: "application/json" });
+    await expect(importTemplateFromFile(file)).rejects.toThrow(/not a valid template file/i);
+  });
+});
+
+describe("exportTemplateToFile", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("downloads a sanitized .mocksy.json blob", () => {
+    const createObjectURL = vi.fn((_: unknown) => "blob:fake");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
+    const anchor = { href: "", download: "", click: vi.fn() };
+    vi.stubGlobal("document", { createElement: (tag: string) => (tag === "a" ? anchor : {}) });
+
+    exportTemplateToFile(scene({ frame: "browser" }), "My Template!");
+
+    expect(createObjectURL).toHaveBeenCalledOnce();
+    const blob = createObjectURL.mock.calls[0]![0];
+    expect(blob).toBeInstanceOf(Blob);
+    expect(anchor.download).toBe(`${sanitizeFilename("My Template!") || "mocksy-template"}.mocksy.json`);
+    expect(anchor.click).toHaveBeenCalledOnce();
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:fake");
+  });
+
+  it("falls back to the default name when the sanitized name is empty", () => {
+    const createObjectURL = vi.fn((_: unknown) => "blob:fake");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
+    const anchor = { href: "", download: "", click: vi.fn() };
+    vi.stubGlobal("document", { createElement: () => anchor });
+
+    exportTemplateToFile(scene(), "");
+
+    expect(anchor.download).toBe("mocksy-template.mocksy.json");
   });
 });

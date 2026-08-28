@@ -32,6 +32,13 @@ export { captureWebm };
 export { captureWebmWithRetry };
 export { cleanupFfmpegTempFiles };
 
+/** Unique per-run FFmpeg temp names so overlapping exports (shortcuts and the
+ *  command palette aren't gated by isExporting) never share FS entries. */
+function videoTempNames(ext: "mp4" | "webp" | "gif"): { inputName: string; outputName: string } {
+  const id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return { inputName: `input-${id}.webm`, outputName: `mocksy-export-${id}.${ext}` };
+}
+
 export async function exportVideo(
   scene: EditorScene,
   scale?: number,
@@ -42,9 +49,13 @@ export async function exportVideo(
   activeLayerId: string | null = scene.activeLayerId,
   signal?: AbortSignal
 ) {
+  // Unique per-run temp names: concurrent exports (keyboard shortcuts and the
+  // command palette aren't gated by isExporting) share one FFmpeg filesystem,
+  // and fixed names would make them overwrite each other's input/output.
+  const { inputName, outputName } = videoTempNames("mp4");
   try {
     signal?.throwIfAborted();
-    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId);
+    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId, signal);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no frames.");
       return;
@@ -56,8 +67,6 @@ export async function exportVideo(
   const exportQuality = (scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0])?.videoQuality ?? "medium";
   const quality = QUALITY[exportQuality] ?? QUALITY.medium;
   const ffmpeg = await getFfmpegInstance(onStatus);
-  const inputName = "input.webm";
-  const outputName = "mocksy-export.mp4";
   await ffmpeg.writeFile(inputName, new Uint8Array(await webmBlob.arrayBuffer()));
   onProgress?.(50);
   signal?.throwIfAborted();
@@ -85,15 +94,16 @@ export async function exportVideo(
   link.href = URL.createObjectURL(blob);
   link.download = `${exportBaseName(scene, activeLayerId)}.mp4`;
   link.click();
-  setTimeout(() => URL.revokeObjectURL(link.href), 200);
-  await ffmpeg.deleteFile(inputName);
-  await ffmpeg.deleteFile(outputName);
+  setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+  // Cleanup after the download is best-effort: a failed deleteFile must not
+  // mask the successful export with an error toast.
+  await cleanupFfmpegTempFiles(ffmpeg, [inputName, outputName]);
   onStatus?.("Done");
   onProgress?.(100);
   } catch (err) {
     // Best-effort temp-file cleanup so the FFmpeg singleton doesn't carry
     // stale input/output between failed exports.
-    await cleanupFfmpegTempFiles(getFfmpegSingleton(), ["input.webm", "mocksy-export.mp4"]);
+    await cleanupFfmpegTempFiles(getFfmpegSingleton(), [inputName, outputName]);
     onError?.(err instanceof Error ? err.message : "Video export failed.");
   }
 }
@@ -110,11 +120,12 @@ export async function exportWebm(
 ) {
   try {
     signal?.throwIfAborted();
-    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId);
+    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId, signal);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no video frames.");
       return;
     }
+    signal?.throwIfAborted();
     downloadBlob(webmBlob, `${exportBaseName(scene, activeLayerId)}.webm`);
     onStatus?.("Done");
     onProgress?.(100);
@@ -133,9 +144,10 @@ export async function exportWebpAnim(
   activeLayerId: string | null = scene.activeLayerId,
   signal?: AbortSignal
 ) {
+  const { inputName, outputName } = videoTempNames("webp");
   try {
     signal?.throwIfAborted();
-    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId);
+    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId, signal);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no frames.");
       return;
@@ -147,8 +159,6 @@ export async function exportWebpAnim(
     const exportQuality = activeLayerOf(scene, activeLayerId)?.videoQuality ?? "medium";
     const quality = QUALITY[exportQuality] ?? QUALITY.medium;
     const ffmpeg = await getFfmpegInstance(onStatus);
-    const inputName = "input.webm";
-    const outputName = "mocksy-export.webp";
     await ffmpeg.writeFile(inputName, new Uint8Array(await webmBlob.arrayBuffer()));
     onProgress?.(50);
     // Animated WebP is best kept small: cap the width per quality tier (2× is
@@ -176,12 +186,13 @@ export async function exportWebpAnim(
       throw new Error("WebP encoding produced no output.");
     }
     downloadBlob(new Blob([bytes], { type: "image/webp" }), `${exportBaseName(scene, activeLayerId)}.webp`);
-    await ffmpeg.deleteFile(inputName);
-    await ffmpeg.deleteFile(outputName);
+    // Cleanup after the download is best-effort: a failed deleteFile must not
+    // mask the successful export with an error toast.
+    await cleanupFfmpegTempFiles(ffmpeg, [inputName, outputName]);
     onStatus?.("Done");
     onProgress?.(100);
   } catch (err) {
-    await cleanupFfmpegTempFiles(getFfmpegSingleton(), ["input.webm", "mocksy-export.webp"]);
+    await cleanupFfmpegTempFiles(getFfmpegSingleton(), [inputName, outputName]);
     onError?.(err instanceof Error ? err.message : "Animated WebP export failed.");
   }
 }
@@ -196,9 +207,10 @@ export async function exportGif(
   activeLayerId: string | null = scene.activeLayerId,
   signal?: AbortSignal
 ) {
+  const { inputName, outputName } = videoTempNames("gif");
   try {
     signal?.throwIfAborted();
-    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId);
+    const webmBlob = await captureWebmWithRetry(scene, scale, onStatus, onProgress, customSize, activeLayerId, signal);
     if (!webmBlob || webmBlob.size === 0) {
       onError?.("Recording produced no frames.");
       return;
@@ -210,9 +222,6 @@ export async function exportGif(
     const exportQuality = (scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0])?.videoQuality ?? "medium";
     const quality = QUALITY[exportQuality] ?? QUALITY.medium;
     const ffmpeg = await getFfmpegInstance(onStatus);
-    const inputName = "input.webm";
-    const paletteName = "palette.png";
-    const outputName = "mocksy-export.gif";
     await ffmpeg.writeFile(inputName, new Uint8Array(await webmBlob.arrayBuffer()));
     onProgress?.(50);
     // Scale down for GIF: keep it crisp but cap width so the palette step
@@ -245,14 +254,16 @@ export async function exportGif(
     link.href = URL.createObjectURL(blob);
     link.download = `${exportBaseName(scene, activeLayerId)}.gif`;
     link.click();
-    setTimeout(() => URL.revokeObjectURL(link.href), 200);
-    await ffmpeg.deleteFile(inputName);
-    await ffmpeg.deleteFile(paletteName);
-    await ffmpeg.deleteFile(outputName);
+    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+    // The single-pass palettegen/paletteuse filter graph keeps the palette in
+    // an in-memory label — no palette file is ever written, so only the input
+    // and output need cleanup. Best-effort: a failed deleteFile must not mask
+    // the successful export with an error toast.
+    await cleanupFfmpegTempFiles(ffmpeg, [inputName, outputName]);
     onStatus?.("Done");
     onProgress?.(100);
   } catch (err) {
-    await cleanupFfmpegTempFiles(getFfmpegSingleton(), ["input.webm", "palette.png", "mocksy-export.gif"]);
+    await cleanupFfmpegTempFiles(getFfmpegSingleton(), [inputName, outputName]);
     onError?.(err instanceof Error ? err.message : "GIF export failed.");
   }
 }

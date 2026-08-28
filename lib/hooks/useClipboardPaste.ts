@@ -17,8 +17,8 @@ function isTypingTarget(target: EventTarget | null): boolean {
  * Global paste handler with a clear priority: (1) OS clipboard media — a
  * screenshot/copied image-video file, or an http(s) media link — lands in the
  * active layer; (2) otherwise an object copied inside the editor via ⌘C
- * (annotation or frame instance) is duplicated. Ignored while typing in a
- * field. Media errors surface through the shared upload error.
+ * (annotation, frame instance or layer) is duplicated. Ignored while typing in
+ * a field. Media errors surface through the shared upload error.
  */
 export function useClipboardPaste(): void {
   const t = useTranslations();
@@ -33,6 +33,11 @@ export function useClipboardPaste(): void {
       }
       event.preventDefault();
       const { setMediaUploadError } = useEditorStore.getState();
+      // Pin the active layer before decoding: decoding can outlive the paste
+      // event, and a layer switch (or lock) in that window would otherwise put
+      // the media into the wrong layer or drop it silently.
+      const st = useEditorStore.getState();
+      const targetLayerId = st.activeLayerId ?? st.scene.layers[0]?.id ?? null;
       try {
         const loaded = payload.kind === "file"
           ? await loadMediaFromFile(payload.file)
@@ -41,7 +46,7 @@ export function useClipboardPaste(): void {
         // Drop any palette from the previous media; a fresh one is computed
         // once the new file decodes in the preview.
         useEditorStore.getState().setScenePalette(null);
-        useEditorStore.getState().setMedia(loaded.url, loaded.mediaType, loaded.mediaName);
+        useEditorStore.getState().setMedia(loaded.url, loaded.mediaType, loaded.mediaName, targetLayerId);
       } catch (err) {
         if (err instanceof UnsupportedMediaError || err instanceof UnsupportedMediaUrlError) setMediaUploadError(err.message);
         else setMediaUploadError(t("editor.uploadError"));
@@ -53,7 +58,8 @@ export function useClipboardPaste(): void {
 }
 
 /** Fallback for ⌘V when the OS clipboard carries no media: duplicate the
- *  annotation/frame copied via ⌘C. Stale ids (target deleted) are dropped. */
+ *  annotation/frame/layer copied via ⌘C. Stale ids (target deleted) are
+ *  dropped. */
 function pasteCopiedObject(event: ClipboardEvent): void {
   const copiedEntry = getCopiedObject();
   if (!copiedEntry) return;
@@ -64,6 +70,9 @@ function pasteCopiedObject(event: ClipboardEvent): void {
   } else if (copiedEntry.kind === "frameInstance" && st.scene.frameInstances.some((fi) => fi.id === copiedEntry.id)) {
     event.preventDefault();
     st.duplicateFrameInstance(copiedEntry.id);
+  } else if (copiedEntry.kind === "layer" && st.scene.layers.some((l) => l.id === copiedEntry.id)) {
+    event.preventDefault();
+    st.duplicateLayer(copiedEntry.id);
   } else {
     setCopiedObject(null);
   }

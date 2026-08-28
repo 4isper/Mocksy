@@ -5,6 +5,8 @@ import type {
   BackgroundMode,
   CustomFrame,
   EditorScene,
+  EntranceAnimation,
+  BlendMode,
   FrameInstance,
   GradientType,
   MediaLayer,
@@ -18,7 +20,10 @@ import type {
 } from "@/lib/types/editor";
 import { ALL_FRAMES, ANIMATION_PRESETS, frameOs } from "@/lib/render/frames";
 import { LAYER_FILTER_DEFAULTS } from "@/lib/render/layerFilters";
-import { initialScene } from "@/lib/state/editorStore";
+// Import from the defining module, not the editorStore barrel: initialScene is
+// mutated after its first assignment (activeLayerId is set a line later), and
+// a re-exported snapshot can drop fields in Turbopack's server bundles.
+import { initialScene } from "@/lib/state/editorScene";
 import { nextAnnotationId, nextFrameInstanceId, nextLayerId } from "@/lib/state/ids";
 
 const FRAMES = ALL_FRAMES;
@@ -30,6 +35,8 @@ const MEDIA_TYPES: MediaType[] = ["none", "image", "video"];
 const MEDIA_FITS = ["cover", "contain"] as const;
 const ANIMATIONS = ANIMATION_PRESETS;
 const ANIMATION_EASINGS: AnimationEasing[] = ["linear", "easeInOut", "easeOut", "bounce", "spring"];
+const ENTRANCE_ANIMATIONS: EntranceAnimation[] = ["none", "fadeIn", "slideUp", "slideDown", "slideLeft", "slideRight", "scaleUp"];
+const BLEND_MODES: BlendMode[] = ["normal", "multiply", "screen", "overlay", "soft-light", "hard-light", "color-dodge", "color-burn", "difference", "exclusion", "hue", "saturation", "color", "luminosity"];
 const ANNOTATION_TYPES: AnnotationType[] = ["text", "arrow", "rect", "circle", "blur"];
 const SCREEN_CHROME_STYLES: ScreenChromeStyle[] = ["lock", "home", "statusBar"];
 const SCREEN_CHROME_THEMES: ScreenChromeTheme[] = ["dark", "light"];
@@ -74,6 +81,17 @@ function str(value: unknown, fallback: string | null): string | null {
   return typeof value === "string" && value.length > 0 ? value : fallback;
 }
 
+// Color fields are embedded verbatim into inline styles and generated SVG/HTML
+// attributes (e.g. fill="…" in the text-layer SVG), so an arbitrary string from
+// a share URL could break out of the attribute and inject markup. Only strict
+// CSS color notations — hex and rgb()/rgba() with plain numeric components —
+// pass through; anything else falls back like a missing field.
+const CSS_COLOR_RE = /^(?:#[0-9a-f]{3}|#[0-9a-f]{4}|#[0-9a-f]{6}|#[0-9a-f]{8}|rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(?:,\s*(?:0?\.\d+|1)\s*)?\))$/i;
+
+function colorStr(value: unknown, fallback: string | null): string | null {
+  return typeof value === "string" && CSS_COLOR_RE.test(value) ? value : fallback;
+}
+
 /** Normalizes one raw annotation-shaped object into a valid Annotation. */
 function normalizeAnnotation(raw: unknown, fallback: Annotation): Annotation {
   if (!raw || typeof raw !== "object") return fallback;
@@ -88,17 +106,22 @@ function normalizeAnnotation(raw: unknown, fallback: Annotation): Annotation {
     w: num(r.w, fallback.w, -2, 2),
     h: num(r.h, fallback.h, -2, 2),
     text: str(r.text, fallback.text) ?? "",
-    color: str(r.color, fallback.color) ?? fallback.color,
+    color: colorStr(r.color, fallback.color) ?? fallback.color,
     strokeWidth: num(r.strokeWidth, fallback.strokeWidth, 0, 40),
     fontSize: num(r.fontSize, fallback.fontSize, 8, 200),
     fontFamily: str(r.fontFamily, null) ?? fallback.fontFamily,
     fontWeight: pick(r.fontWeight, ["normal", "bold"] as const, fallback.fontWeight ?? "bold"),
     fontStyle: pick(r.fontStyle, ["normal", "italic"] as const, fallback.fontStyle ?? "normal"),
     textAlign: pick(r.textAlign, ["left", "center", "right"] as const, fallback.textAlign ?? "left"),
-    bgColor: str(r.bgColor, null),
+    bgColor: colorStr(r.bgColor, null),
     bgPadding: num(r.bgPadding, fallback.bgPadding ?? 0, 0, 100),
     bgRadius: num(r.bgRadius, fallback.bgRadius ?? 0, 0, 200),
-    animated: r.animated === true
+    animated: r.animated === true,
+    gradientFrom: colorStr(r.gradientFrom, null) ?? undefined,
+    gradientTo: colorStr(r.gradientTo, null) ?? undefined,
+    gradientVia: colorStr(r.gradientVia, null) ?? undefined,
+    gradientType: r.gradientType === "linear" || r.gradientType === "radial" ? r.gradientType : undefined,
+    gradientAngle: typeof r.gradientAngle === "number" ? num(r.gradientAngle, 135, 0, 360) : undefined
   };
 }
 
@@ -113,9 +136,22 @@ function normalizeLayer(raw: unknown, fallback: MediaLayer): MediaLayer {
     // to the demo data URL here would resurrect the demo phone on every
     // normalize (load, share import, undo) — see shareState for where the demo
     // is restored deliberately.
+    kind: pick(r.kind, ["media", "text"] as const, fallback.kind ?? "media"),
+    groupId: typeof r.groupId === "string" && r.groupId.length > 0 ? r.groupId : (r.groupId === null ? null : fallback.groupId ?? null),
+    // A layer with no media (the user cleared it, or a stripped demo that the
+    // share/project loader chose not to restore) must stay empty. Falling back
+    // to the demo data URL here would resurrect the demo phone on every
+    // normalize (load, share import, undo) — see shareState for where the demo
+    // is restored deliberately.
     mediaUrl: str(r.mediaUrl, null),
     mediaType: pick(r.mediaType, MEDIA_TYPES, fallback.mediaType),
     mediaName: str(r.mediaName, fallback.mediaName),
+    textContent: str(r.textContent, "") ?? "",
+    textColor: colorStr(r.textColor, null) ?? "#ffffff",
+    textSize: num(r.textSize, fallback.textSize ?? 0.12, 0.01, 0.6),
+    textAlign: pick(r.textAlign, ["left", "center", "right"] as const, fallback.textAlign ?? "center"),
+    fontWeight: pick(r.fontWeight, ["normal", "bold"] as const, fallback.fontWeight ?? "bold"),
+    fontFamily: str(r.fontFamily, null) ?? undefined,
     hidden: r.hidden === true,
     zoom: num(r.zoom, fallback.zoom, 0.1, 3),
     mediaOffsetX: num(r.mediaOffsetX, fallback.mediaOffsetX, -1, 1),
@@ -131,6 +167,9 @@ function normalizeLayer(raw: unknown, fallback: MediaLayer): MediaLayer {
     locked: r.locked === true,
     animationPreset: pick(r.animationPreset, ANIMATIONS, fallback.animationPreset),
     animationEasing: pick(r.animationEasing, ANIMATION_EASINGS, fallback.animationEasing ?? "easeInOut"),
+    entranceAnimation: pick(r.entranceAnimation, ENTRANCE_ANIMATIONS, fallback.entranceAnimation ?? "none"),
+    entranceDuration: num(r.entranceDuration, fallback.entranceDuration ?? 600, 200, 2000),
+    blendMode: pick(r.blendMode, BLEND_MODES, fallback.blendMode ?? "normal"),
     videoMuted: r.videoMuted !== false,
     videoLoop: r.videoLoop !== false,
     videoAutoplay: r.videoAutoplay !== false,
@@ -170,7 +209,7 @@ function normalizeCustomFrame(raw: unknown): CustomFrame | null {
 }
 
 /** Normalizes one raw frame instance into a valid FrameInstance. */
-function normalizeFrameInstance(raw: unknown, fallback: FrameInstance): FrameInstance {
+function normalizeFrameInstance(raw: unknown, fallback: FrameInstance, sceneScreen: ScreenChrome): FrameInstance {
   if (!raw || typeof raw !== "object") return fallback;
   const r = raw as Record<string, unknown>;
   return {
@@ -181,7 +220,9 @@ function normalizeFrameInstance(raw: unknown, fallback: FrameInstance): FrameIns
     scale: num(r.scale, fallback.scale, 0.1, 5),
     layerId: typeof r.layerId === "string" ? r.layerId : null,
     orientation: r.orientation === "landscape" ? "landscape" : r.orientation === "portrait" ? "portrait" : undefined,
-    material: r.material === "silver" || r.material === "white" ? r.material : undefined
+    material: r.material === "silver" || r.material === "white" ? r.material : undefined,
+    screen: r.screen != null && typeof r.screen === "object" ? normalizeScreenChrome(r.screen, sceneScreen, r.frame as MockupFrame | undefined) : undefined,
+    floorReflection: typeof r.floorReflection === "boolean" ? r.floorReflection : undefined
   };
 }
 
@@ -218,13 +259,23 @@ export function normalizeScene(raw: unknown): EditorScene {
     ? initialScene.frame
     : pick(r.frame, FRAMES, initialScene.frame);
 
+  // Normalized top-level screen — the default every instance without its own
+  // override inherits (and the seed used when an instance override is created).
+  const sceneScreen = normalizeScreenChrome(r.screen, initialScene.screen, frame);
+
+  // Trusted active layer: only keep an id that actually names a normalized
+  // layer, otherwise fall back to the first layer (never persist a dangling id).
+  const activeLayerId = typeof r.activeLayerId === "string" && layers.some((l) => l.id === r.activeLayerId)
+    ? r.activeLayerId
+    : layers[0]?.id ?? null;
+
   return {
     layers,
-    activeLayerId: typeof r.activeLayerId === "string" ? r.activeLayerId : layers[0]?.id ?? null,
+    activeLayerId,
     frame,
     frameMaterial: r.frameMaterial === "silver" || r.frameMaterial === "white" ? r.frameMaterial : undefined,
     frameInstances: Array.isArray(r.frameInstances) && r.frameInstances.length > 0
-      ? r.frameInstances.slice(0, MAX_FRAME_INSTANCES).map((fi) => normalizeFrameInstance(fi, fallbackFrame))
+      ? r.frameInstances.slice(0, MAX_FRAME_INSTANCES).map((fi) => normalizeFrameInstance(fi, fallbackFrame, sceneScreen))
       : [],
     customFrame,
     stylePreset: pick(r.stylePreset, STYLE_PRESETS, initialScene.stylePreset),
@@ -233,10 +284,10 @@ export function normalizeScene(raw: unknown): EditorScene {
     tiltX: num(r.tiltX, initialScene.tiltX, -25, 25),
     tiltY: num(r.tiltY, initialScene.tiltY, -25, 25),
     backgroundMode: pick(r.backgroundMode, BACKGROUND_MODES, initialScene.backgroundMode),
-    backgroundColor: str(r.backgroundColor, initialScene.backgroundColor) ?? initialScene.backgroundColor,
-    gradientFrom: str(r.gradientFrom, initialScene.gradientFrom) ?? initialScene.gradientFrom,
-    gradientTo: str(r.gradientTo, initialScene.gradientTo) ?? initialScene.gradientTo,
-    gradientVia: str(r.gradientVia, initialScene.gradientVia) ?? initialScene.gradientVia,
+    backgroundColor: colorStr(r.backgroundColor, initialScene.backgroundColor) ?? initialScene.backgroundColor,
+    gradientFrom: colorStr(r.gradientFrom, initialScene.gradientFrom) ?? initialScene.gradientFrom,
+    gradientTo: colorStr(r.gradientTo, initialScene.gradientTo) ?? initialScene.gradientTo,
+    gradientVia: colorStr(r.gradientVia, initialScene.gradientVia) ?? initialScene.gradientVia,
     gradientType: pick(r.gradientType, GRADIENT_TYPES, initialScene.gradientType),
     gradientAngle: num(r.gradientAngle, initialScene.gradientAngle, 0, 360),
     patternId: r.patternId != null && PATTERN_IDS.includes(r.patternId as PatternId)

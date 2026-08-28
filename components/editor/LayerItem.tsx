@@ -1,16 +1,13 @@
 "use client";
 
-import type { DragEvent } from "react";
 import { useTranslations } from "next-intl";
-import { Eye, EyeOff, Lock, LockOpen, Video } from "lucide-react";
+import { Video } from "lucide-react";
 import type { MediaLayer } from "@/lib/types/editor";
 import { isVideoLayer } from "@/lib/render/mediaKind";
-import { useEditorStore } from "@/lib/state/editorStore";
+import { isTextLayer } from "@/lib/render/layerText";
 
 interface LayerItemProps {
   layer: MediaLayer;
-  index: number;
-  total: number;
   active: boolean;
   selected: boolean;
   isDragging: boolean;
@@ -22,20 +19,20 @@ interface LayerItemProps {
   onCancelEdit: () => void;
   onDraftChange: (v: string) => void;
   onSelect: (e: React.MouseEvent<HTMLLIElement>) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLLIElement>, id: string) => void;
   onContext: (e: React.MouseEvent<HTMLLIElement>) => void;
-  onMove: (id: string, dir: -1 | 1) => void;
-  onDragStart: (e: DragEvent<HTMLLIElement>, id: string) => void;
-  onDragOver: (e: DragEvent<HTMLLIElement>, id: string) => void;
-  onDrop: (e: DragEvent<HTMLLIElement>, id: string) => void;
+  onDragStart: (e: React.DragEvent<HTMLLIElement>, id: string) => void;
+  onDragOver: (e: React.DragEvent<HTMLLIElement>, id: string) => void;
+  onDrop: (e: React.DragEvent<HTMLLIElement>, id: string) => void;
   onDragEnd: () => void;
 }
 
-/** One row in the layer list: thumbnail, editable name, and per-layer
- *  hide/duplicate/move/remove actions. Selection-aware via the parent. */
+/** One row in the layer listbox: thumbnail and editable name. The row itself is
+ *  the `role="option"` element so it stays a direct, focusable listbox child
+ *  (ARIA options must not contain interactive controls — the per-layer actions
+ *  live in the separate `LayerActions` toolbar, not here). */
 export function LayerItem({
   layer,
-  index,
-  total,
   active,
   selected,
   isDragging,
@@ -47,21 +44,18 @@ export function LayerItem({
   onCancelEdit,
   onDraftChange,
   onSelect,
+  onKeyDown,
   onContext,
-  onMove,
   onDragStart,
   onDragOver,
   onDrop,
   onDragEnd
 }: LayerItemProps) {
   const t = useTranslations();
-  const selectedLayerIds = useEditorStore((s) => s.selectedLayerIds);
-  const toggleLayersHidden = useEditorStore((s) => s.toggleLayersHidden);
-  const toggleLayersLocked = useEditorStore((s) => s.toggleLayersLocked);
-  const duplicateLayers = useEditorStore((s) => s.duplicateLayers);
-  const removeLayers = useEditorStore((s) => s.removeLayers);
 
-  const label = layer.mediaName ?? (layer.mediaType === "video" ? t("editor.videoLabel") : t("editor.imageLabel"));
+  const label = isTextLayer(layer)
+    ? layer.textContent?.trim() || t("editor.textLabel")
+    : layer.mediaName ?? (layer.mediaType === "video" ? t("editor.videoLabel") : t("editor.imageLabel"));
   const dropStyle = dropIndicator
     ? { boxShadow: dropIndicator.inset === "top" ? "0 -2px 0 0 var(--accent) inset" : "0 2px 0 0 var(--accent) inset" }
     : undefined;
@@ -70,11 +64,17 @@ export function LayerItem({
     <li
       key={layer.id}
       className={active ? "layer-item is-active" : "layer-item"}
+      role="option"
+      aria-selected={selected}
+      tabIndex={active ? 0 : -1}
       draggable
       onDragStart={(e) => onDragStart(e, layer.id)}
       onDragOver={(e) => onDragOver(e, layer.id)}
       onDrop={(e) => onDrop(e, layer.id)}
       onDragEnd={onDragEnd}
+      onClick={onSelect}
+      onKeyDown={(e) => onKeyDown(e, layer.id)}
+      onContextMenu={onContext}
       style={{
         display: "flex",
         alignItems: "center",
@@ -88,9 +88,20 @@ export function LayerItem({
         minWidth: 0,
         ...dropStyle
       }}
-      onClick={onSelect}
-      onContextMenu={onContext}
     >
+      {layer.groupId && (
+        <span
+          aria-hidden="true"
+          title={t("editor.groupedLayer")}
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: 3,
+            background: "var(--accent)",
+            flex: "0 0 auto",
+          }}
+        />
+      )}
       <span
         aria-hidden="true"
         style={{
@@ -113,7 +124,7 @@ export function LayerItem({
           flex: "0 0 auto",
           borderRadius: 5,
           overflow: "hidden",
-          background: "#0a0a0a",
+          background: "var(--panel-solid)",
           display: "grid",
           placeItems: "center",
           border: "1px solid var(--panel-border)"
@@ -125,6 +136,8 @@ export function LayerItem({
           ) : (
             <img src={layer.mediaUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           )
+        ) : isTextLayer(layer) ? (
+          <span style={{ fontSize: 12, fontWeight: 700, color: layer.textColor ?? "#ffffff" }}>T</span>
         ) : (
           <span style={{ fontSize: 11, color: "var(--text-dim)" }}><Video size={10} /></span>
         )}
@@ -142,6 +155,7 @@ export function LayerItem({
               else if (e.key === "Escape") onCancelEdit();
             }}
             onClick={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
             autoFocus
             style={{ width: "100%", fontSize: 12 }}
           />
@@ -159,81 +173,6 @@ export function LayerItem({
           </span>
         )}
       </span>
-      <button
-        type="button"
-        className="btn-icon"
-        aria-label={layer.hidden ? t("editor.showLayer") : t("editor.hideLayer")}
-        title={layer.hidden ? t("editor.showLayer") : t("editor.hideLayer")}
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleLayersHidden(selected ? selectedLayerIds : [layer.id]);
-        }}
-      >
-        {layer.hidden ? <EyeOff size={12} /> : <Eye size={12} />}
-      </button>
-      <button
-        type="button"
-        className="btn-icon"
-        aria-label={layer.locked ? t("editor.unlockLayer") : t("editor.lockLayer")}
-        title={layer.locked ? t("editor.unlockLayer") : t("editor.lockLayer")}
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleLayersLocked(selected ? selectedLayerIds : [layer.id]);
-        }}
-      >
-        {layer.locked ? <Lock size={12} /> : <LockOpen size={12} />}
-      </button>
-      <button
-        type="button"
-        className="btn-icon"
-        aria-label={t("editor.duplicateLayer")}
-        title={t("editor.duplicateLayer")}
-        onClick={(e) => {
-          e.stopPropagation();
-          duplicateLayers(selected ? selectedLayerIds : [layer.id]);
-        }}
-      >
-        ⧉
-      </button>
-      <button
-        type="button"
-        className="btn-icon tooltip"
-        aria-label={t("editor.moveUp")}
-        data-tooltip={t("editor.moveUp")}
-        disabled={index === 0}
-        onClick={(e) => {
-          e.stopPropagation();
-          onMove(layer.id, -1);
-        }}
-      >
-        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 10V2M6 2L2 6M6 2L10 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-      </button>
-      <button
-        type="button"
-        className="btn-icon tooltip"
-        aria-label={t("editor.moveDown")}
-        data-tooltip={t("editor.moveDown")}
-        disabled={index === total - 1}
-        onClick={(e) => {
-          e.stopPropagation();
-          onMove(layer.id, 1);
-        }}
-      >
-        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M6 10l4-4M6 10l-4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-      </button>
-      <button
-        type="button"
-        className="btn-icon tooltip"
-        aria-label={t("editor.removeLayer", { label })}
-        data-tooltip={t("editor.removeLayer", { label })}
-        disabled={total <= 1 || layer.locked}
-        onClick={(e) => {
-          e.stopPropagation();
-          removeLayers(selected ? selectedLayerIds : [layer.id]);
-        }}
-      >
-        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
-      </button>
     </li>
   );
 }

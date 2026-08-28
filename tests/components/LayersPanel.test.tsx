@@ -150,7 +150,7 @@ describe("LayersPanel", () => {
       activeLayerId: "a"
     });
     render(<LayersPanel />);
-    const items = screen.getAllByRole("listitem");
+    const items = screen.getAllByRole("option");
     const a = items[0]!;
     const b = items[1]!;
     expect(a).toHaveTextContent("A");
@@ -176,7 +176,7 @@ describe("LayersPanel", () => {
       activeLayerId: "a"
     });
     render(<LayersPanel />);
-    const items = screen.getAllByRole("listitem");
+    const items = screen.getAllByRole("option");
     const a = items[0]!;
     const b = items[1]!;
     const c = items[2]!;
@@ -205,7 +205,7 @@ describe("LayersPanel", () => {
       activeLayerId: "a"
     });
     render(<LayersPanel />);
-    const items = screen.getAllByRole("listitem");
+    const items = screen.getAllByRole("option");
     const a = items[0]!;
     const b = items[1]!;
     fireEvent.dragStart(a);
@@ -230,7 +230,7 @@ describe("LayersPanel", () => {
       activeLayerId: "a"
     });
     render(<LayersPanel />);
-    const a = screen.getAllByRole("listitem")[0]!;
+    const a = screen.getAllByRole("option")[0]!;
     fireEvent.dragStart(a);
     fireEvent.dragOver(a, { clientY: 0 });
     expect(useEditorStore.getState().scene.layers.map((l) => l.mediaName)).toEqual(["A", "B"]);
@@ -269,13 +269,12 @@ describe("LayersPanel", () => {
       scene: {
         ...useEditorStore.getState().scene,
         layers: [makeLayer("a", { mediaName: "A" }), makeLayer("b", { mediaName: "B" }), makeLayer("c", { mediaName: "C" })],
-        activeLayerId: "a",
+        activeLayerId: "b",
       },
-      activeLayerId: "a"
+      activeLayerId: "b"
     });
     render(<LayersPanel />);
-    const upButtons = screen.getAllByRole("button", { name: /editor.moveUp/ });
-    await userEvent.click(upButtons[1]!);
+    await userEvent.click(screen.getByRole("button", { name: /editor.moveUp/ }));
     expect(useEditorStore.getState().scene.layers.map((l) => l.mediaName)).toEqual(["B", "A", "C"]);
   });
 
@@ -289,12 +288,11 @@ describe("LayersPanel", () => {
       activeLayerId: "a"
     });
     render(<LayersPanel />);
-    const downButtons = screen.getAllByRole("button", { name: /editor.moveDown/ });
-    await userEvent.click(downButtons[1]!);
-    expect(useEditorStore.getState().scene.layers.map((l) => l.mediaName)).toEqual(["A", "C", "B"]);
+    await userEvent.click(screen.getByRole("button", { name: /editor.moveDown/ }));
+    expect(useEditorStore.getState().scene.layers.map((l) => l.mediaName)).toEqual(["B", "A", "C"]);
   });
 
-  it("disables move-up for the top layer and move-down for the bottom layer", () => {
+  it("disables move-up for the top layer and move-down for the bottom layer", async () => {
     useEditorStore.setState({
       scene: {
         ...useEditorStore.getState().scene,
@@ -304,8 +302,14 @@ describe("LayersPanel", () => {
       activeLayerId: "a"
     });
     render(<LayersPanel />);
-    expect(screen.getAllByRole("button", { name: /editor.moveUp/ })[0]).toBeDisabled();
-    expect(screen.getAllByRole("button", { name: /editor.moveDown/ })[1]).toBeDisabled();
+    // Active layer is the top layer: move-up disabled, move-down enabled.
+    expect(screen.getByRole("button", { name: /editor.moveUp/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /editor.moveDown/ })).toBeEnabled();
+
+    // Switch the active layer to the bottom row: move-down becomes disabled.
+    useEditorStore.setState({ activeLayerId: "b" });
+    await waitFor(() => expect(screen.getByRole("button", { name: /editor.moveDown/ })).toBeDisabled());
+    expect(screen.getByRole("button", { name: /editor.moveUp/ })).toBeEnabled();
   });
 
   it("disables remove when only one layer remains", () => {
@@ -433,13 +437,11 @@ describe("LayersPanel", () => {
       scene: {
         ...useEditorStore.getState().scene,
         layers: [makeLayer("a", { mediaName: "A", locked: true }), makeLayer("b", { mediaName: "B" })],
-        activeLayerId: "b",
+        activeLayerId: "a",
       },
-      activeLayerId: "b"
+      activeLayerId: "a"
     });
     render(<LayersPanel />);
-    const removeBtns = screen.getAllByRole("button", { name: /editor.removeLayer/i });
-    const lockedBtn = removeBtns.find((btn) => (btn as HTMLButtonElement).disabled);
-    expect(lockedBtn).toBeDefined();
+    expect(screen.getByRole("button", { name: /editor.removeLayer/i })).toBeDisabled();
   });
 });

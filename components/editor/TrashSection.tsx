@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import type { Project } from "@/lib/types/editor";
@@ -19,6 +19,15 @@ export function TrashSection({ trashed, relativeTime, onRestore, onEmptyTrash }:
   const [showTrash, setShowTrash] = useState(false);
   const [confirmEmptyTrash, setConfirmEmptyTrash] = useState(false);
   const emptyTrashTrapRef = useFocusTrap(confirmEmptyTrash);
+
+  useEffect(() => {
+    if (!confirmEmptyTrash) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setConfirmEmptyTrash(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [confirmEmptyTrash]);
 
   if (trashed.length === 0) return null;
 
@@ -97,12 +106,12 @@ export function TrashSection({ trashed, relativeTime, onRestore, onEmptyTrash }:
             <h3 id="empty-trash-title">{t("projects.emptyTrashConfirm_title")}</h3>
             <p id="empty-trash-desc">{t("projects.emptyTrashConfirm_message")}</p>
             <div className="modal-actions">
-              <button type="button" className="btn" onClick={() => setConfirmEmptyTrash(false)} autoFocus>
+              <button type="button" className="btn btn-primary" onClick={() => setConfirmEmptyTrash(false)} autoFocus>
                 {t("projects.emptyTrashConfirm_cancel")}
               </button>
               <button
                 type="button"
-                className="btn btn-primary"
+                className="btn btn-danger"
                 onClick={() => {
                   onEmptyTrash();
                   setConfirmEmptyTrash(false);

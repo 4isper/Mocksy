@@ -45,7 +45,9 @@ function makeProject(id: string, name: string): Project {
 function makeFileCallbacks() {
   return {
     onExportPng: vi.fn(),
+    onExportJpeg: vi.fn(),
     onExportWebp: vi.fn(),
+    onExportAvif: vi.fn(),
     onExportSvg: vi.fn(),
     onExportHtml: vi.fn(),
     onExportPdf: vi.fn(),
@@ -53,7 +55,12 @@ function makeFileCallbacks() {
     onExportWebm: vi.fn(),
     onExportGif: vi.fn(),
     onExportWebpAnim: vi.fn(),
+    onExportZipVideo: vi.fn(),
     onCopyPng: vi.fn(),
+    onCopyJpeg: vi.fn(),
+    onCopyWebp: vi.fn(),
+    onCopySvg: vi.fn(),
+    onCopyHtml: vi.fn(),
     onCopyShareUrl: vi.fn(),
     onSave: vi.fn()
   };
@@ -74,6 +81,7 @@ function makeOrchestratorArgs(scene: EditorScene) {
     setBackgroundImage: vi.fn(),
     setAspectRatio: vi.fn(),
     addLayer: vi.fn(),
+    addTextLayer: vi.fn(),
     duplicateLayer: vi.fn(),
     removeLayer: vi.fn(),
     toggleLayerHidden: vi.fn(),
@@ -111,12 +119,13 @@ describe("createFileCommands", () => {
     const cb = makeFileCallbacks();
     const cmds = createFileCommands(t, cb);
     expect(cmds.map((c) => c.id)).toEqual([
-      "record-screen", "new-project", "save-project", "export-png", "export-mp4", "export-webm",
+      "record-screen", "new-project", "save-project", "export-png", "export-jpeg", "export-avif", "export-mp4", "export-webm",
       "export-webp", "export-webp-anim", "export-svg", "export-html", "export-pdf",
-      "export-gif", "copy-png", "copy-share-url"
+      "export-gif", "export-video-zip", "copy-png", "copy-jpeg", "copy-webp", "copy-svg", "copy-html", "copy-share-url"
     ]);
     cmds.find((c) => c.id === "save-project")!.action();
     cmds.find((c) => c.id === "export-png")!.action();
+    cmds.find((c) => c.id === "export-jpeg")!.action();
     cmds.find((c) => c.id === "export-mp4")!.action();
     cmds.find((c) => c.id === "export-webm")!.action();
     cmds.find((c) => c.id === "export-webp")!.action();
@@ -125,10 +134,14 @@ describe("createFileCommands", () => {
     cmds.find((c) => c.id === "export-html")!.action();
     cmds.find((c) => c.id === "export-pdf")!.action();
     cmds.find((c) => c.id === "export-gif")!.action();
+    cmds.find((c) => c.id === "export-video-zip")!.action();
     cmds.find((c) => c.id === "copy-png")!.action();
+    cmds.find((c) => c.id === "copy-svg")!.action();
+    cmds.find((c) => c.id === "copy-html")!.action();
     cmds.find((c) => c.id === "copy-share-url")!.action();
     expect(cb.onSave).toHaveBeenCalledTimes(1);
     expect(cb.onExportPng).toHaveBeenCalledTimes(1);
+    expect(cb.onExportJpeg).toHaveBeenCalledTimes(1);
     expect(cb.onExportMp4).toHaveBeenCalledTimes(1);
     expect(cb.onExportWebm).toHaveBeenCalledTimes(1);
     expect(cb.onExportWebp).toHaveBeenCalledTimes(1);
@@ -137,7 +150,10 @@ describe("createFileCommands", () => {
     expect(cb.onExportHtml).toHaveBeenCalledTimes(1);
     expect(cb.onExportPdf).toHaveBeenCalledTimes(1);
     expect(cb.onExportGif).toHaveBeenCalledTimes(1);
+    expect(cb.onExportZipVideo).toHaveBeenCalledTimes(1);
     expect(cb.onCopyPng).toHaveBeenCalledTimes(1);
+    expect(cb.onCopySvg).toHaveBeenCalledTimes(1);
+    expect(cb.onCopyHtml).toHaveBeenCalledTimes(1);
     expect(cb.onCopyShareUrl).toHaveBeenCalledTimes(1);
   });
 
@@ -227,9 +243,11 @@ describe("createBackgroundCommands", () => {
         expect(setBackgroundSolid).toHaveBeenCalledWith(preset.backgroundColor);
       else if (preset.kind === "pattern")
         expect(setBackgroundPattern).toHaveBeenCalledWith(preset.patternId);
-      else expect(setBackgroundGradient).toHaveBeenCalledWith(preset.gradientFrom, preset.gradientTo);
+      // Gradient presets clear the middle stop so they render exactly as
+      // their two-stop swatch.
+      else expect(setBackgroundGradient).toHaveBeenCalledWith(preset.gradientFrom, preset.gradientTo, null);
     }
-    expect(setBackgroundGradient).not.toHaveBeenCalledWith(undefined, undefined);
+    expect(setBackgroundGradient).not.toHaveBeenCalledWith(undefined, undefined, undefined);
   });
 });
 
@@ -247,7 +265,7 @@ describe("createAspectRatioCommands", () => {
 });
 
 describe("createLayerCommands", () => {
-  it("adds a layer from a picked file", () => {
+  it("adds a layer from a picked file", async () => {
     const addLayer = vi.fn();
     const input = {
       type: "",
@@ -256,15 +274,20 @@ describe("createLayerCommands", () => {
       click: vi.fn()
     };
     vi.stubGlobal("document", { createElement: (tag: string) => (tag === "input" ? input : undefined) });
-    vi.stubGlobal("URL", { createObjectURL: vi.fn(() => "blob:file"), revokeObjectURL: vi.fn() });
 
     const cmds = createLayerCommands(t, makeScene(), {
-      addLayer, duplicateLayer: vi.fn(), removeLayer: vi.fn(), toggleLayerHidden: vi.fn(), selectLayer: vi.fn()
+      addLayer, addTextLayer: vi.fn(), duplicateLayer: vi.fn(), removeLayer: vi.fn(), toggleLayerHidden: vi.fn(), selectLayer: vi.fn()
     });
     cmds.find((c) => c.id === "layer-add")!.action();
     expect(input.click).toHaveBeenCalled();
     input.onchange?.({ target: { files: [new File(["x"], "clip.mp4", { type: "video/mp4" })] } });
-    expect(addLayer).toHaveBeenCalledWith("blob:file", "video", "clip.mp4");
+    // The layer gets a self-contained data URL (not a one-shot blob: URL) so
+    // it survives reloads and the video export's teardown.
+    await vi.waitFor(() => expect(addLayer).toHaveBeenCalledTimes(1));
+    const [url, type, name] = addLayer.mock.calls[0]! as [string, string, string];
+    expect(url).toMatch(/^data:video\/mp4;base64,/);
+    expect(type).toBe("video");
+    expect(name).toBe("clip.mp4");
   });
 
   it("duplicates, removes, toggles and selects the active layer", () => {
@@ -274,7 +297,7 @@ describe("createLayerCommands", () => {
     const toggleLayerHidden = vi.fn();
     const selectLayer = vi.fn();
     const cmds = createLayerCommands(t, scene, {
-      addLayer: vi.fn(), duplicateLayer, removeLayer, toggleLayerHidden, selectLayer
+      addLayer: vi.fn(), addTextLayer: vi.fn(), duplicateLayer, removeLayer, toggleLayerHidden, selectLayer
     });
     expect(cmds.find((c) => c.id === "layer-duplicate")!.disabled).toBe(false);
     expect(cmds.find((c) => c.id === "layer-remove")!.disabled).toBe(false);
@@ -293,7 +316,7 @@ describe("createLayerCommands", () => {
     const removeLayer = vi.fn();
     const toggleLayerHidden = vi.fn();
     const cmds = createLayerCommands(t, { ...makeScene(2), activeLayerId: null }, {
-      addLayer: vi.fn(), duplicateLayer, removeLayer, toggleLayerHidden, selectLayer: vi.fn()
+      addLayer: vi.fn(), addTextLayer: vi.fn(), duplicateLayer, removeLayer, toggleLayerHidden, selectLayer: vi.fn()
     });
     cmds.find((c) => c.id === "layer-duplicate")!.action();
     cmds.find((c) => c.id === "layer-toggle-hidden")!.action();
@@ -303,7 +326,7 @@ describe("createLayerCommands", () => {
 
   it("never offers to remove the last remaining layer", () => {
     const cmds = createLayerCommands(t, makeScene(1), {
-      addLayer: vi.fn(), duplicateLayer: vi.fn(), removeLayer: vi.fn(), toggleLayerHidden: vi.fn(), selectLayer: vi.fn()
+      addLayer: vi.fn(), addTextLayer: vi.fn(), duplicateLayer: vi.fn(), removeLayer: vi.fn(), toggleLayerHidden: vi.fn(), selectLayer: vi.fn()
     });
     expect(cmds.find((c) => c.id === "layer-remove")!.disabled).toBe(true);
   });
@@ -319,9 +342,13 @@ describe("createAnnotationCommands", () => {
     cmds.find((c) => c.id === "anno-text")!.action();
     cmds.find((c) => c.id === "anno-arrow")!.action();
     cmds.find((c) => c.id === "anno-rect")!.action();
+    cmds.find((c) => c.id === "anno-circle")!.action();
+    cmds.find((c) => c.id === "anno-blur")!.action();
     expect(addAnnotation).toHaveBeenNthCalledWith(1, "text");
     expect(addAnnotation).toHaveBeenNthCalledWith(2, "arrow");
     expect(addAnnotation).toHaveBeenNthCalledWith(3, "rect");
+    expect(addAnnotation).toHaveBeenNthCalledWith(4, "circle");
+    expect(addAnnotation).toHaveBeenNthCalledWith(5, "blur");
 
     const withAnnotations = createAnnotationCommands(t, {
       ...scene,
@@ -436,15 +463,15 @@ describe("createCommands", () => {
       a.setFrame, a.setStylePreset, a.setAnimationPreset,
       a.setBackgroundSolid, a.setBackgroundGradient, a.setBackgroundPattern, a.setBackgroundTransparent, a.setBackgroundImage,
       a.setAspectRatio,
-      a.addLayer, a.duplicateLayer, a.removeLayer, a.toggleLayerHidden, a.selectLayer, a.reorderLayers,
+      a.addLayer, a.addTextLayer, a.duplicateLayer, a.removeLayer, a.toggleLayerHidden, a.selectLayer, a.reorderLayers,
       a.addAnnotation, a.clearAnnotations,
       a.toggleWatermark,
       a.setExportScale, 2,
       "p1", [makeProject("p1", "One")], a.switchProject,
       "dark", a.setThemeMode,
-      a.onExportPng, a.onExportWebp, a.onExportSvg, a.onExportHtml, a.onExportPdf,
-      a.onExportMp4, a.onExportWebm, a.onExportGif, a.onExportWebpAnim,
-      a.onCopyPng, a.onCopyShareUrl, a.onSave, a.onToggleFullscreen
+      a.onExportPng, a.onExportJpeg, a.onExportWebp, a.onExportAvif, a.onExportSvg, a.onExportHtml, a.onExportPdf,
+      a.onExportMp4, a.onExportWebm, a.onExportGif, a.onExportWebpAnim, a.onExportZipVideo,
+      a.onCopyPng, a.onCopyJpeg, a.onCopyWebp, a.onCopySvg, a.onCopyHtml, a.onCopyShareUrl, a.onSave, a.onToggleFullscreen
     );
 
     expect(cmds.find((c) => c.id === "export-png")).toBeDefined();

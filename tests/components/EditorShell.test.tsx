@@ -6,6 +6,7 @@ import { EditorShell } from "@/components/editor/EditorShell";
 import { useEditorStore, makeDemoScene, initialScene } from "@/lib/state/editorStore";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { useThemeStore } from "@/lib/state/themeStore";
+import { readSharedSceneFromUrl, readTemplateFromUrl } from "@/lib/state/shareState";
 
 /** Renders the shell and drains the async bootstrap (share-URL resolution →
  *  hydrate) so tests observe the same state the old sync bootstrap produced. */
@@ -33,6 +34,15 @@ vi.mock("@/lib/export/exportImage", () => mockExportImage);
 vi.mock("@/lib/export/exportSvg", () => mockExportSvg);
 vi.mock("@/lib/export/exportHtml", () => mockExportHtml);
 vi.mock("@/lib/export/exportVideo", () => mockExportVideo);
+vi.mock("@/lib/state/shareState", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/state/shareState")>();
+  return {
+    ...actual,
+    readSharedSceneFromUrl: vi.fn(),
+    readTemplateFromUrl: vi.fn(),
+    clearTemplateFromUrl: vi.fn()
+  };
+});
 
 afterEach(() => {
   cleanup();
@@ -52,6 +62,8 @@ beforeEach(() => {
   // Prevent bootstrap effect from hydrating and resetting scene
   vi.spyOn(useProjectsStore.getState(), "hydrate").mockImplementation(() => useEditorStore.getState().scene);
   vi.clearAllMocks();
+  vi.mocked(readSharedSceneFromUrl).mockResolvedValue(null);
+  vi.mocked(readTemplateFromUrl).mockResolvedValue(null);
 });
 
 describe("EditorShell", () => {
@@ -160,6 +172,31 @@ describe("EditorShell", () => {
     // After a scene change, the saved indicator should show unsaved
     expect(await screen.findByText("editor.unsaved", {}, { timeout: 2000 })).toBeInTheDocument();
   });
+
+  it("does not restore the previous session's undo stack when opening a share link", async () => {
+    const demo = makeDemoScene();
+    vi.mocked(readSharedSceneFromUrl).mockResolvedValueOnce(demo);
+    window.localStorage.setItem(
+      "mocksy-history",
+      JSON.stringify({ past: [{ ...demo }], future: [] })
+    );
+    await renderShell();
+    const state = useEditorStore.getState();
+    expect(state.past).toHaveLength(0);
+    expect(state.future).toHaveLength(0);
+    // The stale stack must not survive to a later plain reload either.
+    expect(window.localStorage.getItem("mocksy-history")).toBeNull();
+  });
+
+  it("restores the previous session's undo stack on a plain reload", async () => {
+    const demo = makeDemoScene();
+    const stale = { ...demo, backgroundColor: "#112233" };
+    window.localStorage.setItem("mocksy-history", JSON.stringify({ past: [stale], future: [] }));
+    await renderShell();
+    const state = useEditorStore.getState();
+    expect(state.past).toHaveLength(1);
+    expect(state.past[0]!.backgroundColor).toBe("#112233");
+  });
 });
 
 describe("EditorShell keyboard shortcuts", () => {
@@ -188,6 +225,19 @@ describe("EditorShell keyboard shortcuts", () => {
     render(<EditorShell />);
     const resetBtn = screen.getAllByRole("button").find(b => b.title === "editor.resetBtnTitle");
     fireEvent.click(resetBtn!);
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    expect(screen.queryByPlaceholderText("commandPalette.searchPlaceholder")).not.toBeInTheDocument();
+  });
+
+  it("does not trigger global shortcuts while the share QR dialog is open", async () => {
+    const writeText = vi.fn();
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    render(<EditorShell />);
+    const shareBtn = screen.getAllByRole("button").find(b => b.title === "editor.shareTitle");
+    await userEvent.click(shareBtn!);
+    await screen.findByRole("dialog", {}, { timeout: 2000 });
+    // ⌘K would open the command palette behind the dialog unless the dialog is
+    // folded into the modal gate that parks global shortcuts.
     fireEvent.keyDown(window, { key: "k", metaKey: true });
     expect(screen.queryByPlaceholderText("commandPalette.searchPlaceholder")).not.toBeInTheDocument();
   });
@@ -365,6 +415,18 @@ describe("EditorShell keyboard shortcuts", () => {
     const after = useEditorStore.getState();
     expect(after.activeFrameInstanceId).toBe(firstId);
     expect(after.scene.frameInstances[0]!.x).toBeCloseTo(x + 0.01);
+  });
+
+  it("does not double-nudge a focused frame instance on arrow keys", async () => {
+    useEditorStore.setState({ scene: makeDemoScene() });
+    await renderShell();
+    const inst = useEditorStore.getState().scene.frameInstances[0]!;
+    useEditorStore.getState().selectFrameInstance(inst.id);
+    const frame = document.querySelector(".frame-instance");
+    expect(frame).not.toBeNull();
+    const x = inst.x;
+    fireEvent.keyDown(frame!, { key: "ArrowRight" });
+    expect(useEditorStore.getState().scene.frameInstances[0]!.x).toBeCloseTo(x + 0.01);
   });
 });
 

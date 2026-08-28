@@ -47,10 +47,14 @@ export function useAutosaveStatus(
 
   const saveNow = useCallback(() => {
     useProjectsStore.getState().updateActiveProjectScene({ ...scene, activeLayerId });
+    savedSceneRef.current = scene;
     setSaved(true);
   }, [scene, activeLayerId]);
 
-  const markSaved = useCallback(() => setSaved(true), []);
+  const markSaved = useCallback(() => {
+    savedSceneRef.current = latestSceneRef.current;
+    setSaved(true);
+  }, []);
 
   useEffect(() => {
     latestSceneRef.current = scene;

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildSvgMarkup, exportSvg, inlineSvgAsset, mediaToDataUrl, videoToDataUrl } from "@/lib/export/exportSvg";
 import { clearImageCache } from "@/lib/render/canvasMedia";
 import { computeFrameBox } from "@/lib/render/frameGeometry";
+import { RENDER } from "@/lib/render/canvasDrawing";
 import { initialScene } from "@/lib/state/editorStore";
 import type { EditorScene } from "@/lib/types/editor";
 
@@ -266,7 +267,9 @@ describe("buildSvgMarkup", () => {
       zoom: 1,
       groups: [{ box, mediaHref: null, mediaWidth: 362, mediaHeight: 816, isOverlay: true, overlayInner: '<rect fill="red"/>' }]
     });
-    expect(markup).toContain('<g filter="url(#frame-shadow)"><g transform="translate(205 -122) scale(1 1)"><rect fill="red"/></g></g>');
+    // Shadow comes from an opaque halo rect; the skin rides unfiltered.
+    expect(markup).toContain('<rect x="205" y="-122" width="390" height="844" rx="55" fill="#000" filter="url(#frame-shadow)"/>');
+    expect(markup).toContain('<g transform="translate(205 -122) scale(1 1)"><rect fill="red"/></g>');
   });
 
   it("adds a drop-shadow filter scaled by the frame zoom", () => {
@@ -279,7 +282,11 @@ describe("buildSvgMarkup", () => {
       zoom: 1.5,
       groups: [{ box, mediaHref: null, mediaWidth: 400, mediaHeight: 300, isOverlay: false, overlayInner: null }]
     });
-    expect(markup).toContain('<feDropShadow dx="0" dy="42" stdDeviation="52.5" flood-color="#000" flood-opacity="0.5"/>');
+    // Halo-only chain: blur SourceAlpha, offset, tint, then subtract the
+    // silhouette so only the halo renders.
+    expect(markup).toContain('<feOffset dy="42" result="off"/>');
+    expect(markup).toContain('flood-opacity="0.5"');
+    expect(markup).toContain('<feComposite in2="SourceAlpha" operator="out"/>');
   });
 
   it("renders text, rect and arrow annotations", () => {
@@ -393,6 +400,43 @@ describe("buildSvgMarkup", () => {
      expect(markup).toContain('<rect');
      expect(markup).toContain('fill="rgba(0,0,0,0.5)"');
    });
+
+  it("fades the floor reflection downward from the device edge", () => {    const scene = sceneWith({ backgroundMode: "transparent", floorReflection: true });
+    const box = boxFor(scene);
+    const group = { box, mediaHref: null, mediaWidth: 100, mediaHeight: 50, isOverlay: false, overlayInner: null };
+    const markup = buildSvgMarkup(scene, { width: 800, height: 600, backgroundHref: null, groups: [group] });
+
+    // The reflection defs use index i + groups.length → 1 for the first group.
+    const gradTag = markup.match(/<linearGradient id="refl-fade-1"[\s\S]*?<\/linearGradient>/)?.[0];
+    expect(gradTag).toBeTruthy();
+    const y1 = Number(gradTag!.match(/y1="([-\d.]+)"/)![1]);
+    const y2 = Number(gradTag!.match(/y2="([-\d.]+)"/)![1]);
+    // The axis must start at the device's bottom edge and point DOWN into the
+    // mirrored content (which lies entirely below that edge): an upward axis
+    // would pad-clamp every sample to the first stop and hide the reflection.
+    expect(y1).toBeCloseTo(box.y + box.height, 0);
+    expect(y2).toBeGreaterThan(y1);
+    expect(y2 - y1).toBeCloseTo(box.height * 0.55, 0);
+    // Full alpha at the device edge, gone at the far end.
+    expect(gradTag).toContain('<stop offset="0" stop-color="#fff" stop-opacity="0.28"/>');
+    expect(gradTag).toContain('<stop offset="1" stop-color="#fff" stop-opacity="0"/>');
+    // The mirrored group is masked by the gradient.
+    expect(markup).toContain('mask="url(#refl-mask-1)"');
+  });
+
+  it("embeds the text layer svg instead of media for text layers", () => {
+    const scene = sceneWith({ frame: "none" });
+    const box = boxFor(scene);
+    const layer = { ...scene.layers[0]!, kind: "text" as const, mediaUrl: null, mediaType: "none" as const, textContent: "Hello", textColor: "#00ff00", textSize: 0.1 };
+    const group = { box, mediaHref: null, mediaWidth: 100, mediaHeight: 50, isOverlay: false, overlayInner: null, textLayer: layer };
+    const markup = buildSvgMarkup(scene, { width: 800, height: 600, backgroundHref: null, groups: [group] });
+    // The nested svg's viewBox matches the screen box aspect (400×300 → 390×292.5)
+    // and the text carries the layer's color — no <image>, no empty fill.
+    expect(markup).toContain('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 ');
+    expect(markup).toContain('fill="#00ff00"');
+    expect(markup).not.toContain("<image ");
+    expect(markup).not.toContain(RENDER.emptyMediaFill);
+  });
  });
 
 describe("mediaToDataUrl", () => {
@@ -488,8 +532,7 @@ describe("exportSvg", () => {
       clientWidth: 800,
       clientHeight: 600,
       querySelector: (selector: string) => {
-        if (selector === "img") return img;
-        if (selector === "video") return null;
+        if (selector.startsWith("[data-layer-media=")) return img;
         if (selector === "[data-mockup-frame]") return null;
         return null;
       }

@@ -12,6 +12,8 @@ export function LayerBulkActions({ count, total }: { count: number; total: numbe
   const toggleLayersHidden = useEditorStore((s) => s.toggleLayersHidden);
   const duplicateLayers = useEditorStore((s) => s.duplicateLayers);
   const removeLayers = useEditorStore((s) => s.removeLayers);
+  const groupLayers = useEditorStore((s) => s.groupLayers);
+  const ungroupLayers = useEditorStore((s) => s.ungroupLayers);
   const transformLayers = useEditorStore((s) => s.transformLayers);
   const nudgeLayers = useEditorStore((s) => s.nudgeLayers);
 
@@ -23,10 +25,18 @@ export function LayerBulkActions({ count, total }: { count: number; total: numbe
   });
   const nudgeStep = 0.02;
 
+  // Determine group state for selected layers.
+  const selectedLayers = useEditorStore((s) =>
+    s.scene.layers.filter((l) => s.selectedLayerIds.includes(l.id))
+  );
+  const selectedGroupIds = new Set(selectedLayers.map((l) => l.groupId).filter((g): g is string => !!g));
+  const canGroup = count >= 2;
+  const canUngroup = count >= 1 && selectedGroupIds.size === 1 && selectedLayers.every((l) => l.groupId === selectedLayers[0]?.groupId);
+
   return (
-    <div style={{ display: "grid", gap: 8 }}>
-      <div className="bulk-actions" style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ fontSize: 12, color: "var(--text-dim)" }}>{t("editor.selectedCount", { count })}</span>
+    <div className="panel-grid">
+      <div className="bulk-actions-row">
+        <span className="text-dim-sm">{t("editor.selectedCount", { count })}</span>
         <button type="button" className="btn btn-sm" onClick={() => toggleLayersHidden(selectedLayerIds)}>
           {t("editor.toggleVisibility")}
         </button>
@@ -35,16 +45,26 @@ export function LayerBulkActions({ count, total }: { count: number; total: numbe
         </button>
         <button
           type="button"
-          className="btn btn-sm"
-          disabled={total <= count}
+          className="btn btn-sm btn-danger"
+          disabled={count === total}
           onClick={() => removeLayers(selectedLayerIds)}
         >
           {t("editor.deleteLayers")}
         </button>
+        {canUngroup && (
+          <button type="button" className="btn btn-sm" onClick={() => ungroupLayers(selectedLayerIds)}>
+            {t("editor.ungroup")}
+          </button>
+        )}
+        {canGroup && (
+          <button type="button" className="btn btn-sm" onClick={() => groupLayers(selectedLayerIds)}>
+            {t("editor.group")}
+          </button>
+        )}
       </div>
-      <div className="bulk-transform" style={{ display: "grid", gap: 6, padding: 8, border: "1px solid var(--panel-border)", borderRadius: 8 }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-dim)" }}>{t("editor.groupTransform")}</span>
-        <div className="nudge-pad" style={{ display: "grid", gridTemplateColumns: "repeat(3, 28px)", gridTemplateRows: "repeat(3, 28px)", justifyItems: "center", alignContent: "center", gap: 2 }}>
+      <div className="bulk-transform-card">
+        <span className="text-dim-sm" style={{ fontWeight: 600 }}>{t("editor.groupTransform")}</span>
+        <div className="nudge-pad">
           <span />
           <button type="button" className="btn btn-sm" aria-label={t("editor.nudgeUp")} onClick={() => nudgeLayers(selectedLayerIds, 0, -nudgeStep)}>↑</button>
           <span />
@@ -55,7 +75,7 @@ export function LayerBulkActions({ count, total }: { count: number; total: numbe
           <button type="button" className="btn btn-sm" aria-label={t("editor.nudgeDown")} onClick={() => nudgeLayers(selectedLayerIds, 0, nudgeStep)}>↓</button>
           <span />
         </div>
-        <label className="field" style={{ gap: 4 }}>
+        <label className="field field-compact">
           <span>{t("editor.filterOpacity", { val: Math.round((seed?.opacity ?? 100)) })}</span>
           <input
             type="range"
@@ -67,7 +87,7 @@ export function LayerBulkActions({ count, total }: { count: number; total: numbe
             onChange={(e) => transformLayers(selectedLayerIds, { opacity: Number(e.target.value) })}
           />
         </label>
-        <label className="field" style={{ gap: 4 }}>
+        <label className="field field-compact">
           <span>{t("editor.rotation")}</span>
           <input
             type="range"
@@ -79,7 +99,7 @@ export function LayerBulkActions({ count, total }: { count: number; total: numbe
             onChange={(e) => transformLayers(selectedLayerIds, { rotation: Number(e.target.value) })}
           />
         </label>
-        <label className="field" style={{ gap: 4 }}>
+        <label className="field field-compact">
           <span>{t("editor.zoom")}</span>
           <input
             type="range"

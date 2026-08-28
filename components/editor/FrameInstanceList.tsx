@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { EditorScene, FrameInstance, MockupFrame } from "@/lib/types/editor";
 import { FRAME_ORDER } from "@/lib/render/frames";
@@ -11,9 +12,14 @@ interface FrameInstanceListProps {
   expandedFrameId: string | null;
   setExpandedFrameId: (id: string | null) => void;
   selectFrameInstance: (id: string | null) => void;
+  selectFrameIds: (ids: string[]) => void;
+  toggleFrameSelected: (id: string) => void;
   setFrameInstances: (instances: FrameInstance[]) => void;
   updateFrameInstance: (id: string, patch: Partial<FrameInstance>) => void;
   removeFrameInstance: (id: string) => void;
+  addFrameInstance: () => void;
+  reorderFrameInstances: (orderedIds: string[]) => void;
+  selectedFrameIds: string[];
 }
 
 export function FrameInstanceList({
@@ -21,11 +27,18 @@ export function FrameInstanceList({
   expandedFrameId,
   setExpandedFrameId,
   selectFrameInstance,
+  selectFrameIds,
+  toggleFrameSelected,
   setFrameInstances,
   updateFrameInstance,
-  removeFrameInstance
+  removeFrameInstance,
+  addFrameInstance,
+  reorderFrameInstances,
+  selectedFrameIds
 }: FrameInstanceListProps) {
   const t = useTranslations();
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
 
   const frameLabels: Record<Exclude<MockupFrame, "custom">, string> = {
     none: t("frame.none"),
@@ -50,15 +63,70 @@ export function FrameInstanceList({
 
   return (
     <>
+      <div className="field field-row" style={{ justifyContent: "space-between" }}>
+        <span className="text-dim-sm">{t("editor.frames")}</span>
+        <button
+          type="button"
+          className="btn btn-sm"
+          onClick={addFrameInstance}
+          aria-label={t("editor.addFrame")}
+          title={t("editor.addFrame")}
+        >
+          + {t("editor.addFrame")}
+        </button>
+      </div>
       {scene.frameInstances.length > 0 && (
         <div className="field" style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.frames")}</span>
           {scene.frameInstances.map((inst, i) => {
             const open = expandedFrameId === inst.id;
+            const selected = selectedFrameIds.includes(inst.id);
             const frameLayer = scene.layers.find((l) => l.id === inst.layerId);
             return (
-              <div key={inst.id} className="frame-card">
+              <div
+                key={inst.id}
+                className="frame-card"
+                data-selected={selected || undefined}
+                data-drag-over={overId === inst.id || undefined}
+                draggable
+                onDragStart={() => setDragId(inst.id)}
+                onDragEnd={() => { setDragId(null); setOverId(null); }}
+                onDragOver={(e) => { e.preventDefault(); if (overId !== inst.id) setOverId(inst.id); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const from = dragId;
+                  setDragId(null);
+                  setOverId(null);
+                  if (!from || from === inst.id) return;
+                  const ids = scene.frameInstances.map((f) => f.id);
+                  const fromIndex = ids.indexOf(from);
+                  const toIndex = ids.indexOf(inst.id);
+                  if (fromIndex < 0 || toIndex < 0) return;
+                  ids.splice(toIndex, 0, ids.splice(fromIndex, 1)[0]!);
+                  reorderFrameInstances(ids);
+                }}
+                onKeyDown={(e) => {
+                  if (!e.altKey || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+                  e.preventDefault();
+                  const ids = scene.frameInstances.map((f) => f.id);
+                  const idx = ids.indexOf(inst.id);
+                  if (idx < 0) return;
+                  if (e.key === "ArrowUp" && idx > 0) {
+                    [ids[idx - 1], ids[idx]] = [ids[idx]!, ids[idx - 1]!];
+                    reorderFrameInstances(ids);
+                  } else if (e.key === "ArrowDown" && idx < ids.length - 1) {
+                    [ids[idx], ids[idx + 1]] = [ids[idx + 1]!, ids[idx]!];
+                    reorderFrameInstances(ids);
+                  }
+                }}
+              >
                 <div className="frame-card-head">
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={() => toggleFrameSelected(inst.id)}
+                    aria-label={t("editor.selectFrame", { n: i + 1 })}
+                    title={t("editor.selectFrame", { n: i + 1 })}
+                  />
                   <button
                     type="button"
                     className="btn-icon tooltip"
@@ -87,7 +155,7 @@ export function FrameInstanceList({
                       setFrameInstances(next);
                     }}
                     aria-label={t("editor.moveUp")}
-                    data-tooltip={t("editor.moveUp")}
+                    data-tooltip={i === 0 ? t("editor.moveUpDisabled") : t("editor.moveUp")}
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 10V2M6 2L2 6M6 2L10 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </button>
@@ -101,7 +169,7 @@ export function FrameInstanceList({
                       setFrameInstances(next);
                     }}
                     aria-label={t("editor.moveDown")}
-                    data-tooltip={t("editor.moveDown")}
+                    data-tooltip={i === scene.frameInstances.length - 1 ? t("editor.moveDownDisabled") : t("editor.moveDown")}
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M6 10l4-4M6 10l-4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </button>
@@ -144,11 +212,11 @@ export function FrameInstanceList({
                       <span className="range-val">{Math.round(inst.scale * 100)}%</span>
                     </label>
                     <label className="range-wrap" style={{ display: "grid", gap: 3 }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-dim)" }}>{t("editor.frameLayer")}</span>
+                      <span className="text-dim-sm" style={{ fontSize: 11, fontWeight: 600 }}>{t("editor.frameLayer")}</span>
                       <select
                         value={inst.layerId ?? ""}
                         onChange={(e) => updateFrameInstance(inst.id, { layerId: e.target.value || null })}
-                        style={{ flex: 1, fontSize: 12, padding: "4px 6px" }}
+                        className="frame-layer-select"
                       >
                         <option value="">—</option>
                         {scene.layers.map((l, li) => (

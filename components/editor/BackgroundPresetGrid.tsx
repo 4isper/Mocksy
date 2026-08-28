@@ -11,9 +11,11 @@ interface BackgroundPresetGridProps {
   gradientFrom: string;
   gradientTo: string;
   gradientAngle: number;
+  gradientVia: string | null;
+  gradientType: "linear" | "radial";
   patternId: PatternId | null;
   setBackgroundSolid: (color: string) => void;
-  setBackgroundGradient: (from: string, to: string, angle?: number) => void;
+  setBackgroundGradient: (from: string, to: string, angle?: number, gradientVia?: string | null) => void;
   setBackgroundPattern: (patternId: PatternId) => void;
 }
 
@@ -25,6 +27,8 @@ export function BackgroundPresetGrid({
   gradientFrom,
   gradientTo,
   gradientAngle,
+  gradientVia,
+  gradientType,
   patternId,
   setBackgroundSolid,
   setBackgroundGradient,
@@ -38,9 +42,16 @@ export function BackgroundPresetGrid({
         {backgroundPresets
           .filter((preset) => preset.kind === backgroundMode)
           .map((preset) => {
+            // Gradient presets are two-stop linear gradients, so only an exact
+            // match on both stops (and no middle color / radial override)
+            // counts as applied.
             const active =
               (preset.kind === "solid" && backgroundColor === preset.backgroundColor) ||
-              (preset.kind === "gradient" && gradientFrom === preset.gradientFrom && gradientTo === preset.gradientTo) ||
+              (preset.kind === "gradient" &&
+                gradientType === "linear" &&
+                gradientVia == null &&
+                gradientFrom === preset.gradientFrom &&
+                gradientTo === preset.gradientTo) ||
               (preset.kind === "pattern" && patternId === preset.patternId);
             return (
               <button
@@ -48,11 +59,12 @@ export function BackgroundPresetGrid({
                 type="button"
                 className="swatch-btn"
                 title={t(`preset.${preset.id}`)}
+                aria-label={t(`preset.${preset.id}`)}
                 aria-pressed={active}
                 onClick={() => {
                   if (preset.kind === "solid" && preset.backgroundColor) setBackgroundSolid(preset.backgroundColor);
                   else if (preset.kind === "gradient" && preset.gradientFrom && preset.gradientTo)
-                    setBackgroundGradient(preset.gradientFrom, preset.gradientTo, gradientAngle);
+                    setBackgroundGradient(preset.gradientFrom, preset.gradientTo, gradientAngle, null);
                   else if (preset.kind === "pattern" && preset.patternId) setBackgroundPattern(preset.patternId);
                 }}
                 style={{

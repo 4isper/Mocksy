@@ -3,6 +3,7 @@ import {
   EXPORT_BASE_WIDTH,
   fitRatioForCustomSize,
   intrinsicExportSize,
+  resolveSpinRenderSize,
   sceneAspectRatio
 } from "@/lib/export/exportSize";
 import { singleFrameCssSize } from "@/lib/render/frameGeometry";
@@ -54,6 +55,36 @@ describe("fitRatioForCustomSize", () => {
   it("is limited by the tighter axis when aspects differ", () => {
     const ratio = fitRatioForCustomSize(sceneWith({ aspectRatio: "9 / 16" }), { width: 1920, height: 1080 });
     expect(ratio).toBeCloseTo(1080 / intrinsicExportSize(sceneWith({ aspectRatio: "9 / 16" })).height, 6);
+  });
+});
+
+describe("resolveSpinRenderSize", () => {
+  it("anchors to the intrinsic artboard at the default scale 2", () => {
+    const size = resolveSpinRenderSize(sceneWith({ aspectRatio: "16 / 9" }));
+    expect(size).toEqual({ width: EXPORT_BASE_WIDTH * 2, height: 450 * 2 });
+  });
+
+  it("applies an explicit scale", () => {
+    const size = resolveSpinRenderSize(sceneWith({ aspectRatio: "1 / 1" }), { scale: 3 });
+    expect(size).toEqual({ width: EXPORT_BASE_WIDTH * 3, height: EXPORT_BASE_WIDTH * 3 });
+  });
+
+  it("caps scale at 4 and floors at 1", () => {
+    expect(resolveSpinRenderSize(sceneWith({ aspectRatio: "1 / 1" }), { scale: 99 }).width).toBe(EXPORT_BASE_WIDTH * 4);
+    expect(resolveSpinRenderSize(sceneWith({ aspectRatio: "1 / 1" }), { scale: 0 }).width).toBe(EXPORT_BASE_WIDTH);
+  });
+
+  it("explicit width/height win over scale and clamp to 8192", () => {
+    const size = resolveSpinRenderSize(sceneWith({ aspectRatio: "16 / 9" }), { scale: 1, width: 1920, height: 1080 });
+    expect(size).toEqual({ width: 1920, height: 1080 });
+    const clamped = resolveSpinRenderSize(sceneWith({ aspectRatio: "16 / 9" }), { width: 99999, height: 99999 });
+    expect(clamped.width).toBe(8192);
+    expect(clamped.height).toBe(8192);
+  });
+
+  it("ignores a partial width/height and falls back to scale", () => {
+    const size = resolveSpinRenderSize(sceneWith({ aspectRatio: "16 / 9" }), { width: 1920 });
+    expect(size.width).toBe(EXPORT_BASE_WIDTH * 2);
   });
 });
 

@@ -21,7 +21,9 @@ export const DEFAULT_SCREEN_CHROME: ScreenChrome = {
 export const DEFAULT_BROWSER_URL = "mocksy.app";
 
 export const initialScene: EditorScene = {
-  layers: [makeDemoLayer()],
+  // Deterministic id: this module-level scene is rendered during SSR, and a
+  // Date.now-based id would differ between server and client HTML.
+  layers: [makeDemoLayer("layer-demo")],
   activeLayerId: null,
   frame: "iphone",
   frameInstances: [],

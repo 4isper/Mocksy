@@ -33,6 +33,11 @@ export interface RenderWorkerPayload {
   overlayUrl: string | null;
   backgroundImageUrl: string | null;
   watermarkImageUrl: string | null;
+  /** Pre-decoded bitmaps for SVG assets (skins, custom frames, SVG media).
+   *  Workers have no Image constructor and createImageBitmap refuses SVG
+   *  blobs, so the main thread rasterizes them via an <img> first and ships
+   *  the pixels over (transferred, zero-copy). Keyed by source URL. */
+  bitmaps?: Array<{ url: string; bitmap: ImageBitmap }>;
 }
 
 export interface RenderWorkerResponse {
@@ -45,6 +50,25 @@ export interface RenderWorkerResponse {
 export const ACTIVE_MEDIA_KEY = "active";
 /** Prefix for per-layer device-skin slots in multi-frame scenes. */
 export const OVERLAY_KEY_PREFIX = "overlay:";
+
+/** True for SVG payloads. `createImageBitmap` refuses to rasterize SVG blobs
+ *  in Chromium/Firefox, so those slots must be pre-decoded on the main thread
+ *  (see payload.bitmaps) — workers have no Image constructor. */
+export function isSvgMimeType(type: string): boolean {
+  return type === "image/svg+xml" || type === "image/svg" || type.endsWith("+xml");
+}
+
+/** True when a URL points at an SVG asset: a .svg path (device skins) or an
+ *  inline data: URL (user-uploaded/custom-frame skins). */
+export function isSvgAssetUrl(url: string): boolean {
+  if (url.startsWith("data:image/svg")) return true;
+  try {
+    const path = new URL(url, "https://mocksy.invalid").pathname;
+    return /\.svg$/i.test(path);
+  } catch {
+    return false;
+  }
+}
 
 function isRenderableLayer(scene: EditorScene, layerId: string | null): boolean {
   const layer = scene.layers.find((l) => l.id === layerId) ?? scene.layers[0];

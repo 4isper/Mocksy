@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { useEditorShortcuts } from "@/lib/hooks/useEditorShortcuts";
 import { useEditorStore, initialScene, makeDemoScene } from "@/lib/state/editorStore";
+import { useShortcutsStore } from "@/lib/state/shortcutsStore";
 
 function Harness({
   actions,
@@ -240,5 +241,34 @@ describe("useEditorShortcuts", () => {
     const { unmount } = render(<Harness actions={actions} />);
     unmount();
     expect(removeSpy).toHaveBeenCalledWith("keydown", expect.any(Function));
+  });
+
+  it("honors a user override: ⌘J exports PNG and the old ⌘E goes inert", () => {
+    // Rebind export-png from ⌘E to ⌘J in the persisted overrides store.
+    useShortcutsStore.getState().setOverride("export-png", "mod+j");
+    try {
+      const actions = makeActions();
+      render(<Harness actions={actions} />);
+      fireEvent.keyDown(window, { key: "j", metaKey: true });
+      expect(actions.onExportPng).toHaveBeenCalledTimes(1);
+      // The previous binding no longer fires the action.
+      fireEvent.keyDown(window, { key: "e", metaKey: true });
+      expect(actions.onExportPng).toHaveBeenCalledTimes(1);
+    } finally {
+      useShortcutsStore.getState().clearOverride("export-png");
+    }
+  });
+
+  it("keeps a rebound shortcut working on the Cyrillic physical layout", () => {
+    useShortcutsStore.getState().setOverride("export-png", "mod+j");
+    try {
+      const actions = makeActions();
+      render(<Harness actions={actions} />);
+      // Russian layout: physical J produces key "о", code stays "KeyJ".
+      fireEvent.keyDown(window, { key: "о", code: "KeyJ", metaKey: true });
+      expect(actions.onExportPng).toHaveBeenCalledTimes(1);
+    } finally {
+      useShortcutsStore.getState().clearOverride("export-png");
+    }
   });
 });

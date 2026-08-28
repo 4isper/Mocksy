@@ -5,7 +5,7 @@ export function createBackgroundCommands(
   t: (key: string, values?: Record<string, string | number | Date>) => string,
   callbacks: {
     setBackgroundSolid: (color: string) => void;
-    setBackgroundGradient: (from: string, to: string) => void;
+    setBackgroundGradient: (from: string, to: string, gradientVia?: string | null) => void;
     setBackgroundPattern: (patternId: PatternId) => void;
     setBackgroundTransparent: () => void;
   }
@@ -26,7 +26,8 @@ export function createBackgroundCommands(
       if (bg.kind === "transparent") setBackgroundTransparent();
       else if (bg.kind === "solid") setBackgroundSolid(bg.backgroundColor!);
       else if (bg.kind === "pattern") setBackgroundPattern(bg.patternId!);
-      else setBackgroundGradient(bg.gradientFrom!, bg.gradientTo!);
+      // Presets are two-stop gradients: clear any leftover middle color.
+      else setBackgroundGradient(bg.gradientFrom!, bg.gradientTo!, null);
     },
   }));
 }

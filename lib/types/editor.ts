@@ -46,6 +46,17 @@ export interface Annotation {
    *  shapes/arrows, typewriter for text) in the live preview. Export renders
    *  the final state regardless. */
   animated?: boolean;
+  /** Gradient start color (hex). When both gradientFrom and gradientTo are set,
+   *  the annotation uses a gradient instead of the flat `color` value. */
+  gradientFrom?: string;
+  /** Gradient end color (hex). */
+  gradientTo?: string;
+  /** Optional mid-point color for a three-stop gradient. */
+  gradientVia?: string;
+  /** Gradient type (default "linear"). Ignored when gradientFrom/gradientTo are absent. */
+  gradientType?: "linear" | "radial";
+  /** Gradient angle in degrees for linear gradients (default 135). */
+  gradientAngle?: number;
 }
 export type MockupFrame = "none" | "iphone" | "iphone15" | "iphone16pro" | "pixel8pro" | "galaxy24" | "iphoneSE" | "ipad" | "galaxyTab" | "desktop" | "tablet" | "macbook" | "imac" | "notebook" | "browser" | "tv" | "watchUltra" | "watch" | "custom";
 
@@ -55,6 +66,10 @@ export type StylePreset = "default" | "glassLight" | "glassDark" | "outline";
 export type AnimationPreset = "none" | "zoomIn" | "zoomOut" | "parallax" | "panLeft" | "panRight" | "breathe" | "float" | "sway";
 /** Easing curve applied between animation keyframes. */
 export type AnimationEasing = "linear" | "easeInOut" | "easeOut" | "bounce" | "spring";
+/** One-shot entrance animation played when a layer becomes visible. */
+export type EntranceAnimation = "none" | "fadeIn" | "slideUp" | "slideDown" | "slideLeft" | "slideRight" | "scaleUp";
+/** CSS mix-blend-mode for layer compositing. */
+export type BlendMode = "normal" | "multiply" | "screen" | "overlay" | "soft-light" | "hard-light" | "color-dodge" | "color-burn" | "difference" | "exclusion" | "hue" | "saturation" | "color" | "luminosity";
 /** Screen decoration style rendered over the media (lock screen, home screen). */
 export type ScreenChromeStyle = "lock" | "home" | "statusBar";
 /** Accent theme of the screen decoration (text, status bar, dock). */
@@ -93,7 +108,7 @@ export type WatermarkPosition = "bottom-right" | "bottom-left" | "top-right" | "
 export type LayoutPreset = "grid" | "fan" | "cascade" | "masonry" | "stack";
 
 /** Formats offered by the export dialog (raster, vector, video, batch zip). */
-export type ExportFormat = "png" | "webp" | "svg" | "html" | "mp4" | "webm" | "gif" | "webpAnim" | "pdf" | "zip";
+export type ExportFormat = "png" | "jpeg" | "webp" | "avif" | "svg" | "html" | "mp4" | "webm" | "gif" | "webpAnim" | "pdf" | "zip" | "zipVideo";
 
 /** A named snapshot of export-dialog settings (format + scale/size), stored
  *  outside the scene in localStorage so it survives reloads and projects. */
@@ -135,6 +150,13 @@ export interface FrameInstance {
   orientation?: FrameOrientation;
   /** Body material / finish; absent = graphite (the default skin). */
   material?: FrameMaterial;
+  /** Per-device on-screen chrome override (status bar, lock clock, dock). When
+   *  omitted the instance inherits the scene-level `screen` default. Stored
+   *  separately from the scene so each device can have its own decoration. */
+  screen?: ScreenChrome;
+  /** Per-device floor reflection under the device. When omitted the instance
+   *  inherits the scene-level `floorReflection` default. */
+  floorReflection?: boolean;
 }
 
 /** A user-uploaded SVG device skin. Rendered as an overlay frame whose
@@ -153,19 +175,56 @@ export interface CustomFrame {
   cutout: { x: number; y: number; w: number; h: number; rx: number };
 }
 
+/** A pre-built scene layout combining frame type, background, style, and
+ *  optional multi-device arrangement. Applied with one click; media is never
+ *  stored in the template. */
+export interface SceneTemplate {
+  id: string;
+  /** Translation key for the template name. */
+  nameKey: string;
+  /** Scene-appearance fields merged on top of the current scene. */
+  scenePatch: Partial<EditorScene>;
+  /** Recommended frame type for single-frame templates. */
+  frame: MockupFrame;
+  /** Optional pre-configured frame instances for multi-device layouts.
+   *  The `id` field is regenerated on apply. */
+  frameInstances?: Array<Omit<FrameInstance, "id">>;
+}
+
 /** Subset of MediaLayer fields that can be transformed together across a
  *  multi-selection (group transform). */
 export type LayerTransformPatch = Partial<
   Pick<MediaLayer, "zoom" | "mediaOffsetX" | "mediaOffsetY" | "rotation" | "opacity" | "brightness" | "contrast" | "saturate" | "blur" | "grayscale">
 >;
 
+/** Content kind of a layer: "media" (default) renders the uploaded image/video,
+ *  "text" renders styled text filling the frame's screen. Absent = "media" so
+ *  scenes saved before text layers stay valid without migration. */
+export type LayerKind = "media" | "text";
+
 /** A single media item stacked inside the mockup frame. Each layer owns its
  *  own transform, animation and (for video) playback/trim settings. */
 export interface MediaLayer {
   id: string;
+  /** Content kind; absent means "media". */
+  kind?: LayerKind;
+  /** Group id shared among grouped layers. `null` or absent = ungrouped. */
+  groupId?: string | null;
   mediaUrl: string | null;
   mediaType: MediaType;
   mediaName: string | null;
+  /** Text content for kind === "text"; newlines split lines. */
+  textContent?: string;
+  /** Text fill color, any CSS color. */
+  textColor?: string;
+  /** Font size as a fraction of the screen height, [0.01, 0.6]. */
+  textSize?: number;
+  /** Horizontal alignment of the text block inside the screen. */
+  textAlign?: TextAlign;
+  /** Text font weight (default "bold", matching annotations). */
+  fontWeight?: FontWeight;
+  /** Font family for text layers. Falls back to "Inter, system-ui, sans-serif". */
+  fontFamily?: string;
   /** When true the layer is omitted from the preview and export. */
   hidden: boolean;
   /** Base scale of this layer (frame-wide zoom is applied on top in preview). */
@@ -197,6 +256,12 @@ export interface MediaLayer {
   animationPreset: AnimationPreset;
   /** Easing curve between animation keyframes (default "easeInOut"). */
   animationEasing?: AnimationEasing;
+  /** One-shot entrance animation played when the layer becomes visible. */
+  entranceAnimation?: EntranceAnimation;
+  /** Duration of the entrance animation in ms, [200, 2000] (default 600). */
+  entranceDuration?: number;
+  /** CSS mix-blend-mode for compositing this layer over layers below. */
+  blendMode?: BlendMode;
   videoMuted: boolean;
   videoLoop: boolean;
   videoAutoplay: boolean;

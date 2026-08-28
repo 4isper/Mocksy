@@ -10,10 +10,9 @@ import { PLATFORM_PRESETS, closestAspectRatio } from "@/lib/export/platformPrese
 export type { ExportFormat } from "@/lib/types/editor";
 import type { ExportFormat } from "@/lib/types/editor";
 
-/** Raster formats honor the 1×/2×/4× scale control (and custom size); vector
- *  formats don't. */
-const RASTER_FORMATS: ExportFormat[] = ["png", "webp", "mp4", "webm", "gif", "webpAnim", "zip"];
-const VECTOR_FORMATS: ExportFormat[] = ["svg", "html", "pdf"];
+/** Image raster formats honor the 1×/2×/4× scale control (and custom size);
+ *  video, batch, and vector formats don't. */
+const IMAGE_SCALE_FORMATS: ExportFormat[] = ["png", "jpeg", "webp", "avif"];
 
 /** Fallback size offered when the user first enables the custom-size option. */
 const DEFAULT_CUSTOM_SIZE: ExportSize = { width: 1280, height: 720 };
@@ -27,6 +26,10 @@ export function ExportDialog({
   onCustomSizeChange,
   onExport,
   onCopy,
+  onCopyJpeg,
+  onCopyWebp,
+  onCopySvg,
+  onCopyHtml,
   busy,
   onCancel,
   isMultiFrame = false,
@@ -40,6 +43,10 @@ export function ExportDialog({
   onCustomSizeChange: (size: ExportSize | null) => void;
   onExport: (format: ExportFormat) => void;
   onCopy: () => void;
+  onCopyJpeg?: () => void;
+  onCopyWebp?: () => void;
+  onCopySvg?: () => void;
+  onCopyHtml?: () => void;
   busy?: boolean;
   onCancel?: () => void;
   /** When true (multi-frame mode), offers the per-frame ZIP batch export. */
@@ -50,7 +57,9 @@ export function ExportDialog({
   const t = useTranslations();
   const IMAGE_FORMATS: { value: ExportFormat; label: string }[] = [
     { value: "png", label: t("export.png") },
+    { value: "jpeg", label: t("export.jpeg") },
     { value: "webp", label: t("export.webp") },
+    { value: "avif", label: t("export.avif") },
     ...(isMultiFrame ? [{ value: "zip" as ExportFormat, label: t("export.zip") }] : []),
     { value: "svg", label: t("export.svg") },
     { value: "html", label: t("export.html") },
@@ -59,6 +68,7 @@ export function ExportDialog({
   const VIDEO_FORMATS: { value: ExportFormat; label: string }[] = [
     { value: "mp4", label: t("export.mp4") },
     { value: "webm", label: t("export.webm") },
+    ...(isMultiFrame ? [{ value: "zipVideo" as ExportFormat, label: t("export.zipVideo") }] : []),
     { value: "gif", label: t("export.gif") },
     { value: "webpAnim", label: t("export.webpAnim") }
   ];
@@ -83,16 +93,22 @@ export function ExportDialog({
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      // While an export is running, ESC must not silently close the dialog and
+      // orphan the job (which would continue invisible); route it to the same
+      // cancel the toolbar/button uses.
+      if (e.key === "Escape") {
+        if (busy && onCancel) onCancel();
+        else onClose();
+      }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, onClose, busy, onCancel]);
 
   if (!open) return null;
   const formatLabel = t(`export.${format}`);
   return (
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+    <div className="modal-backdrop" role="presentation" onClick={() => (busy && onCancel ? onCancel() : onClose())}>
       <div
         className="modal export"
         ref={trapRef}
@@ -181,7 +197,7 @@ export function ExportDialog({
               ))}
             </div>
           </label>
-          {RASTER_FORMATS.includes(format) ? (
+          {IMAGE_SCALE_FORMATS.includes(format) ? (
             <label className="field">
               <span>{t("export.size")}</span>
               <div className="segmented" role="group" aria-label={t("export.size")}>
@@ -257,6 +273,22 @@ export function ExportDialog({
         <div className="modal-actions">
           {format === "png" ? (
             <button type="button" className="btn" onClick={onCopy} disabled={busy} title={t("shortcuts.copyPng")}>
+              {t("export.copy")}
+            </button>
+          ) : format === "jpeg" && onCopyJpeg ? (
+            <button type="button" className="btn" onClick={onCopyJpeg} disabled={busy}>
+              {t("export.copy")}
+            </button>
+          ) : format === "webp" && onCopyWebp ? (
+            <button type="button" className="btn" onClick={onCopyWebp} disabled={busy}>
+              {t("export.copy")}
+            </button>
+          ) : format === "svg" && onCopySvg ? (
+            <button type="button" className="btn" onClick={onCopySvg} disabled={busy}>
+              {t("export.copy")}
+            </button>
+          ) : format === "html" && onCopyHtml ? (
+            <button type="button" className="btn" onClick={onCopyHtml} disabled={busy}>
               {t("export.copy")}
             </button>
           ) : null}

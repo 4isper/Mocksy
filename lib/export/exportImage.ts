@@ -10,26 +10,65 @@ import { encodeCanvasToBlob } from "@/lib/export/offthreadEncode";
 import { renderSceneInWorker } from "@/lib/export/offthreadRender";
 import {
   buildRenderWorkerPayload,
-  canRenderSceneInWorker
+  canRenderSceneInWorker,
+  isSvgAssetUrl,
+  type RenderWorkerPayload
 } from "@/lib/render/renderWorkerProtocol";
-import { resolveExportTransform, waitForImage } from "@/lib/export/exportImageCore";
+import { resolveExportTransform, waitForImage, layerMediaSelector } from "@/lib/export/exportImageCore";
 import { fitRatioForCustomSize, intrinsicExportSize } from "@/lib/export/exportSize";
-import { singleFrameCssSize } from "@/lib/render/frameGeometry";
+import { singleFrameCssSize, isVisibleFrameInstance } from "@/lib/render/frameGeometry";
 import { loadExportAssets } from "@/lib/export/exportAssets";
 
+/** Escapes a value for use inside a double-quoted CSS attribute selector. */
+function escapeSelectorValue(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
 /**
- * Renders the current scene to a raster `Blob` (PNG or WebP) at an intrinsic,
- * viewport-independent resolution (see exportSize.ts), reusing the exact
- * geometry the preview uses (frame box, zoom/animation transform, overlay
+ * Rasterizes every SVG asset referenced by the payload (device skins, custom
+ * frames, SVG media/backgrounds/watermarks) into transferred ImageBitmaps.
+ * Workers can't decode SVG themselves (no Image constructor, and
+ * createImageBitmap rejects SVG blobs), so this runs on the main thread right
+ * before the payload ships. Failures are skipped: the worker then throws for
+ * mandatory slots (overlay) or degrades optional ones, and the export falls
+ * back to the main-thread render. Exported for tests — this contract is what
+ * keeps device skins (and their drop shadows) alive in off-thread exports.
+ */
+export async function decodeSvgAssetsForWorker(payload: RenderWorkerPayload): Promise<Array<{ url: string; bitmap: ImageBitmap }>> {
+  const urls = new Set<string>();
+  if (payload.overlayUrl && isSvgAssetUrl(payload.overlayUrl)) urls.add(payload.overlayUrl);
+  if (payload.backgroundImageUrl && isSvgAssetUrl(payload.backgroundImageUrl)) urls.add(payload.backgroundImageUrl);
+  if (payload.watermarkImageUrl && isSvgAssetUrl(payload.watermarkImageUrl)) urls.add(payload.watermarkImageUrl);
+  for (const slot of payload.images) {
+    if (isSvgAssetUrl(slot.url)) urls.add(slot.url);
+  }
+  const out: Array<{ url: string; bitmap: ImageBitmap }> = [];
+  await Promise.all(
+    [...urls].map(async (url) => {
+      try {
+        const img = await loadImage(url);
+        out.push({ url, bitmap: await createImageBitmap(img) });
+      } catch {
+        // Skipped: the worker's strict/optional decode handles the miss.
+      }
+    })
+  );
+  return out;
+}
+
+/**
+ * Renders the current scene to a raster `Blob` (PNG, JPEG or WebP) at an
+ * intrinsic, viewport-independent resolution (see exportSize.ts), reusing the
+ * exact geometry the preview uses (frame box, zoom/animation transform, overlay
  * skin, transparent background). Returns null
  * (and routes the reason through `onError`) when the scene can't be rendered
- * or the canvas can't be read. Shared by `exportImage`, `exportWebp` and
- * `copyPngToClipboard`.
+ * or the canvas can't be read. Shared by `exportImage`, `exportWebp`,
+ * `exportJpeg` and `copyPngToClipboard`.
  */
 export async function renderSceneToImageBlob(
   scene: EditorScene,
   containerId: string,
-  mimeType: "image/png" | "image/webp",
+  mimeType: "image/png" | "image/webp" | "image/jpeg" | "image/avif",
   onError?: (message: string) => void,
   /** Pixel ratio for the export. Defaults to `Math.max(2, devicePixelRatio)`
    *  when omitted so existing callers keep 2× output on standard displays. */
@@ -48,29 +87,33 @@ export async function renderSceneToImageBlob(
       return null;
     }
 
-    const video = node.querySelector("video");
-    const img = node.querySelector("img");
     const isMultiFrame = scene.frameInstances.length > 0;
     const active = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
     let media: CanvasImageSource | null = null;
 
     // A hidden active layer renders nothing, matching the preview.
-    if (!active?.hidden) {
-      if (video instanceof HTMLVideoElement) {
-        if (video.readyState >= 2) {
-          media = video;
-        } else if (active && isVideoLayer(active) && active.mediaUrl) {
-          // Export fired before the preview video decoded; load a frame
-          // explicitly instead of drawing an empty screen.
+    if (!active?.hidden && active) {
+      // Resolve the active layer's media element by identity, never by DOM
+      // order: the preview container also holds unrelated <img>s (device-skin
+      // overlays, the watermark logo) and other layers' media, which a blind
+      // querySelector would export with this layer's fit/filters applied.
+      const el = node.querySelector(layerMediaSelector(active.id));
+      if (el instanceof HTMLVideoElement) {
+        // Always capture the layer's poster frame for a video layer: reusing
+        // the preview element would snapshot whatever frame its playhead
+        // happens to be on, making the export depend on transient preview
+        // state (and differ from the multi-frame path, which always loads the
+        // poster frame).
+        if (isVideoLayer(active) && active.mediaUrl) {
           try {
             media = await loadVideoFrame(active.mediaUrl, active.videoPosterTime ?? 0);
           } catch {
             media = null;
           }
         }
-      } else if (img instanceof HTMLImageElement) {
-        await waitForImage(img);
-        media = img;
+      } else if (el instanceof HTMLImageElement) {
+        await waitForImage(el);
+        media = el;
       }
     }
 
@@ -100,6 +143,11 @@ export async function renderSceneToImageBlob(
 
     const transform = resolveExportTransform(scene, activeLayerId);
 
+    // JPEG has no alpha channel: a transparent background would encode as
+    // black. Flatten onto white instead (same call the video pipeline makes
+    // with black) so both render paths — worker and main thread — agree.
+    const jpegFlattenFill = mimeType === "image/jpeg" && scene.backgroundMode === "transparent" ? "#ffffff" : undefined;
+
     // Fast path: render the whole composite inside a worker so big exports
     // don't block input. Video layers can't decode off-thread and any worker
     // hiccup resolves null, both falling through to the synchronous path.
@@ -114,10 +162,12 @@ export async function renderSceneToImageBlob(
         mimeType,
         transform,
         frameWidth,
-        frameHeight
+        frameHeight,
+        backgroundFill: jpegFlattenFill
       });
       if (payload) {
-        const blob = await renderSceneInWorker(payload);
+        const predecoded = await decodeSvgAssetsForWorker(payload);
+        const blob = await renderSceneInWorker(payload, predecoded);
         if (blob) return blob;
       }
     }
@@ -131,34 +181,49 @@ export async function renderSceneToImageBlob(
     if (scene.frameInstances.length > 0) {
       layerMedias = new Map();
       frameOverlays = new Map();
-      for (const inst of scene.frameInstances) {
-        const layer = scene.layers.find((l) => l.id === inst.layerId);
-        if (layer?.mediaUrl) {
-          try {
-            // An <img> can't decode a video URL; load video frames through a
-            // <video> element that has actually decoded a frame, so the static
-            // export shows the poster frame instead of an empty screen.
-            if (isVideoLayer(layer)) {
-              const videoFrame = await loadVideoFrame(layer.mediaUrl, layer.videoPosterTime ?? 0);
-              layerMedias.set(layer.id, videoFrame);
-            } else {
-              const loaded = await loadImage(layer.mediaUrl);
-              layerMedias.set(layer.id, loaded);
+      // Hidden layers' instances aren't rendered — skip their media too. All
+      // loads run concurrently: each instance waits on its own media + skin
+      // fetch instead of queueing behind every earlier frame's round-trip.
+      const visible = scene.frameInstances.filter((inst) => isVisibleFrameInstance(scene, inst));
+      const loaded = await Promise.all(
+        visible.map(async (inst) => {
+          const layer = scene.layers.find((l) => l.id === inst.layerId);
+          let media: CanvasImageSource | null = null;
+          let hasMedia = false;
+          if (layer?.mediaUrl) {
+            hasMedia = true;
+            try {
+              // An <img> can't decode a video URL; load video frames through a
+              // <video> element that has actually decoded a frame, so the static
+              // export shows the poster frame instead of an empty screen.
+              media = isVideoLayer(layer)
+                ? await loadVideoFrame(layer.mediaUrl, layer.videoPosterTime ?? 0)
+                : await loadImage(layer.mediaUrl);
+            } catch {
+              media = null;
             }
-          } catch {
-            layerMedias.set(layer.id, null);
           }
-        }
-        // Load overlay for this frame instance if it uses an overlay frame
-        const instSpec = getFrameSpec(inst.frame, scene.customFrame, inst.material);
-        if (instSpec.isOverlay && instSpec.asset) {
-          try {
-            const ov = await loadImage(instSpec.asset);
-            if (layer?.id) frameOverlays.set(layer.id, ov);
-          } catch {
-            // Overlay failed to load - leave empty
+          // Load overlay for this frame instance if it uses an overlay frame
+          let overlay: CanvasImageSource | null = null;
+          let hasOverlay = false;
+          const instSpec = getFrameSpec(inst.frame, scene.customFrame, inst.material);
+          if (instSpec.isOverlay && instSpec.asset) {
+            try {
+              overlay = await loadImage(instSpec.asset);
+              hasOverlay = true;
+            } catch {
+              // Overlay failed to load - leave empty
+            }
           }
-        }
+          return { layerId: layer?.id ?? null, media, hasMedia, overlay, hasOverlay };
+        })
+      );
+      // Apply in instance order so a layer shared by several frames keeps the
+      // sequential semantics (the last visible instance wins).
+      for (const { layerId, media, hasMedia, overlay, hasOverlay } of loaded) {
+        if (!layerId) continue;
+        if (hasMedia) layerMedias.set(layerId, media);
+        if (hasOverlay && overlay) frameOverlays.set(layerId, overlay);
       }
     }
 
@@ -172,7 +237,7 @@ export async function renderSceneToImageBlob(
       frameHeight,
       pixelRatio,
       transform,
-      undefined,
+      jpegFlattenFill,
       overlay,
       backgroundImage,
       layerMedias,
@@ -241,6 +306,48 @@ export async function exportWebp(
 }
 
 /**
+ * Exports the scene as a static JPEG image (lossy, universally supported).
+ * Rendered through the same canvas pipeline as PNG; a transparent background
+ * is flattened onto white because JPEG has no alpha channel.
+ */
+export async function exportJpeg(
+  scene: EditorScene,
+  containerId: string,
+  filename: string,
+  onError?: (message: string) => void,
+  /** Export pixel ratio (1×/2×/4×), read from the editor's scale control. */
+  scale?: number,
+  /** Absolute output size in pixels; overrides `scale` when set. */
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
+) {
+  const blob = await renderSceneToImageBlob(scene, containerId, "image/jpeg", onError, scale, customSize, activeLayerId);
+  if (blob) downloadBlob(blob, `${filename}.jpg`);
+}
+
+/**
+ * Exports the scene as a static AVIF image. AVIF encoding via canvas is only
+ * supported in Chromium-based browsers (Chrome 121+); other browsers will fail
+ * gracefully with an error message through `onError`.
+ */
+export async function exportAvif(
+  scene: EditorScene,
+  containerId: string,
+  filename: string,
+  onError?: (message: string) => void,
+  scale?: number,
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
+) {
+  const blob = await renderSceneToImageBlob(scene, containerId, "image/avif", onError, scale, customSize, activeLayerId);
+  if (!blob) {
+    onError?.("AVIF export is not supported in this browser. Try Chrome or Edge.");
+    return;
+  }
+  downloadBlob(blob, `${filename}.avif`);
+}
+
+/**
  * Copies a PNG snapshot of the scene to the system clipboard. Handy for pasting
  * a mockup straight into Slack/Notion without a file download. Needs a secure
  * context (https or localhost) and the Clipboard Image write permission; falls
@@ -266,6 +373,55 @@ export async function copyPngToClipboard(
     if (!blob) return;
     await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
     onStatus?.("Copied PNG to clipboard");
+  } catch (err) {
+    onError?.(err instanceof Error ? err.message : "Could not copy the image.");
+  }
+}
+
+/** Copies a JPEG snapshot to the clipboard. Transparent backgrounds are
+ *  flattened onto white because JPEG has no alpha channel. */
+export async function copyJpegToClipboard(
+  scene: EditorScene,
+  containerId: string,
+  onError?: (message: string) => void,
+  onStatus?: (message: string) => void,
+  scale?: number,
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
+) {
+  try {
+    if (typeof navigator === "undefined" || !navigator.clipboard || typeof ClipboardItem === "undefined") {
+      onError?.("Clipboard isn't available here (open over https or localhost).");
+      return;
+    }
+    const blob = await renderSceneToImageBlob(scene, containerId, "image/jpeg", onError, scale, customSize, activeLayerId);
+    if (!blob) return;
+    await navigator.clipboard.write([new ClipboardItem({ "image/jpeg": blob })]);
+    onStatus?.("Copied JPEG to clipboard");
+  } catch (err) {
+    onError?.(err instanceof Error ? err.message : "Could not copy the image.");
+  }
+}
+
+/** Copies a WebP snapshot to the clipboard. */
+export async function copyWebpToClipboard(
+  scene: EditorScene,
+  containerId: string,
+  onError?: (message: string) => void,
+  onStatus?: (message: string) => void,
+  scale?: number,
+  customSize?: ExportSize | null,
+  activeLayerId: string | null = scene.activeLayerId
+) {
+  try {
+    if (typeof navigator === "undefined" || !navigator.clipboard || typeof ClipboardItem === "undefined") {
+      onError?.("Clipboard isn't available here (open over https or localhost).");
+      return;
+    }
+    const blob = await renderSceneToImageBlob(scene, containerId, "image/webp", onError, scale, customSize, activeLayerId);
+    if (!blob) return;
+    await navigator.clipboard.write([new ClipboardItem({ "image/webp": blob })]);
+    onStatus?.("Copied WebP to clipboard");
   } catch (err) {
     onError?.(err instanceof Error ? err.message : "Could not copy the image.");
   }

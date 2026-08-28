@@ -6,10 +6,13 @@ import { makeDemoScene, useEditorStore } from "@/lib/state/editorStore";
 import { normalizeScene } from "@/lib/state/normalizeScene";
 import { readSceneFromUrl, clearSceneFromUrl } from "@/lib/state/shareState";
 import { nextProjectId } from "@/lib/state/ids";
-import { decodeProjectsState, encodeProjectsState, stateNeedsMediaOffload, sweepOrphanedMedia, type PersistedProjectsState } from "@/lib/state/mediaPersistence";
+import { beginMediaOffload, decodeProjectsState, encodeProjectsState, endMediaOffload, stateNeedsMediaOffload, sweepOrphanedMedia, type PersistedProjectsState } from "@/lib/state/mediaPersistence";
 
 const STORAGE_KEY = "mocksy-projects";
 const AUTOSAVE_KEY = "mocksy-scene";
+
+/** Well-known error key set by persist() when localStorage quota is exceeded. */
+export const STORAGE_FULL_ERROR_KEY = "editor.storageFull";
 
 /**
  * Decoded-once view of localStorage. `hydrate` must stay synchronous (the
@@ -33,8 +36,15 @@ export async function warmProjectCache(): Promise<void> {
   }
   decodedCache = await decodeProjectsState(raw);
   // Blobs left over from deleted scenes/replaced uploads would otherwise sit
-  // in IndexedDB forever.
-  void sweepOrphanedMedia(decodedCache);
+  // in IndexedDB forever. The sweep re-reads the raw JSON at deletion time so
+  // a persist racing the IDB open can't get its fresh blobs deleted.
+  void sweepOrphanedMedia(decodedCache, () => {
+    try {
+      return window.localStorage.getItem(STORAGE_KEY);
+    } catch {
+      return null;
+    }
+  });
 }
 
 /** Clears the decode-once cache. Test seam: the module-level cache must not
@@ -52,7 +62,15 @@ function cloneScene(scene: EditorScene): EditorScene {
  *  never writes one project's scene into another (project activation isn't an
  *  edit, so it must not pollute the undo stack either). */
 function activateEditorScene(project: Project | undefined): void {
-  if (project) useEditorStore.getState().setScene(project.scene, false);
+  if (!project) return;
+  const editor = useEditorStore.getState();
+  editor.setScene(project.scene, false);
+  // The undo/redo stacks belong to the replaced project's editing session.
+  // Keeping them would let ⌘Z paste the previous project's scene into this
+  // one — which the autosave would then persist over the active project.
+  // Coalescing keys are reset with them so an edit right after the switch
+  // starts a fresh entry instead of merging into a stale snapshot.
+  editor.clearHistory();
 }
 
 export interface ProjectsStoreState {
@@ -112,7 +130,17 @@ async function persist(state: ProjectsStoreState): Promise<boolean> {
       // breaks (large media just costs localStorage quota, as before).
       json = JSON.stringify({ projects: state.projects, activeProjectId: state.activeProjectId });
     }
-    window.localStorage.setItem(STORAGE_KEY, json);
+    // The blobs behind these placeholders are already in IndexedDB, but their
+    // markers aren't in localStorage yet. A sweep landing in that window would
+    // delete the fresh blobs as orphans, stranding the placeholders: mark the
+    // keys until the write is committed (setItem may throw; always release).
+    const placeholderKeys = [...json.matchAll(/@idb:([0-9a-f]+)/g)].map((match) => match[1]!);
+    beginMediaOffload(placeholderKeys);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, json);
+    } finally {
+      endMediaOffload(placeholderKeys);
+    }
     // Keep the decode-once cache in sync so later reads see this write even
     // if they happen before the next warm-up.
     decodedCache = { projects: state.projects, activeProjectId: state.activeProjectId };
@@ -130,7 +158,7 @@ async function persist(state: ProjectsStoreState): Promise<boolean> {
       err instanceof DOMException &&
       (err.name === "QuotaExceededError" || err.name === "NS_ERROR_DOM_QUOTA_REACHED")
     ) {
-      useProjectsStore.setState({ saveError: "Storage full — recent changes may not be saved" });
+      useProjectsStore.setState({ saveError: STORAGE_FULL_ERROR_KEY });
     }
     return false;
   }
@@ -246,6 +274,13 @@ export const useProjectsStore = create<ProjectsStoreState>((set, get) => ({
     const state = get();
     const target = state.projects.find((p) => p.id === id);
     if (!target) return;
+    // Flush the outgoing project's pending debounced autosave FIRST: the
+    // scene swap below cancels the watcher's timer, which would silently
+    // drop the last ≤500ms of edits (and later show a false "Saved" toast).
+    if (state.activeProjectId && state.activeProjectId !== id) {
+      const editor = useEditorStore.getState();
+      get().updateActiveProjectScene({ ...editor.scene, activeLayerId: editor.activeLayerId });
+    }
     set({ activeProjectId: id });
     // The editor scene and the active project must stay in sync: switch the
     // stored scene into the editor (without recording undo history — project

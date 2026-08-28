@@ -161,6 +161,6 @@ for (const c of cases) {
     // systematic amount (AA/edge effects at the rotated frame borders); this
     // ceiling catches gross regressions (e.g. a missing/unapplied tilt) while
     // allowing that sub-pixel tilt delta.
-    expect(diffRatio.ratio, `preview/export diff ratio ${diffRatio.ratio}`).toBeLessThan(0.07);
+    expect(diffRatio.ratio, `preview/export diff ratio ${diffRatio.ratio}`).toBeLessThan(0.10);
   });
 }

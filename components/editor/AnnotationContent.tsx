@@ -5,6 +5,7 @@ import type { CSSProperties, ReactNode } from "react";
 import type { Annotation } from "@/lib/types/editor";
 import { computeArrowGeometry } from "@/lib/render/annotationArrow";
 import { annotationPreviewAnimation } from "@/lib/render/annotationAnimation";
+import { annotationGradientCSS, annotationSvgGradientDef } from "@/lib/render/annotationGradient";
 
 interface AnnotationContentProps {
   annotation: Annotation;
@@ -38,17 +39,22 @@ export function AnnotationContent({
   onStartEditing
 }: AnnotationContentProps): ReactNode {
   if (annotation.type === "text") {
+    const gradientCSS = annotationGradientCSS(annotation);
     const textStyle: CSSProperties = {
       fontSize: annotation.fontSize * scale,
-      color: annotation.color,
+      color: gradientCSS ? "transparent" : annotation.color,
       lineHeight: 1.2,
       fontWeight: annotation.fontWeight ?? "bold",
       fontStyle: annotation.fontStyle ?? "normal",
       textAlign: annotation.textAlign ?? "left",
       fontFamily: annotation.fontFamily ?? "Inter, system-ui, sans-serif",
       whiteSpace: "pre-wrap",
-      textShadow: "0 1px 3px rgba(0,0,0,0.5)",
-      background: annotation.bgColor ?? undefined,
+      textShadow: gradientCSS ? "none" : "0 1px 3px rgba(0,0,0,0.5)",
+      background: gradientCSS
+        ? `${gradientCSS}, ${annotation.bgColor ?? "transparent"}`
+        : annotation.bgColor ?? undefined,
+      backgroundClip: gradientCSS ? "text" : undefined,
+      WebkitBackgroundClip: gradientCSS ? "text" : undefined,
       padding: annotation.bgColor ? (annotation.bgPadding ?? 0) * scale : 0,
       borderRadius: annotation.bgColor ? (annotation.bgRadius ?? 0) * scale : 0,
       display: "inline-block"
@@ -61,6 +67,8 @@ export function AnnotationContent({
         ref={editRef as React.RefObject<HTMLDivElement>}
         contentEditable
         suppressContentEditableWarning
+        role="textbox"
+        aria-multiline="true"
         style={{ ...textStyle, outline: "none", minWidth: 24, cursor: "text" }}
         onPointerDown={(e) => e.stopPropagation()}
         onInput={(e) => onTextInput(e.currentTarget.textContent ?? "")}
@@ -81,31 +89,55 @@ export function AnnotationContent({
   }
 
   if (annotation.type === "rect") {
+    const gradientCSS = annotationGradientCSS(annotation);
+    const sw = Math.max(1, annotation.strokeWidth * scale);
+    const borderStyle: CSSProperties = gradientCSS
+      ? {
+          width: "100%",
+          height: "100%",
+          border: `${sw}px solid transparent`,
+          borderRadius: 4,
+          boxSizing: "border-box",
+          background: `${gradientCSS} padding-box, ${gradientCSS} border-box`
+        }
+      : {
+          width: "100%",
+          height: "100%",
+          border: `${sw}px solid ${annotation.color}`,
+          borderRadius: 4,
+          boxSizing: "border-box"
+        };
     return (
       <div
         className={annotationPreviewAnimation(annotation)?.className}
-        style={{
-          width: "100%",
-          height: "100%",
-          border: `${Math.max(1, annotation.strokeWidth * scale)}px solid ${annotation.color}`,
-          borderRadius: 4,
-          boxSizing: "border-box"
-        }}
+        style={borderStyle}
       />
     );
   }
 
   if (annotation.type === "circle") {
+    const gradientCSS = annotationGradientCSS(annotation);
+    const sw = Math.max(1, annotation.strokeWidth * scale);
+    const borderStyle: CSSProperties = gradientCSS
+      ? {
+          width: "100%",
+          height: "100%",
+          border: `${sw}px solid transparent`,
+          borderRadius: "50%",
+          boxSizing: "border-box",
+          background: `${gradientCSS} padding-box, ${gradientCSS} border-box`
+        }
+      : {
+          width: "100%",
+          height: "100%",
+          border: `${sw}px solid ${annotation.color}`,
+          borderRadius: "50%",
+          boxSizing: "border-box"
+        };
     return (
       <div
         className={annotationPreviewAnimation(annotation)?.className}
-        style={{
-          width: "100%",
-          height: "100%",
-          border: `${Math.max(1, annotation.strokeWidth * scale)}px solid ${annotation.color}`,
-          borderRadius: "50%",
-          boxSizing: "border-box"
-        }}
+        style={borderStyle}
       />
     );
   }
@@ -131,10 +163,14 @@ export function AnnotationContent({
   const bw = Math.abs(annotation.w) || 1e-4;
   const bh = Math.abs(annotation.h) || 1e-4;
   const { startX, startY, endX, endY, points } = computeArrowGeometry(annotation, size.w, size.h, bx, by, scale);
+  const gradId = `anno-grad-${annotation.id}`;
+  const grad = annotationSvgGradientDef(annotation, gradId, 0, 0, bw * (size.w || 1), bh * (size.h || 1));
+  const strokeColor = grad ? grad.ref : annotation.color;
   return (
     <svg className={annotationPreviewAnimation(annotation)?.className} width={bw * (size.w || 1)} height={bh * (size.h || 1)} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-      <line pathLength={1} x1={startX} y1={startY} x2={endX} y2={endY} stroke={annotation.color} strokeWidth={Math.max(0.5, annotation.strokeWidth * scale)} strokeLinecap="round" />
-      <polygon points={points} fill={annotation.color} />
+      {grad ? <defs dangerouslySetInnerHTML={{ __html: grad.def }} /> : null}
+      <line pathLength={1} x1={startX} y1={startY} x2={endX} y2={endY} stroke={strokeColor} strokeWidth={Math.max(0.5, annotation.strokeWidth * scale)} strokeLinecap="round" />
+      <polygon points={points} fill={strokeColor} />
     </svg>
   );
 }

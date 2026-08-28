@@ -8,6 +8,7 @@ import { screenChromeSvg } from "@/lib/render/screenChrome";
 import { browserChromeSvg, isBrowserFrameSpec } from "@/lib/render/browserChrome";
 import { buildCssBackground } from "@/lib/render/sceneBackground";
 import { overlayClipDefForSpec } from "@/lib/render/squircle";
+import { buildTextLayerSvg } from "@/lib/render/layerText";
 
 function overlayClipCss(spec: FrameSpec): Pick<CSSProperties, "WebkitClipPath" | "clipPath"> {
   const def = overlayClipDefForSpec(spec);
@@ -28,6 +29,14 @@ export interface SceneCss {
   mediaStyle: CSSProperties;
   /** Style for the empty-media placeholder when no media is loaded. */
   emptyMediaStyle: CSSProperties;
+  /** Full SVG markup of a text layer's content stretched over the screen box,
+   *  or null when the active layer is not a text layer (or has no content). */
+  textSvg: string | null;
+  /** Box styles positioning `textSvg` over the frame's screen area. */
+  textStyle: CSSProperties;
+  /** Screen-area aspect ratio (w/h) so per-layer text markup can be built
+   *  outside this module without recomputing frame geometry. */
+  screenAspect: number;
   /** Full SVG markup of the on-screen decoration (status bar, lock clock,
    *  home dock), or null when the screen chrome is disabled. */
   screenChrome: string | null;
@@ -203,6 +212,29 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
   const screenChrome = scene.screen.enabled
     ? screenChromeSvg({ ...scene.screen, os: frameOs(scene.frame) }, chromeW, chromeH, `screen-chrome-${String(scene.frame).replace(/[^a-z0-9]/gi, "")}`, chromePar)
     : null;
+
+  // Text layers render instead of media, stretched over the same screen box.
+  // The SVG's viewBox matches the screen aspect so glyphs never distort; the
+  // canvas/SVG/HTML renderers reuse the identical layout from layerText.ts.
+  const textSvg = buildTextLayerSvg(activeLayerForCss, screenAspect);
+  const textStyle: CSSProperties = spec.isOverlay && spec.cutout
+    ? {
+        position: "absolute",
+        left: `${(spec.cutout.x / vb.w) * 100}%`,
+        top: `${(spec.cutout.y / vb.h) * 100}%`,
+        width: `${(spec.cutout.w / vb.w) * 100}%`,
+        height: `${(spec.cutout.h / vb.h) * 100}%`,
+        ...overlayClipCss(spec),
+        overflow: "hidden",
+        pointerEvents: "none"
+      }
+    : {
+        position: "absolute",
+        inset: framePadding,
+        borderRadius: spec.screenRadius,
+        overflow: "hidden",
+        pointerEvents: "none"
+      };
   const screenChromeStyle: CSSProperties = spec.isOverlay && spec.cutout
     ? {
         position: "absolute",
@@ -262,6 +294,9 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
     screenRadius: spec.screenRadius,
     mediaStyle,
     emptyMediaStyle,
+    textSvg,
+    textStyle,
+    screenAspect,
     screenChrome,
     screenChromeStyle,
     screenGlareStyle: buildScreenGlareStyle(scene, spec),
@@ -302,4 +337,58 @@ function buildScreenGlareStyle(scene: EditorScene, spec: FrameSpec): CSSProperti
     };
   }
   return { ...base, inset: 0, borderRadius: "inherit" };
+}
+
+/* ── Entrance animations ─────────────────────────────────────────────── */
+
+import type { EntranceAnimation, MediaLayer } from "@/lib/types/editor";
+
+const ENTRANCE_KEYFRAMES: Record<Exclude<EntranceAnimation, "none">, string> = {
+  fadeIn: "from{opacity:0}to{opacity:1}",
+  slideUp: "from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}",
+  slideDown: "from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}",
+  slideLeft: "from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}",
+  slideRight: "from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}",
+  scaleUp: "from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}"
+};
+
+const ENTRANCE_EASING: Record<Exclude<EntranceAnimation, "none">, string> = {
+  fadeIn: "ease-out",
+  slideUp: "cubic-bezier(0.16,1,0.3,1)",
+  slideDown: "cubic-bezier(0.16,1,0.3,1)",
+  slideLeft: "cubic-bezier(0.16,1,0.3,1)",
+  slideRight: "cubic-bezier(0.16,1,0.3,1)",
+  scaleUp: "cubic-bezier(0.34,1.56,0.64,1)"
+};
+
+/** Returns CSS animation properties for a layer's entrance animation, or an
+ *  empty object when the animation is "none". The animation plays once on
+ *  mount and fills forward so the element stays in its final state. */
+export function buildEntranceAnimationCss(layer: MediaLayer): CSSProperties {
+  const anim = layer.entranceAnimation;
+  if (!anim || anim === "none") return {};
+  const duration = Math.max(200, Math.min(2000, layer.entranceDuration ?? 600));
+  const name = `mockup-entrance-${layer.id}`;
+  return {
+    animation: `${name} ${duration}ms ${ENTRANCE_EASING[anim]} both`,
+  };
+}
+
+/** Returns a CSS @keyframes rule string for the given layer's entrance
+ *  animation, or null when the animation is "none". */
+export function buildEntranceKeyframeCss(layer: MediaLayer): string | null {
+  const anim = layer.entranceAnimation;
+  if (!anim || anim === "none") return null;
+  const name = `mockup-entrance-${layer.id}`;
+  return `@keyframes ${name}{${ENTRANCE_KEYFRAMES[anim]}}`;
+}
+
+/** Collects all unique @keyframes rules for visible layers that have an
+ *  entrance animation. Returns a single <style> tag content string. */
+export function buildEntranceKeyframesStyle(layers: MediaLayer[]): string {
+  return layers
+    .filter((l) => !l.hidden)
+    .map((l) => buildEntranceKeyframeCss(l))
+    .filter((css): css is string => css !== null)
+    .join("\n");
 }

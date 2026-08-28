@@ -166,18 +166,25 @@ describe("compressImageIfNeeded", () => {
   });
 
   it("downscales oversized photos to MAX_IMAGE_DIMENSION and re-encodes as WebP", async () => {
-    stubImageTools({ width: 4096, height: 2048 });
+    stubImageTools({ width: 8192, height: 4096 });
     const result = await compressImageIfNeeded(bigPhoto());
     expect(result.type).toBe("image/webp");
     expect(result.size).toBeLessThan(10_000_000);
   });
 
   it("scales the longest side to MAX_IMAGE_DIMENSION preserving aspect ratio", async () => {
-    const { canvas, draw } = stubImageTools({ width: 4096, height: 2048 });
+    const { canvas, draw } = stubImageTools({ width: 8192, height: 4096 });
     await compressImageIfNeeded(bigPhoto());
-    expect(canvas.width).toBe(2048);
-    expect(canvas.height).toBe(1024);
-    expect(draw).toHaveBeenCalledWith(expect.anything(), 0, 0, 2048, 1024);
+    expect(canvas.width).toBe(4096);
+    expect(canvas.height).toBe(2048);
+    expect(draw).toHaveBeenCalledWith(expect.anything(), 0, 0, 4096, 2048);
+  });
+
+  it("keeps images already at the limit untouched", async () => {
+    stubImageTools({ width: 4096, height: 2048 });
+    const result = await compressImageIfNeeded(bigPhoto());
+    expect(result.type).toBe("image/jpeg");
+    expect(result.size).toBe(10_000_000);
   });
 
   it("returns the original file when createImageBitmap is unavailable", async () => {
@@ -194,7 +201,7 @@ describe("compressImageIfNeeded", () => {
   });
 
   it("returns the original file when canvas.toBlob yields null", async () => {
-    stubImageTools({ width: 4096, height: 2048 }).canvas.toBlob.mockImplementation(
+    stubImageTools({ width: 8192, height: 4096 }).canvas.toBlob.mockImplementation(
       (cb: (b: Blob | null) => void) => cb(null)
     );
     const result = await compressImageIfNeeded(bigPhoto());

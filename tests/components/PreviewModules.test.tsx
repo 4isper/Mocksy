@@ -43,6 +43,7 @@ describe("PreviewOverlays", () => {
         guides={[]}
         onSelectAnnotation={vi.fn()}
         onUpdateAnnotation={vi.fn()}
+        onRemoveAnnotation={vi.fn()}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />
@@ -69,6 +70,14 @@ describe("PreviewChips", () => {
     render(<PreviewChips isMultiFrame canClearActive targetLayerId="l1" fileInputKey={0} onFile={vi.fn()} />);
     expect(screen.queryByText("editor.uploadMedia")).not.toBeInTheDocument();
     expect(screen.getByText("editor.clearMedia")).toBeInTheDocument();
+  });
+
+  it("renders the upload chip as a focusable button (keyboard accessible)", () => {
+    render(<PreviewChips isMultiFrame={false} canClearActive={false} targetLayerId={null} fileInputKey={0} onFile={vi.fn()} />);
+    const upload = screen.getByRole("button", { name: "editor.uploadMedia" });
+    expect(upload).toBeInTheDocument();
+    // Opening the file dialog goes through the hidden input, which must exist.
+    expect(document.querySelector("input[type=file]")).toBeInTheDocument();
   });
 });
 

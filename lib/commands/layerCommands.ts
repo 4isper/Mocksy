@@ -1,10 +1,12 @@
 import type { Command, EditorScene, MediaType } from "@/lib/types/editor";
+import { blobToDataUrl, detectMediaType } from "@/lib/media/loadFile";
 
 export function createLayerCommands(
   t: (key: string, values?: Record<string, string | number | Date>) => string,
   scene: EditorScene,
   callbacks: {
     addLayer: (url: string, type: MediaType, name?: string | null) => void;
+    addTextLayer: (textContent: string) => void;
     duplicateLayer: (id: string) => void;
     removeLayer: (id: string) => void;
     toggleLayerHidden: (id: string) => void;
@@ -12,7 +14,7 @@ export function createLayerCommands(
   },
   activeLayerId: string | null = scene.activeLayerId
 ): Command[] {
-  const { addLayer, duplicateLayer, removeLayer, toggleLayerHidden, selectLayer } = callbacks;
+  const { addLayer, addTextLayer, duplicateLayer, removeLayer, toggleLayerHidden, selectLayer } = callbacks;
   const layers = scene.layers;
   const activeLayer = activeLayerId ?? layers[0]?.id;
 
@@ -29,14 +31,25 @@ export function createLayerCommands(
         input.accept = "image/*,video/*";
         input.onchange = e => {
           const file = (e.target as HTMLInputElement).files?.[0];
-          if (file) {
-            const url = URL.createObjectURL(file);
-            const type = file.type.startsWith("video/") ? "video" : "image";
-            addLayer(url, type, file.name);
-          }
+          if (!file) return;
+          // Store a self-contained data URL like every other upload path: a
+          // raw `blob:` URL here would die on reload, pin the File in memory
+          // forever, and get revoked out from under the preview by the video
+          // export's cleanup.
+          void blobToDataUrl(file).then(url => {
+            addLayer(url, detectMediaType(file), file.name);
+          });
         };
         input.click();
       },
+    },
+    {
+      id: "layer-add-text",
+      category: "layer",
+      label: t("commandPalette.addTextLayer"),
+      description: t("commandPalette.addTextLayerDesc"),
+      keywords: ["layer", "add", "new", "text", "label", "caption", "typography"],
+      action: () => addTextLayer(t("text.defaultContent")),
     },
     {
       id: "layer-duplicate",

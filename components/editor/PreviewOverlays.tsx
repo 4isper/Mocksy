@@ -20,6 +20,7 @@ export function PreviewOverlays({
   guides,
   onSelectAnnotation,
   onUpdateAnnotation,
+  onRemoveAnnotation,
   onSelectMany,
   onGuides
 }: {
@@ -33,6 +34,7 @@ export function PreviewOverlays({
   guides: GuideLine[];
   onSelectAnnotation: (id: string | null, additive?: boolean) => void;
   onUpdateAnnotation: (id: string, patch: Partial<EditorScene["annotations"][number]>) => void;
+  onRemoveAnnotation: (id: string) => void;
   onSelectMany: (ids: string[]) => void;
   onGuides: (guides: GuideLine[]) => void;
 }) {
@@ -61,12 +63,13 @@ export function PreviewOverlays({
           key={a.id}
           annotation={a}
           selected={selectedAnnotationIds.includes(a.id)}
-          others={scene.annotations.filter((o) => o.id !== a.id)}
+          all={scene.annotations}
           canvasRef={canvasRef}
           snapDivisions={showGrid ? gridDivisions : null}
           onSelect={onSelectAnnotation}
           onSelectMany={onSelectMany}
           onUpdate={onUpdateAnnotation}
+          onRemove={onRemoveAnnotation}
           onGuides={onGuides}
         />
       ))}

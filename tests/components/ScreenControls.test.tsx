@@ -15,13 +15,16 @@ describe("ScreenControls", () => {
     screen: { ...DEFAULT_SCREEN_CHROME, enabled: true },
     setScreenChrome: vi.fn(),
     screenGlare: false,
-    setScreenGlare: vi.fn()
+    setScreenGlare: vi.fn(),
+    resolvedOs: "ios" as const,
+    floorReflection: false,
+    setFloorReflection: vi.fn()
   };
 
   it("renders the master toggle and all sub-toggles", () => {
     render(<ScreenControls {...props} />);
     const toggles = screen.getAllByRole("checkbox");
-    expect(toggles).toHaveLength(7); // master + 5 flags + glare
+    expect(toggles).toHaveLength(8); // master + 5 flags + glare + floor reflection
   });
 
   it("calls setScreenChrome when the master toggle is flipped", async () => {
@@ -40,14 +43,17 @@ describe("ScreenControls", () => {
     expect(setScreenGlare).toHaveBeenCalledWith(false);
   });
 
-  it("renders the style and theme segmented groups", () => {
+  it("renders the style, theme and OS segmented groups", () => {
     render(<ScreenControls {...props} />);
-    expect(screen.getAllByRole("group")).toHaveLength(2);
+    expect(screen.getAllByRole("group")).toHaveLength(3);
     expect(screen.getByText("editor.screenStyleLock")).toBeInTheDocument();
     expect(screen.getByText("editor.screenStyleHome")).toBeInTheDocument();
     expect(screen.getByText("editor.screenStyleStatusBar")).toBeInTheDocument();
     expect(screen.getByText("editor.screenThemeDark")).toBeInTheDocument();
     expect(screen.getByText("editor.screenThemeLight")).toBeInTheDocument();
+    expect(screen.getByText("editor.screenOsIos")).toBeInTheDocument();
+    expect(screen.getByText("editor.screenOsAndroid")).toBeInTheDocument();
+    expect(screen.getByText("editor.screenOsDesktop")).toBeInTheDocument();
   });
 
   it("switches the style through the segmented control", async () => {
@@ -82,20 +88,50 @@ describe("ScreenControls", () => {
 
   it("disables everything when the master toggle is off", () => {
     render(<ScreenControls {...props} screen={{ ...DEFAULT_SCREEN_CHROME, enabled: false }} />);
-    // master toggle stays interactive; all sub-toggles are disabled
+    // master toggle stays interactive; all screen-chrome flags are disabled
     const toggles = screen.getAllByRole("checkbox");
     expect(toggles[0]).not.toBeDisabled();
-    // All screen-chrome toggles disable with the master; the glare toggle
-    // (last) is independent of it.
-    for (const el of toggles.slice(1, -1)) {
+    // The 5 screen-chrome flags disable with the master; glare and floor
+    // reflection are independent effects and stay interactive.
+    for (const el of toggles.slice(1, 6)) {
       expect(el).toBeDisabled();
     }
-    expect(toggles[toggles.length - 1]).not.toBeDisabled();
+    expect(toggles[6]).not.toBeDisabled(); // glare
+    expect(toggles[7]).not.toBeDisabled(); // floor reflection
     for (const el of screen.getAllByRole("group").flatMap((g) => Array.from(g.querySelectorAll("button")))) {
       expect(el).toBeDisabled();
     }
     expect(screen.getByDisplayValue("9:41")).toBeDisabled();
     expect(screen.getByDisplayValue("Tuesday, August 4")).toBeDisabled();
+  });
+
+  it("switches the device OS through the segmented control", async () => {
+    const setScreenChrome = vi.fn();
+    render(<ScreenControls {...props} setScreenChrome={setScreenChrome} />);
+    await userEvent.click(screen.getByText("editor.screenOsAndroid"));
+    expect(setScreenChrome).toHaveBeenCalledWith({ os: "android" });
+  });
+
+  it("toggles the floor reflection via its own checkbox", async () => {
+    const setFloorReflection = vi.fn();
+    render(<ScreenControls {...props} floorReflection={true} setFloorReflection={setFloorReflection} />);
+    const floorToggle = screen.getAllByRole("checkbox")[7]!;
+    expect((floorToggle as HTMLInputElement).checked).toBe(true);
+    await userEvent.click(floorToggle);
+    expect(setFloorReflection).toHaveBeenCalledWith(false);
+  });
+
+  it("renders reset/apply actions only in instance mode", () => {
+    const { rerender } = render(<ScreenControls {...props} />);
+    expect(screen.queryByText("editor.screenResetDefault")).not.toBeInTheDocument();
+    expect(screen.queryByText("editor.screenApplyToAll")).not.toBeInTheDocument();
+    const onResetScreen = vi.fn();
+    const onApplyToAll = vi.fn();
+    rerender(<ScreenControls {...props} onResetScreen={onResetScreen} onApplyToAll={onApplyToAll} />);
+    const resetBtn = screen.getByText("editor.screenResetDefault");
+    const applyBtn = screen.getByText("editor.screenApplyToAll");
+    expect(resetBtn).toBeInTheDocument();
+    expect(applyBtn).toBeInTheDocument();
   });
 
   it("updates the time and date text fields", () => {

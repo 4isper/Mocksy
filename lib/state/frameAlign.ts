@@ -97,3 +97,43 @@ export function distributeFrameInstances(
   }
   return next;
 }
+
+/**
+ * Clamps every instance's center so the whole frame stays inside the canvas
+ * (x/y are 0..1 fractions; a frame of half-extent e must sit in [e, 1-e]).
+ * align/distribute never clamp today, so large frames can be pushed fully off
+ * the canvas when the group's bounding box is wider than the canvas — this
+ * keeps them at least partially visible. Mirrors the clamp used by the auto-
+ * layout presets and the frame-card drag.
+ */
+export function clampFramePositions(
+  instances: FrameInstance[],
+  aspectRatio = "16 / 9",
+  customFrame: CustomFrame | null = null
+): FrameInstance[] {
+  return instances.map((inst) => {
+    const size = frameInstanceSize(inst, customFrame, aspectRatio);
+    const halfW = size.w / 2;
+    const halfH = size.h / 2;
+    // A frame larger than the canvas can't be fully contained; center it so at
+    // least the middle is visible rather than clamping to a single edge.
+    const cx = size.w >= 1 ? 0.5 : Math.min(1 - halfW, Math.max(halfW, inst.x));
+    const cy = size.h >= 1 ? 0.5 : Math.min(1 - halfH, Math.max(halfH, inst.y));
+    return cx === inst.x && cy === inst.y ? inst : { ...inst, x: cx, y: cy };
+  });
+}
+
+/**
+ * Picks the instances an align/distribute should target: the selected subset
+ * when the user has one, otherwise the whole scene. Only ids that still exist
+ * in the scene are honored.
+ */
+export function targetFrameInstances(
+  all: FrameInstance[],
+  selectedIds: string[]
+): FrameInstance[] {
+  if (selectedIds.length === 0) return all;
+  const byId = new Map(all.map((i) => [i.id, i]));
+  const picked = selectedIds.map((id) => byId.get(id)).filter((i): i is FrameInstance => Boolean(i));
+  return picked.length >= 2 ? picked : all;
+}

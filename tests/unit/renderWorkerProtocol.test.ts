@@ -3,9 +3,35 @@ import {
   ACTIVE_MEDIA_KEY,
   OVERLAY_KEY_PREFIX,
   buildRenderWorkerPayload,
-  canRenderSceneInWorker
+  canRenderSceneInWorker,
+  isSvgAssetUrl,
+  isSvgMimeType
 } from "@/lib/render/renderWorkerProtocol";
 import { initialScene } from "@/lib/state/editorScene";
+
+describe("isSvgMimeType", () => {
+  it("flags SVG payloads that createImageBitmap cannot rasterize", () => {
+    expect(isSvgMimeType("image/svg+xml")).toBe(true);
+    expect(isSvgMimeType("image/svg")).toBe(true);
+    expect(isSvgMimeType("image/svg-foo+xml")).toBe(true);
+    expect(isSvgMimeType("image/png")).toBe(false);
+    expect(isSvgMimeType("image/webp")).toBe(false);
+    expect(isSvgMimeType("video/mp4")).toBe(false);
+    expect(isSvgMimeType("")).toBe(false);
+  });
+});
+
+describe("isSvgAssetUrl", () => {
+  it("detects device-skin paths and inline data: SVGs", () => {
+    expect(isSvgAssetUrl("/devices/iphone15.svg")).toBe(true);
+    expect(isSvgAssetUrl("https://cdn.test/skin.SVG?v=2")).toBe(true);
+    expect(isSvgAssetUrl("data:image/svg+xml;base64,PHN2Zy8+")).toBe(true);
+    expect(isSvgAssetUrl("data:image/svg;utf8,<svg/>")).toBe(true);
+    expect(isSvgAssetUrl("data:image/png;base64,AAA")).toBe(false);
+    expect(isSvgAssetUrl("/media/photo.png")).toBe(false);
+    expect(isSvgAssetUrl("https://cdn.test/clip.mp4")).toBe(false);
+  });
+});
 
 const baseScene = () => ({
   ...initialScene,

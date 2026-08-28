@@ -1,33 +1,49 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { useEditorExport } from "@/lib/hooks/useEditorExport";
 import { useAutosaveStatus } from "@/lib/hooks/useAutosaveStatus";
+import { STORAGE_FULL_ERROR_KEY } from "@/lib/state/projectsStore";
 import { warmUpFfmpeg } from "@/lib/export/exportVideo";
 import { useEditorShortcuts } from "@/lib/hooks/useEditorShortcuts";
 import { useClipboardPaste } from "@/lib/hooks/useClipboardPaste";
 import { ControlPanel } from "@/components/editor/ControlPanel";
-import { ExportDialog } from "@/components/editor/ExportDialog";
-import { ShortcutsDialog } from "@/components/editor/ShortcutsDialog";
 import { PreviewCanvas } from "@/components/editor/PreviewCanvas";
 import { RightPanel } from "@/components/editor/RightPanel";
-import { CommandPalette } from "@/components/editor/CommandPalette";
 import { ErrorBoundary } from "@/components/editor/ErrorBoundary";
-import { ResetConfirmDialog } from "@/components/editor/ResetConfirmDialog";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { MobileTabBar } from "@/components/editor/MobileTabBar";
 import { PanelResizeHandles } from "@/components/editor/PanelResizeHandles";
-import { OnboardingTour, hasSeenOnboarding } from "@/components/editor/OnboardingTour";
-import { ShareQrDialog } from "@/components/editor/ShareQrDialog";
+import { LiveAnnouncer } from "@/components/editor/LiveAnnouncer";
+import { hasSeenOnboarding } from "@/components/editor/OnboardingTour";
 import { useCommands } from "@/lib/hooks/useCommands";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { useProjectsStore } from "@/lib/state/projectsStore";
-import { initHistoryPersistence, restoreHistory } from "@/lib/state/historyStorage";
+import { clearPersistedHistory, initHistoryPersistence, restoreHistory } from "@/lib/state/historyStorage";
 import { readSharedSceneFromUrl, readTemplateFromUrl, clearTemplateFromUrl } from "@/lib/state/shareState";
 import { warmProjectCache } from "@/lib/state/projectsStore";
 import type { EditorScene } from "@/lib/types/editor";
+
+const ExportDialog = React.lazy(() =>
+  import("@/components/editor/ExportDialog").then((m) => ({ default: m.ExportDialog }))
+);
+const ShortcutsDialog = React.lazy(() =>
+  import("@/components/editor/ShortcutsDialog").then((m) => ({ default: m.ShortcutsDialog }))
+);
+const CommandPalette = React.lazy(() =>
+  import("@/components/editor/CommandPalette").then((m) => ({ default: m.CommandPalette }))
+);
+const ResetConfirmDialog = React.lazy(() =>
+  import("@/components/editor/ResetConfirmDialog").then((m) => ({ default: m.ResetConfirmDialog }))
+);
+const OnboardingTour = React.lazy(() =>
+  import("@/components/editor/OnboardingTour").then((m) => ({ default: m.OnboardingTour }))
+);
+const ShareQrDialog = React.lazy(() =>
+  import("@/components/editor/ShareQrDialog").then((m) => ({ default: m.ShareQrDialog }))
+);
 
 export function EditorShell() {
   const t = useTranslations();
@@ -47,6 +63,8 @@ export function EditorShell() {
   const setCustomExportSize = useEditorStore((s) => s.setCustomExportSize);
   const setAspectRatio = useEditorStore((s) => s.setAspectRatio);
   const saveError = useProjectsStore((s) => s.saveError);
+
+  const translatedSaveError = saveError === STORAGE_FULL_ERROR_KEY ? t("editor.storageFull") : saveError;
   const fullscreenPreview = useEditorStore((s) => s.fullscreenPreview);
   const setFullscreenPreview = useEditorStore((s) => s.setFullscreenPreview);
   const mobileSheet = useEditorStore((s) => s.mobileSheet);
@@ -63,19 +81,27 @@ export function EditorShell() {
   const historyCleanupRef = useRef<(() => void) | null>(null);
 
   const resetTrapRef = useFocusTrap(confirmResetOpen);
-
-  useEffect(() => {
-    hasOpenModalRef.current = confirmResetOpen || exportOpen || shortcutsOpen || commandPaletteOpen;
-  }, [confirmResetOpen, exportOpen, shortcutsOpen, commandPaletteOpen]);
+  const controlsSheetTrapRef = useFocusTrap(mobileSheet === "controls");
+  const rightSheetTrapRef = useFocusTrap(mobileSheet === "right");
 
   const closeExportDialog = useCallback(() => setExportOpen(false), []);
   const exportApi = useEditorExport(scene, exportScale, customExportSize, closeExportDialog, activeLayerId);
+
+  // Every shortcut-gated dialog is routed through this gate: while any of them
+  // is open the global shortcuts are parked so keystrokes land in the dialog,
+  // not the editor. The Share-QR dialog is stateful inside exportApi, so it's
+  // folded in here as a final boolean rather than a separate local state.
+  useEffect(() => {
+    hasOpenModalRef.current = confirmResetOpen || exportOpen || shortcutsOpen || commandPaletteOpen || exportApi.shareQrUrl !== null;
+  }, [confirmResetOpen, exportOpen, shortcutsOpen, commandPaletteOpen, exportApi.shareQrUrl]);
 
   const { saved, saveToast, savedSceneRef, saveNow, markSaved } = useAutosaveStatus(scene, activeLayerId, bootstrapped);
 
   const commands = useCommands(
     exportApi.handleExportPng,
+    exportApi.handleExportJpeg,
     exportApi.handleExportWebp,
+    exportApi.handleExportAvif,
     exportApi.handleExportSvg,
     exportApi.handleExportHtml,
     exportApi.handleExportPdf,
@@ -83,7 +109,12 @@ export function EditorShell() {
     exportApi.handleExportWebm,
     exportApi.handleExportGif,
     exportApi.handleExportWebpAnim,
+    exportApi.handleExportZipVideo,
     exportApi.handleCopyPng,
+    exportApi.handleCopyJpeg,
+    exportApi.handleCopyWebp,
+    exportApi.handleCopySvg,
+    exportApi.handleCopyHtml,
     exportApi.copyShareUrl,
     saveNow,
     () => setFullscreenPreview(!fullscreenPreview)
@@ -91,9 +122,9 @@ export function EditorShell() {
 
   const handleReset = useCallback(() => setConfirmResetOpen(true), []);
   const handleNewProject = useCallback(() => {
-    const id = useProjectsStore.getState().createProject("Untitled");
+    const id = useProjectsStore.getState().createProject(t("projects.untitled"));
     useProjectsStore.getState().switchProject(id);
-  }, []);
+  }, [t]);
   useEditorShortcuts({
     saveNow,
     onReset: handleReset,
@@ -144,24 +175,44 @@ export function EditorShell() {
     // restored scene is not a user edit, so don't push it onto the undo stack
     // (also keeps StrictMode's double-mount from recording a duplicate entry).
     let alive = true;
-    void Promise.all([readTemplateFromUrl(), readSharedSceneFromUrl(), warmProjectCache()]).then(
-      ([template, shared]) => {
+    void Promise.all([readTemplateFromUrl(), readSharedSceneFromUrl(), warmProjectCache()])
+      .then(
+        ([template, shared]) => {
+          if (!alive) return;
+          // Template links win over share scenes: both params in one URL is a
+          // hand-made edge case, and the template is the more specific intent.
+          if (template) clearTemplateFromUrl();
+          // A share or template link replaces the scene wholesale: the undo
+          // stack persisted by the previous session belongs to a different
+          // scene and must not be restored (⌘Z would swap the opened scene
+          // for an old project's snapshot, which the autosave would then
+          // persist over the new project). Continuations of the same session
+          // (no URL scene) restore the stack so Ctrl+Z works after a reload.
+          const fromShareOrTemplate = !!(template ?? shared);
+          const restored = useProjectsStore.getState().hydrate(template ?? shared);
+          // The restored scene already matches what's persisted, so treat it as the
+          // saved baseline. `setScene` merges into a fresh object, so sync the ref
+          // to the live scene afterwards — the autosave watcher won't flag it
+          // "unsaved" on load.
+          setScene(restored, false);
+          savedSceneRef.current = useEditorStore.getState().scene;
+          bootstrapped.current = true;
+          // Bring back the undo/redo stacks saved by the last session (also not an
+          // edit — it only fills `past`/`future`), then start watching for changes
+          // so every subsequent edit persists across reloads.
+          if (fromShareOrTemplate) {
+            useEditorStore.getState().clearHistory();
+            clearPersistedHistory();
+          } else {
+            restoreHistory();
+          }
+          historyCleanupRef.current = initHistoryPersistence();
+        })
+      .catch((err) => {
         if (!alive) return;
-        // Template links win over share scenes: both params in one URL is a
-        // hand-made edge case, and the template is the more specific intent.
-        if (template) clearTemplateFromUrl();
-        const restored = useProjectsStore.getState().hydrate(template ?? shared);
-        // The restored scene already matches what's persisted, so treat it as the
-        // saved baseline. `setScene` merges into a fresh object, so sync the ref
-        // to the live scene afterwards — the autosave watcher won't flag it
-        // "unsaved" on load.
-        setScene(restored, false);
-        savedSceneRef.current = useEditorStore.getState().scene;
+        console.error("Editor bootstrap failed:", err);
+        // Mark bootstrapped so autosave starts — the default scene is usable.
         bootstrapped.current = true;
-        // Bring back the undo/redo stacks saved by the last session (also not an
-        // edit — it only fills `past`/`future`), then start watching for changes
-        // so every subsequent edit persists across reloads.
-        restoreHistory();
         historyCleanupRef.current = initHistoryPersistence();
       });
     return () => {
@@ -187,11 +238,13 @@ export function EditorShell() {
     ? { msg: exportApi.copyStatus, type: "success" as const }
     : exportApi.exportError
       ? { msg: exportApi.exportError, type: "error" as const }
-      : saveError
-        ? { msg: saveError, type: "error" as const }
-        : saveToast
-          ? { msg: saveToast, type: "info" as const }
-          : null;
+      : exportApi.exportWarning
+        ? { msg: exportApi.exportWarning, type: "info" as const }
+        : saveError
+          ? { msg: translatedSaveError, type: "error" as const }
+          : saveToast
+            ? { msg: saveToast, type: "info" as const }
+            : null;
 
   useEffect(() => () => {
     if (resetNoticeTimer.current) clearTimeout(resetNoticeTimer.current);
@@ -210,6 +263,7 @@ export function EditorShell() {
 
   return (
     <main className="editor-shell" id="main-content" tabIndex={-1}>
+      <LiveAnnouncer />
       {!fullscreenPreview ? (
         <div className="brand">
           <span className="brand-mark" aria-hidden="true" />
@@ -222,8 +276,8 @@ export function EditorShell() {
           /* Sheet hosts are layout-transparent (`display: contents`) on
              desktop so the grid still sees the panels directly; at the
              mobile breakpoint they become fixed bottom sheets. */
-          <div className={mobileSheet === "controls" ? "sheet-host sheet-host--controls is-open" : "sheet-host sheet-host--controls"}>
-            <ErrorBoundary message={t("errors.message")}><ControlPanel /></ErrorBoundary>
+          <div ref={controlsSheetTrapRef} className={mobileSheet === "controls" ? "sheet-host sheet-host--controls is-open" : "sheet-host sheet-host--controls"}>
+            <ErrorBoundary message={t("errors.message")} retryLabel={t("errors.tryAgain")}><ControlPanel /></ErrorBoundary>
           </div>
         ) : null}
         <section
@@ -248,7 +302,7 @@ export function EditorShell() {
               <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M9 1v4h4M5 13V9H1M13 5H9V1M1 9h4v4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </button>
           ) : null}
-          <ErrorBoundary message={t("errors.message")}><PreviewCanvas scene={scene} /></ErrorBoundary>
+          <ErrorBoundary message={t("errors.message")} retryLabel={t("errors.tryAgain")}><PreviewCanvas scene={scene} /></ErrorBoundary>
           {!fullscreenPreview ? (
             <EditorToolbar
               canUndo={canUndo}
@@ -277,8 +331,8 @@ export function EditorShell() {
           ) : null}
         </section>
         {!fullscreenPreview ? (
-          <div className={mobileSheet === "right" ? "sheet-host sheet-host--right is-open" : "sheet-host sheet-host--right"}>
-            <ErrorBoundary message={t("errors.message")}>
+          <div ref={rightSheetTrapRef} className={mobileSheet === "right" ? "sheet-host sheet-host--right is-open" : "sheet-host sheet-host--right"}>
+            <ErrorBoundary message={t("errors.message")} retryLabel={t("errors.tryAgain")}>
               <RightPanel onShareTemplate={exportApi.copyTemplateUrl} />
             </ErrorBoundary>
           </div>
@@ -289,29 +343,45 @@ export function EditorShell() {
         <div className="sheet-backdrop" aria-hidden="true" onClick={() => setMobileSheet(null)} />
       ) : null}
       {!fullscreenPreview ? <MobileTabBar onExport={() => setExportOpen(true)} /> : null}
-      <ResetConfirmDialog open={confirmResetOpen} onConfirm={confirmReset} onCancel={cancelReset} />
-      <ExportDialog
-        open={exportOpen}
-        onClose={() => setExportOpen(false)}
-        scale={exportScale}
-        onScaleChange={setExportScale}
-        customSize={customExportSize}
-        onCustomSizeChange={setCustomExportSize}
-        onAspectRatioChange={setAspectRatio}
-        onExport={exportApi.handleExport}
-        onCopy={exportApi.handleCopyFromDialog}
-        busy={exportApi.isExporting}
-        onCancel={exportApi.cancelExport}
-        isMultiFrame={scene.frameInstances.length > 0}
-      />
-      <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
-      <OnboardingTour />
-      <ShareQrDialog url={exportApi.shareQrUrl} onClose={exportApi.closeShareQr} />
-      <CommandPalette
-        commands={commands}
-        isOpen={commandPaletteOpen}
-        onClose={() => setCommandPaletteOpen(false)}
-      />
+      <Suspense fallback={null}>
+        <ResetConfirmDialog open={confirmResetOpen} onConfirm={confirmReset} onCancel={cancelReset} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ExportDialog
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+          scale={exportScale}
+          onScaleChange={setExportScale}
+          customSize={customExportSize}
+          onCustomSizeChange={setCustomExportSize}
+          onAspectRatioChange={setAspectRatio}
+          onExport={exportApi.handleExport}
+          onCopy={exportApi.handleCopyFromDialog}
+          onCopyJpeg={exportApi.handleCopyJpeg}
+          onCopyWebp={exportApi.handleCopyWebp}
+          onCopySvg={exportApi.handleCopySvg}
+          onCopyHtml={exportApi.handleCopyHtml}
+          busy={exportApi.isExporting}
+          onCancel={exportApi.cancelExport}
+          isMultiFrame={scene.frameInstances.length > 0}
+        />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <OnboardingTour />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ShareQrDialog url={exportApi.shareQrUrl} onClose={exportApi.closeShareQr} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <CommandPalette
+          commands={commands}
+          isOpen={commandPaletteOpen}
+          onClose={() => setCommandPaletteOpen(false)}
+        />
+      </Suspense>
     </main>
   );
 }

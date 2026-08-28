@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BackgroundControls } from "@/components/editor/BackgroundControls";
-import { pickBestSolid, pickGradientPair } from "@/lib/media/palette";
+import { pickBestSolid, pickHarmonicPair } from "@/lib/media/palette";
 import { loadMediaFromFile } from "@/lib/media/loadFile";
 
 vi.mock("@/lib/media/loadFile", () => ({
@@ -12,12 +12,13 @@ vi.mock("@/lib/media/loadFile", () => ({
 
 vi.mock("@/lib/media/palette", () => ({
   pickBestSolid: vi.fn(() => "#123456"),
-  pickGradientPair: vi.fn(() => ["#111111", "#222222"]),
+  pickHarmonicPair: vi.fn(() => ["#111111", "#222222"]),
+  gradientMiddleStop: vi.fn(() => "#abcdef"),
 }));
 
 const mockLoad = vi.mocked(loadMediaFromFile);
 const mockPickBest = vi.mocked(pickBestSolid);
-const mockPickPair = vi.mocked(pickGradientPair);
+const mockPickPair = vi.mocked(pickHarmonicPair);
 
 afterEach(() => {
   cleanup();
@@ -59,7 +60,9 @@ describe("BackgroundControls", () => {
   it("changes the solid color via the picker", () => {
     render(<BackgroundControls {...baseProps} />);
     fireEvent.change(screen.getByDisplayValue("#ffffff"), { target: { value: "#aabbcc" } });
-    expect(setters.setBackgroundSolid).toHaveBeenCalledWith("#aabbcc");
+    // The color input fires continuously while dragging, so the change is
+    // flagged for history coalescing.
+    expect(setters.setBackgroundSolid).toHaveBeenCalledWith("#aabbcc", true);
   });
 
   it("renders from/middle/to pickers and angle slider in gradient mode", () => {
@@ -73,13 +76,34 @@ describe("BackgroundControls", () => {
   it("edits the gradient stops and angle", () => {
     render(<BackgroundControls {...baseProps} backgroundMode="gradient" />);
     fireEvent.change(screen.getByDisplayValue("#111111"), { target: { value: "#010203" } });
-    expect(setters.setBackgroundGradient).toHaveBeenCalledWith("#010203", "#222222", 45, "#333333", "linear");
+    expect(setters.setBackgroundGradient).toHaveBeenCalledWith("#010203", "#222222", 45, "#333333", "linear", true);
     fireEvent.change(screen.getByDisplayValue("#222222"), { target: { value: "#040506" } });
-    expect(setters.setBackgroundGradient).toHaveBeenCalledWith("#111111", "#040506", 45, "#333333", "linear");
+    expect(setters.setBackgroundGradient).toHaveBeenCalledWith("#111111", "#040506", 45, "#333333", "linear", true);
     fireEvent.change(screen.getByDisplayValue("#333333"), { target: { value: "#070809" } });
-    expect(setters.setGradientVia).toHaveBeenCalledWith("#070809");
+    expect(setters.setGradientVia).toHaveBeenCalledWith("#070809", true);
     fireEvent.change(screen.getByRole("slider", { name: "editor.gradientAngle" }), { target: { value: "120" } });
-    expect(setters.setBackgroundGradient).toHaveBeenCalledWith("#111111", "#222222", 120, "#333333", "linear");
+    expect(setters.setBackgroundGradient).toHaveBeenCalledWith("#111111", "#222222", 120, "#333333", "linear", true);
+  });
+
+  it("toggles the middle gradient stop off and back on", async () => {
+    render(<BackgroundControls {...baseProps} backgroundMode="gradient" />);
+    const checkbox = screen.getByRole("checkbox");
+    expect(checkbox).toBeChecked();
+    await userEvent.click(checkbox);
+    expect(setters.setGradientVia).toHaveBeenCalledWith(null);
+  });
+
+  it("disables the middle picker while the stop is off and re-enables it", async () => {
+    render(<BackgroundControls {...baseProps} backgroundMode="gradient" gradientVia={null} />);
+    const picker = screen.getByLabelText("editor.gradientMiddle", { selector: "input[type=color]" });
+    expect(picker).toBeDisabled();
+    await userEvent.click(screen.getByRole("checkbox"));
+    expect(setters.setGradientVia).toHaveBeenCalledWith("#ffffff");
+  });
+
+  it("hides the angle slider for radial gradients", () => {
+    render(<BackgroundControls {...baseProps} backgroundMode="gradient" gradientType="radial" />);
+    expect(screen.queryByRole("slider", { name: "editor.gradientAngle" })).not.toBeInTheDocument();
   });
 
   it("switches between linear and radial gradient types", async () => {
@@ -100,6 +124,52 @@ describe("BackgroundControls", () => {
     );
     expect(screen.getByTitle("preset.slate")).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByTitle("preset.zinc")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("highlights a gradient preset only for an exact two-stop linear match", () => {
+    render(
+      <BackgroundControls
+        {...baseProps}
+        backgroundMode="gradient"
+        gradientFrom="#1d4ed8"
+        gradientTo="#7c3aed"
+        gradientVia={null}
+      />
+    );
+    expect(screen.getByTitle("preset.blue-violet")).toHaveAttribute("aria-pressed", "true");
+    cleanup();
+
+    // A leftover middle stop means the scene renders differently from the
+    // preset's two-stop swatch.
+    render(
+      <BackgroundControls
+        {...baseProps}
+        backgroundMode="gradient"
+        gradientFrom="#1d4ed8"
+        gradientTo="#7c3aed"
+        gradientVia="#ffffff"
+      />
+    );
+    expect(screen.getByTitle("preset.blue-violet")).toHaveAttribute("aria-pressed", "false");
+    cleanup();
+
+    // Same colors in radial form are not the preset either.
+    render(
+      <BackgroundControls
+        {...baseProps}
+        backgroundMode="gradient"
+        gradientFrom="#1d4ed8"
+        gradientTo="#7c3aed"
+        gradientVia={null}
+        gradientType="radial"
+      />
+    );
+    expect(screen.getByTitle("preset.blue-violet")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("exposes preset names to assistive tech via aria-label", () => {
+    render(<BackgroundControls {...baseProps} />);
+    expect(screen.getByTitle("preset.zinc")).toHaveAttribute("aria-label", "preset.zinc");
   });
 
   it("switches background mode via the mode tabs", async () => {
@@ -124,10 +194,22 @@ describe("BackgroundControls", () => {
     expect(setters.setBackgroundImage).toHaveBeenCalledWith("data:image/png;base64,abc");
   });
 
-  it("image tab without an uploaded image is a no-op", async () => {
+  it("disables the image tab without an uploaded image", () => {
     render(<BackgroundControls {...baseProps} backgroundMode="solid" />);
-    await userEvent.click(screen.getByRole("button", { name: "editor.bgModeImage" }));
-    expect(setters.setBackgroundImage).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "editor.bgModeImage" })).toBeDisabled();
+    cleanup();
+    render(<BackgroundControls {...baseProps} backgroundMode="solid" backgroundImageUrl="data:image/png;base64,abc" />);
+    expect(screen.getByRole("button", { name: "editor.bgModeImage" })).toBeEnabled();
+  });
+
+  it("clears a stale error message on the next mode switch", async () => {
+    mockLoad.mockRejectedValue(new Error("unsupported"));
+    render(<BackgroundControls {...baseProps} />);
+    const file = new File([""], "bg.gif", { type: "image/gif" });
+    await userEvent.upload(screen.getByText("editor.uploadBgImage"), file);
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+    await userEvent.click(screen.getByRole("button", { name: "editor.bgModeGradient" }));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("shows only the preset swatches matching the active mode", () => {
@@ -160,7 +242,9 @@ describe("BackgroundControls", () => {
     cleanup();
     render(<BackgroundControls {...baseProps} backgroundMode="gradient" gradientFrom="#1d4ed8" gradientTo="#7c3aed" />);
     await userEvent.click(screen.getByTitle("preset.mint"));
-    expect(setters.setBackgroundGradient).toHaveBeenCalledWith("#059669", "#0ea5e9", 45);
+    // Gradient presets are two-stop gradients: the leftover middle color is
+    // cleared so the preset renders exactly as its swatch.
+    expect(setters.setBackgroundGradient).toHaveBeenCalledWith("#059669", "#0ea5e9", 45, null);
 
     cleanup();
     render(<BackgroundControls {...baseProps} backgroundMode="pattern" patternId="dots" />);
@@ -181,8 +265,12 @@ describe("BackgroundControls", () => {
     mockPickPair.mockReturnValue(["#aa0000", "#0000aa"]);
     render(<BackgroundControls {...baseProps} scenePalette={["#aa0000", "#0000aa"]} />);
     await userEvent.click(screen.getByText("editor.autoBackground"));
-    expect(mockPickPair).toHaveBeenCalledWith(["#aa0000", "#0000aa"]);
-    expect(setters.setBackgroundGradient).toHaveBeenCalledWith("#aa0000", "#0000aa", expect.any(Number));
+    expect(mockPickPair).toHaveBeenCalledWith(["#aa0000", "#0000aa"], expect.any(String));
+    const call = setters.setBackgroundGradient.mock.calls.find((c) => c[0] === "#aa0000" && c[1] === "#0000aa");
+    expect(call).toBeDefined();
+    expect(call![2]).toEqual(expect.any(Number));
+    // A harmonic middle stop is added for a richer 3-stop blend.
+    expect(call![3]).toMatch(/^#/);
   });
 
   it("applies an auto solid from the media palette", async () => {

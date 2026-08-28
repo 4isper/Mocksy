@@ -5,6 +5,8 @@ import type {
   AnimationEasing,
   AnimationPreset,
   EditorScene,
+  EntranceAnimation,
+  BlendMode,
   ExportSize,
   FrameInstance,
   LayerTransformPatch,
@@ -41,6 +43,9 @@ export interface EditorStoreState {
    *  of `scene` so selecting doesn't churn undo history or serialize into share
    *  URLs. */
   activeFrameInstanceId: string | null;
+  /** Ids of all currently-selected frame instances for multi-select align/
+   *  distribute. Kept out of `scene` for the same reason as `activeLayerId`. */
+  selectedFrameIds: string[];
   /** Ids of all currently-selected layers for multi-select bulk operations.
    *  Kept out of `scene` for the same reason as `activeLayerId`. */
   selectedLayerIds: string[];
@@ -124,16 +129,24 @@ export interface EditorStoreState {
   resetScene: () => void;
   undo: () => void;
   redo: () => void;
+  /** Drops the entire undo/redo history. Used when the editor's scene is
+   *  replaced wholesale by a non-edit (project switch/import) — the stacks
+   *  belong to the replaced session and must not leak across projects. */
+  clearHistory: () => void;
   /** Jumps to an absolute position in the undo timeline. `index` 0 is the
    *  oldest entry; `past.length` is the current scene (a no-op). Entries after
    *  the target become the redo stack. */
   jumpToHistory: (index: number) => void;
   /** Replaces the active layer's media (or seeds the first layer). */
-  setMedia: (mediaUrl: string | null, mediaType: MediaType, mediaName?: string | null) => void;
+  setMedia: (mediaUrl: string | null, mediaType: MediaType, mediaName?: string | null, targetLayerId?: string | null) => void;
   /** Replaces media on a specific layer id (used by the multi-frame preview,
    *  where the visible frame isn't necessarily the globally-active layer). */
   setMediaOnLayer: (layerId: string, mediaUrl: string | null, mediaType: MediaType, mediaName?: string | null) => void;
   addLayer: (mediaUrl: string, mediaType: MediaType, mediaName?: string | null) => void;
+  /** Appends a new text layer (kind "text") with the given initial content
+   *  and selects it. Styled via the text controls; renders inside the frame's
+ *  screen like a media layer. */
+  addTextLayer: (textContent: string) => void;
   /** Clones a layer (same media + per-layer settings) as a new top-of-stack
    *  layer with a fresh id. Shares the source's blob: URL, which the
    *  orphan-revocation logic keeps alive while either layer references it. */
@@ -173,6 +186,16 @@ export interface EditorStoreState {
   updateActiveLayer: (patch: Partial<MediaLayer>) => void;
   /** Renames a layer's display label (its `mediaName`). */
   renameLayer: (id: string, name: string) => void;
+  /** Groups the given layers under a new shared groupId. Requires 2+ ids. */
+  groupLayers: (ids: string[], name?: string) => void;
+  /** Removes groupId from the given layers, dissolving the group. */
+  ungroupLayers: (ids: string[]) => void;
+  /** Renames a group (stored on the first layer's mediaName). */
+  renameGroup: (groupId: string | null, name: string) => void;
+  /** Toggles visibility for all layers in a group. */
+  toggleGroupHidden: (groupId: string | null) => void;
+  /** Toggles locked state for all layers in a group. */
+  toggleGroupLocked: (groupId: string | null) => void;
   setFrame: (frame: MockupFrame) => void;
   /** Stores a user-uploaded SVG skin and selects it as the active frame; passing
    *  null removes it (and falls back to the default frame when "custom" is
@@ -181,12 +204,20 @@ export interface EditorStoreState {
   setCustomFrame: (customFrame: import("@/lib/types/editor").CustomFrame | null) => void;
   setFrameInstances: (instances: FrameInstance[]) => void;
   updateFrameInstance: (id: string, patch: Partial<FrameInstance>, coalesce?: boolean) => void;
+  /** Appends a new frame instance cloned from the active one (or the default
+   *  scene frame when none exist yet), so the user can incrementally add
+   *  devices instead of only via grid/layout presets or right-click duplicate. */
+  addFrameInstance: () => void;
   removeFrameInstance: (id: string) => void;
   /** Clones a frame instance (and its layer) slightly offset from the original. */
   duplicateFrameInstance: (id: string) => void;
   /** Moves a frame instance to the top ("front") or bottom ("back") of the
    *  render order — later instances draw on top. */
   reorderFrameInstance: (id: string, to: "front" | "back") => void;
+  /** Reorders frame instances to match the given id order (used by drag-and-drop
+   *  in the frame list). Unknown/missing ids are ignored; every existing id must
+   *  appear exactly once in `orderedIds`. */
+  reorderFrameInstances: (orderedIds: string[]) => void;
   layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") => void;
   applyFrameLayout: (frame: MockupFrame, count: number, layout: import("@/lib/types/editor").LayoutPreset) => void;
   /** Aligns all frame instances to a shared edge/center (one undo step). */
@@ -197,6 +228,9 @@ export interface EditorStoreState {
   setAnimationPreset: (animationPreset: AnimationPreset) => void;
   setAnimationEasing: (animationEasing: AnimationEasing) => void;
   setAnimationDuration: (durationMs: number) => void;
+  setEntranceAnimation: (entranceAnimation: EntranceAnimation) => void;
+  setEntranceDuration: (entranceDuration: number) => void;
+  setBlendMode: (blendMode: BlendMode) => void;
   setZoom: (zoom: number) => void;
   setMediaOffsetX: (offset: number) => void;
   setMediaOffsetY: (offset: number) => void;
@@ -212,13 +246,16 @@ export interface EditorStoreState {
   setBorderRadius: (radius: number) => void;
   setTiltX: (tiltX: number) => void;
   setTiltY: (tiltY: number) => void;
-  setBackgroundSolid: (color: string) => void;
-  setBackgroundGradient: (from: string, to: string, angle?: number, gradientVia?: string, gradientType?: "linear" | "radial") => void;
+  setBackgroundSolid: (color: string, coalesce?: boolean) => void;
+  /** `gradientVia` accepts an explicit `null` to clear the middle stop;
+   *  `undefined` leaves the current value untouched. */
+  setBackgroundGradient: (from: string, to: string, angle?: number, gradientVia?: string | null, gradientType?: "linear" | "radial", coalesce?: boolean) => void;
   setBackgroundTransparent: () => void;
   setBackgroundImage: (url: string) => void;
   setBackgroundPattern: (patternId: import("@/lib/types/editor").PatternId) => void;
   setGradientType: (gradientType: "linear" | "radial") => void;
-  setGradientVia: (gradientVia: string) => void;
+  /** `null` clears the middle stop so a two-stop gradient is restored. */
+  setGradientVia: (gradientVia: string | null, coalesce?: boolean) => void;
   setBackgroundBlur: (blur: number) => void;
   toggleWatermark: (enabled: boolean) => void;
   setWatermarkText: (text: string) => void;
@@ -227,6 +264,14 @@ export interface EditorStoreState {
   setWatermarkImage: (url: string | null) => void;
   /** Patches the on-screen decoration (status bar / lock / home chrome). */
   setScreenChrome: (patch: Partial<import("@/lib/types/editor").ScreenChrome>) => void;
+  /** Patches the screen chrome of one frame instance (independent per device). */
+  setFrameInstanceScreen: (id: string, patch: Partial<import("@/lib/types/editor").ScreenChrome>) => void;
+  /** Patches the floor reflection of one frame instance (independent per device). */
+  setFrameInstanceFloorReflection: (id: string, on: boolean) => void;
+  /** Removes a frame instance's screen + floor-reflection overrides. */
+  clearFrameInstanceOverrides: (id: string) => void;
+  /** Copies a device's effective screen chrome and floor reflection to the scene defaults and clears all overrides. */
+  applyInstanceToAll: (id: string) => void;
   /** Toggles the screen-glare light sweep. */
   setScreenGlare: (on: boolean) => void;
   /** Toggles the floor reflection under the device. */
@@ -252,6 +297,8 @@ export interface EditorStoreState {
   selectAnnotation: (id: string | null, additive?: boolean) => void;
   selectAnnotations: (ids: string[]) => void;
   selectFrameInstance: (id: string | null) => void;
+  selectFrameIds: (ids: string[]) => void;
+  toggleFrameSelected: (id: string) => void;
   clearAnnotations: () => void;
   setVideoMuted: (muted: boolean) => void;
   setVideoLoop: (loop: boolean) => void;

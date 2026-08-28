@@ -1,0 +1,306 @@
+/* ---- Template cards ---- */
+.templates {
+  display: grid;
+  gap: 9px;
+  padding: 10px;
+  align-content: start;
+}
+
+.template-card {
+  text-align: start;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--panel-border);
+  background: var(--field-bg);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+.template-card:hover {
+  background: var(--hover);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-soft);
+}
+
+.template-card:active {
+  transform: translateY(1px);
+}
+
+.template-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.template-card .t-name {
+  font-size: 13px;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+
+.template-card .t-desc {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+/* ---- Frame cards (multi-frame list) ---- */
+.frame-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--panel-border);
+  background: var(--panel-border);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.frame-card:hover {
+  border-color: var(--panel-border-strong);
+  background: var(--panel-border-strong);
+}
+.frame-card[draggable="true"] {
+  cursor: grab;
+}
+.frame-card[data-drag-over] {
+  border-color: var(--accent, #4f8cff);
+  box-shadow: 0 -2px 0 0 var(--accent, #4f8cff);
+}
+
+.frame-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  min-height: 36px;
+}
+
+.frame-card-head .frame-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--range-track);
+  overflow: hidden;
+  flex: none;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  color: var(--text-faint);
+}
+.frame-card-head .frame-thumb img,
+.frame-card-head .frame-thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.frame-card-head .frame-idx {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  min-width: 14px;
+  text-align: center;
+}
+
+.frame-card-head .frame-device {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 6px;
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.frame-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 8px 8px;
+}
+
+/* ---- Annotation list rows (Annotations panel) ---- */
+.anno-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 8px 11px;
+  border-radius: 9px;
+  border: 1px solid var(--panel-border);
+  background: var(--field-bg);
+  color: var(--text-dim);
+  cursor: pointer;
+  text-align: start;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.anno-row:hover {
+  color: var(--text);
+  border-color: var(--panel-border-strong);
+}
+
+.anno-row.is-active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.anno-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.anno-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex: none;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+.anno-hint {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+/* ---- Layer items (Layers panel) ---- */
+.layer-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: transparent;
+  cursor: grab;
+  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.layer-item:hover {
+  border-color: var(--panel-border-strong);
+}
+
+.layer-item.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.layer-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.layer-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 2px 0;
+}
+
+/* ---- Project items (Projects panel) ---- */
+.project-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.project-item:hover {
+  border-color: var(--panel-border-strong);
+}
+
+.project-item.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.project-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---- History panel ---- */
+.history-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: start;
+  padding: 7px 9px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--panel-border);
+  background: var(--field-bg);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12.5px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.history-row:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: var(--accent);
+}
+
+.history-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.history-row.is-current {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  cursor: default;
+}
+
+.history-row.is-future {
+  color: var(--text-faint);
+}
+
+.history-dot {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.history-row.is-current .history-dot {
+  opacity: 1;
+}
+
+.history-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-index {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.history-empty {
+  font-size: 12.5px;
+  color: var(--text-faint);
+}

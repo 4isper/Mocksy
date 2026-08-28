@@ -5,7 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { PwaRegister } from "@/components/editor/PwaRegister";
 import { SkipLink } from "@/components/editor/SkipLink";
-import { ErrorBoundary } from "@/components/editor/ErrorBoundary";
+import { ErrorBoundary, LocalizedErrorBoundary } from "@/components/editor/ErrorBoundary";
 import { isRtlLocale } from "@/i18n/request";
 import { isValidLocale } from "@/i18n/locales";
 import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH } from "@/lib/state/ogScene";
@@ -69,11 +69,15 @@ export default async function LocaleLayout({
       <body>
         <NextIntlClientProvider messages={messages}>
           <SkipLink />
-          <ErrorBoundary message={errors?.message} retryLabel={errors?.tryAgain}>
-            <ThemeProvider>{children}</ThemeProvider>
-          </ErrorBoundary>
+          <LocalizedErrorBoundary>
+            {/* PWA registration + update banner: lives inside the provider so
+                the banner can be localized. Renders null until an update lands. */}
+            <ThemeProvider>
+              <PwaRegister />
+              {children}
+            </ThemeProvider>
+          </LocalizedErrorBoundary>
         </NextIntlClientProvider>
-        <PwaRegister />
       </body>
     </html>
   );

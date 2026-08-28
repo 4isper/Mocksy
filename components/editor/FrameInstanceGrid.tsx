@@ -6,7 +6,8 @@ import { useTranslations } from "next-intl";
 import type { EditorScene, FrameInstance, MediaLayer } from "@/lib/types/editor";
 import { frameInstanceHalfExtents, frameInstAr, getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
-import type { SceneCss } from "@/lib/render/mockupRenderer";
+import { buildTextLayerSvg, isTextLayer } from "@/lib/render/layerText";
+import { buildEntranceAnimationCss, buildEntranceKeyframesStyle, type SceneCss } from "@/lib/render/mockupRenderer";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { resolveZoomScale } from "@/lib/render/previewViewport";
 import { snapToGrid } from "@/lib/render/grid";
@@ -253,6 +254,7 @@ export function FrameInstanceGrid({
 
   return (
     <>
+      <style dangerouslySetInnerHTML={{ __html: buildEntranceKeyframesStyle(scene.layers) }} />
       {scene.frameInstances.filter((inst) => {
         const layer = scene.layers.find((l) => l.id === inst.layerId) ?? activeLayer;
         return !layer?.hidden;
@@ -261,9 +263,11 @@ export function FrameInstanceGrid({
         const spec = getFrameSpec(inst.frame);
         const instCss = frameInstanceCssMap.get(inst.id)!;
         const zoom = layer?.zoom ?? 1;
-        const offsetX = layer?.mediaOffsetX ?? 0;
-        const offsetY = layer?.mediaOffsetY ?? 0;
-        const zoomStyle = { transform: tiltCss(scene) + "scale(" + zoom + ") translate(" + (offsetX * 2) + "px, " + (offsetY * 2) + "px)", transformOrigin: "center" };
+        // mediaOffset pans the MEDIA inside the frame (objectPosition in
+        // instCss, matching the exporters) — translating the whole frame here
+        // as well double-applies it and shifts the device ~2px per unit away
+        // from its exported position.
+        const zoomStyle = { transform: tiltCss(scene) + "scale(" + zoom + ")", transformOrigin: "center" };
         // Live preview uses the native -webkit-box-reflect (Chromium/Safari);
         // canvas-based exports implement the effect fully for every browser.
         const isSelected = activeFrameInstanceId === inst.id;
@@ -326,7 +330,7 @@ export function FrameInstanceGrid({
               outlineOffset: 4,
               borderRadius: 4,
               touchAction: "none",
-              ...(scene.floorReflection
+              ...(inst.floorReflection ?? scene.floorReflection
                 ? ({ WebkitBoxReflect: "below 0 linear-gradient(transparent 45%, rgba(255,255,255,0.30))" } as CSSProperties)
                 : {})
             } as CSSProperties}
@@ -362,38 +366,56 @@ export function FrameInstanceGrid({
                 css={instCss}
                 media={
                   layer?.mediaUrl ? (
-                    isVideoLayer(layer) ? (
-                      <video
-                        src={layer.mediaUrl}
-                        muted
-                        playsInline
-                        controls
-                        loop={layer.videoLoop}
-                        autoPlay={layer.videoAutoplay}
-                        crossOrigin="anonymous"
-                        style={{ ...instCss.mediaStyle, objectFit: "contain", backgroundColor: "var(--panel-solid)", cursor: "grab" }}
-                        onPointerDown={() => selectLayer(layer.id)}
-                        onLoadedData={(e) => {
-                          setMediaLoading(false);
-                          analyzeMedia(e.currentTarget);
-                        }}
-                        onLoadedMetadata={(e) => {
-                          setVideoDuration(e.currentTarget.duration || 0, layer.id);
-                          e.currentTarget.playbackRate = Math.max(0.5, Math.min(2, layer.playbackSpeed ?? 1));
-                        }}
-                      />
-                    ) : (
-                      <img
-                        src={layer.mediaUrl}
-                        alt={t("editor.uploadedMediaAlt")}
-                        style={{ ...instCss.mediaStyle, cursor: "grab" }}
-                        onLoad={(e) => {
-                          setMediaLoading(false);
-                          analyzeMedia(e.currentTarget);
-                        }}
-                        onPointerDown={() => selectLayer(layer.id)}
-                      />
-                    )
+                    (() => {
+                      const entranceStyle = buildEntranceAnimationCss(layer);
+                      const hasEntrance = layer.entranceAnimation && layer.entranceAnimation !== "none";
+                      const blendCss = layer.blendMode && layer.blendMode !== "normal" ? { mixBlendMode: layer.blendMode } : {};
+                      const wrapper: CSSProperties = hasEntrance
+                        ? { position: "relative", width: "100%", height: "100%", ...entranceStyle }
+                        : {};
+                      const wrap = (el: React.ReactNode) =>
+                        hasEntrance
+                          ? <div key={`${layer.id}-${layer.entranceAnimation}`} style={wrapper}>{el}</div>
+                          : el;
+                      return isVideoLayer(layer) ? wrap(
+                        <video
+                          src={layer.mediaUrl}
+                          muted
+                          playsInline
+                          controls
+                          loop={layer.videoLoop}
+                          autoPlay={layer.videoAutoplay}
+                          crossOrigin="anonymous"
+                          style={{ ...instCss.mediaStyle, objectFit: "contain", backgroundColor: "var(--panel-solid)", cursor: "grab", ...blendCss }}
+                          onPointerDown={() => selectLayer(layer.id)}
+                          onLoadedData={(e) => {
+                            setMediaLoading(false);
+                            analyzeMedia(e.currentTarget);
+                          }}
+                          onLoadedMetadata={(e) => {
+                            setVideoDuration(e.currentTarget.duration || 0, layer.id);
+                            e.currentTarget.playbackRate = Math.max(0.5, Math.min(2, layer.playbackSpeed ?? 1));
+                          }}
+                        />
+                      ) : wrap(
+                        <img
+                          src={layer.mediaUrl}
+                          alt={t("editor.uploadedMediaAlt")}
+                          style={{ ...instCss.mediaStyle, cursor: "grab", ...blendCss }}
+                          onLoad={(e) => {
+                            setMediaLoading(false);
+                            analyzeMedia(e.currentTarget);
+                          }}
+                          onPointerDown={() => selectLayer(layer.id)}
+                        />
+                      );
+                    })()
+                  ) : isTextLayer(layer) ? (
+                    <div
+                      style={{ ...instCss.textStyle, cursor: "grab" }}
+                      onPointerDown={() => selectLayer(layer!.id)}
+                      dangerouslySetInnerHTML={{ __html: buildTextLayerSvg(layer, instCss.screenAspect) ?? "" }}
+                    />
                   ) : null
                 }
               />

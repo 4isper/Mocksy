@@ -30,8 +30,9 @@ import { nextProjectId } from "@/lib/state/ids";
 type MediaHolder = Record<string, unknown>;
 
 /** Calls `visit` for every media-URL field of the scene (layers, background
- *  image, watermark logo, background audio, custom frame asset). */
-function visitSceneMedia(scene: unknown, visit: (holder: MediaHolder, prop: string) => void): void {
+ *  image, watermark logo, background audio, custom frame asset). Exported so
+ *  other codecs (project bundles) walk exactly the same field set. */
+export function visitSceneMedia(scene: unknown, visit: (holder: MediaHolder, prop: string) => void): void {
   if (!scene || typeof scene !== "object") return;
   const s = scene as MediaHolder;
   if (Array.isArray(s.layers)) {
@@ -143,6 +144,22 @@ export interface PersistedProjectsState {
   activeProjectId: string | null;
 }
 
+/** Content-hash keys whose blobs are already in IndexedDB but whose `@idb:`
+ *  placeholders haven't been committed to localStorage yet. A sweep running in
+ *  that window must not delete them as orphans — the next reload would find
+ *  the placeholder with no blob behind it and silently lose the media. */
+const inFlightOffloads = new Set<string>();
+
+/** Registers offload keys as referenced until the persist write lands. */
+export function beginMediaOffload(keys: Iterable<string>): void {
+  for (const key of keys) inFlightOffloads.add(key);
+}
+
+/** Releases previously registered keys once their placeholders are persisted. */
+export function endMediaOffload(keys: Iterable<string>): void {
+  for (const key of keys) inFlightOffloads.delete(key);
+}
+
 /**
  * Encodes the whole projects state for localStorage. Returns null when any
  * part could not be offloaded (no IndexedDB, conversion failure) so the caller
@@ -216,8 +233,15 @@ export async function decodeProjectsState(raw: string | null): Promise<Persisted
 }
 
 /** Deletes IndexedDB blobs no longer referenced by any stored project
- *  (deleted scenes, replaced uploads). Runs once per load after decoding. */
-export async function sweepOrphanedMedia(state: PersistedProjectsState | null): Promise<number> {
+ *  (deleted scenes, replaced uploads). Runs once per load after decoding.
+ *  `readFreshRaw` re-snapshots the raw localStorage JSON at deletion time:
+ *  a concurrent persist (share-link bootstrap, another tab) may offload new
+ *  blobs while we await listMediaKeys — deleting against the stale load-time
+ *  snapshot would strand those fresh placeholders with no blob behind them. */
+export async function sweepOrphanedMedia(
+  state: PersistedProjectsState | null,
+  readFreshRaw?: () => string | null
+): Promise<number> {
   const referenced = new Set<string>();
   const collect = (scene: unknown) =>
     visitSceneMedia(scene, (holder, prop) => {
@@ -229,6 +253,24 @@ export async function sweepOrphanedMedia(state: PersistedProjectsState | null): 
   if (state) for (const p of state.projects) collect(p.scene);
 
   const keys = await listMediaKeys();
+  if (readFreshRaw) {
+    let raw: string | null = null;
+    try {
+      raw = readFreshRaw();
+    } catch {
+      raw = null;
+    }
+    if (raw) {
+      // Textual scan is enough — placeholders are plain "@idb:<hex>" strings.
+      for (const match of raw.matchAll(/@idb:([0-9a-f]+)/g)) {
+        referenced.add(match[1]!);
+      }
+    }
+  }
+  // A persist may have written blobs to IndexedDB while the placeholders for
+  // them aren't in localStorage yet — those keys are protected until the
+  // caller reports the write landed.
+  for (const key of inFlightOffloads) referenced.add(key);
   const orphans = keys.filter((k) => !referenced.has(k));
   for (const key of orphans) await deleteMediaBlob(key);
   return orphans.length;

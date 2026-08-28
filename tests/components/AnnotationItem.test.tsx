@@ -29,7 +29,7 @@ function makeAnnotation(overrides: Partial<Annotation> = {}): Annotation {
  *  out of each individual test. */
 function baseProps(overrides: Record<string, unknown> = {}) {
   return {
-    others: [],
+    all: [],
     onSelect: () => {},
     onSelectMany: vi.fn(),
     onGuides: vi.fn(),
@@ -55,7 +55,8 @@ describe("AnnotationItem", () => {
         snapDivisions={10}
         onSelect={() => {}}
         onUpdate={onUpdate}
-        others={[]}
+        onRemove={vi.fn()}
+        all={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />
@@ -88,7 +89,8 @@ describe("AnnotationItem", () => {
         snapDivisions={null}
         onSelect={() => {}}
         onUpdate={onUpdate}
-        others={[]}
+        onRemove={vi.fn()}
+        all={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />
@@ -119,7 +121,8 @@ describe("AnnotationItem", () => {
         canvasRef={canvasRef}
         onSelect={() => {}}
         onUpdate={onUpdate}
-        others={[]}
+        onRemove={vi.fn()}
+        all={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />
@@ -150,7 +153,8 @@ describe("AnnotationItem", () => {
         snapDivisions={null}
         onSelect={() => {}}
         onUpdate={onUpdate}
-        others={[]}
+        onRemove={vi.fn()}
+        all={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />
@@ -173,7 +177,8 @@ describe("AnnotationItem", () => {
         canvasRef={{ current: null }}
         onSelect={() => {}}
         onUpdate={() => {}}
-        others={[]}
+        onRemove={vi.fn()}
+        all={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />
@@ -193,7 +198,8 @@ describe("AnnotationItem", () => {
         canvasRef={canvasRef}
         onSelect={() => {}}
         onUpdate={() => {}}
-        others={[]}
+        onRemove={vi.fn()}
+        all={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />
@@ -216,7 +222,8 @@ describe("AnnotationItem", () => {
         canvasRef={canvasRef}
         onSelect={() => {}}
         onUpdate={() => {}}
-        others={[]}
+        onRemove={vi.fn()}
+        all={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />
@@ -237,7 +244,8 @@ describe("AnnotationItem", () => {
         canvasRef={canvasRef}
         onSelect={onSelect}
         onUpdate={() => {}}
-        others={[]}
+        onRemove={vi.fn()}
+        all={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />
@@ -259,7 +267,8 @@ describe("AnnotationItem", () => {
         canvasRef={canvasRef}
         onSelect={() => {}}
         onUpdate={() => {}}
-        others={[]}
+        onRemove={vi.fn()}
+        all={[]}
         onSelectMany={vi.fn()}
         onGuides={vi.fn()}
       />

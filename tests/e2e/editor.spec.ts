@@ -105,12 +105,13 @@ test("selecting iphone16pro renders the device overlay", async ({ page }) => {
   await selectFrame(page, "16 Pro");
   await expect(page.locator('img[src*="iphone16pro.svg"]').first()).toBeVisible();
   // The overlay frame adopts its native (portrait) aspect ratio instead of
-  // stretching the skin to the scene's default 16/9.
+  // stretching the skin to the scene's default 16/9. The 16 Pro skin carries
+  // its real viewBox (402x874), not the shared 390x844 phone default.
   const ratio = await page
     .locator("[data-mockup-frame]")
     .first()
     .evaluate((el) => getComputedStyle(el).aspectRatio);
-  expect(ratio).toContain("390 / 844");
+  expect(ratio).toContain("402 / 874");
 });
 
 test("iphone16pro media stays inside the device cutout, not under the bezel", async ({ page }) => {
@@ -303,12 +304,14 @@ test("autosaves the scene and restores it after reload", async ({ page }) => {
   await expect.poll(() => frameIsActive(page, "Tablet")).toBe("true");
 });
 
-test("watch frame renders as a circle", async ({ page }) => {
+test("watch frame renders with a squircle screen", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "Watch");
   await expect.poll(() => frameIsActive(page, "Watch")).toBe("true");
-  const radius = await page.locator("[data-mockup-frame]").first().evaluate((el) => getComputedStyle(el).borderRadius);
-  expect(radius).toContain("50%");
+  // The watch bezel is a squircle applied via an SVG clip-path (not a CSS
+  // 50% border-radius), shared between preview and canvas export.
+  const clip = await page.locator("[data-mockup-frame] img").first().evaluate((el) => getComputedStyle(el).clipPath);
+  expect(clip).toContain("sq");
 });
 
 test("changing aspect ratio resizes the canvas but not the device frame", async ({ page }) => {
@@ -389,9 +392,9 @@ test("duplicating a layer clones it with the same media", async ({ page }) => {
   // The default demo is a 2-frame grid, so two layers to start.
   await expect(page.locator(".layer-item")).toHaveCount(2);
 
-  // Duplicate the selected layer from the layers panel. The clone keeps the
-  // same media, so the layer list grows to three.
-  await page.locator(".layer-item.is-active").getByRole("button", { name: "Duplicate layer" }).click();
+  // Duplicate the selected layer from the layers-panel toolbar. The clone
+  // keeps the same media, so the layer list grows to three.
+  await page.getByRole("button", { name: "Duplicate layer" }).click();
   await expect(page.locator(".layer-item")).toHaveCount(3);
   // Only the two grid frames render; the duplicated layer has no frame slot.
   await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(2);
@@ -572,13 +575,14 @@ test("toggling layer visibility hides and shows it in the preview", async ({ pag
   });
   await expect(previewMedia(page)).toBeVisible();
 
-  // Hide the active layer via the eye toggle in the layers panel; the preview
-  // drops its media without deleting the layer (the grid's other frame stays).
-  await page.locator(".layer-item.is-active").getByTitle("Hide layer").click();
+  // Hide the active layer via the eye toggle in the layers-panel toolbar; the
+  // preview drops its media without deleting the layer (the grid's other frame
+  // stays).
+  await page.getByTitle("Hide layer").click();
   await expect(page.locator('img[alt="Uploaded media"]')).toHaveCount(1);
 
   // Show it again; the media returns to the preview.
-  await page.locator(".layer-item.is-active").getByTitle("Show layer").click();
+  await page.getByTitle("Show layer").click();
   await expect(previewMedia(page)).toBeVisible();
 });
 
@@ -642,8 +646,16 @@ test("Export PNG via keyboard shortcut triggers a download", async ({ page }) =>
 test("panels stack and stay within the viewport on a narrow screen", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 800 });
   await page.goto("/");
+  // Below the 768px breakpoint the side panels move into bottom sheets behind
+  // the fixed MobileTabBar; the desktop toolbar (and its Export button) is hidden.
+  const tabbar = page.locator(".mobile-tabbar");
+  await expect(tabbar).toBeVisible();
+  await expect(tabbar.getByRole("button", { name: /Export/ })).toBeVisible();
+  // The control panels are reachable by opening their sheets.
+  await tabbar.getByRole("button", { name: /Controls/ }).click();
+  await expect(page.locator("#control-panel")).toBeVisible();
+  await tabbar.getByRole("button", { name: /Layers/ }).click();
   await expect(page.getByText("Scene presets")).toBeVisible();
-  await expect(page.getByRole("button", { name: /Export PNG \/ MP4/ })).toBeVisible();
   // No horizontal overflow on mobile.
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
   expect(overflow).toBe(true);
@@ -1107,9 +1119,11 @@ test("exporting an image scene produces a self-contained HTML document", async (
   expect(name).toMatch(/\.html$/);
   const html = buffer.toString("utf8");
   expect(html.trimStart().toLowerCase().startsWith("<!doctype html")).toBe(true);
-  // The default scene is a multi-frame grid, so the HTML embeds a rendered PNG
-  // snapshot of the whole grid as a data URL (see exportHtml).
-  expect(html).toContain('<img src="data:image/png;base64,');
+  // The default scene is a multi-frame grid, exported as live-CSS markup
+  // (see exportHtml): one .frame-instance per device, every asset inlined
+  // as a data URL so the document stays fully self-contained.
+  expect(html).toContain('class="frame-instance"');
+  expect(html).toContain('<img class="media" src="data:image/');
 });
 
 test("exporting a video scene triggers a WebM download", async ({ page }) => {
@@ -1128,6 +1142,9 @@ test("exporting a video scene triggers a WebM download", async ({ page }) => {
 });
 
 test("animated WebP export of an image scene downloads a non-empty file", async ({ page }) => {
+  // The WebP encoder runs under SwiftShader locally; give it the same
+  // headroom as the video-export suites.
+  test.setTimeout(VIDEO_EXPORT_TIMEOUT);
   await page.goto("/");
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({
     name: "sample.png",
@@ -1141,7 +1158,7 @@ test("animated WebP export of an image scene downloads a non-empty file", async 
 
   await openExportDialog(page);
   await chooseExportFormat(page, "Animated WebP");
-  const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
+  const downloadPromise = page.waitForEvent("download", { timeout: VIDEO_EXPORT_EVENT_TIMEOUT });
   await page.locator(".modal[role='dialog']").getByRole("button", { name: "Export Animated WebP" }).click();
   const { name, buffer } = await downloadBuffer(downloadPromise);
   expect(name).toMatch(/\.webp$/);
@@ -1198,6 +1215,10 @@ test("SVG export of a video scene embeds the poster frame", async ({ page }) => 
 
 test("creating a 2-frame grid renders two mockups in the preview", async ({ page }) => {
   await page.goto("/");
+  // Layouts are non-destructive: they rearrange existing frames and fill new
+  // slots by reusing bound media round-robin. Start from a single frame so
+  // one uploaded video has to fill both grid slots.
+  await page.getByRole("button", { name: "Remove frame" }).first().click();
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles("public/sample-video.mp4");
   await expect(page.locator("#preview-canvas video")).toHaveCount(1);
 
@@ -1320,7 +1341,7 @@ test("locale switcher switches the UI language end-to-end", async ({ page }) => 
   ]);
   await expect(page.locator("html")).toHaveAttribute("lang", "ru");
   await expect(page.getByRole("button", { name: /Экспорт PNG \/ MP4/ })).toBeVisible();
-  await expect(page.getByLabel("Сетка")).toBeVisible();
+  await expect(page.getByLabel("Сетка", { exact: true })).toBeVisible();
 
   await page.waitForTimeout(1000);
   await Promise.all([
@@ -1336,7 +1357,7 @@ test("Russian locale renders translated UI strings", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("lang", "ru");
   await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
   await expect(page.getByRole("button", { name: /Экспорт PNG \/ MP4/ })).toBeVisible();
-  await expect(page.getByLabel("Сетка")).toBeVisible();
+  await expect(page.getByLabel("Сетка", { exact: true })).toBeVisible();
 });
 
 test("grid controls are translated per locale", async ({ page }) => {

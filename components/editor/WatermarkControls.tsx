@@ -59,7 +59,7 @@ export function WatermarkControls({
         <span className="track" aria-hidden="true" />
         <span>{t("editor.watermark")}</span>
       </label>
-      <label className="field">
+      <div className="field">
         <span>{t("editor.watermarkLogo")}</span>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {watermarkImageUrl ? (
@@ -85,7 +85,7 @@ export function WatermarkControls({
             {error}
           </span>
         ) : null}
-      </label>
+      </div>
       <label className="field">
         <span>{t("editor.watermarkText")}</span>
         <input value={watermarkText} onChange={(e) => setWatermarkText(e.target.value)} />

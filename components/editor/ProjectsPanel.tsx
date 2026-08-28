@@ -1,15 +1,18 @@
 "use client";
 
 import type { ChangeEvent } from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import type { Project } from "@/lib/types/editor";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { useProjectsStore } from "@/lib/state/projectsStore";
 import { exportProjectToFile, importProjectFromFile } from "@/lib/state/projectFile";
+import { exportProjectBundle, importProjectBundle, isBundleFile } from "@/lib/state/projectBundle";
 import { exportTemplateToFile, importTemplateFromFile } from "@/lib/state/templateFile";
-import { relativeTime } from "@/lib/utils/relativeTime";
+import { relativeTime } from "@/lib/state/relativeTime";
 import { ProjectItem } from "@/components/editor/ProjectItem";
 import { TrashSection } from "@/components/editor/TrashSection";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 
 export function ProjectsPanel() {
   const t = useTranslations();
@@ -36,6 +39,18 @@ export function ProjectsPanel() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [pendingSwitchId, setPendingSwitchId] = useState<string | null>(null);
+  const [busyExportId, setBusyExportId] = useState<string | null>(null);
+  const trapRef = useFocusTrap(!!pendingSwitchId);
+
+  useEffect(() => {
+    if (!pendingSwitchId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPendingSwitchId(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [pendingSwitchId]);
 
   const activeProjects = projects.filter((p) => p.deletedAt == null);
   const trashedProjects = projects.filter((p) => p.deletedAt != null);
@@ -47,6 +62,21 @@ export function ProjectsPanel() {
     setError(null);
   };
 
+  const handleSwitch = useCallback((id: string) => {
+    if (id === activeProjectId) return;
+    const hasUndo = useEditorStore.getState().past.length > 0;
+    if (hasUndo) {
+      setPendingSwitchId(id);
+    } else {
+      switchProject(id);
+    }
+  }, [activeProjectId, switchProject]);
+
+  const confirmSwitch = useCallback(() => {
+    if (pendingSwitchId) switchProject(pendingSwitchId);
+    setPendingSwitchId(null);
+  }, [pendingSwitchId, switchProject]);
+
   const startRename = (id: string, name: string) => {
     setEditingId(id);
     setDraftName(name);
@@ -57,16 +87,34 @@ export function ProjectsPanel() {
     setEditingId(null);
   };
 
+  const cancelRename = () => {
+    setEditingId(null);
+  };
+
   const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
     try {
-      const project = await importProjectFromFile(file);
+      // .mocksy.zip bundles carry their media; plain JSON imports the
+      // appearance-only project format.
+      const project = isBundleFile(file) ? await importProjectBundle(file) : await importProjectFromFile(file);
       importProject(project);
       setError(null);
     } catch {
       setError(t("projects.importError"));
+    }
+  };
+
+  const handleExportBundle = async (project: Project) => {
+    try {
+      setBusyExportId(project.id);
+      await exportProjectBundle(project);
+      setError(null);
+    } catch {
+      setError(t("projects.bundleError"));
+    } finally {
+      setBusyExportId(null);
     }
   };
 
@@ -96,7 +144,12 @@ export function ProjectsPanel() {
         </button>
         <label className="btn" style={{ flex: 1, fontSize: 12, padding: "7px 10px", cursor: "pointer", textAlign: "center" }}>
           {t("projects.import")}
-          <input type="file" accept="application/json,.json" onChange={handleImport} style={{ display: "none" }} />
+          <input
+            type="file"
+            accept="application/json,.json,.zip,application/zip,.mocksy.zip"
+            onChange={handleImport}
+            style={{ display: "none" }}
+          />
         </label>
       </div>
       <div style={{ display: "flex", gap: 6 }}>
@@ -147,12 +200,15 @@ export function ProjectsPanel() {
               editing={editingId === project.id}
               draftName={draftName}
               relativeTime={relTime}
-              onSwitch={switchProject}
+              onSwitch={handleSwitch}
               onStartRename={startRename}
               onCommitRename={commitRename}
+              onCancelRename={cancelRename}
               onDraftChange={setDraftName}
               onDuplicate={duplicateProject}
               onExport={exportProjectToFile}
+              onExportBundle={handleExportBundle}
+              bundleBusy={busyExportId === project.id}
               onDelete={deleteProject}
               disableDelete={activeProjects.length <= 1}
             />
@@ -163,6 +219,18 @@ export function ProjectsPanel() {
       <p style={{ color: "var(--text-dim)", fontSize: 12, margin: 0 }}>
         {t("projects.autosaveNote")}
       </p>
+      {pendingSwitchId && (
+        <div className="modal-backdrop" role="presentation" onClick={() => setPendingSwitchId(null)}>
+          <div className="modal" ref={trapRef} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <h3>{t("projects.switchConfirmTitle")}</h3>
+            <p>{t("projects.switchConfirmMessage")}</p>
+            <div className="modal-actions">
+              <button type="button" className="btn btn-primary" onClick={() => setPendingSwitchId(null)} autoFocus>{t("projects.switchConfirmCancel")}</button>
+              <button type="button" className="btn btn-danger" onClick={confirmSwitch}>{t("projects.switchConfirmDiscard")}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

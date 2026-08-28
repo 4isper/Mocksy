@@ -9,7 +9,9 @@ import { useAutoDismissError } from "@/lib/hooks/useAutoDismissError";
 import { useLayerReorder } from "@/lib/hooks/useLayerReorder";
 import { ContextMenu, type ContextMenuItem } from "@/components/editor/ContextMenu";
 import { LayerItem } from "@/components/editor/LayerItem";
+import { LayerActions } from "@/components/editor/LayerActions";
 import { LayerBulkActions } from "@/components/editor/LayerBulkActions";
+import { Eye, EyeOff, Lock, LockOpen } from "lucide-react";
 
 export function LayersPanel() {
   const t = useTranslations();
@@ -20,6 +22,7 @@ export function LayersPanel() {
   const selectLayer = useEditorStore((s) => s.selectLayer);
   const selectLayerRange = useEditorStore((s) => s.selectLayerRange);
   const toggleLayerSelected = useEditorStore((s) => s.toggleLayerSelected);
+  const removeLayers = useEditorStore((s) => s.removeLayers);
   const renameLayer = useEditorStore((s) => s.renameLayer);
   const setMedia = useEditorStore((s) => s.setMedia);
   const isMediaLoading = useEditorStore((s) => s.isMediaLoading);
@@ -28,6 +31,17 @@ export function LayersPanel() {
   const [error, setError] = useAutoDismissError();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const toggleGroupCollapse = (groupId: string) => setCollapsedGroups((prev) => {
+    const next = new Set(prev);
+    if (next.has(groupId)) next.delete(groupId); else next.add(groupId);
+    return next;
+  });
+  const renameGroup = useEditorStore((s) => s.renameGroup);
+  const toggleGroupHidden = useEditorStore((s) => s.toggleGroupHidden);
+  const toggleGroupLocked = useEditorStore((s) => s.toggleGroupLocked);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [groupDraftName, setGroupDraftName] = useState("");
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
 
@@ -65,6 +79,61 @@ export function LayersPanel() {
     ids[idx] = b;
     ids[next] = a;
     useEditorStore.getState().reorderLayers(ids);
+  };
+
+  /** Keyboard navigation for the layer listbox. Implements roving tabindex
+   *  with ArrowUp/Down, Home/End, Enter (activate), Space (toggle select),
+   *  F2 (rename), Delete (remove), and Alt+Arrow (reorder). */
+  const handleLayerKeyDown = (e: React.KeyboardEvent<HTMLLIElement>, layerId: string) => {
+    if (editingId) return;
+    const ids = scene.layers.map((l) => l.id);
+    const idx = ids.indexOf(layerId);
+    if (idx < 0) return;
+
+    const focusLayer = (nextIdx: number) => {
+      const id = ids[nextIdx];
+      if (!id) return;
+      selectLayer(id);
+      // Move roving tabindex to the newly focused item.
+      const items = e.currentTarget.closest('ul.layers-list')?.querySelectorAll('[role="option"]');
+      (items?.[nextIdx] as HTMLElement | undefined)?.focus();
+    };
+
+    if (e.key === "ArrowDown" && !e.altKey) {
+      e.preventDefault();
+      focusLayer(Math.min(idx + 1, ids.length - 1));
+    } else if (e.key === "ArrowUp" && !e.altKey) {
+      e.preventDefault();
+      focusLayer(Math.max(idx - 1, 0));
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      focusLayer(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      focusLayer(ids.length - 1);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      selectLayer(layerId);
+    } else if (e.key === " ") {
+      e.preventDefault();
+      toggleLayerSelected(layerId);
+    } else if (e.key === "F2") {
+      e.preventDefault();
+      const layer = scene.layers.find((l) => l.id === layerId);
+      if (layer) {
+        setDraftName(layer.mediaName ?? t("editor.textLabel"));
+        setEditingId(layerId);
+      }
+    } else if (e.key === "Delete" || e.key === "Backspace") {
+      e.preventDefault();
+      removeLayers([layerId]);
+    } else if (e.altKey && e.key === "ArrowUp") {
+      e.preventDefault();
+      move(layerId, -1);
+    } else if (e.altKey && e.key === "ArrowDown") {
+      e.preventDefault();
+      move(layerId, 1);
+    }
   };
 
   /** Right-click menu for one layer row: select it, then offer the same
@@ -113,8 +182,21 @@ export function LayersPanel() {
           <p className="empty-state-text" style={{ fontSize: 11, color: "var(--text-dim)" }}>{t("help.layersStack")}</p>
         </div>
       ) : (
-        <ul className="layers-list" style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 6, minWidth: 0 }}>
-          {scene.layers.map((layer, index) => {
+        <>
+          <LayerActions
+            layer={activeLayer}
+            index={activeLayer ? scene.layers.findIndex((l) => l.id === activeLayer.id) : -1}
+            total={scene.layers.length}
+            onMove={move}
+          />
+          <ul
+            className="layers-list"
+            role="listbox"
+            aria-label={t("editor.layers")}
+            aria-multiselectable="true"
+            style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 6, minWidth: 0 }}
+          >
+            {scene.layers.map((layer, index) => {
             const active = layer.id === activeLayerId;
             const isDragging = dragId === layer.id;
             const isSelected = selectedSet.has(layer.id);
@@ -122,12 +204,92 @@ export function LayersPanel() {
             const dropIndicator = isTarget && !isDragging
               ? { inset: dropTarget?.pos === "above" ? ("top" as const) : ("bottom" as const) }
               : undefined;
-            return (
+
+            const groupId = layer.groupId;
+            const isFirstInGroup = !!groupId && scene.layers.findIndex((l) => l.groupId === groupId) === index;
+            const isGrouped = !!groupId;
+            const isCollapsed = groupId ? collapsedGroups.has(groupId) : false;
+
+            // Skip rendering layers inside a collapsed group (except the first one which shows the header).
+            if (isGrouped && groupId && !isFirstInGroup && isCollapsed) return null;
+
+            const items: React.ReactNode[] = [];
+
+            if (isFirstInGroup && groupId) {
+              const groupLabel = layer.mediaName ?? t("editor.groupUntitled");
+              const members = scene.layers.filter((l) => l.groupId === groupId);
+              const allHidden = members.every((l) => l.hidden);
+              const allLocked = members.every((l) => l.locked);
+              const isEditingGroup = editingGroupId === groupId;
+
+              items.push(
+                <li
+                  key={`group-${groupId}`}
+                  role="presentation"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                    padding: "3px 6px",
+                    borderRadius: 6,
+                    background: "rgba(0,217,255,0.04)",
+                    border: "1px solid var(--panel-border)",
+                    marginTop: index > 0 ? 4 : 0,
+                  }}
+                >
+                  <button
+                    type="button"
+                    aria-label={isCollapsed ? t("editor.expandGroup") : t("editor.collapseGroup")}
+                    onClick={() => toggleGroupCollapse(groupId)}
+                    style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", color: "var(--text-dim)" }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s" }}>
+                      <path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  {isEditingGroup ? (
+                    <input
+                      autoFocus
+                      value={groupDraftName}
+                      onChange={(e) => setGroupDraftName(e.target.value)}
+                      onBlur={() => { renameGroup(groupId, groupDraftName.trim()); setEditingGroupId(null); }}
+                      onKeyDown={(e) => { if (e.key === "Enter") { renameGroup(groupId, groupDraftName.trim()); setEditingGroupId(null); } if (e.key === "Escape") setEditingGroupId(null); }}
+                      style={{ flex: 1, minWidth: 0, fontSize: 12, padding: "1px 4px", background: "var(--panel)", color: "var(--text)", border: "1px solid var(--accent)", borderRadius: 4 }}
+                    />
+                  ) : (
+                    <span
+                      style={{ flex: 1, fontSize: 11, fontWeight: 600, color: "var(--text)", cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                      onDoubleClick={() => { setEditingGroupId(groupId); setGroupDraftName(groupLabel); }}
+                      title={t("editor.renameHint")}
+                    >
+                      {groupLabel}
+                    </span>
+                  )}
+                  <span style={{ fontSize: 10, color: "var(--text-dim)" }}>{members.length}</span>
+                  <button
+                    type="button"
+                    aria-label={allHidden ? t("editor.showGroup") : t("editor.hideGroup")}
+                    onClick={() => toggleGroupHidden(groupId)}
+                    style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", color: "var(--text-dim)" }}
+                  >
+                    {allHidden ? <EyeOff size={12} /> : <Eye size={12} />}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={allLocked ? t("editor.unlockGroup") : t("editor.lockGroup")}
+                    onClick={() => toggleGroupLocked(groupId)}
+                    style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", color: "var(--text-dim)" }}
+                  >
+                    {allLocked ? <Lock size={12} /> : <LockOpen size={12} />}
+                  </button>
+                </li>
+              );
+            }
+
+            items.push(
               <LayerItem
                 key={layer.id}
                 layer={layer}
-                index={index}
-                total={scene.layers.length}
                 active={active}
                 selected={isSelected}
                 isDragging={isDragging}
@@ -146,21 +308,24 @@ export function LayersPanel() {
                   else if (e.metaKey || e.ctrlKey) toggleLayerSelected(layer.id);
                   else selectLayer(layer.id);
                 }}
+                onKeyDown={handleLayerKeyDown}
                 onContext={(e) => openLayerContextMenu(e, layer.id)}
-                onMove={move}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 onDragEnd={handleDragEnd}
               />
             );
+
+            return items;
           })}
           {isMediaLoading ? (
             <li className="layer-item" aria-busy="true" aria-label={t("editor.loadingMedia")} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 8px", borderRadius: 8, border: "1px solid var(--panel-border)" }}>
               <span className="skeleton" style={{ flex: 1, height: 14, borderRadius: 6 }} />
             </li>
           ) : null}
-        </ul>
+          </ul>
+        </>
       )}
       {selectedLayerIds.length > 1 ? (
         <LayerBulkActions count={selectedLayerIds.length} total={scene.layers.length} />

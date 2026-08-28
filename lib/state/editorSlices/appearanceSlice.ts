@@ -18,6 +18,10 @@ export type AppearanceSlice = Pick<
   | "setWatermarkSize"
   | "setWatermarkImage"
   | "setScreenChrome"
+  | "setFrameInstanceScreen"
+  | "setFrameInstanceFloorReflection"
+  | "clearFrameInstanceOverrides"
+  | "applyInstanceToAll"
   | "setScreenGlare"
   | "setFloorReflection"
   | "setBrowserUrl"
@@ -41,8 +45,12 @@ export type AppearanceSlice = Pick<
 /** Background, watermark, annotation and background-audio setters. */
 export function createAppearanceSlice(set: EditorStoreSetter): AppearanceSlice {
   return {
-    setBackgroundSolid: (backgroundColor) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "solid", backgroundColor })),
-    setBackgroundGradient: (gradientFrom, gradientTo, gradientAngle, gradientVia, gradientType) =>
+    setBackgroundSolid: (backgroundColor, coalesce) =>
+      set((s) => pushHistory(s, { ...s.scene, backgroundMode: "solid", backgroundColor }, coalesce ? "backgroundColor" : undefined)),
+    // gradientVia === null clears the middle stop; undefined keeps the current
+    // value. The coalesce key collapses color-picker / angle-slider drags
+    // (which fire per-pixel) into a single undo step.
+    setBackgroundGradient: (gradientFrom, gradientTo, gradientAngle, gradientVia, gradientType, coalesce) =>
       set((s) => pushHistory(s, {
         ...s.scene,
         backgroundMode: "gradient",
@@ -51,12 +59,12 @@ export function createAppearanceSlice(set: EditorStoreSetter): AppearanceSlice {
         ...(gradientAngle !== undefined ? { gradientAngle } : {}),
         ...(gradientVia !== undefined ? { gradientVia } : {}),
         ...(gradientType !== undefined ? { gradientType } : {})
-      })),
+      }, coalesce ? "gradient" : undefined)),
     setBackgroundTransparent: () => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "transparent" })),
     setBackgroundImage: (backgroundImageUrl) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "image", backgroundImageUrl })),
     setBackgroundPattern: (patternId) => set((s) => pushHistory(s, { ...s.scene, backgroundMode: "pattern", patternId })),
     setGradientType: (gradientType) => set((s) => pushHistory(s, { ...s.scene, gradientType })),
-    setGradientVia: (gradientVia) => set((s) => pushHistory(s, { ...s.scene, gradientVia })),
+    setGradientVia: (gradientVia, coalesce) => set((s) => pushHistory(s, { ...s.scene, gradientVia }, coalesce ? "gradientVia" : undefined)),
     setBackgroundBlur: (backgroundBlur) => set((s) => pushHistory(s, { ...s.scene, backgroundBlur: Math.max(0, Math.min(40, Math.round(backgroundBlur))) }, "bgBlur")),
     toggleWatermark: (watermarkEnabled) => set((s) => pushHistory(s, { ...s.scene, watermarkEnabled })),
     setWatermarkText: (watermarkText) => set((s) => pushHistory(s, { ...s.scene, watermarkText })),
@@ -64,6 +72,64 @@ export function createAppearanceSlice(set: EditorStoreSetter): AppearanceSlice {
     setWatermarkSize: (watermarkSize) => set((s) => pushHistory(s, { ...s.scene, watermarkSize: Math.max(8, Math.min(64, Math.round(watermarkSize))) }, "watermarkSize")),
     setWatermarkImage: (watermarkImageUrl) => set((s) => pushHistory(s, { ...s.scene, watermarkImageUrl })),
     setScreenChrome: (patch) => set((s) => pushHistory(s, { ...s.scene, screen: { ...s.scene.screen, ...patch } }, "screen")),
+    // Per-device screen chrome. Seeds the override from the effective screen
+    // (instance override ?? scene default) so the first edit of a device that
+    // previously inherited the default still keeps the other fields intact.
+    setFrameInstanceScreen: (id, patch) =>
+      set((s) => {
+        const inst = s.scene.frameInstances.find((i) => i.id === id);
+        if (!inst) return {};
+        const base = inst.screen ?? s.scene.screen;
+        const screen = { ...base, ...patch };
+        return pushHistory(
+          s,
+          { ...s.scene, frameInstances: s.scene.frameInstances.map((i) => (i.id === id ? { ...i, screen } : i)) },
+          "screen"
+        );
+      }),
+    // Per-device floor reflection toggle (creates an override seeded from the
+    // current effective value so the first edit keeps the other devices' state).
+    setFrameInstanceFloorReflection: (id, on) =>
+      set((s) => {
+        const inst = s.scene.frameInstances.find((i) => i.id === id);
+        if (!inst) return {};
+        return pushHistory(
+          s,
+          { ...s.scene, frameInstances: s.scene.frameInstances.map((i) => (i.id === id ? { ...i, floorReflection: on } : i)) },
+          "screen"
+        );
+      }),
+    // Drops a device's screen + floor-reflection overrides so it inherits the
+    // scene defaults again.
+    clearFrameInstanceOverrides: (id) =>
+      set((s) => {
+        if (!s.scene.frameInstances.some((i) => i.id === id)) return {};
+        return pushHistory(
+          s,
+          { ...s.scene, frameInstances: s.scene.frameInstances.map((i) => (i.id === id ? { ...i, screen: undefined, floorReflection: undefined } : i)) },
+          "screen"
+        );
+      }),
+    // Copies the selected device's effective screen chrome and floor reflection
+    // to the scene defaults and clears every instance override, so all devices
+    // share that configuration.
+    applyInstanceToAll: (id) =>
+      set((s) => {
+        const inst = s.scene.frameInstances.find((i) => i.id === id);
+        if (!inst) return {};
+        const screen = inst.screen ?? s.scene.screen;
+        const floorReflection = inst.floorReflection ?? s.scene.floorReflection;
+        return pushHistory(
+          s,
+          {
+            ...s.scene,
+            screen: { ...screen },
+            floorReflection,
+            frameInstances: s.scene.frameInstances.map((i) => ({ ...i, screen: undefined, floorReflection: undefined }))
+          },
+          "screen"
+        );
+      }),
     setScreenGlare: (screenGlare) => set((s) => pushHistory(s, { ...s.scene, screenGlare })),
     setFloorReflection: (floorReflection) => set((s) => pushHistory(s, { ...s.scene, floorReflection })),
     setBrowserUrl: (browserUrl) => set((s) => pushHistory(s, { ...s.scene, browserUrl }, "browserUrl")),
@@ -153,10 +219,15 @@ export function createAppearanceSlice(set: EditorStoreSetter): AppearanceSlice {
         };
       });
     },
-    selectAnnotations: (ids) => set({
-      selectedAnnotationIds: [...new Set(ids)],
-      selectedAnnotationId: ids.length > 0 ? ids[ids.length - 1]! : null
-    }),
+    selectAnnotations: (ids) =>
+      set((s) => {
+        const annotationIds = new Set(s.scene.annotations.map((a) => a.id));
+        const valid = ids.filter((id) => annotationIds.has(id));
+        return {
+          selectedAnnotationIds: [...new Set(valid)],
+          selectedAnnotationId: valid.length > 0 ? valid[valid.length - 1]! : null
+        };
+      }),
     clearAnnotations: () => set((s) => ({ ...pushHistory(s, { ...s.scene, annotations: [] }), selectedAnnotationId: null })),
     setBackgroundAudio: (backgroundAudioUrl, backgroundAudioName) =>
       set((s) => pushHistory(s, { ...s.scene, backgroundAudioUrl, backgroundAudioName })),

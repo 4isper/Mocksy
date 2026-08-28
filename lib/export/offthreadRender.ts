@@ -53,15 +53,21 @@ function getRenderer(): Worker | null {
 }
 
 /**
- * Renders the payload's scene in the worker. Resolves null whenever the
- * worker path is unavailable or fails — the export then proceeds exactly as
- * before on the main thread.
+ * Renders the payload's scene in the worker. `predecoded` carries bitmaps for
+ * SVG assets (device skins, custom frames, SVG media) rasterized on the main
+ * thread — workers can neither construct an Image nor createImageBitmap an
+ * SVG blob — and the buffers are transferred, not copied. Resolves null
+ * whenever the worker path is unavailable or fails — the export then proceeds
+ * exactly as before on the main thread.
  */
-export async function renderSceneInWorker(payload: Omit<RenderWorkerPayload, "id">): Promise<Blob | null> {
+export async function renderSceneInWorker(
+  payload: Omit<RenderWorkerPayload, "id">,
+  predecoded: Array<{ url: string; bitmap: ImageBitmap }> = []
+): Promise<Blob | null> {
   const worker = getRenderer();
   if (!worker) return null;
   const id = ++nextId;
-  const full: RenderWorkerPayload = { ...payload, id };
+  const full: RenderWorkerPayload = { ...payload, id, bitmaps: predecoded };
   return new Promise((resolve) => {
     const timer = window.setTimeout(() => {
       pending.delete(id);
@@ -74,7 +80,7 @@ export async function renderSceneInWorker(payload: Omit<RenderWorkerPayload, "id
       }
     });
     try {
-      worker.postMessage(full);
+      worker.postMessage(full, predecoded.map((e) => e.bitmap));
     } catch {
       window.clearTimeout(timer);
       pending.delete(id);

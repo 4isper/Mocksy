@@ -15,7 +15,9 @@ export const MAX_EXPORT_PRESETS = 12;
 
 const FORMAT_LABELS: Record<ExportFormat, string> = {
   png: "PNG",
+  jpeg: "JPEG",
   webp: "WebP",
+  avif: "AVIF",
   svg: "SVG",
   html: "HTML",
   mp4: "MP4",
@@ -23,7 +25,8 @@ const FORMAT_LABELS: Record<ExportFormat, string> = {
   gif: "GIF",
   webpAnim: "WebP",
   pdf: "PDF",
-  zip: "ZIP"
+  zip: "ZIP",
+  zipVideo: "Video ZIP"
 };
 
 /** Human-readable preset label derived from the settings it captures. */

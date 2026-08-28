@@ -16,7 +16,6 @@ import { useCanvasGestures } from "@/lib/hooks/useCanvasGestures";
 import { useCanvasDrop } from "@/lib/hooks/useCanvasDrop";
 import { useCanvasViewport } from "@/lib/hooks/useCanvasViewport";
 import { ContextMenu, type ContextMenuItem } from "@/components/editor/ContextMenu";
-import { AnnotationItem } from "@/components/editor/AnnotationItem";
 import { FrameInstanceGrid } from "@/components/editor/FrameInstanceGrid";
 import { SingleFrameView } from "@/components/editor/SingleFrameView";
 import { PreviewBackground } from "@/components/editor/PreviewBackground";
@@ -70,7 +69,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
     const map = new Map<string, ReturnType<typeof buildSceneCss>>();
     for (const inst of scene.frameInstances) {
       const layer = scene.layers.find((l) => l.id !== undefined && l.id === inst.layerId) ?? activeLayer;
-      map.set(inst.id, buildSceneCss({ ...scene, frame: inst.frame, frameMaterial: inst.material, layers: layer ? [layer] : [] }));
+      map.set(inst.id, buildSceneCss({ ...scene, frame: inst.frame, frameMaterial: inst.material, screen: inst.screen ?? scene.screen, layers: layer ? [layer] : [] }));
     }
     return map;
     // activeLayer is derived from activeLayerId, so keying on the id keeps the
@@ -183,7 +182,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         // page scrolling when the user drags on the canvas margins on mobile,
         // so the editor page isn't trapped behind a scroll-blocking panel.
         touchAction: "pan-y",
-        outline: isDragging ? "2px dashed #00d9ff" : "2px dashed transparent"
+        outline: isDragging ? "2px dashed var(--accent)" : "2px dashed transparent"
       }}
       onDragEnter={onDragEnter}
       onDragOver={onDragOver}
@@ -195,6 +194,9 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
       <div
         id="preview-canvas"
         ref={canvasRef}
+        tabIndex={0}
+        role="group"
+        aria-label={t("editor.canvasAria")}
         onPointerDown={(e) => {
           // Deselect any active annotation when clicking empty canvas. Clicks
           // on annotations/watermark use stopPropagation, so they won't bubble
@@ -209,6 +211,14 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         onPointerCancel={view.onPointerCancel}
         onDoubleClick={view.onDoubleClickReset}
         onContextMenu={openContextMenu}
+        onKeyDown={(e) => {
+          // Delete/Backspace removes the selected annotation when the canvas is focused.
+          if ((e.key === "Delete" || e.key === "Backspace") && selectedAnnotationId) {
+            e.preventDefault();
+            removeAnnotation(selectedAnnotationId);
+            selectAnnotation(null);
+          }
+        }}
         style={{
           // Contain inside the size container: take the larger of the two
           // axes that still fits the other, so the canvas keeps its aspect
@@ -301,6 +311,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           guides={guides}
           onSelectAnnotation={selectAnnotation}
           onUpdateAnnotation={updateAnnotation}
+          onRemoveAnnotation={removeAnnotation}
           onSelectMany={selectAnnotations}
           onGuides={setGuides}
         />
@@ -327,18 +338,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         )}
         {isMultiFrame && scene.layers.every((l) => !l.mediaUrl) ? (
           <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              color: "var(--text-dim)",
-              fontSize: 14,
-              textAlign: "center",
-              pointerEvents: "none",
-              zIndex: 2
-            }}
+            className="drop-hint"
           >
             <span>{t("editor.dropToStart")}</span>
           </div>

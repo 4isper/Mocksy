@@ -47,6 +47,20 @@ describe("editorStore", () => {
     expect(store().scene.layers[0]!.videoTrimEnd).toBe(6);
   });
 
+  it("setVideoDuration keeps trimStart <= trimEnd when a shorter clip loads", () => {
+    useEditorStore.setState({ scene: { ...initialScene } });
+    store().setVideoDuration(10);
+    store().setVideoTrimStart(7);
+    store().setVideoTrimEnd(8);
+    store().setVideoDuration(3);
+    const l = store().scene.layers[0]!;
+    // Lookout: the new duration is shorter than the current trim start.
+    expect(l.videoDuration).toBe(3);
+    expect(l.videoTrimStart).toBeLessThanOrEqual(l.videoTrimEnd);
+    expect(l.videoTrimStart).toBe(3);
+    expect(l.videoTrimEnd).toBe(3);
+  });
+
   it("setVideoTrimEnd(0) clamps to the full duration instead of a 0 sentinel", () => {
     store().setVideoDuration(8);
     store().setVideoTrimEnd(0);
@@ -125,6 +139,44 @@ describe("editorStore", () => {
     expect(store().scene.gradientAngle).toBe(45);
   });
 
+  it("setBackgroundGradient clears the middle stop when explicitly passed null", () => {
+    store().setGradientVia("#ffffff");
+    expect(store().scene.gradientVia).toBe("#ffffff");
+    store().setBackgroundGradient("#059669", "#0ea5e9", undefined, null);
+    expect(store().scene.gradientVia).toBeNull();
+  });
+
+  it("setGradientVia(null) clears the middle stop", () => {
+    store().setGradientVia("#ffffff");
+    store().setGradientVia(null);
+    expect(store().scene.gradientVia).toBeNull();
+  });
+
+  it("coalesces rapid solid color picker edits into one undo step", () => {
+    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene }, lastHistoryKey: null, lastHistoryAt: 0 });
+    store().setBackgroundSolid("#111111", true);
+    store().setBackgroundSolid("#222222", true);
+    expect(store().past).toHaveLength(1);
+    expect(store().scene.backgroundColor).toBe("#222222");
+  });
+
+  it("coalesces rapid gradient picker/slider edits into one undo step", () => {
+    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene }, lastHistoryKey: null, lastHistoryAt: 0 });
+    for (const angle of [10, 60, 120, 240, 359]) {
+      store().setBackgroundGradient("#1d4ed8", "#7c3aed", angle, undefined, undefined, true);
+    }
+    // one baseline entry for the whole drag, not one per degree
+    expect(store().past).toHaveLength(1);
+    expect(store().scene.gradientAngle).toBe(359);
+  });
+
+  it("keeps discrete gradient preset clicks as separate undo steps", () => {
+    useEditorStore.setState({ past: [], future: [], scene: { ...initialScene }, lastHistoryKey: null, lastHistoryAt: 0 });
+    store().setBackgroundGradient("#059669", "#0ea5e9", undefined, null);
+    store().setBackgroundGradient("#f97316", "#db2777", undefined, null);
+    expect(store().past).toHaveLength(2);
+  });
+
   it("setScene merges onto the initial scene", () => {
     store().setScene({ frame: "desktop" });
     store().setZoom(1.2);
@@ -179,6 +231,25 @@ describe("editorStore", () => {
     store().setZoom(1.5);
     expect(store().future.length).toBe(0);
     expect(store().scene.layers[0]!.zoom).toBe(1.5);
+  });
+
+  it("undo/redo sync videoCurrentTime to the reconciled active layer", () => {
+    const l1 = { ...initialScene.layers[0]!, id: "L1", videoPosterTime: 1, videoDuration: 10 };
+    const l2 = { ...initialScene.layers[0]!, id: "L2", videoPosterTime: 7, videoDuration: 10 };
+    // Restored scene's snapshot points at L1, but the live selection is L2.
+    const previous = { ...initialScene, layers: [l1, l2], activeLayerId: "L1" };
+    const current = { ...initialScene, layers: [l1, l2], activeLayerId: "L1", tiltX: 5 };
+    useEditorStore.setState({
+      past: [previous],
+      scene: current,
+      activeLayerId: "L2",
+      videoCurrentTime: 0
+    });
+    store().undo();
+    // L2 still exists in the restored scene, so it stays active — the scrubber
+    // must reflect L2's poster time, not the snapshot's L1.
+    expect(store().activeLayerId).toBe("L2");
+    expect(store().videoCurrentTime).toBe(7);
   });
 
   it("an edit of the same field right after undo starts a fresh history entry", () => {
@@ -477,6 +548,7 @@ describe("annotations", () => {
       scene: { ...initialScene },
       selectedAnnotationId: null,
       activeFrameInstanceId: null,
+      selectedFrameIds: [],
       activeLayerId: initialScene.activeLayerId,
       lastHistoryKey: null,
       lastHistoryAt: 0
@@ -530,6 +602,26 @@ describe("annotations", () => {
     expect(added.mediaUrl).toBe("data:image/png;base64,new");
     expect(added.mediaName).toBe("new.png");
     expect(store().activeLayerId).toBe(added.id);
+  });
+
+  it("addTextLayer appends a text layer, selects it and records history", () => {
+    reset();
+    const before = store().scene.layers.length;
+    const pastBefore = store().past.length;
+    store().addTextLayer("Hello world");
+    expect(store().scene.layers.length).toBe(before + 1);
+    const added = store().scene.layers[store().scene.layers.length - 1]!;
+    expect(added.kind).toBe("text");
+    expect(added.textContent).toBe("Hello world");
+    expect(added.mediaUrl).toBeNull();
+    expect(store().activeLayerId).toBe(added.id);
+    expect(store().selectedLayerIds).toEqual([added.id]);
+    // Editing the text afterwards flows through updateActiveLayer with undo.
+    useEditorStore.getState().updateActiveLayer({ textContent: "Changed" });
+    expect(store().scene.layers.find((l) => l.id === added.id)!.textContent).toBe("Changed");
+    store().undo();
+    expect(store().scene.layers.find((l) => l.id === added.id)!.textContent).toBe("Hello world");
+    expect(store().past.length).toBe(pastBefore + 1);
   });
 
   it("addLayer sets isMediaLoading while media decodes", () => {
@@ -600,6 +692,40 @@ describe("annotations", () => {
     reset();
     const pastBefore = store().past.length;
     store().removeLayer(store().scene.layers[0]!.id);
+    expect(store().scene.layers.length).toBe(1);
+    expect(store().past.length).toBe(pastBefore);
+  });
+
+  it("removeLayer drops frame instances bound to the removed layer", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    const layer2 = store().scene.layers[1]!;
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0.4, y: 0.4, scale: 0.5, layerId: layer2.id },
+      { id: "fi2", frame: "iphone" as const, x: 0.6, y: 0.6, scale: 0.5, layerId: store().scene.layers[0]!.id }
+    ]);
+    store().removeLayer(layer2.id);
+    expect(store().scene.frameInstances.map((fi) => fi.id)).toEqual(["fi2"]);
+  });
+
+  it("removeLayers drops frame instances bound to any removed layer", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    store().addLayer("data:image/png;base64,l3", "image");
+    const [l1, l2, l3] = store().scene.layers;
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0.4, y: 0.4, scale: 0.5, layerId: l1!.id },
+      { id: "fi2", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 0.5, layerId: l2!.id },
+      { id: "fi3", frame: "iphone" as const, x: 0.6, y: 0.6, scale: 0.5, layerId: l3!.id }
+    ]);
+    store().removeLayers([l1!.id, l2!.id]);
+    expect(store().scene.frameInstances.map((fi) => fi.id)).toEqual(["fi3"]);
+  });
+
+  it("duplicateLayer is a no-op when the source layer does not exist", () => {
+    reset();
+    const pastBefore = store().past.length;
+    store().duplicateLayer("missing");
     expect(store().scene.layers.length).toBe(1);
     expect(store().past.length).toBe(pastBefore);
   });
@@ -691,6 +817,7 @@ describe("frame control", () => {
       scene: { ...initialScene },
       selectedAnnotationId: null,
       activeFrameInstanceId: null,
+      selectedFrameIds: [],
       activeLayerId: initialScene.activeLayerId,
       lastHistoryKey: null,
       lastHistoryAt: 0
@@ -785,6 +912,91 @@ describe("frame control", () => {
     store().updateFrameInstance("fi1", { x: 0.25 });
     expect(store().scene.frameInstances[0]!.x).toBe(0.25);
     expect(store().scene.frameInstances[1]!.x).toBe(0.5);
+  });
+
+  it("setFrameInstanceScreen overrides only the targeted device and seeds from the scene default", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0, scale: 1, layerId: null },
+      { id: "fi2", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }
+    ]);
+    // Start from a known scene default.
+    store().setScreenChrome({ style: "home", theme: "light", showDock: true });
+    // Editing device fi1 creates an independent override seeded from the default.
+    store().setFrameInstanceScreen("fi1", { style: "lock", showClock: true });
+    expect(store().scene.frameInstances[0]!.screen).toMatchObject({ style: "lock", showClock: true });
+    // The seed kept the default's other fields (theme, showDock).
+    expect(store().scene.frameInstances[0]!.screen).toMatchObject({ theme: "light", showDock: true });
+    // The other device still inherits the scene default (no override).
+    expect(store().scene.frameInstances[1]!.screen).toBeUndefined();
+    // Editing the scene default later doesn't bleed into the override.
+    store().setScreenChrome({ showDock: false });
+    expect(store().scene.frameInstances[0]!.screen!.showDock).toBe(true);
+  });
+
+  it("setFrameInstanceScreen is a no-op for an unknown id", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0, scale: 1, layerId: null }
+    ]);
+    const before = store().scene.frameInstances;
+    store().setFrameInstanceScreen("nope", { enabled: false });
+    expect(store().scene.frameInstances).toBe(before);
+  });
+
+  it("clearFrameInstanceOverrides drops screen + floor reflection so the device inherits the defaults", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0, scale: 1, layerId: null }
+    ]);
+    store().setScreenChrome({ style: "home" });
+    store().setFloorReflection(true);
+    store().setFrameInstanceScreen("fi1", { style: "lock" });
+    store().setFrameInstanceFloorReflection("fi1", false);
+    expect(store().scene.frameInstances[0]!.screen!.style).toBe("lock");
+    expect(store().scene.frameInstances[0]!.floorReflection).toBe(false);
+    store().clearFrameInstanceOverrides("fi1");
+    expect(store().scene.frameInstances[0]!.screen).toBeUndefined();
+    expect(store().scene.frameInstances[0]!.floorReflection).toBeUndefined();
+    expect(store().scene.frameInstances[0]!.id).toBe("fi1");
+  });
+
+  it("applyInstanceToAll copies the device chrome and floor reflection to the defaults and clears all overrides", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0, scale: 1, layerId: null },
+      { id: "fi2", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }
+    ]);
+    store().setScreenChrome({ style: "home", theme: "light" });
+    store().setFloorReflection(true);
+    store().setFrameInstanceScreen("fi1", { style: "lock", showClock: true });
+    store().setFrameInstanceFloorReflection("fi1", false);
+    store().setFrameInstanceScreen("fi2", { style: "statusBar" });
+    store().applyInstanceToAll("fi1");
+    // Scene defaults now match fi1's effective configuration.
+    expect(store().scene.screen.style).toBe("lock");
+    expect(store().scene.screen.showClock).toBe(true);
+    expect(store().scene.floorReflection).toBe(false);
+    // All instance overrides are cleared; they inherit the new defaults.
+    expect(store().scene.frameInstances[0]!.screen).toBeUndefined();
+    expect(store().scene.frameInstances[0]!.floorReflection).toBeUndefined();
+    expect(store().scene.frameInstances[1]!.screen).toBeUndefined();
+    expect(store().scene.frameInstances[1]!.floorReflection).toBeUndefined();
+  });
+
+  it("setFrameInstanceFloorReflection overrides only the targeted device", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0, scale: 1, layerId: null },
+      { id: "fi2", frame: "iphone" as const, x: 0.5, y: 0.5, scale: 1, layerId: null }
+    ]);
+    store().setFloorReflection(false);
+    store().setFrameInstanceFloorReflection("fi1", true);
+    expect(store().scene.frameInstances[0]!.floorReflection).toBe(true);
+    expect(store().scene.frameInstances[1]!.floorReflection).toBeUndefined();
+    // Editing the scene default later doesn't bleed into the override.
+    store().setFloorReflection(false);
+    expect(store().scene.frameInstances[0]!.floorReflection).toBe(true);
   });
 
   it("updateFrameInstance coalesces rapid calls into a single history entry", () => {
@@ -887,6 +1099,51 @@ describe("frame control", () => {
     expect(store().past.length).toBe(pastBefore);
   });
 
+  it("addFrameInstance appends a clone of the active frame instance with its own layer", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    const srcLayerId = store().scene.layers[1]!.id;
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0.4, y: 0.4, scale: 0.5, layerId: srcLayerId }
+    ]);
+    store().selectFrameInstance("fi1");
+    const layersBefore = store().scene.layers.length;
+    const frameCount = store().scene.frameInstances.length;
+    store().addFrameInstance();
+    expect(store().scene.frameInstances.length).toBe(frameCount + 1);
+    const added = store().scene.frameInstances[frameCount]!;
+    expect(added.id).not.toBe("fi1");
+    expect(added.frame).toBe("iphone");
+    expect(added.scale).toBe(0.5);
+    expect(added.x).toBeCloseTo(0.48);
+    expect(added.y).toBeCloseTo(0.48);
+    expect(added.layerId).not.toBe(srcLayerId);
+    expect(store().scene.layers.length).toBe(layersBefore + 1);
+    expect(store().past.length).toBeGreaterThan(0);
+  });
+
+  it("addFrameInstance falls back to the default scene frame when no instances exist", () => {
+    reset();
+    store().setFrame("macbook");
+    store().addFrameInstance();
+    expect(store().scene.frameInstances.length).toBe(1);
+    const added = store().scene.frameInstances[0]!;
+    expect(added.frame).toBe("macbook");
+    expect(added.layerId).not.toBeNull();
+    expect(store().scene.layers.some((l) => l.id === added.layerId)).toBe(true);
+  });
+
+  it("addFrameInstance records undo history on the new instance", () => {
+    reset();
+    store().addLayer("data:image/png;base64,l2", "image");
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0.4, y: 0.4, scale: 0.5, layerId: store().scene.layers[1]!.id }
+    ]);
+    const pastBefore = store().past.length;
+    store().addFrameInstance();
+    expect(store().past.length).toBe(pastBefore + 1);
+  });
+
   it("reorderFrameInstance moves an instance to front/back of the render order", () => {
     reset();
     store().setFrameInstances([
@@ -900,29 +1157,127 @@ describe("frame control", () => {
     expect(store().scene.frameInstances.map((fi) => fi.id)).toEqual(["a", "b", "c"]);
   });
 
-  it("layoutFrameGrid creates new layers for each frame instance", () => {
+  it("reorderFrameInstances reorders by the given id order (drag-and-drop)", () => {
     reset();
-    const layersBefore = store().scene.layers.length;
-    store().layoutFrameGrid("iphone", 3, "horizontal");
-    expect(store().scene.frameInstances.length).toBe(3);
-    expect(store().scene.layers.length).toBe(layersBefore + 3);
-    expect(store().activeLayerId).toBe(store().scene.frameInstances[0]!.layerId);
+    store().setFrameInstances([
+      { id: "a", frame: "none" as const, x: 0.3, y: 0.5, scale: 0.4, layerId: null },
+      { id: "b", frame: "none" as const, x: 0.5, y: 0.5, scale: 0.4, layerId: null },
+      { id: "c", frame: "none" as const, x: 0.7, y: 0.5, scale: 0.4, layerId: null }
+    ]);
+    store().reorderFrameInstances(["c", "a", "b"]);
+    expect(store().scene.frameInstances.map((fi) => fi.id)).toEqual(["c", "a", "b"]);
   });
 
-  it("re-applying a layout drops layers orphaned by the previous layout", () => {
+  it("reorderFrameInstances is a no-op when the id list is incomplete", () => {
     reset();
-    const baseLayers = store().scene.layers;
+    store().setFrameInstances([
+      { id: "a", frame: "none" as const, x: 0.3, y: 0.5, scale: 0.4, layerId: null },
+      { id: "b", frame: "none" as const, x: 0.5, y: 0.5, scale: 0.4, layerId: null }
+    ]);
+    const before = store().scene.frameInstances.map((fi) => fi.id);
+    store().reorderFrameInstances(["a"]); // missing b
+    expect(store().scene.frameInstances.map((fi) => fi.id)).toEqual(before);
+  });
+
+  it("alignFrameInstances targets the selected subset when one is active", () => {
+    reset();
+    store().selectFrameIds([]);
+    store().setFrameInstances([
+      { id: "a", frame: "none" as const, x: 0.1, y: 0.5, scale: 0.2, layerId: null },
+      { id: "b", frame: "none" as const, x: 0.9, y: 0.5, scale: 0.2, layerId: null },
+      { id: "c", frame: "none" as const, x: 0.5, y: 0.8, scale: 0.2, layerId: null }
+    ]);
+    // Select only a & b → align left should not move c.
+    store().selectFrameIds(["a", "b"]);
+    store().alignFrameInstances("left");
+    const after = store().scene.frameInstances;
+    const c = after.find((i) => i.id === "c")!;
+    expect(c.x).toBeCloseTo(0.5, 6);
+    expect(c.y).toBeCloseTo(0.8, 6);
+    // a and b share a left edge now.
+    expect(Math.abs(after[0]!.x - after[1]!.x)).toBeLessThan(1e-9);
+  });
+
+  it("alignFrameInstances falls back to all instances when nothing is selected", () => {
+    reset();
+    store().selectFrameIds([]);
+    store().setFrameInstances([
+      { id: "a", frame: "none" as const, x: 0.1, y: 0.5, scale: 0.2, layerId: null },
+      { id: "b", frame: "none" as const, x: 0.9, y: 0.5, scale: 0.2, layerId: null }
+    ]);
+    expect(store().selectedFrameIds).toEqual([]);
+    store().alignFrameInstances("centerX");
+    const xs = store().scene.frameInstances.map((i) => i.x);
+    expect(Math.abs(xs[0]! - xs[1]!)).toBeLessThan(1e-9);
+  });
+
+  it("alignFrameInstances clamps positions so frames stay on the canvas", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "a", frame: "none" as const, x: -0.5, y: 1.5, scale: 0.5, layerId: null },
+      { id: "b", frame: "none" as const, x: 0.5, y: 0.5, scale: 0.5, layerId: null }
+    ]);
+    store().selectFrameIds(["a", "b"]);
+    store().alignFrameInstances("left");
+    const a = store().scene.frameInstances.find((i) => i.id === "a")!;
+    // half-extent 0.25 → center must sit in [0.25, 0.75].
+    expect(a.x).toBeGreaterThanOrEqual(0.25);
+    expect(a.y).toBeLessThanOrEqual(0.75);
+  });
+
+  it("toggleFrameSelected adds and removes frames from the selection", () => {
+    reset();
+    store().selectFrameIds([]);
+    store().setFrameInstances([
+      { id: "a", frame: "none" as const, x: 0.1, y: 0.1, scale: 0.2, layerId: null },
+      { id: "b", frame: "none" as const, x: 0.5, y: 0.5, scale: 0.2, layerId: null }
+    ]);
+    store().toggleFrameSelected("a");
+    expect(store().selectedFrameIds).toEqual(["a"]);
+    store().toggleFrameSelected("b");
+    expect(store().selectedFrameIds).toEqual(["a", "b"]);
+    store().toggleFrameSelected("a");
+    expect(store().selectedFrameIds).toEqual(["b"]);
+  });
+
+  it("layoutFrameGrid reuses the existing layer when there is only one", () => {
+    reset();
+    const layersBefore = store().scene.layers.length; // 1 demo layer
+    store().layoutFrameGrid("iphone", 3, "horizontal");
+    expect(store().scene.frameInstances.length).toBe(3);
+    // All three frames bind to the single demo layer (round-robin reuse); no
+    // new layers are created, so the scene's media is never duplicated.
+    expect(store().scene.layers.length).toBe(layersBefore);
+    expect(store().scene.frameInstances.every((fi) => fi.layerId === store().scene.layers[0]!.id)).toBe(true);
+  });
+
+  it("re-applying a layout preserves existing layers instead of dropping them", () => {
+    reset();
+    const baseLayerCount = store().scene.layers.length; // 1 demo layer
     store().layoutFrameGrid("iphone", 2, "horizontal");
     const firstInstanceLayerIds = store().scene.frameInstances.map((fi) => fi.layerId);
-    expect(store().scene.layers.length).toBe(baseLayers.length + 2);
-    // Apply a different layout — the old layout's layers must be replaced,
-    // not accumulated, while the base layers survive.
+    expect(store().scene.layers.length).toBe(baseLayerCount);
+    // Apply a different layout with more frames: the existing layer is reused,
+    // nothing is dropped and no clones are added.
     store().applyFrameLayout("iphone", 3, "grid");
-    expect(store().scene.layers.length).toBe(baseLayers.length + 3);
+    expect(store().scene.layers.length).toBe(baseLayerCount);
     for (const id of firstInstanceLayerIds) {
-      expect(store().scene.layers.some((l) => l.id === id)).toBe(false);
+      expect(store().scene.layers.some((l) => l.id === id)).toBe(true);
     }
     expect(store().scene.frameInstances).toHaveLength(3);
+  });
+
+  it("layout reuses the scene's existing layers so their media is preserved", () => {
+    reset();
+    store().addLayer("data:image/png;base64,keep", "image");
+    store().addLayer("data:image/png;base64,keep2", "image");
+    const layerIds = store().scene.layers.map((l) => l.id);
+    store().layoutFrameGrid("iphone", 3, "horizontal");
+    const used = store().scene.frameInstances.map((fi) => fi.layerId);
+    // All three new frames bind to the existing layers — nothing is cloned and
+    // the user's uploaded media survives the layout change.
+    expect(used).toEqual(layerIds);
+    expect(store().scene.layers.length).toBe(layerIds.length);
   });
 
   it("layoutFrameGrid falls back to demo layer when no active layer", () => {
@@ -934,11 +1289,74 @@ describe("frame control", () => {
     expect(store().scene.layers[0]!.mediaUrl).toContain("data:image/svg");
   });
 
+  it("applying a layout preserves each frame's type and media, not just the scene frame", () => {
+    reset();
+    store().addLayer("data:image/png;base64,a", "image");
+    store().addLayer("data:image/png;base64,b", "image");
+    store().addLayer("data:image/png;base64,c", "image");
+    store().setFrameInstances([
+      { id: "f1", frame: "iphone16pro" as const, x: 0.1, y: 0.1, scale: 0.3, layerId: store().scene.layers[0]!.id },
+      { id: "f2", frame: "iphone15" as const, x: 0.5, y: 0.5, scale: 0.3, layerId: store().scene.layers[1]!.id },
+      { id: "f3", frame: "none" as const, x: 0.9, y: 0.9, scale: 0.3, layerId: store().scene.layers[2]!.id }
+    ]);
+    // A 3-frame layout must reposition all three without dropping the "none"
+    // frame or converting every instance to the scene's current frame.
+    store().applyFrameLayout("iphone", 3, "grid");
+    const byId = Object.fromEntries(store().scene.frameInstances.map((fi) => [fi.id, fi]));
+    expect(byId.f1!.frame).toBe("iphone16pro");
+    expect(byId.f2!.frame).toBe("iphone15");
+    expect(byId.f3!.frame).toBe("none");
+    expect(byId.f3!.layerId).toBe(store().scene.layers[2]!.id);
+    expect(store().scene.frameInstances).toHaveLength(3);
+  });
+
+  it("applying a layout with count matching the scene keeps every existing frame", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "f1", frame: "iphone" as const, x: 0.1, y: 0.1, scale: 0.3, layerId: null },
+      { id: "f2", frame: "none" as const, x: 0.5, y: 0.5, scale: 0.3, layerId: null }
+    ]);
+    store().applyFrameLayout("iphone", 2, "grid");
+    const ids = store().scene.frameInstances.map((fi) => fi.id);
+    expect(ids).toEqual(["f1", "f2"]);
+  });
+
   it("layoutFrameGrid with count=0 adds no layers and keeps activeLayerId", () => {
     reset();
     store().layoutFrameGrid("iphone", 0, "horizontal");
     expect(store().scene.frameInstances).toHaveLength(0);
     expect(store().activeLayerId).toBe(store().scene.layers[0]!.id);
+  });
+
+  it("layout reuses every existing layer cyclically instead of repeating the last", () => {
+    reset();
+    const before = store().scene.layers.length; // 1 demo layer
+    store().addLayer("data:image/png;base64,a", "image");
+    store().addLayer("data:image/png;base64,b", "image");
+    store().addLayer("data:image/png;base64,c", "image");
+    const addedIds = store().scene.layers.slice(before).map((l) => l.id);
+    const layerCountBefore = store().scene.layers.length;
+    // 6 frames over the 4 existing layers (demo + 3 added) round-robin: each
+    // added layer is bound at least once, and no new layers are cloned.
+    store().applyFrameLayout("iphone", 6, "grid");
+    expect(store().scene.layers.length).toBe(layerCountBefore);
+    const used = store().scene.frameInstances.map((fi) => fi.layerId);
+    for (const id of addedIds) expect(used).toContain(id);
+    // No layer should be used far more than the others (the old bug repeated
+    // only the last layer); with 6 frames / 4 layers the spread is even.
+    const counts = new Map(used.map((id) => [id, 0]));
+    for (const id of used) counts.set(id, (counts.get(id) ?? 0) + 1);
+    const max = Math.max(...counts.values());
+    const min = Math.min(...counts.values());
+    expect(max - min).toBeLessThanOrEqual(1);
+  });
+
+  it("applying a layout selects the freshly created frame instances", () => {
+    reset();
+    store().selectFrameIds([]);
+    store().applyFrameLayout("iphone", 4, "grid");
+    expect(store().selectedFrameIds).toEqual(store().scene.frameInstances.map((fi) => fi.id));
+    expect(store().activeFrameInstanceId).toBe(store().scene.frameInstances[0]!.id);
   });
 
   it("selectFrameInstance sets activeFrameInstanceId without history", () => {
@@ -980,11 +1398,14 @@ describe("scene-wide settings", () => {
 
   it("setAnimationEasing updates the active layer easing and coalesces", () => {
     reset();
+    // A preset click and an easing click are separate undo steps now (they
+    // used to share one coalesce key and merge into a single step); repeated
+    // easing changes still coalesce with each other.
     store().setAnimationPreset("zoomIn");
     store().setAnimationEasing("bounce");
     expect(store().scene.layers[0]!.animationEasing).toBe("bounce");
     store().setAnimationEasing("spring");
-    expect(store().past.length).toBe(1);
+    expect(store().past.length).toBe(2);
   });
 
   it("setAnimationDuration updates the loop length and clamps into range", () => {
@@ -995,6 +1416,33 @@ describe("scene-wide settings", () => {
     expect(store().scene.animationDurationMs).toBe(500);
     store().setAnimationDuration(999999);
     expect(store().scene.animationDurationMs).toBe(20000);
+  });
+
+  it("setEntranceAnimation updates the active layer entrance animation and coalesces", () => {
+    reset();
+    store().setEntranceAnimation("fadeIn");
+    expect(store().scene.layers[0]!.entranceAnimation).toBe("fadeIn");
+    store().setEntranceAnimation("slideUp");
+    expect(store().past.length).toBe(1);
+  });
+
+  it("setEntranceDuration updates the entrance duration and clamps into range", () => {
+    reset();
+    store().setEntranceDuration(800);
+    expect(store().scene.layers[0]!.entranceDuration).toBe(800);
+    store().setEntranceDuration(50);
+    expect(store().scene.layers[0]!.entranceDuration).toBe(200);
+    store().setEntranceDuration(5000);
+    expect(store().scene.layers[0]!.entranceDuration).toBe(2000);
+  });
+
+  it("setBlendMode updates the active layer blend mode and coalesces", () => {
+    reset();
+    store().setBlendMode("multiply");
+    expect(store().scene.layers[0]!.blendMode).toBe("multiply");
+    store().setBlendMode("overlay");
+    expect(store().past.length).toBe(1);
+    expect(store().scene.layers[0]!.blendMode).toBe("overlay");
   });
 
   it("setZoom coalesces rapid calls", () => {
@@ -1103,6 +1551,36 @@ describe("scene-wide settings", () => {
     expect(store().past.length).toBe(1);
     expect(store().past[0]!.tiltX).toBe(0);
     expect(store().past[0]!.tiltY).toBe(0);
+  });
+
+  it("different filter sliders stay separate undo steps", () => {
+    reset();
+    store().setBrightness(120);
+    store().setBrightness(150);
+    // The same slider still coalesces with itself.
+    expect(store().past.length).toBe(1);
+    // Touching brightness then contrast within the coalescing window used to
+    // merge into one unrecoverable step (shared "layerFilter" key).
+    store().setContrast(80);
+    expect(store().past.length).toBe(2);
+    expect(store().scene.layers[0]!.brightness).toBe(150);
+    expect(store().scene.layers[0]!.contrast).toBe(80);
+  });
+
+  it("group transforms of different selections stay separate undo steps", () => {
+    reset();
+    const a = store().scene.layers[0]!;
+    store().addLayer("data:image/png;base64,abc", "image", "b.png");
+    const b = store().scene.layers[1]!;
+    const base = store().past.length; // addLayer recorded its own step
+    store().transformLayers([a.id], { zoom: 1.5 });
+    expect(store().past.length).toBe(base + 1);
+    store().transformLayers([b.id], { zoom: 1.5 });
+    expect(store().past.length).toBe(base + 2);
+    // Repeated edits of the same (adjacent) selection still coalesce.
+    store().transformLayers([b.id], { opacity: 50 });
+    expect(store().past.length).toBe(base + 2);
+    expect(store().scene.layers.find((l) => l.id === b.id)!.opacity).toBe(50);
   });
 
   it("setVideoMuted toggles the muted flag", () => {
@@ -1239,6 +1717,40 @@ describe("scene-wide settings", () => {
     expect(store().scene.layers.find((l) => l.id === l2Id)!.mediaUrl).toBe("data:image/png;base64,l2");
   });
 
+  it("setMedia with a pinned target applies to that layer even when another is active", () => {
+    useEditorStore.setState({ scene: { ...initialScene } });
+    store().addLayer("data:image/png;base64,l2", "image");
+    const l1Id = store().scene.layers[0]!.id;
+    const l2Id = store().scene.layers[1]!.id;
+    // The user picked a file while l1 was active, then switched to l2 before
+    // the decode finished — the media must still land on l1 (the pinned target).
+    store().selectLayer(l2Id);
+    store().setMedia("data:image/png;base64,new", "image", "new.png", l1Id);
+    expect(store().scene.layers.find((l) => l.id === l1Id)!.mediaUrl).toBe("data:image/png;base64,new");
+    expect(store().scene.layers.find((l) => l.id === l2Id)!.mediaUrl).toBe("data:image/png;base64,l2");
+    // Selection is not yanked back to the pinned layer.
+    expect(store().activeLayerId).toBe(l2Id);
+  });
+
+  it("setMedia with a pinned target that got locked silently declines", () => {
+    useEditorStore.setState({ scene: { ...initialScene } });
+    store().addLayer("data:image/png;base64,l2", "image");
+    const l1Id = store().scene.layers[0]!.id;
+    store().toggleLayersLocked([l1Id]);
+    const before = store().scene.layers.find((l) => l.id === l1Id)!.mediaUrl;
+    store().setMedia("data:image/png;base64,new", "image", "new.png", l1Id);
+    expect(store().scene.layers.find((l) => l.id === l1Id)!.mediaUrl).toBe(before);
+  });
+
+  it("setMedia with a pinned target that no longer exists falls back to the active layer", () => {
+    useEditorStore.setState({ scene: { ...initialScene } });
+    store().addLayer("data:image/png;base64,l2", "image");
+    const l2Id = store().scene.layers[1]!.id;
+    store().selectLayer(l2Id);
+    store().setMedia("data:image/png;base64,new", "image", "new.png", "ghost-layer");
+    expect(store().scene.layers.find((l) => l.id === l2Id)!.mediaUrl).toBe("data:image/png;base64,new");
+  });
+
   it("setVideoDuration only updates the target layer", () => {
     useEditorStore.setState({ scene: { ...initialScene, layers: [], activeLayerId: null } });
     store().addLayer("data:image/png;base64,l1", "image");
@@ -1302,8 +1814,9 @@ describe("grid overlay state", () => {
       past: [],
       future: [],
       scene: { ...initialScene },
-      showGrid: false,
-      gridDivisions: 12,
+      selectedAnnotationId: null,
+      activeFrameInstanceId: null,
+      selectedFrameIds: [],
       activeLayerId: initialScene.activeLayerId,
       lastHistoryKey: null,
       lastHistoryAt: 0

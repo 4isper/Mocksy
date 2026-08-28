@@ -1,8 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { clearImageCache } from "@/lib/render/canvasMedia";
 import { resolveExportTransform, waitForImage } from "@/lib/export/exportImage";
 import { sampleVideoTransform } from "@/lib/render/videoComposer";
 import { initialScene } from "@/lib/state/editorStore";
 import type { AnimationPreset, EditorScene, MediaLayer } from "@/lib/types/editor";
+
+// Tests stub document/Image/URL/... heavily; leaking one stub into the next
+// test breaks it in confusing ways (e.g. a URL stub without a constructor
+// makes isSvgAssetUrl silently skip every path url).
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 function layer(overrides: Partial<MediaLayer> = {}): MediaLayer {
   return { ...initialScene.layers[0]!, id: overrides.id ?? "layer-test", ...overrides };
@@ -98,11 +106,14 @@ function setupDOMMocks({
     clientWidth: containerSize ? 800 : 0,
     clientHeight: containerSize ? 600 : 0,
     querySelector: (selector: string) => {
-      if (selector === "video") return hasMedia && mediaType === "video" ? ({ readyState: 2 } as HTMLVideoElement) : null;
-      if (selector === "img")
-        return hasMedia && mediaType === "image"
-          ? ({ complete: true, naturalWidth: 100, naturalHeight: 100 } as HTMLImageElement)
-          : null;
+      // Exporters must query by data-layer-media identity; a plain
+      // "img"/"video" selector would grab skins/watermark/other layers.
+      if (selector.startsWith("[data-layer-media=")) {
+        if (!hasMedia) return null;
+        return mediaType === "video"
+          ? ({ readyState: 2 } as HTMLVideoElement)
+          : ({ complete: true, naturalWidth: 100, naturalHeight: 100 } as HTMLImageElement);
+      }
       if (selector === "[data-mockup-frame]")
         return frameElement ? ({ offsetWidth: 400, offsetHeight: 300 } as HTMLElement) : null;
       return null;
@@ -242,6 +253,47 @@ describe("renderSceneToPngBlob", () => {
     const { renderSceneToPngBlob } = await import("@/lib/export/exportImage");
     const result = await renderSceneToPngBlob({ ...initialScene, layers: [] } as any, "preview");
     expect(result).toBeNull();
+  });
+
+  it("queries media by layer identity, never by DOM order", async () => {
+    vi.stubGlobal("window", { devicePixelRatio: 2 });
+    vi.stubGlobal("HTMLCanvasElement", class {});
+    vi.stubGlobal("HTMLVideoElement", class {});
+    vi.stubGlobal("HTMLImageElement", class {});
+    const selectors: string[] = [];
+    // A watermark/skin <img> would answer a blind "img" query — the export
+    // must instead ask for the active layer's own element and accept that
+    // no such element exists (empty frame), never draw the impostor.
+    const container = {
+      clientWidth: 800,
+      clientHeight: 600,
+      querySelector: (sel: string) => {
+        selectors.push(sel);
+        if (sel === "img") return { complete: true, naturalWidth: 100, naturalHeight: 100 } as HTMLImageElement;
+        if (sel === "[data-mockup-frame]") return { offsetWidth: 400, offsetHeight: 300 } as HTMLElement;
+        return null;
+      }
+    };
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => null,
+      toBlob: (cb: (b: Blob | null) => void) => cb(new Blob(["png"]))
+    } as unknown as HTMLCanvasElement;
+    vi.stubGlobal("document", {
+      getElementById: (id: string) => (id === "preview" ? container : null),
+      createElement: (tag: string) => (tag === "canvas" ? canvas : null)
+    });
+
+    const { renderSceneToPngBlob } = await import("@/lib/export/exportImage");
+    const errors: string[] = [];
+    const activeId = initialScene.layers[0]!.id;
+    const blob = await renderSceneToPngBlob(initialScene, "preview", (m) => errors.push(m));
+    expect(errors, errors.join(" | ")).toEqual([]);
+    expect(blob).toBeInstanceOf(Blob);
+    expect(selectors).toContain(`[data-layer-media="${activeId}"]`);
+    expect(selectors).not.toContain("img");
+    expect(selectors).not.toContain("video");
   });
 });
 
@@ -589,8 +641,7 @@ describe("renderSceneToPngBlob multi-frame video", () => {
   });
 });
 
-describe("renderSceneToPngBlob single-frame video fallback", () => {
-  it("loads a video frame when the preview video is not decoded yet", async () => {
+describe("renderSceneToPngBlob single-frame video fallback", () => {  it("loads a video frame when the preview video is not decoded yet", async () => {
     const videoEl: Record<string, unknown> = {
       src: "",
       crossOrigin: "",
@@ -629,7 +680,7 @@ describe("renderSceneToPngBlob single-frame video fallback", () => {
       clientWidth: 800,
       clientHeight: 600,
       querySelector: (sel: string) => {
-        if (sel === "video") return undecoded;
+        if (sel.startsWith("[data-layer-media=")) return undecoded;
         if (sel === "[data-mockup-frame]") return { offsetWidth: 400, offsetHeight: 300 };
         return null;
       }
@@ -664,5 +715,224 @@ describe("renderSceneToPngBlob single-frame video fallback", () => {
     // The fallback decoded a frame through loadVideoFrame (seek + pause).
     expect(videoEl.currentTime).toBe(2);
     expect(videoEl.pause).toHaveBeenCalled();
+  });
+
+  it("loads the poster frame even when the preview video is already decoded", async () => {
+    const videoEl: Record<string, unknown> = {
+      src: "",
+      crossOrigin: "",
+      muted: false,
+      playsInline: false,
+      videoWidth: 320,
+      videoHeight: 240,
+      duration: 5,
+      pause: vi.fn()
+    };
+    const autoFire = (name: string) =>
+      Object.defineProperty(videoEl, name, {
+        configurable: true,
+        get: () => videoEl[`_${name}`],
+        set(fn: unknown) {
+          (videoEl as Record<string, unknown>)[`_${name}`] = fn;
+          if (fn) queueMicrotask(() => (fn as () => void)());
+        }
+      });
+    autoFire("onloadedmetadata");
+    autoFire("onloadeddata");
+    autoFire("onseeked");
+    Object.defineProperty(videoEl, "onerror", {
+      configurable: true,
+      get: () => videoEl._onerror,
+      set(fn: unknown) {
+        (videoEl as Record<string, unknown>)._onerror = fn;
+      }
+    });
+
+    vi.stubGlobal("HTMLVideoElement", class {});
+    vi.stubGlobal("HTMLImageElement", class {});
+    // The preview <video> already decoded a frame, so a naive exporter would
+    // snapshot whatever frame the playhead is sitting on. The exporter must
+    // still seek a fresh element to the poster time.
+    const decoded = Object.assign(new (vi.mocked(globalThis.HTMLVideoElement))(), { readyState: 2 });
+    const container = {
+      clientWidth: 800,
+      clientHeight: 600,
+      querySelector: (sel: string) => {
+        if (sel.startsWith("[data-layer-media=")) return decoded;
+        if (sel === "[data-mockup-frame]") return { offsetWidth: 400, offsetHeight: 300 };
+        return null;
+      }
+    };
+    const mockCanvas = {
+      width: 800,
+      height: 600,
+      getContext: () => null,
+      toBlob: (cb: (b: Blob | null) => void) => cb(new Blob(["png"]))
+    } as unknown as HTMLCanvasElement;
+    vi.stubGlobal("document", {
+      getElementById: (id: string) => (id === "preview" ? container : null),
+      createElement: (tag: string) => (tag === "canvas" ? mockCanvas : tag === "video" ? videoEl : null)
+    });
+    vi.stubGlobal("window", { devicePixelRatio: 2 });
+
+    const videoLayer = {
+      ...initialScene.layers[0]!,
+      id: "vlayer",
+      mediaUrl: "blob:vid",
+      mediaType: "video",
+      mediaName: "clip.mp4",
+      videoPosterTime: 2
+    } as MediaLayer;
+    const scene: EditorScene = { ...initialScene, layers: [videoLayer], activeLayerId: "vlayer" };
+
+    const { renderSceneToPngBlob } = await import("@/lib/export/exportImage");
+    const errors: string[] = [];
+    const blob = await renderSceneToPngBlob(scene, "preview", (m) => errors.push(m));
+    expect(errors, errors.join(" | ")).toEqual([]);
+    expect(blob).toBeInstanceOf(Blob);
+    // The ready preview element must NOT be reused at its current playhead:
+    // a fresh element was seeked to the poster time instead.
+    expect(videoEl.currentTime).toBe(2);
+    expect(videoEl.pause).toHaveBeenCalled();
+  });
+});
+
+describe("renderSceneToImageBlob jpeg flatten", () => {
+  /** Runs an export against a canvas ctx that records every fillStyle
+   *  assignment, so the test can observe what paintBackground filled with. */
+  async function exportWithFillRecording(mimeType: "image/png" | "image/jpeg"): Promise<string[]> {
+    const fills: string[] = [];
+    vi.stubGlobal("window", { devicePixelRatio: 2 });
+    vi.stubGlobal("HTMLCanvasElement", class {});
+    vi.stubGlobal("HTMLVideoElement", class {});
+    vi.stubGlobal("HTMLImageElement", class {});
+    const ctx: Record<string, unknown> = {
+      clearRect: vi.fn(),
+      fillRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      quadraticCurveTo: vi.fn(),
+      closePath: vi.fn(),
+      clip: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+      createLinearGradient: () => ({ addColorStop: vi.fn() }),
+      drawImage: vi.fn()
+    };
+    Object.defineProperty(ctx, "fillStyle", { set: (v: unknown) => fills.push(String(v)), get: () => "", configurable: true });
+    const setters = ["font", "textAlign", "textBaseline", "strokeStyle", "shadowColor", "shadowBlur", "shadowOffsetX", "shadowOffsetY", "lineWidth", "lineCap", "filter"];
+    for (const s of setters) {
+      Object.defineProperty(ctx, s, { set: vi.fn(), get: () => "", configurable: true });
+    }
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => ctx,
+      toBlob: (cb: (b: Blob | null) => void) => cb(new Blob(["x"], { type: mimeType }))
+    } as unknown as HTMLCanvasElement;
+    const container = {
+      clientWidth: 800,
+      clientHeight: 600,
+      querySelector: (sel: string) =>
+        sel === "[data-mockup-frame]" ? ({ offsetWidth: 400, offsetHeight: 300 } as HTMLElement) : null
+    };
+    vi.stubGlobal("document", {
+      getElementById: (id: string) => (id === "preview" ? container : null),
+      createElement: (tag: string) => (tag === "canvas" ? canvas : null)
+    });
+    vi.stubGlobal("Image", class {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      set src(_v: string) { setTimeout(() => this.onload?.(), 0); }
+      naturalWidth = 100;
+      naturalHeight = 100;
+    });
+
+    const { renderSceneToImageBlob } = await import("@/lib/export/exportImage");
+    const scene: EditorScene = { ...initialScene, backgroundMode: "transparent" };
+    const errors: string[] = [];
+    const blob = await renderSceneToImageBlob(scene, "preview", mimeType, (m) => errors.push(m));
+    expect(errors, errors.join(" | ")).toEqual([]);
+    expect(blob).toBeInstanceOf(Blob);
+    return fills;
+  }
+
+  it("flattens a transparent background onto white for JPEG", async () => {
+    // JPEG has no alpha channel — without the white underlay toBlob would
+    // encode the transparent canvas as black.
+    const fills = await exportWithFillRecording("image/jpeg");
+    expect(fills).toContain("#ffffff");
+  });
+
+  it("keeps transparency for PNG (only the faint empty-scene wash)", async () => {
+    const fills = await exportWithFillRecording("image/png");
+    expect(fills).not.toContain("#ffffff");
+  });
+});
+
+describe("decodeSvgAssetsForWorker", () => {
+  /** Workers can neither construct Image nor createImageBitmap an SVG blob;
+   *  this contract (pre-decoded bitmaps shipped from the main thread) is what
+   *  keeps device skins — and their drop shadows — alive in off-thread
+   *  exports. A silent miss here used to export skinless frames. */
+  function stubImageDecoder() {
+    // Earlier tests in this file poison the shared canvasMedia image cache
+    // (their Image stubs throw synchronously, and executor throws cache the
+    // rejected promise without eviction). Start from a clean cache.
+    clearImageCache();
+    vi.stubGlobal("Image", class {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      naturalWidth = 393;
+      naturalHeight = 852;
+      #src = "";
+      get src(): string {
+        return this.#src;
+      }
+      set src(value: string) {
+        this.#src = value;
+        if (value.includes("broken")) queueMicrotask(() => this.onerror?.());
+        else queueMicrotask(() => this.onload?.());
+      }
+    });
+    vi.stubGlobal("createImageBitmap", async (img: { src: string }) => ({ __bitmapFor: img.src }));
+  }
+
+  it("pre-decodes every SVG url (overlay + slots) and skips raster ones", async () => {
+    stubImageDecoder();
+    const { decodeSvgAssetsForWorker } = await import("@/lib/export/exportImage");
+    const payload = {
+      overlayUrl: "/devices/iphone15.svg",
+      backgroundImageUrl: "data:image/png;base64,AAA",
+      watermarkImageUrl: null,
+      images: [
+        { key: "l1", url: "data:image/svg+xml;base64,PHN2Zy8+" },
+        { key: "overlay:l1", url: "/devices/iphone15.svg" },
+        { key: "l2", url: "data:image/png;base64,BBB" }
+      ]
+    } as unknown as Parameters<typeof decodeSvgAssetsForWorker>[0];
+    const out = await decodeSvgAssetsForWorker(payload);
+    // Deduped by url: the skin appears once even though two slots reference it.
+    expect(out).toHaveLength(2);
+    const byUrl = new Map(out.map((e) => [e.url, e.bitmap]));
+    expect(byUrl.get("/devices/iphone15.svg")).toEqual({ __bitmapFor: "/devices/iphone15.svg" });
+    expect(byUrl.get("data:image/svg+xml;base64,PHN2Zy8+")).toEqual({ __bitmapFor: "data:image/svg+xml;base64,PHN2Zy8+" });
+  });
+
+  it("skips a failed decode instead of aborting the batch", async () => {
+    stubImageDecoder();
+    const { decodeSvgAssetsForWorker } = await import("@/lib/export/exportImage");
+    const payload = {
+      overlayUrl: "/devices/broken.svg",
+      backgroundImageUrl: null,
+      watermarkImageUrl: null,
+      images: [{ key: "l1", url: "/devices/iphone15.svg" }]
+    } as unknown as Parameters<typeof decodeSvgAssetsForWorker>[0];
+    const out = await decodeSvgAssetsForWorker(payload);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.url).toBe("/devices/iphone15.svg");
   });
 });

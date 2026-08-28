@@ -1,0 +1,25 @@
+/* Visually hidden but accessible to screen readers and keyboard users.
+   The skip-link becomes visible when focused. */
+.skip-link {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.skip-link:focus {
+  position: fixed;
+  left: 8px;
+  top: 8px;
+  z-index: 100;
+  width: auto;
+  height: auto;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #000;
+  font-weight: 600;
+  text-decoration: none;
+  overflow: visible;
+  white-space: normal;
+}

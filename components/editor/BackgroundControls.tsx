@@ -24,13 +24,13 @@ interface BackgroundControlsProps {
   patternId: PatternId | null;
   backgroundBlur: number;
   backgroundImageUrl: string | null;
-  setBackgroundSolid: (color: string) => void;
-  setBackgroundGradient: (from: string, to: string, angle?: number, gradientVia?: string, gradientType?: "linear" | "radial") => void;
+  setBackgroundSolid: (color: string, coalesce?: boolean) => void;
+  setBackgroundGradient: (from: string, to: string, angle?: number, gradientVia?: string | null, gradientType?: "linear" | "radial", coalesce?: boolean) => void;
   setBackgroundTransparent: () => void;
   setBackgroundImage: (url: string) => void;
   setBackgroundPattern: (patternId: PatternId) => void;
   setGradientType: (gradientType: "linear" | "radial") => void;
-  setGradientVia: (gradientVia: string) => void;
+  setGradientVia: (gradientVia: string | null, coalesce?: boolean) => void;
   setBackgroundBlur: (blur: number) => void;
 }
 
@@ -82,12 +82,15 @@ export function BackgroundControls({
 
   const handleModeChange = (mode: BackgroundMode) => {
     if (mode === backgroundMode) return;
+    // Any successful mode switch invalidates a stale hint (e.g. one left over
+    // from clicking the image tab before uploading anything).
+    setError(null);
     switch (mode) {
       case "solid":
         setBackgroundSolid(backgroundColor);
         break;
       case "gradient":
-        setBackgroundGradient(gradientFrom, gradientTo, gradientAngle, gradientVia ?? undefined, gradientType);
+        setBackgroundGradient(gradientFrom, gradientTo, gradientAngle, gradientVia, gradientType);
         break;
       case "pattern":
         setBackgroundPattern(patternId ?? "dots");
@@ -108,7 +111,13 @@ export function BackgroundControls({
 
   return (
     <div className="field-group">
-      <Segmented value={backgroundMode} options={MODE_ORDER.map((m) => ({ value: m, label: modeLabels[m] }))} onChange={handleModeChange} />
+      <Segmented
+        value={backgroundMode}
+        // The image tab is pointless until an image exists — disable it
+        // instead of letting it produce a no-op + error message.
+        options={MODE_ORDER.map((m) => ({ value: m, label: modeLabels[m], disabled: m === "image" && !backgroundImageUrl }))}
+        onChange={handleModeChange}
+      />
 
       {showPresetGrid ? (
         <BackgroundPresetGrid
@@ -117,6 +126,8 @@ export function BackgroundControls({
           gradientFrom={gradientFrom}
           gradientTo={gradientTo}
           gradientAngle={gradientAngle}
+          gradientVia={gradientVia}
+          gradientType={gradientType}
           patternId={patternId}
           setBackgroundSolid={setBackgroundSolid}
           setBackgroundGradient={setBackgroundGradient}

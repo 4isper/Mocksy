@@ -44,7 +44,12 @@ export function trimHistoryForStorage(
   // even for very large payloads. Stop at a single snapshot — dropping it too
   // would lose the undo stack entirely.
   while (p.length > 1 && payloadSize(p, f) > budget) p = p.slice(Math.floor(p.length / 2));
-  if (payloadSize(p, f) > budget) return null;
+  if (payloadSize(p, f) > budget) {
+    // Keep at least one snapshot so the user always has a minimal undo after
+    // reload, even if it alone exceeds the budget.
+    if (p.length > 1) p = p.slice(-1);
+    if (payloadSize(p, f) > budget) return null;
+  }
   return { past: p, future: f };
 }
 
@@ -95,6 +100,19 @@ export function restoreHistory(): void {
   });
 }
 
+/** Drops the persisted undo stack. Used when bootstrap replaces the scene with
+ *  an unrelated one (a share/template link): the stored stack belongs to a
+ *  different scene, so restoring it later would let one ⌘Z revert into that
+ *  scene and the autosave would persist it over the newly-opened one. */
+export function clearPersistedHistory(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Best-effort persistence: storage failures are non-actionable here.
+  }
+}
+
 /** Watches the editor store for undo/redo-stack changes and writes a trimmed,
  *  debounced copy to localStorage. Flushes synchronously on pagehide so a quick
  *  tab close doesn't lose the most recent undo steps. Returns an unsubscribe. */
@@ -122,6 +140,9 @@ export function initHistoryPersistence(): () => void {
   return () => {
     unsubscribe();
     window.removeEventListener("pagehide", flush);
-    if (timer) clearTimeout(timer);
+    // Flush instead of dropping: an SPA unmount (locale switch remounts the
+    // editor) must not lose the pending write, or the next mount's
+    // restoreHistory would resurrect a stale stack over newer history.
+    flush();
   };
 }

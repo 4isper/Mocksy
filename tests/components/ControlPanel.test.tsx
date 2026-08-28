@@ -36,10 +36,17 @@ describe("ControlPanel", () => {
     render(<ControlPanel />);
     const header = screen.getByRole("button", { name: "editor.animation" });
     expect(header).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText("animation.none")).not.toBeVisible();
+    // "animation.none" now appears in both loop and entrance Segmented controls
+    const noneButtons = screen.queryAllByText("animation.none");
+    expect(noneButtons.length).toBeGreaterThanOrEqual(1);
+    for (const el of noneButtons) {
+      expect(el).not.toBeVisible();
+    }
     await openSection("editor.animation");
     expect(header).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText("animation.none")).toBeVisible();
+    for (const el of screen.getAllByText("animation.none")) {
+      expect(el).toBeVisible();
+    }
   });
 
   it("renders upload media trigger", () => {
@@ -71,7 +78,8 @@ describe("ControlPanel", () => {
   it("renders animation presets", async () => {
     render(<ControlPanel />);
     await openSection("editor.animation");
-    expect(screen.getByText("animation.none")).toBeInTheDocument();
+    // "animation.none" appears in both the looping and entrance animation Segmented controls
+    expect(screen.getAllByText("animation.none").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("animation.zoomIn")).toBeInTheDocument();
     expect(screen.getByText("animation.zoomOut")).toBeInTheDocument();
     expect(screen.getByText("animation.parallax")).toBeInTheDocument();

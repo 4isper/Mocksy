@@ -1,13 +1,14 @@
 "use client";
 
 import type { EditorScene } from "@/lib/types/editor";
-import { computeFrameBox, computeFrameInstances, singleFrameCssSize, type FrameBox } from "@/lib/render/frameGeometry";
+import { computeFrameBox, computeFrameInstances, isVisibleFrameInstance, singleFrameCssSize, type FrameBox } from "@/lib/render/frameGeometry";
 import { intrinsicExportSize } from "@/lib/export/exportSize";
 import { getFrameSpec, frameViewBox } from "@/lib/render/frames";
 import { isBrowserFrameSpec } from "@/lib/render/browserChrome";
 import { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
-import { resolveExportTransform, waitForImage } from "@/lib/export/exportImageCore";
+import { resolveExportTransform, waitForImage, layerMediaSelector } from "@/lib/export/exportImageCore";
 import { isVideoLayer } from "@/lib/render/mediaKind";
+import { isTextLayer } from "@/lib/render/layerText";
 import { buildEmbeddedFontCss, collectFontStacks } from "@/lib/export/fontEmbed";
 import { downloadBlob } from "@/lib/export/downloadBlob";
 import { buildSvgMarkup, type SvgFrameGroup, type SvgExportOptions } from "@/lib/export/svgMarkup";
@@ -63,9 +64,13 @@ export async function inlineSvgAsset(asset: string): Promise<string | null> {
   try {
     const res = await fetch(asset);
     const text = await res.text();
+    // Strip XML declarations, the <svg> root wrapper and closing tag so the
+    // inner markup can be inlined into a <g>. The replacement is deliberately
+    // simple — device skins are authored in-house and never contain nested
+    // <svg> elements or CDATA sections.
     return text
-      .replace(/<\?xml[^>]*\?>/i, "")
-      .replace(/^[\s\S]*?<svg[^>]*>/i, "<g>")
+      .replace(/<\?xml[^>]*\?>/gi, "")
+      .replace(/<svg[\s\S]*?>/i, "<g>")
       .replace(/<\/svg>\s*$/i, "</g>")
       .trim();
   } catch {
@@ -73,27 +78,27 @@ export async function inlineSvgAsset(asset: string): Promise<string | null> {
   }
 }
 
+export interface StandaloneSvg {
+  markup: string;
+  width: number;
+  height: number;
+}
+
 /**
- * Exports the scene as a standalone SVG. Geometry is measured from the live
- * preview (so it matches the PNG/video exports), media is embedded as data
- * URLs, and overlay device skins are inlined so the file opens cleanly in
- * Figma/Illustrator/browsers.
+ * Builds a standalone SVG document from the live preview. Geometry is
+ * measured from the DOM (so it matches the PNG/video exports), media is
+ * embedded as data URLs, and overlay device skins are inlined so the result
+ * opens cleanly in Figma/Illustrator/browsers. Shared by the SVG and PDF
+ * exporters so both stay pixel-identical. Returns null when the preview
+ * area is missing.
  */
-export async function exportSvg(
+export async function buildStandaloneSvg(
   scene: EditorScene,
   containerId: string,
-  filename = "mocksy-export",
-  onError?: (message: string) => void,
   activeLayerId: string | null = scene.activeLayerId
-) {
-  try {
-    const node = document.getElementById(containerId);
-    if (!node) {
-      onError?.("Preview area not found.");
-      return;
-    }
-    const video = node.querySelector("video");
-    const img = node.querySelector("img");
+): Promise<StandaloneSvg | null> {
+  const node = document.getElementById(containerId);
+  if (!node) return null;
     // Anchor the SVG canvas to the scene's intrinsic artboard (exportSize.ts)
     // so vector output matches the raster exports and never depends on the
     // preview's on-screen size.
@@ -124,6 +129,8 @@ export async function exportSvg(
         const box: FrameBox | undefined = boxes[i];
         const inst = scene.frameInstances[i];
         if (!box || !inst) continue;
+        // Hidden layers' instances are invisible in the preview — skip them.
+        if (!isVisibleFrameInstance(scene, inst)) continue;
         const layer = scene.layers.find((l) => l.id === inst.layerId) ?? activeLayer;
         const spec = getFrameSpec(inst.frame, scene.customFrame, inst.material);
         let media: { href: string; width: number; height: number } | null = null;
@@ -154,29 +161,36 @@ export async function exportSvg(
           rotation: layer?.rotation ?? 0,
           opacity: layer?.opacity,
           orientation: box.rotation ? (box.rotation * 180) / Math.PI : undefined,
-          frame: inst.frame
+          frame: inst.frame,
+          screen: inst.screen ?? scene.screen,
+          floorReflection: inst.floorReflection ?? scene.floorReflection,
+          textLayer: isTextLayer(layer) ? layer : null
         });
       }
     } else {
       const spec = getFrameSpec(scene.frame, scene.customFrame, scene.frameMaterial);
       let media: { href: string; width: number; height: number } | null = null;
-      if (!activeLayer?.hidden) {
-        if (video instanceof HTMLVideoElement) {
-          let src: HTMLVideoElement = video;
-          if (video.readyState < 2 && activeLayer && isVideoLayer(activeLayer) && activeLayer.mediaUrl) {
+      if (!activeLayer?.hidden && activeLayer) {
+        // Resolve the active layer's media element by identity, never by DOM
+        // order: the preview also holds device-skin overlays, the watermark
+        // logo and other layers' media.
+        const el = node.querySelector(layerMediaSelector(activeLayer.id));
+        if (el instanceof HTMLVideoElement) {
+          let src: HTMLVideoElement = el;
+          if (el.readyState < 2 && isVideoLayer(activeLayer) && activeLayer.mediaUrl) {
             try {
               src = await loadVideoFrame(activeLayer.mediaUrl, activeLayer.videoPosterTime ?? 0);
             } catch {
-              src = video;
+              src = el;
             }
           }
           media = videoToDataUrl(src);
-        } else if (img instanceof HTMLImageElement) {
-          await waitForImage(img);
+        } else if (el instanceof HTMLImageElement) {
+          await waitForImage(el);
           media = {
-            href: img.src,
-            width: img.naturalWidth || img.width || 1,
-            height: img.naturalHeight || img.height || 1
+            href: el.src,
+            width: el.naturalWidth || el.width || 1,
+            height: el.naturalHeight || el.height || 1
           };
         }
       }
@@ -198,7 +212,10 @@ export async function exportSvg(
         offsetY: activeLayer?.mediaOffsetY,
         rotation: activeLayer?.rotation ?? 0,
         frame: scene.frame,
-        opacity: activeLayer?.opacity
+        screen: scene.screen,
+        floorReflection: scene.floorReflection,
+        opacity: activeLayer?.opacity,
+        textLayer: isTextLayer(activeLayer) ? activeLayer : null
       });
     }
 
@@ -215,8 +232,54 @@ export async function exportSvg(
       groups,
       fontCss: await buildEmbeddedFontCss(collectFontStacks(scene))
     });
-    downloadBlob(new Blob([markup], { type: "image/svg+xml" }), `${filename}.svg`);
+    return { markup, width, height };
+}
+
+/**
+ * Exports the scene as a standalone SVG file.
+ */
+export async function exportSvg(
+  scene: EditorScene,
+  containerId: string,
+  filename = "mocksy-export",
+  onError?: (message: string) => void,
+  activeLayerId: string | null = scene.activeLayerId
+) {
+  try {
+    const svg = await buildStandaloneSvg(scene, containerId, activeLayerId);
+    if (!svg) {
+      onError?.("Preview area not found.");
+      return;
+    }
+    downloadBlob(new Blob([svg.markup], { type: "image/svg+xml" }), `${filename}.svg`);
   } catch (err) {
     onError?.(err instanceof Error ? err.message : "SVG export failed.");
+  }
+}
+
+/**
+ * Copies the scene as SVG markup to the system clipboard as text.
+ */
+export async function copySvgToClipboard(
+  scene: EditorScene,
+  containerId: string,
+  onError?: (message: string) => void,
+  onStatus?: (message: string) => void,
+  activeLayerId: string | null = scene.activeLayerId
+) {
+  try {
+    if (typeof navigator === "undefined" || !navigator.clipboard) {
+      onError?.("Clipboard isn't available here (open over https or localhost).");
+      return;
+    }
+    const svg = await buildStandaloneSvg(scene, containerId, activeLayerId);
+    if (!svg) {
+      onError?.("Preview area not found.");
+      return;
+    }
+    await navigator.clipboard.writeText(svg.markup);
+    onStatus?.("Copied SVG to clipboard");
+  } catch (err) {
+    onError?.(err instanceof Error ? err.message : "Could not copy SVG.");
   }
 }

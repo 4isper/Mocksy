@@ -33,20 +33,24 @@ export function useCanvasDrop({ scene }: UseCanvasDrop) {
   const [isDragging, setIsDragging] = useState(false);
 
   const setMediaUploadError = useEditorStore((s) => s.setMediaUploadError);
-  const setMedia = useEditorStore((s) => s.setMedia);
 
   const loadMediaToLayer = useCallback(
     async (file: File, layerId?: string) => {
+      // Pin the target layer before the async decode (a drop targeting a
+      // specific frame already passes its layerId in): without it, a user who
+      // switches layers while the file decodes would drop the media into the
+      // wrong layer — or, if that layer is now locked, silently nowhere.
+      const st = useEditorStore.getState();
+      const targetLayerId = layerId ?? st.activeLayerId ?? st.scene.layers[0]?.id ?? null;
       try {
         const { url, mediaType, mediaName } = await loadMediaFromFile(file);
         setMediaUploadError(null);
-        if (layerId) useEditorStore.getState().setMediaOnLayer(layerId, url, mediaType, mediaName);
-        else setMedia(url, mediaType, mediaName);
+        useEditorStore.getState().setMedia(url, mediaType, mediaName, targetLayerId);
       } catch (err) {
         setMediaUploadError(err instanceof UnsupportedMediaError ? err.message : t("editor.uploadError"));
       }
     },
-    [setMedia, setMediaUploadError, t]
+    [setMediaUploadError, t]
   );
 
   const handleDrop = useCallback(

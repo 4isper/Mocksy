@@ -38,3 +38,25 @@ export function fitRatioForCustomSize(
   const base = intrinsicExportSize(scene, 1);
   return Math.min(custom.width / base.width, custom.height / base.height);
 }
+
+/** Output pixel size for the server-side spin render. Explicit width/height
+ *  win; otherwise the artboard is anchored to EXPORT_BASE_WIDTH × scale,
+ *  capped so a misconfigured caller can't starve the renderer. */
+export function resolveSpinRenderSize(
+  scene: EditorScene,
+  opts: { scale?: number; width?: number; height?: number } = {}
+): { width: number; height: number } {
+  const { width, height } = opts;
+  if (typeof width === "number" && Number.isFinite(width) && width > 0 &&
+      typeof height === "number" && Number.isFinite(height) && height > 0) {
+    return {
+      width: Math.max(1, Math.min(8192, Math.round(width))),
+      height: Math.max(1, Math.min(8192, Math.round(height)))
+    };
+  }
+  const scale =
+    typeof opts.scale === "number" && Number.isFinite(opts.scale)
+      ? Math.min(4, Math.max(1, opts.scale))
+      : 2;
+  return intrinsicExportSize(scene, scale);
+}

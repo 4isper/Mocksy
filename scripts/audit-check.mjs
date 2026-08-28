@@ -3,7 +3,7 @@
  * npm audit wrapper that fails only on advisory IDs NOT in the known allowlist.
  *
  * The allowlisted advisories are all transitive dev/build-time dependencies —
- * postcss/sharp bundled inside next, and tmp/uuid pulled in by @lhci/cli.
+ * postcss bundled inside next, and tmp/uuid/extract-zip pulled in by @lhci/cli.
  * There is no safe fix: `npm audit fix --force` would downgrade next to 9.3.3
  * (breaking). None of these reach the client bundle. Revisit and prune the
  * list when next/@lhci/cli bump the offending packages upstream.
@@ -14,7 +14,6 @@ const KNOWN = new Set([
   "GHSA-qx2v-qp2m-jg93", // postcss (next) — XSS in CSS stringify
   "GHSA-6g55-p6wh-862q", // postcss (next) — sourceMappingURL file read
   "GHSA-r28c-9q8g-f849", // postcss (next) — source map path traversal
-  "GHSA-f88m-g3jw-g9cj", // sharp (next) — libvips CVEs
   "GHSA-52f5-9888-hmc6", // tmp (@lhci/cli) — symlink in dir param
   "GHSA-ph9p-34f9-6g65", // tmp (@lhci/cli) — prefix/postfix traversal
   "GHSA-w5hq-g745-h8pq", // uuid (@lhci/cli) — buffer bounds check
@@ -22,8 +21,6 @@ const KNOWN = new Set([
   // client bundle. Revisit when the parents bump upstream.
   "GHSA-xcpc-8h2w-3j85", // adm-zip (onnxruntime-node, @huggingface/transformers) — 4GB alloc
   "GHSA-jmr9-qjv8-65gv", // extract-zip (@lhci/cli → puppeteer) — symlink traversal
-  "GHSA-5p4m-2wfm-xmqj", // js-yaml (@lhci/cli 3.x / eslint eslintrc 4.x) — !!omap CPU
-  "GHSA-2v37-7h3g-55p8", // nanoid (next → postcss) — zero-size generator loop
 ]);
 
 function parseAudit(raw) {

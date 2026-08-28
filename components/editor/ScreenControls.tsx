@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import type { ScreenChrome, ScreenChromeStyle, ScreenChromeTheme } from "@/lib/types/editor";
+import type { DeviceOS } from "@/lib/render/frames";
 import { Segmented } from "@/components/editor/Segmented";
 
 interface ScreenControlsProps {
@@ -9,12 +10,25 @@ interface ScreenControlsProps {
   setScreenChrome: (patch: Partial<ScreenChrome>) => void;
   screenGlare: boolean;
   setScreenGlare: (on: boolean) => void;
+  /** Caption telling the user whether edits apply to all devices or just the
+   *  selected one (per-device override mode). */
+  scopeHint?: string;
+  /** Resolved device OS (explicit choice, else derived from the frame). */
+  resolvedOs: DeviceOS;
+  /** Global floor-reflection toggle (moved here from the Position section). */
+  floorReflection: boolean;
+  setFloorReflection: (on: boolean) => void;
+  /** Clears the selected device's override (instance mode only). */
+  onResetScreen?: () => void;
+  /** Copies the selected device's chrome to all devices (instance mode only). */
+  onApplyToAll?: () => void;
 }
 
 const STYLES: ScreenChromeStyle[] = ["lock", "home", "statusBar"];
 const THEMES: ScreenChromeTheme[] = ["dark", "light"];
+const OSES: DeviceOS[] = ["ios", "android", "desktop"];
 
-export function ScreenControls({ screen, setScreenChrome, screenGlare, setScreenGlare }: ScreenControlsProps) {
+export function ScreenControls({ screen, setScreenChrome, screenGlare, setScreenGlare, scopeHint, resolvedOs, floorReflection, setFloorReflection, onResetScreen, onApplyToAll }: ScreenControlsProps) {
   const t = useTranslations();
 
   const styleLabels: Record<ScreenChromeStyle, string> = {
@@ -26,12 +40,18 @@ export function ScreenControls({ screen, setScreenChrome, screenGlare, setScreen
     dark: t("editor.screenThemeDark"),
     light: t("editor.screenThemeLight")
   };
+  const osLabels: Record<DeviceOS, string> = {
+    ios: t("editor.screenOsIos"),
+    android: t("editor.screenOsAndroid"),
+    desktop: t("editor.screenOsDesktop")
+  };
 
   const isLock = screen.style === "lock";
   const isHome = screen.style === "home";
 
   return (
     <div className="field-group">
+      {scopeHint ? <p className="field-hint">{scopeHint}</p> : null}
       <label className="toggle">
         <input type="checkbox" checked={screen.enabled} onChange={(e) => setScreenChrome({ enabled: e.target.checked })} />
         <span className="track" aria-hidden="true" />
@@ -50,6 +70,13 @@ export function ScreenControls({ screen, setScreenChrome, screenGlare, setScreen
         value={screen.theme}
         options={THEMES.map((th) => ({ value: th, label: themeLabels[th] }))}
         onChange={(theme) => setScreenChrome({ theme })}
+        disabled={!screen.enabled}
+      />
+      <Segmented
+        label={t("editor.screenOs")}
+        value={resolvedOs}
+        options={OSES.map((os) => ({ value: os, label: osLabels[os] }))}
+        onChange={(os) => setScreenChrome({ os })}
         disabled={!screen.enabled}
       />
 
@@ -118,6 +145,27 @@ export function ScreenControls({ screen, setScreenChrome, screenGlare, setScreen
         <span className="track" aria-hidden="true" />
         <span>{t("editor.screenGlare")}</span>
       </label>
+
+      <label className="toggle">
+        <input type="checkbox" checked={floorReflection} onChange={(e) => setFloorReflection(e.target.checked)} />
+        <span className="track" aria-hidden="true" />
+        <span>{t("editor.floorReflection")}</span>
+      </label>
+
+      {onResetScreen || onApplyToAll ? (
+        <div className="screen-actions">
+          {onResetScreen ? (
+            <button type="button" className="btn-link" onClick={onResetScreen}>
+              {t("editor.screenResetDefault")}
+            </button>
+          ) : null}
+          {onApplyToAll ? (
+            <button type="button" className="btn-link" onClick={onApplyToAll}>
+              {t("editor.screenApplyToAll")}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

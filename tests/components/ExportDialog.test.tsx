@@ -26,6 +26,7 @@ describe("ExportDialog", () => {
   it("renders format segmented buttons", () => {
     render(<ExportDialog {...baseProps} />);
     expect(screen.getByText("export.png")).toBeInTheDocument();
+    expect(screen.getByText("export.jpeg")).toBeInTheDocument();
     expect(screen.getByText("export.webp")).toBeInTheDocument();
     expect(screen.getByText("export.svg")).toBeInTheDocument();
     expect(screen.getByText("export.html")).toBeInTheDocument();
@@ -48,7 +49,7 @@ describe("ExportDialog", () => {
   it("calls onExport with each newly added format", async () => {
     const onExport = vi.fn();
     render(<ExportDialog {...baseProps} onExport={onExport} />);
-    for (const format of ["webp", "svg", "html", "webm", "webpAnim"]) {
+    for (const format of ["jpeg", "webp", "svg", "html", "webm", "webpAnim"]) {
       onExport.mockClear();
       await userEvent.click(screen.getByText(`export.${format}`));
       await userEvent.click(screen.getByText("export.exportAction"));

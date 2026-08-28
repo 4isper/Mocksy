@@ -34,7 +34,14 @@ function openDb(): Promise<IDBDatabase | null> {
         };
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => resolve(null);
-        req.onblocked = () => resolve(null);
+        req.onblocked = () => {
+          // The open is stalled by another connection holding the DB during an
+          // upgrade. Resolve this attempt as unavailable so callers degrade
+          // gracefully, but drop the cached handle so a later call doesn't stay
+          // permanently degraded once the blocker releases.
+          w.__mocksyMediaDb = undefined;
+          resolve(null);
+        };
       } catch {
         resolve(null);
       }
@@ -77,8 +84,8 @@ export async function getMediaBlob(key: string): Promise<Blob | null> {
 }
 
 export async function deleteMediaBlob(key: string): Promise<boolean> {
-  await withStore<undefined>("readwrite", (store) => store.delete(key));
-  return true;
+  const result = await withStore<undefined>("readwrite", (store) => store.delete(key));
+  return result !== null;
 }
 
 export async function listMediaKeys(): Promise<string[]> {

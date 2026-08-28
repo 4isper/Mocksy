@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
-import { highlightMatch, matchQuery, scoreMatch } from "@/lib/search/matchCommand";
+import { highlightMatch, matchQuery, scoreMatch } from "@/lib/commands/matchCommand";
 import type { Command } from "@/lib/types/editor";
 
 export type { Command };
@@ -116,19 +116,17 @@ export function CommandPalette({
     }
     if (e.key === "Enter") {
       e.preventDefault();
-      const cmd = filteredCommands[selectedIndex];
+      const idx = Math.min(selectedIndex, filteredCommands.length - 1);
+      const cmd = filteredCommands[idx];
       if (cmd) {
         cmd.action();
         onClose();
       }
       return;
     }
-    if (e.key === "Tab") {
-      e.preventDefault();
-      setSelectedIndex((selectedIndex + 1) % filteredCommands.length);
-      return;
-    }
   }, [filteredCommands, onClose, selectedIndex]);
+
+  const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
 
   if (!isOpen) return null;
 
@@ -143,7 +141,7 @@ export function CommandPalette({
         aria-label={t("commandPalette.title")}
       >
         <div className="command-palette-header">
-          <kbd className="command-palette-kbd">⌘K</kbd>
+          <kbd className="command-palette-kbd">{isMac ? "⌘K" : "Ctrl+K"}</kbd>
           <input
             ref={inputRef}
             type="text"

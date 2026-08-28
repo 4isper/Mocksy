@@ -34,4 +34,20 @@ describe("Segmented", () => {
     expect(screen.getByText("Low").closest("button")).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("High").closest("button")).toHaveAttribute("aria-pressed", "false");
   });
+
+  it("disables individual options without affecting the rest", () => {
+    const onChange = vi.fn();
+    render(
+      <Segmented
+        label="Quality"
+        value="low"
+        options={[{ value: "low", label: "Low" }, { value: "medium", label: "Medium", disabled: true }, { value: "high", label: "High" }]}
+        onChange={onChange}
+      />
+    );
+    expect(screen.getByText("Medium").closest("button")).toBeDisabled();
+    expect(screen.getByText("High").closest("button")).toBeEnabled();
+    screen.getByText("High").click();
+    expect(onChange).toHaveBeenCalledWith("high");
+  });
 });

@@ -162,9 +162,11 @@ function parseLegacyShareScene(raw: string): EditorScene | null {
   * layers carrying `DEMO_MEDIA_PLACEHOLDER` (set when the share URL was built)
   * are restored, so a layer the user genuinely cleared stays empty. Legacy
   * links stored the stripped demo as a bare `null`; if the entire scene had no
-  * media at all we still restore the demo for those (the whole scene was demo). */
+  * media at all we still restore the demo for those (the whole scene was demo).
+  * Text layers never receive media — injecting it would hide their content. */
 function restoreDemoMedia(scene: EditorScene): EditorScene {
-  const allStripped = !scene.layers.some((l) => l.mediaUrl);
+  const mediaLayers = scene.layers.filter((l) => l.kind !== "text");
+  const allStripped = mediaLayers.length > 0 && !mediaLayers.some((l) => l.mediaUrl);
   const hasDemoMarker = scene.layers.some((l) => l.mediaUrl === DEMO_MEDIA_PLACEHOLDER);
   if (!allStripped && !hasDemoMarker) return scene;
   return {
@@ -173,7 +175,7 @@ function restoreDemoMedia(scene: EditorScene): EditorScene {
       if (l.mediaUrl === DEMO_MEDIA_PLACEHOLDER) {
         return { ...l, mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME };
       }
-      if (l.mediaUrl == null && allStripped) {
+      if (l.mediaUrl == null && l.kind !== "text" && allStripped) {
         return { ...l, mediaUrl: DEMO_MEDIA_URL, mediaType: "image", mediaName: DEMO_MEDIA_NAME };
       }
       return l;

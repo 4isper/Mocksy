@@ -58,11 +58,15 @@ function makeScene(): EditorScene {
   };
 }
 
-function renderList() {
+function renderList(selectedFrameIds: string[] = []) {
   const selectFrameInstance = vi.fn();
+  const selectFrameIds = vi.fn();
+  const toggleFrameSelected = vi.fn();
   const setFrameInstances = vi.fn();
   const updateFrameInstance = vi.fn();
   const removeFrameInstance = vi.fn();
+  const addFrameInstance = vi.fn();
+  const reorderFrameInstances = vi.fn();
   const setExpandedFrameId = vi.fn();
   const utils = render(
     <FrameInstanceList
@@ -70,12 +74,17 @@ function renderList() {
       expandedFrameId={null}
       setExpandedFrameId={setExpandedFrameId}
       selectFrameInstance={selectFrameInstance}
+      selectFrameIds={selectFrameIds}
+      toggleFrameSelected={toggleFrameSelected}
+      selectedFrameIds={selectedFrameIds}
       setFrameInstances={setFrameInstances}
       updateFrameInstance={updateFrameInstance}
       removeFrameInstance={removeFrameInstance}
+      addFrameInstance={addFrameInstance}
+      reorderFrameInstances={reorderFrameInstances}
     />
   );
-  return { selectFrameInstance, setFrameInstances, updateFrameInstance, removeFrameInstance, setExpandedFrameId, ...utils };
+  return { selectFrameInstance, selectFrameIds, toggleFrameSelected, setFrameInstances, updateFrameInstance, removeFrameInstance, addFrameInstance, reorderFrameInstances, setExpandedFrameId, ...utils };
 }
 
 afterEach(() => {
@@ -83,19 +92,24 @@ afterEach(() => {
 });
 
 describe("FrameInstanceList", () => {
-  it("renders nothing without frame instances", () => {
-    const { container } = render(
+  it("always shows the Add frame button even without frame instances", () => {
+    render(
       <FrameInstanceList
         scene={{ ...initialScene, frameInstances: [] }}
         expandedFrameId={null}
         setExpandedFrameId={vi.fn()}
         selectFrameInstance={vi.fn()}
+        selectFrameIds={vi.fn()}
+        toggleFrameSelected={vi.fn()}
+        selectedFrameIds={[]}
         setFrameInstances={vi.fn()}
         updateFrameInstance={vi.fn()}
         removeFrameInstance={vi.fn()}
+        addFrameInstance={vi.fn()}
+        reorderFrameInstances={vi.fn()}
       />
     );
-    expect(container.innerHTML).toBe("");
+    expect(screen.getByRole("button", { name: "editor.addFrame" })).toBeInTheDocument();
   });
 
   it("lists frame instances with device selects", () => {
@@ -125,9 +139,14 @@ describe("FrameInstanceList", () => {
         expandedFrameId="f1"
         setExpandedFrameId={setExpandedFrameId}
         selectFrameInstance={selectFrameInstance}
+        selectFrameIds={vi.fn()}
+        toggleFrameSelected={vi.fn()}
+        selectedFrameIds={[]}
         setFrameInstances={vi.fn()}
         updateFrameInstance={vi.fn()}
         removeFrameInstance={vi.fn()}
+        addFrameInstance={vi.fn()}
+        reorderFrameInstances={vi.fn()}
       />
     );
     await userEvent.click(screen.getAllByRole("button", { name: "editor.collapse" })[0]!);
@@ -177,9 +196,14 @@ describe("FrameInstanceList", () => {
         expandedFrameId="f1"
         setExpandedFrameId={vi.fn()}
         selectFrameInstance={vi.fn()}
+        selectFrameIds={vi.fn()}
+        toggleFrameSelected={vi.fn()}
+        selectedFrameIds={[]}
         setFrameInstances={vi.fn()}
         updateFrameInstance={updateFrameInstance}
         removeFrameInstance={vi.fn()}
+        addFrameInstance={vi.fn()}
+        reorderFrameInstances={vi.fn()}
       />
     );
     fireEvent.change(screen.getByRole("slider", { name: "editor.frameX" }), { target: { value: "0.4" } });
@@ -197,9 +221,14 @@ describe("FrameInstanceList", () => {
         expandedFrameId="f1"
         setExpandedFrameId={vi.fn()}
         selectFrameInstance={vi.fn()}
+        selectFrameIds={vi.fn()}
+        toggleFrameSelected={vi.fn()}
+        selectedFrameIds={[]}
         setFrameInstances={vi.fn()}
         updateFrameInstance={vi.fn()}
         removeFrameInstance={vi.fn()}
+        addFrameInstance={vi.fn()}
+        reorderFrameInstances={vi.fn()}
       />
     );
     expect(screen.getByText("10%")).toBeInTheDocument();
@@ -215,12 +244,30 @@ describe("FrameInstanceList", () => {
         expandedFrameId="f2"
         setExpandedFrameId={vi.fn()}
         selectFrameInstance={vi.fn()}
+        selectFrameIds={vi.fn()}
+        toggleFrameSelected={vi.fn()}
+        selectedFrameIds={[]}
         setFrameInstances={vi.fn()}
         updateFrameInstance={updateFrameInstance}
         removeFrameInstance={vi.fn()}
+        addFrameInstance={vi.fn()}
+        reorderFrameInstances={vi.fn()}
       />
     );
     fireEvent.change(screen.getByRole("combobox", { name: "editor.frameLayer" }), { target: { value: "l2" } });
     expect(updateFrameInstance).toHaveBeenCalledWith("f2", { layerId: "l2" });
+  });
+
+  it("reorders frames via native drag-and-drop", () => {
+    const { reorderFrameInstances } = renderList();
+    const cards = screen.getAllByRole("button", { name: "editor.expand" });
+    // Each card is draggable; simulate dragging the first onto the second.
+    fireEvent.dragStart(cards[0]!);
+    fireEvent.dragOver(cards[1]!);
+    fireEvent.drop(cards[1]!);
+    expect(reorderFrameInstances).toHaveBeenCalledTimes(1);
+    const ordered = reorderFrameInstances.mock.calls[0]![0] as string[];
+    // f1 moved to where f2 was → f2, f1.
+    expect(ordered).toEqual(["f2", "f1"]);
   });
 });

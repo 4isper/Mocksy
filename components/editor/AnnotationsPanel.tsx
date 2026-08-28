@@ -6,6 +6,7 @@ import { useEditorStore } from "@/lib/state/editorStore";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import type { AnnotationType } from "@/lib/types/editor";
 import { alignAnnotations, distributeAnnotations, type AlignOp, type DistributeOp } from "@/lib/render/annotationAlign";
+import { annotationGradientCSS } from "@/lib/render/annotationGradient";
 import { AnnotationEditor } from "@/components/editor/AnnotationEditor";
 import { ClearAnnotationsDialog } from "@/components/editor/ClearAnnotationsDialog";
 
@@ -88,8 +89,8 @@ export function AnnotationsPanel() {
           <button type="button" aria-label={t("annotation.alignTop")} onClick={() => runAlign("top")}><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 2h10M4 5v6M7 5v4M10 5v6" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/></svg></button>
           <button type="button" aria-label={t("annotation.alignCenterV")} onClick={() => runAlign("centerV")}><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 7h10M4 5v4M7 6v2M10 5v4" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/></svg></button>
           <button type="button" aria-label={t("annotation.alignBottom")} onClick={() => runAlign("bottom")}><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 12h10M4 2v6M7 2v4M10 2v6" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/></svg></button>
-          <button type="button" aria-label={t("annotation.distributeH")} disabled={selectedAnnotationIds.length < 3} onClick={() => runDistribute("horizontal")}><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 3v8M7 3v8M11 3v8" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/></svg></button>
-          <button type="button" aria-label={t("annotation.distributeV")} disabled={selectedAnnotationIds.length < 3} onClick={() => runDistribute("vertical")}><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 3h8M3 7h8M3 11h8" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/></svg></button>
+          <button type="button" aria-label={t("annotation.distributeH")} disabled={selectedAnnotationIds.length < 3} title={selectedAnnotationIds.length < 3 ? t("annotation.distributeNeedsAnnotations") : undefined} onClick={() => runDistribute("horizontal")}><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 3v8M7 3v8M11 3v8" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/></svg></button>
+          <button type="button" aria-label={t("annotation.distributeV")} disabled={selectedAnnotationIds.length < 3} title={selectedAnnotationIds.length < 3 ? t("annotation.distributeNeedsAnnotations") : undefined} onClick={() => runDistribute("vertical")}><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 3h8M3 7h8M3 11h8" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/></svg></button>
         </div>
       ) : null}
 
@@ -119,7 +120,7 @@ export function AnnotationsPanel() {
                   }
                 }}
               >
-                <span className="anno-swatch" style={{ background: a.color }} aria-hidden="true" />
+                <span className="anno-swatch" style={{ background: annotationGradientCSS(a) ?? a.color }} aria-hidden="true" />
                 {TYPE_LABELS[a.type]} {i + 1}
               </button>
             );

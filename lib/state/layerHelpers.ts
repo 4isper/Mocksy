@@ -40,9 +40,15 @@ export function makeAnnotation(type: AnnotationType): Annotation {
   return { ...base, w: 0.28, h: 0.2, text: "", fontSize: 0 };
 }
 
-export function makeDemoLayer(): MediaLayer {
+/** Builds the demo layer. `initialScene` is created at module scope on BOTH
+ *  the server and the client, so its id must be deterministic — a random id
+ *  (Date.now-based) would differ between the SSR HTML and the first client
+ *  render and trip React's hydration check (visible via any attribute that
+ *  carries the id into the DOM, e.g. data-layer-media). Runtime callers keep
+ *  getting unique random ids. */
+export function makeDemoLayer(id: string = nextLayerId()): MediaLayer {
   return {
-    id: nextLayerId(),
+    id,
     mediaUrl: DEMO_MEDIA_URL,
     mediaType: "image",
     mediaName: DEMO_MEDIA_NAME,
@@ -61,6 +67,9 @@ export function makeDemoLayer(): MediaLayer {
     locked: false,
     animationPreset: "none",
     animationEasing: "easeInOut",
+    entranceAnimation: "none",
+    entranceDuration: 600,
+    blendMode: "normal",
     videoMuted: true,
     videoLoop: true,
     videoAutoplay: true,
@@ -102,6 +111,12 @@ export function isLayerLocked(scene: EditorScene, layerId: string | null = scene
  *  guard with `isLayerLocked` first to avoid no-op undo entries. */
 export function patchActive(scene: EditorScene, patch: Partial<MediaLayer>, activeLayerId: string | null = scene.activeLayerId): MediaLayer[] {
   const id = activeLayerId ?? scene.layers[0]?.id;
-  if (id != null && scene.layers.find((l) => l.id === id)?.locked === true) return scene.layers;
+  if (id == null) return scene.layers;
+  // Locked layers are left untouched, and a target that no longer exists is a
+  // no-op too — in both cases return the SAME array reference so callers can
+  // detect that nothing changed and avoid recording a spurious undo entry.
+  if (scene.layers.find((l) => l.id === id)?.locked === true || !scene.layers.some((l) => l.id === id)) {
+    return scene.layers;
+  }
   return scene.layers.map((l) => (l.id === id ? { ...l, ...patch } : l));
 }

@@ -21,22 +21,34 @@ npm run dev          # http://localhost:3000
 | `npm run test`       | Run unit tests (Vitest)                     |
 | `npm run test:watch` | Run unit tests in watch mode                |
 | `npm run test:e2e`   | Run Playwright e2e tests                    |
+| `npm run test:vrt`   | Visual regression tests via Playwright      |
+| `npm run i18n:sync`  | Sync translations across 57 locales         |
+| `npm run i18n:report`| Report untranslated keys per locale          |
 
 ## Project structure
 
 ```
-app/                      Next.js app router (layout, page, error boundary)
-components/editor/        Editor UI components (11 components)
+app/                        Next.js app router ([locale]/layout, page, error boundary)
+components/editor/          57 React components (EditorShell, ControlPanel, PreviewCanvas, ...)
+  sections/                 6 control-panel sub-sections (Media, Text, Frame, Animation, Position, Filters)
+i18n/                       Locale request config + canonical locale list
 lib/
-  state/                  Zustand stores, scene normalization, share URL, projects
-  render/                 Frame specs, CSS/canvas geometry, video timeline
-  export/                 PNG, MP4/GIF export, canvas mockup rendering
-  media/                  File loading, demo image, palette extraction
-  presets/                Background swatches and scene style presets
-  types/                  TypeScript type definitions
-public/devices/           SVG device skins for overlay frames
-tests/unit/               Vitest unit tests
-tests/e2e/                Playwright e2e tests
+  state/                    Zustand stores (editorStore, projectsStore, themeStore), normalization, share URL
+  render/                   Frame specs, CSS/canvas geometry, video timeline, canvas drawing
+  export/                   PNG/SVG/HTML/MP4-GIF export, canvas rendering, filename helpers
+  commands/                 Command-palette command factories (per feature area)
+  media/                    File loading, demo image, palette extraction, IndexedDB media store
+  presets/                  Background swatches, scene style presets
+  hooks/                    Client hooks (commands, focus trap, frame transform, scene palette)
+  search/                   Frame search utilities
+  shortcuts/                Keyboard shortcut definitions, config, remapping store
+  types/                    TypeScript interfaces
+  utils/                    Utility functions
+messages/                   57 locale JSON files (en.json is the source of truth)
+public/devices/             SVG device skins for overlay frames
+tests/unit/                 Vitest unit tests (mirrors lib/ structure)
+tests/components/           Vitest + Testing Library component tests
+tests/e2e/                  Playwright e2e tests (editor, UX, visual regression, a11y)
 ```
 
 ### Path alias
@@ -59,9 +71,21 @@ import { normalizeScene } from "@/lib/state/normalizeScene";
   export. `lib/render/frames.ts` defines frame specs; `videoComposer.ts` builds
   animation keyframes.
 - **Export**: `lib/export/exportImage.ts` handles PNG (download + clipboard).
+  `lib/export/exportSvg.ts` handles SVG export and clipboard copy.
+  `lib/export/exportHtml.ts` handles HTML export and clipboard copy.
   `lib/export/exportVideo.ts` handles MP4/GIF via MediaRecorder + FFmpeg.
 - **Media**: `lib/media/loadFile.ts` loads files as data URLs (survives localStorage
   round-trip and embeds in share URLs). `palette.ts` extracts dominant colors.
+  `idbMediaStore.ts` offloads large media to IndexedDB.
+
+## i18n (next-intl)
+
+- `next-intl` v4 is used for internationalization.
+- 57 locales live in `messages/*.json`. Add new keys to `messages/en.json` (and
+  translate in `messages/ru.json`), then run `npm run i18n:sync` to backfill the
+  English fallback into every other locale.
+- All user-facing strings must be in message files, never hardcoded in JSX.
+- Use `useTranslations(namespace)` in client components.
 
 ## Adding a new feature
 
@@ -78,7 +102,7 @@ import { normalizeScene } from "@/lib/state/normalizeScene";
 1. Add the new value to the `StylePreset` type in `lib/types/editor.ts`.
 2. Add it to the `STYLE_PRESETS` array in `lib/state/normalizeScene.ts`.
 3. Handle the new value in `buildSceneCss` in `lib/render/mockupRenderer.ts` (CSS preview).
-4. Handle the new value in `renderMockupToCanvas` in `lib/export/renderMockup.ts` (canvas export).
+4. Handle the new value in `renderMockupToCanvas` in `lib/render/renderMockup.ts` (canvas export).
 5. Add a test case to `tests/unit/normalizeScene.test.ts`.
 
 ### New animation preset
@@ -97,35 +121,32 @@ import { normalizeScene } from "@/lib/state/normalizeScene";
 1. Add an entry to `backgroundPresets` in `lib/presets/presets.ts`.
 2. Add a test case to `tests/unit/presets.test.ts`.
 
+### New layout preset
+
+1. Add value to `LayoutPreset` in `lib/types/editor.ts`.
+2. Add key to `LAYOUT_PRESETS` in `lib/state/editorHelpers.ts`.
+3. Add layout handler in `buildAutoLayout` (`lib/state/editorHelpers.ts`).
+4. Add translation keys in `messages/en.json` and `messages/ru.json`.
+5. Add button to the layout section in `ControlPanel.tsx`.
+6. Add tests to `tests/unit/autoLayout.test.ts`.
+
 ## Testing
 
 ### Unit tests (Vitest)
 
-Unit tests live in `tests/unit/`. Each test file mirrors the module it tests:
-
-```
-tests/unit/
-  editorStore.test.ts
-  normalizeScene.test.ts
-  frames.test.ts
-  mockupRenderer.test.ts
-  exportImage.test.ts
-  exportVideo.test.ts
-  videoComposer.test.ts
-  palette.test.ts
-  presets.test.ts
-  shareState.test.ts
-  projectsStore.test.ts
-  loadFile.test.ts
-  mediaKind.test.ts
-  renderMockup.test.ts
-  demoMedia.test.ts
-```
-
+Unit tests live in `tests/unit/`. Each test file mirrors the module it tests.
 Run them with:
 
 ```bash
 npm run test
+```
+
+### Component tests (Vitest + Testing Library)
+
+Component tests live in `tests/components/`. They test React components in isolation:
+
+```bash
+npm run test -- --dir tests/components
 ```
 
 ### E2e tests (Playwright)
@@ -137,6 +158,13 @@ npx playwright install
 npm run test:e2e
 ```
 
+### Visual regression tests
+
+```bash
+npm run test:vrt              # Run visual regression tests
+npm run test:vrt:update       # Update baselines
+```
+
 ### Writing tests
 
 - Use Vitest's `describe` / `it` / `expect` pattern (see existing tests for style).
@@ -145,13 +173,13 @@ npm run test:e2e
   `vi.stubGlobal` or `vi.stubEnv` as needed.
 - Pure functions (normalization, frame specs, video timeline, palette) should
   have straightforward unit tests with no mocks.
+- All new features must include corresponding tests.
 
 ## Code style
 
 - **Lint**: `npm run lint` (ESLint with Next.js core-web-vitals config).
 - **Types**: `npm run typecheck` — fix all type errors before submitting.
-- **Formatting**: The project uses Prettier-style formatting (2-space indent,
-  double quotes, semicolons). Run `npx prettier --write .` if available.
+- **Formatting**: 2-space indent, double quotes, semicolons.
 - **Commits**: Use [Conventional Commits](https://www.conventionalcommits.org/):
   `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`.
 

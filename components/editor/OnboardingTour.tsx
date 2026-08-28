@@ -205,7 +205,7 @@ export function OnboardingTour() {
       <div
         ref={cardRef}
         role="dialog"
-        aria-modal="false"
+        aria-modal="true"
         aria-label={t(step.titleKey)}
         className="panel"
         style={{

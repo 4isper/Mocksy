@@ -1,4 +1,6 @@
-import type { EditorScene, SceneStylePreset } from "@/lib/types/editor";
+import type { EditorScene, SceneStylePreset, SceneTemplate } from "@/lib/types/editor";
+import { gradientMiddleStop, pickBestSolid, pickHarmonicPair } from "@/lib/media/palette";
+import { nextFrameInstanceId } from "@/lib/state/ids";
 
 export type BackgroundKind = "transparent" | "solid" | "gradient" | "pattern";
 
@@ -162,18 +164,45 @@ function pick<T>(arr: readonly T[], rand: () => number): T {
 
 /**
  * Builds a random scene appearance for the "Surprise me" action: a random
- * frame style, a solid/gradient/pattern background sampled from the built-in
- * swatches, and matching shadow/corner values. Deliberately leaves media
- * layers, the device frame choice, the watermark and annotations untouched —
- * it restyles the scene without changing its content. Pure: takes an optional
- * RNG so tests (and future replay) can be deterministic.
+ * frame style, a solid/gradient/pattern background, and matching shadow/corner
+ * values. Deliberately leaves media layers, the device frame choice, the
+ * watermark and annotations untouched — it restyles the scene without changing
+ * its content.
+ *
+ * When a `palette` of dominant media colors is supplied the background is
+ * generated *harmoniously from that media* (a complementary/analogous/triadic
+ * gradient or its dominant solid) instead of a canned swatch, so the surprise
+ * matches the user's uploaded photo. Pure: takes an optional RNG so tests (and
+ * future replay) stay deterministic.
  */
-export function randomSceneStyle(rand: () => number = Math.random): Partial<EditorScene> {
+export function randomSceneStyle(
+  rand: () => number = Math.random,
+  palette?: string[]
+): Partial<EditorScene> {
   const stylePreset = pick(SURPRISE_STYLE_PRESETS, rand);
   const roll = rand();
+  const havePalette = !!palette && palette.length > 0;
 
   if (roll < 0.5) {
     // Gradient backgrounds get a 50% share — they are the most visual.
+    if (havePalette) {
+      const scheme = (["complementary", "analogous", "triadic"] as const)[Math.floor(rand() * 3)];
+      const [from, to] = pickHarmonicPair(palette!, scheme);
+      // Roughly half the time add a harmonic middle stop for a richer blend.
+      const via = rand() < 0.5 ? gradientMiddleStop(from, to) : null;
+      return {
+        stylePreset,
+        backgroundMode: "gradient",
+        backgroundColor: from,
+        gradientFrom: from,
+        gradientTo: to,
+        gradientVia: via,
+        gradientType: rand() < 0.75 ? "linear" : "radial",
+        gradientAngle: Math.floor(rand() * 360),
+        shadowOpacity: Math.round((0.2 + rand() * 0.4) * 100) / 100,
+        borderRadius: pick(SURPRISE_RADII, rand)
+      };
+    }
     const gradients = backgroundPresets.filter((p) => p.kind === "gradient");
     const g = pick(gradients, rand);
     return {
@@ -191,6 +220,15 @@ export function randomSceneStyle(rand: () => number = Math.random): Partial<Edit
   }
 
   if (roll < 0.8) {
+    if (havePalette) {
+      return {
+        stylePreset,
+        backgroundMode: "solid",
+        backgroundColor: pickBestSolid(palette!),
+        shadowOpacity: Math.round((0.2 + rand() * 0.4) * 100) / 100,
+        borderRadius: pick(SURPRISE_RADII, rand)
+      };
+    }
     const solids = backgroundPresets.filter((p) => p.kind === "solid");
     const s = pick(solids, rand);
     return {
@@ -209,6 +247,27 @@ export function randomSceneStyle(rand: () => number = Math.random): Partial<Edit
     patternId: pick(patterns, rand).patternId!,
     shadowOpacity: Math.round((0.2 + rand() * 0.4) * 100) / 100,
     borderRadius: pick(SURPRISE_RADII, rand)
+  };
+}
+
+/** Applies a scene template to the current scene. Returns a new scene with the
+ *  template's frame, style, background, and optional multi-device layout applied.
+ *  Frame instances get fresh ids so they're independent of the template source. */
+export function applySceneTemplate(
+  template: SceneTemplate,
+  currentScene: EditorScene
+): EditorScene {
+  const patch = template.scenePatch;
+  const instances = template.frameInstances?.map((inst) => ({
+    ...inst,
+    id: nextFrameInstanceId(),
+  }));
+
+  return {
+    ...currentScene,
+    ...patch,
+    frame: template.frame,
+    frameInstances: instances ?? currentScene.frameInstances,
   };
 }
 

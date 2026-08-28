@@ -7,5 +7,8 @@ export default createMiddleware({
 });
 
 export const config = {
-  matcher: ["/((?!_next|favicon\\.ico|.*\\..*).*)"]
+  // `/api/*` is the public spin endpoint and must not be re-written by the
+  // locale middleware (it has no locale segment and would 404 after a
+  // redirect if matched).
+  matcher: ["/((?!api/|_next|favicon\\.ico|.*\\..*).*)"]
 };

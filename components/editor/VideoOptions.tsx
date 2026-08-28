@@ -46,10 +46,14 @@ export function VideoOptions() {
   if (!activeLayer || activeLayer.mediaType !== "video") return null;
 
   async function handleAudioUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !isAudioFile(file)) return;
-    const url = await blobToDataUrl(file);
-    setBackgroundAudio(url, file.name);
+    try {
+      const file = e.target.files?.[0];
+      if (!file || !isAudioFile(file)) return;
+      const url = await blobToDataUrl(file);
+      setBackgroundAudio(url, file.name);
+    } catch {
+      // Corrupt or unreadable file — silently ignore.
+    }
   }
 
   return (

@@ -1,7 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { getCopiedObject, setCopiedObject } from "@/lib/state/editorClipboard";
+import { useShortcutsStore, effectiveCombo } from "@/lib/state/shortcutsStore";
+import { SHORTCUT_DEFS, eventMatchesCombo, eventLetter, eventBracket } from "@/lib/shortcuts/shortcutConfig";
 import { resolveZoomScale, stepZoomDirection, zoomAroundCenter } from "@/lib/render/previewViewport";
+import { useLiveAnnouncer } from "@/lib/state/liveAnnouncer";
 
 /** Steps the preview view zoom by one stop around the viewport center. */
 function zoomPreview(direction: 1 | -1): void {
@@ -38,33 +41,110 @@ function isTypingTarget(target: EventTarget | null): boolean {
   return !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT");
 }
 
-/** Letter for shortcut matching, taken from `event.code` (the physical key) so
- *  shortcuts keep working on non-Latin layouts — ⌘S under a Russian layout
- *  produces key "ы", but still code "KeyS". Falls back to a single-character
- *  `event.key` for synthetic events that carry no code (tests). */
-function eventLetter(event: KeyboardEvent): string {
-  const fromCode = /^Key([A-Z])$/.exec(event.code)?.[1]?.toLowerCase();
-  if (fromCode) return fromCode;
-  const key = event.key.toLowerCase();
-  return key.length === 1 ? key : "";
+type ActionMap = {
+  [id: string]: (a: EditorShortcutActions) => boolean | void;
+};
+
+/**
+ * Per-shortcut handlers keyed by def id. Returning false means "not handled"
+ * — the caller skips preventDefault so e.g. ⌘C with nothing copyable keeps
+ * the native browser behavior.
+ */
+const HANDLERS: ActionMap = {
+  "open-command-palette": (a) => (a.onOpenCommandPalette(), true),
+  "new-project": (a) => (a.onNewProject(), true),
+  "save-project": (a) => (a.saveNow(), true),
+  undo: () => {
+    useEditorStore.getState().undo();
+    useLiveAnnouncer.getState().announce("Undo");
+    return true;
+  },
+  redo: () => {
+    useEditorStore.getState().redo();
+    useLiveAnnouncer.getState().announce("Redo");
+    return true;
+  },
+  "export-png": (a) => (a.onExportPng(), true),
+  "copy-png": (a) => (a.onCopyPng(), true),
+  "export-mp4": (a) => (a.onExportMp4(), true),
+  "export-webm": (a) => (a.onExportWebm(), true),
+  "export-webp": (a) => (a.onExportWebp(), true),
+  "export-webp-anim": (a) => (a.onExportWebpAnim(), true),
+  "export-svg": (a) => (a.onExportSvg(), true),
+  "export-html": (a) => (a.onExportHtml(), true),
+  "export-pdf": (a) => (a.onExportPdf(), true),
+  "export-gif": (a) => (a.onExportGif(), true),
+  "duplicate-layer": () => {
+    const st = useEditorStore.getState();
+    const id = st.activeLayerId ?? st.scene.layers[0]?.id;
+    if (!id) return false;
+    st.duplicateLayer(id);
+    return true;
+  },
+  "move-layer-up": () => moveLayer(-1),
+  "move-layer-down": () => moveLayer(1),
+  "select-prev-layer": () => cycleSelection(-1),
+  "select-next-layer": () => cycleSelection(1),
+  // ⌘C copies the selected annotation, frame instance or active layer onto
+  // the editor's internal object clipboard (⌘⇧C above is the PNG copy).
+  // Pasting happens in useClipboardPaste's window paste handler so OS
+  // clipboard media always wins over object paste on ⌘V.
+  "copy-object": () => {
+    const st = useEditorStore.getState();
+    const annId = st.selectedAnnotationId;
+    const frameId = st.activeFrameInstanceId;
+    const layerId = st.activeLayerId ?? st.scene.layers[0]?.id;
+    if (annId) setCopiedObject({ kind: "annotation", id: annId });
+    else if (frameId) setCopiedObject({ kind: "frameInstance", id: frameId });
+    else if (layerId) setCopiedObject({ kind: "layer", id: layerId });
+    else return false;
+    return true;
+  },
+  "go-layers": () => { const st = useEditorStore.getState(); st.setFullscreenPreview(false); st.setRightTab("layers"); return true; },
+  "go-annotations": () => { const st = useEditorStore.getState(); st.setFullscreenPreview(false); st.setRightTab("annotations"); return true; },
+  "go-history": () => { const st = useEditorStore.getState(); st.setFullscreenPreview(false); st.setRightTab("history"); return true; },
+  "add-text-annotation": () => { useEditorStore.getState().addAnnotation("text"); return true; },
+  "add-arrow-annotation": () => { useEditorStore.getState().addAnnotation("arrow"); return true; },
+  "add-rect-annotation": () => { useEditorStore.getState().addAnnotation("rect"); return true; },
+  "add-circle-annotation": () => { useEditorStore.getState().addAnnotation("circle"); return true; },
+  "add-blur-annotation": () => { useEditorStore.getState().addAnnotation("blur"); return true; }
+};
+
+function moveLayer(dir: -1 | 1): boolean {
+  const st = useEditorStore.getState();
+  const ids = st.scene.layers.map((l) => l.id);
+  const idx = ids.indexOf(st.activeLayerId ?? st.scene.layers[0]?.id ?? "");
+  const next = idx + dir;
+  if (idx < 0 || next < 0 || next >= ids.length) return false;
+  const firstId = ids[idx];
+  const secondId = ids[next];
+  if (firstId === undefined || secondId === undefined) return false;
+  ids[idx] = secondId;
+  ids[next] = firstId;
+  st.reorderLayers(ids);
+  return true;
 }
 
-/** "[" / "]" for the layer-selection cycle, physical-key first like letters. */
-function eventBracket(event: KeyboardEvent): "[" | "]" | null {
-  if (event.code === "BracketLeft" || event.key === "[") return "[";
-  if (event.code === "BracketRight" || event.key === "]") return "]";
-  return null;
+function cycleSelection(dir: -1 | 1): boolean {
+  const st = useEditorStore.getState();
+  const ids = st.scene.layers.map((l) => l.id);
+  const idx = ids.indexOf(st.activeLayerId ?? st.scene.layers[0]?.id ?? "");
+  if (idx < 0) return false;
+  const nextIdx = Math.max(0, Math.min(ids.length - 1, idx + dir));
+  const id = ids[nextIdx];
+  if (!id) return false;
+  st.selectLayer(id);
+  return true;
 }
 
 /**
- * Global editor keyboard shortcuts: ⌘K command palette, ⌘Z/⌘⇧Z/⌘Y undo/redo,
- * ⌘N new project, ⌘S save, ⌘E/⌘⇧E/⇧⌘G/⇧⌘W/⇧⌘P/⌘⇧A/⌘⇧S/⌘⇧H/⌘⇧F exports,
- * ⌘⇧C clipboard copy, ⌘D duplicate layer, ⌘↑/⌘↓ layer order, ⌘[/⌘] cycle
- * layer selection, plain arrow keys nudge frames, "?" cheat sheet, "R" reset,
- * "F" full-screen preview (Esc exits). Letter shortcuts match the physical
- * key (`event.code`), so they work on non-Latin keyboard layouts too. Actions
- * are read through a ref so the window listener is bound once and never needs
- * re-subscribing.
+ * Global editor keyboard shortcuts, driven by SHORTCUT_DEFS (single source of
+ * truth shared with the cheat-sheet dialog) plus user overrides persisted in
+ * shortcutsStore. Fixed behaviors (? help, preview zoom, plain-arrow frame
+ * nudge, R reset, F full-screen, Esc exit) stay hardcoded. Actions are read
+ * through a ref so the window listener is bound once and never needs
+ * re-subscribing; overrides are read per-event from the store so rebinding
+ * applies instantly without re-binding the listener.
  */
 export function useEditorShortcuts(actions: EditorShortcutActions): void {
   const actionsRef = useRef(actions);
@@ -75,177 +155,81 @@ export function useEditorShortcuts(actions: EditorShortcutActions): void {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const a = actionsRef.current;
-      const modifier = event.metaKey || event.ctrlKey;
-      const letter = eventLetter(event);
-      const bracket = eventBracket(event);
       const typing = isTypingTarget(event.target);
       // Skip shortcuts when a modal dialog is open.
       if (a.isModalOpen()) return;
-      // ? opens the keyboard-shortcuts cheat sheet. Skip while typing so it
-      // doesn't interfere with "?" typed into a text field. Match on the
-      // physical key (code "Slash" + Shift) so it's layout-independent
-      // and robust to how the "?" character is delivered (event.key).
+
+      // ? opens the cheat sheet (fixed, not remappable).
       if ((event.key === "?" || (event.code === "Slash" && event.shiftKey)) && !typing) {
         event.preventDefault();
         a.onOpenShortcuts();
         return;
       }
-      // ⌘K opens the command palette
-      if (modifier && letter === "k") {
-        event.preventDefault();
-        a.onOpenCommandPalette();
-        return;
+
+      // Remappable table + fixed view-zoom combos, evaluated against the
+      // effective (possibly overridden) bindings.
+      const { overrides } = useShortcutsStore.getState();
+      const letter = eventLetter(event);
+      const bracket = eventBracket(event);
+
+      for (const def of SHORTCUT_DEFS) {
+        const combo = effectiveCombo(def, overrides);
+        if (!eventMatchesCombo(event, letter, bracket, combo)) continue;
+
+        const handler = HANDLERS[def.id];
+        // Defs without a table entry here are display-only (paste, reset,
+        // full-screen…): their behavior lives in the fixed handlers below or
+        // in dedicated listeners, so keep matching.
+        if (!handler) continue;
+
+        // Historical semantics: some shortcuts intentionally fire while
+        // typing (⌘Z, ⌘S…), others must not hijack input fields.
+        if (!def.allowWhileTyping && typing) return;
+
+        const handled = handler(a);
+        if (handled) {
+          event.preventDefault();
+          return;
+        }
+        // Not handled (e.g. ⌘C with nothing to copy): fall through so the
+        // browser's native behavior survives.
       }
-      // Preview view zoom: ⌘+/⌘− step around the viewport center, ⌘0 resets
-      // to fit. Physical codes first (Equal/Minus/Digit0) so numpad and
-      // layout variants match; these shadow the browser's page zoom.
-      if (modifier && !typing && !event.shiftKey && (event.code === "Equal" || event.key === "=" || event.key === "+")) {
-        event.preventDefault();
-        zoomPreview(1);
-        return;
+
+      // Preview view zoom: fixed physical-code matching so numpad and layout
+      // variants work; these shadow the browser's page zoom.
+      if (event.metaKey || event.ctrlKey) {
+        // ⌘Y is a long-standing redo alias kept for muscle memory.
+        if (letter === "y" && !event.shiftKey) {
+          event.preventDefault();
+          useEditorStore.getState().redo();
+          useLiveAnnouncer.getState().announce("Redo");
+          return;
+        }
+        if (!typing && !event.shiftKey && (event.code === "Equal" || event.key === "=" || event.key === "+")) {
+          event.preventDefault();
+          zoomPreview(1);
+          return;
+        }
+        if (!typing && (event.code === "Minus" || event.key === "-")) {
+          event.preventDefault();
+          zoomPreview(-1);
+          return;
+        }
+        if (!typing && (event.code === "Digit0" || event.key === "0")) {
+          event.preventDefault();
+          useEditorStore.getState().resetPreviewView();
+          return;
+        }
       }
-      if (modifier && !typing && (event.code === "Minus" || event.key === "-")) {
-        event.preventDefault();
-        zoomPreview(-1);
-        return;
-      }
-      if (modifier && !typing && (event.code === "Digit0" || event.key === "0")) {
-        event.preventDefault();
-        useEditorStore.getState().resetPreviewView();
-        return;
-      }
-      if (modifier && letter === "z") {
-        event.preventDefault();
-        const st = useEditorStore.getState();
-        if (event.shiftKey) st.redo();
-        else st.undo();
-        return;
-      }
-      if (modifier && letter === "y") {
-        event.preventDefault();
-        useEditorStore.getState().redo();
-        return;
-      }
-      // ⌘⇧S exports SVG — must be checked before the plain ⌘S save handler.
-      if (modifier && event.shiftKey && letter === "s") {
-        event.preventDefault();
-        a.onExportSvg();
-        return;
-      }
-      if (modifier && letter === "s") {
-        event.preventDefault();
-        a.saveNow();
-        return;
-      }
-      if (modifier && !event.shiftKey && letter === "n") {
-        event.preventDefault();
-        a.onNewProject();
-        return;
-      }
-      if (modifier && event.shiftKey && letter === "w") {
-        event.preventDefault();
-        a.onExportWebm();
-        return;
-      }
-      if (modifier && event.shiftKey && letter === "p") {
-        event.preventDefault();
-        a.onExportWebp();
-        return;
-      }
-      if (modifier && event.shiftKey && letter === "a") {
-        event.preventDefault();
-        a.onExportWebpAnim();
-        return;
-      }
-      if (modifier && event.shiftKey && letter === "h") {
-        event.preventDefault();
-        a.onExportHtml();
-        return;
-      }
-      // ⌘⇧F exports PDF (F as in File/PDF; ⌘⇧P is taken by WebP).
-      if (modifier && event.shiftKey && letter === "f") {
-        event.preventDefault();
-        a.onExportPdf();
-        return;
-      }
-      if (modifier && !event.shiftKey && letter === "e") {
-        event.preventDefault();
-        a.onExportPng();
-        return;
-      }
-      // ⌘⇧E exports MP4, ⌘⇧G exports GIF (the GIF module is
-      // still loaded lazily, via the same dynamic import as MP4).
-      if (modifier && event.shiftKey && letter === "e") {
-        event.preventDefault();
-        a.onExportMp4();
-        return;
-      }
-      if (modifier && event.shiftKey && letter === "g") {
-        event.preventDefault();
-        a.onExportGif();
-        return;
-      }
-      // ⌘⇧C copies a PNG snapshot to the clipboard (⌘C alone stays
-      // free for normal text copy while typing in a field).
-      if (modifier && event.shiftKey && letter === "c") {
-        event.preventDefault();
-        a.onCopyPng();
-        return;
-      }
-      // ⌘C copies the selected annotation or frame instance onto the editor's
-      // internal object clipboard (plain ⌘C; ⌘⇧C above is the PNG copy).
-      // Pasting happens in useClipboardPaste's window paste handler so OS
-      // clipboard media always wins over object paste on ⌘V.
-      if (modifier && !event.shiftKey && !typing && letter === "c") {
-        const st = useEditorStore.getState();
-        const annId = st.selectedAnnotationId;
-        const frameId = st.activeFrameInstanceId;
-        if (annId) setCopiedObject({ kind: "annotation", id: annId });
-        else if (frameId) setCopiedObject({ kind: "frameInstance", id: frameId });
-        else return;
-        event.preventDefault();
-        return;
-      }
-      // Layer shortcuts: ⌘D duplicates the active layer, ⌘↑/⌘↓ move it.
-      // Skip while typing in a field so they don't hijack text editing.
-      if (modifier && !typing && letter === "d") {
-        event.preventDefault();
-        const st = useEditorStore.getState();
-        const id = st.activeLayerId ?? st.scene.layers[0]?.id;
-        if (id) st.duplicateLayer(id);
-        return;
-      }
-      if (modifier && !typing && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
-        event.preventDefault();
-        const st = useEditorStore.getState();
-        const ids = st.scene.layers.map((l) => l.id);
-        const idx = ids.indexOf(st.activeLayerId ?? st.scene.layers[0]?.id ?? "");
-        const dir = event.key === "ArrowUp" ? -1 : 1;
-        const next = idx + dir;
-        if (idx < 0 || next < 0 || next >= ids.length) return;
-        const firstId = ids[idx];
-        const secondId = ids[next];
-        if (firstId === undefined || secondId === undefined) return;
-        ids[idx] = secondId;
-        ids[next] = firstId;
-        st.reorderLayers(ids);
-        return;
-      }
-      // ⌘[/⌘] cycle the layer selection (up/down the layer list).
-      if (modifier && !typing && bracket !== null) {
-        event.preventDefault();
-        const st = useEditorStore.getState();
-        const ids = st.scene.layers.map((l) => l.id);
-        const idx = ids.indexOf(st.activeLayerId ?? st.scene.layers[0]?.id ?? "");
-        if (idx < 0) return;
-        const dir = bracket === "[" ? -1 : 1;
-        const nextIdx = Math.max(0, Math.min(ids.length - 1, idx + dir));
-        const id = ids[nextIdx];
-        if (id) st.selectLayer(id);
-        return;
-      }
-      // Arrow keys nudge the selected frame instance on the canvas.
-      if (!modifier && !typing && event.key.startsWith("Arrow")) {
+
+      // Plain arrow keys nudge the selected frame instance on the canvas.
+      if (!(event.metaKey || event.ctrlKey) && !typing && event.key.startsWith("Arrow")) {
+        // A focusable frame-instance div owns arrow handling while focused
+        // (including Shift+Up/Down resizing with its own step semantics), so
+        // the global handler must not apply on top of it — otherwise a single
+        // keypress would nudge (and possibly resize) twice.
+        const target = event.target instanceof Element ? event.target : null;
+        if (target?.closest("[data-frame-instance-id]")) return;
         const st = useEditorStore.getState();
         let id = st.activeFrameInstanceId;
         if (!id && st.scene.frameInstances.length > 0) {
@@ -269,16 +253,18 @@ export function useEditorShortcuts(actions: EditorShortcutActions): void {
         st.updateFrameInstance(id!, { x, y });
         return;
       }
-      if (letter === "r" && !modifier) {
+
+      // R resets (opens the confirm dialog via actions).
+      if (letter === "r" && !(event.metaKey || event.ctrlKey)) {
         if (typing) return;
         event.preventDefault();
         a.onReset();
         return;
       }
       // F toggles the full-screen preview (plain key, like R). Skipped while
-      // typing so it can't hijack text fields; ⌘⇧F (PDF export) is matched
-      // earlier because of its modifier.
-      if (letter === "f" && !modifier && !typing) {
+      // typing so it can't hijack text fields; ⌘⇧F (PDF export) matched the
+      // table earlier because of its modifier.
+      if (letter === "f" && !(event.metaKey || event.ctrlKey) && !typing) {
         event.preventDefault();
         a.onToggleFullscreen();
         return;

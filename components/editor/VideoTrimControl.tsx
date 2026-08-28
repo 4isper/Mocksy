@@ -40,7 +40,7 @@ export function VideoTrimControl({ duration }: VideoTrimControlProps) {
     right: 0,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.12)"
+    backgroundColor: "var(--range-track)"
   };
   const selectedStyle: React.CSSProperties = {
     position: "absolute",
@@ -53,7 +53,7 @@ export function VideoTrimControl({ duration }: VideoTrimControlProps) {
 
   return (
     <div style={{ display: "grid", gap: 4 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--text-dim)" }}>
+      <div className="trim-label-row">
         <span>{t("videoTrim.trim")}</span>
         <span>
           {layer.videoTrimStart.toFixed(1)}s – {endValue.toFixed(1)}s

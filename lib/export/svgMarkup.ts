@@ -1,7 +1,9 @@
-import type { Annotation, EditorScene, MockupFrame } from "@/lib/types/editor";
+import type { Annotation, EditorScene, MediaLayer, MockupFrame, ScreenChrome } from "@/lib/types/editor";
+import { buildTextLayerSvg } from "@/lib/render/layerText";
 import { computeFrameBox, computeFrameInstances, type FrameBox } from "@/lib/render/frameGeometry";
 import { frameViewBox, frameOs, getFrameSpec, DEFAULT_VIEWBOX } from "@/lib/render/frames";
 import { tiltMatrixSvg } from "@/lib/render/tilt";
+import { hasAnnotationGradient, annotationSvgGradientDef } from "@/lib/render/annotationGradient";
 import { RENDER, resolveFrameStyle } from "@/lib/render/canvasDrawing";
 import { watermarkEdges } from "@/lib/render/watermark";
 import { overlayScaleFor } from "@/lib/render/overlayMetrics";
@@ -15,11 +17,6 @@ import { CORNER_POWER_CIRCLE, squirclePathD } from "@/lib/render/squircle";
 function num(n: number): string {
   return round2(n);
 }
-
-/** Running index of blur regions while the markup pass walks the annotations.
- *  Reset at the start of every buildSvgMarkup call; must stay in lockstep with
- *  the defs builder, which iterates the same annotations in the same order. */
-let blurRegionIndex = 0;
 
 export interface SvgFrameGroup {
   /** Canvas-space frame geometry (design px, computed with pixelRatio 1). */
@@ -55,6 +52,13 @@ export interface SvgFrameGroup {
   orientation?: number;
   /** The frame this group represents, so chrome can be OS-specific. */
   frame?: MockupFrame;
+  /** On-screen chrome for this group (status bar / lock / home); per-device
+   *  override when the instance sets one, else the scene default. */
+  screen?: ScreenChrome;
+  /** Floor reflection for this group; per-device override else the scene default. */
+  floorReflection?: boolean;
+  /** Text layer whose content fills the screen instead of media. */
+  textLayer?: MediaLayer | null;
 }
 
 export interface SvgExportOptions {
@@ -171,7 +175,12 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
   const dy = box.innerY + (box.innerH - dh) / 2 + (offY * (box.innerH - dh)) / 2;
 
   const mediaRaw =
-    group.mediaHref != null
+    group.textLayer
+      ? // Text layer: nested aspect-exact SVG stretched over the screen box
+        // (same layout constants the CSS preview and canvas export use).
+        buildTextLayerSvg(group.textLayer, box.innerW / box.innerH) ??
+        `<rect x="${num(box.innerX)}" y="${num(box.innerY)}" width="${num(box.innerW)}" height="${num(box.innerH)}" fill="${RENDER.emptyMediaFill}"/>`
+      : group.mediaHref != null
       ? `<image href="${group.mediaHref}" x="${num(dx)}" y="${num(dy)}" width="${num(dw)}" height="${num(dh)}"/>`
       : `<rect x="${num(box.innerX)}" y="${num(box.innerY)}" width="${num(box.innerW)}" height="${num(box.innerH)}" fill="${RENDER.emptyMediaFill}"/>`;
   // Rotate the media about the inner screen's center to match the CSS preview
@@ -186,9 +195,10 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
   // On-screen decoration in canvas space: the geometry is expressed in units
   // of the inner screen box, so just translate to its origin. Placed inside
   // the clip group so it stays under the device bezel and follows the radius.
+  const chromeScreen = group.screen ?? scene.screen;
   const chromeMarkup =
-    scene.screen.enabled
-      ? `<g transform="translate(${num(box.innerX)} ${num(box.innerY)})">${screenChromeElements({ ...scene.screen, os: frameOs(group.frame) }, box.innerW, box.innerH, `sc-${index}`)}</g>`
+    chromeScreen.enabled
+      ? `<g transform="translate(${num(box.innerX)} ${num(box.innerY)})">${screenChromeElements({ ...chromeScreen, os: frameOs(group.frame) }, box.innerW, box.innerH, `sc-${index}`)}</g>`
       : "";
 
   // SVG has no perspective, so a tilted scene uses the affine best-fit matrix.
@@ -218,6 +228,11 @@ function frameGroupInner(scene: EditorScene, group: SvgFrameGroup): string {
   const { box } = group;
   const isCircular = group.isCircular;
   let frame = "";
+  // The drop shadow is cast from an opaque rounded-rect silhouette (the
+  // halo-only filter below), mirroring drawFrameShadow in canvasDrawing —
+  // filtering the actual body/skin would derive the shadow alpha from glass
+  // fills or skin raster alpha and render it far weaker than the preview.
+  frame += `<rect x="${num(box.x)}" y="${num(box.y)}" width="${num(box.width)}" height="${num(box.height)}" rx="${num(box.outerRadius)}" fill="#000" filter="url(#frame-shadow)"/>`;
   if (group.isOverlay) {
     if (group.overlayInner) {
       const vb = group.viewBox ?? DEFAULT_VIEWBOX;
@@ -226,12 +241,12 @@ function frameGroupInner(scene: EditorScene, group: SvgFrameGroup): string {
       // The browser URL rides in the same translate/scale group as the skin
       // so it tracks the frame at any size (coordinates are viewBox units).
       const urlText = group.browserUrl ? browserUrlSvg(group.browserUrl, scene.browserChromeTheme) : "";
-      frame = `<g filter="url(#frame-shadow)"><g transform="translate(${num(box.x)} ${num(box.y)}) scale(${num(sx)} ${num(sy)})">${group.overlayInner}${urlText}</g></g>`;
+      frame += `<g transform="translate(${num(box.x)} ${num(box.y)}) scale(${num(sx)} ${num(sy)})">${group.overlayInner}${urlText}</g>`;
     }
   } else {
     const frameStyle = resolveFrameStyle(scene.stylePreset);
     const radius = isCircular ? num(Math.min(box.width, box.height) / 2) : num(box.outerRadius);
-    frame = `<rect x="${num(box.x)}" y="${num(box.y)}" width="${num(box.width)}" height="${num(box.height)}" rx="${radius}" fill="${frameStyle.fill}" filter="url(#frame-shadow)"/>`;
+    frame += `<rect x="${num(box.x)}" y="${num(box.y)}" width="${num(box.width)}" height="${num(box.height)}" rx="${radius}" fill="${frameStyle.fill}"/>`;
     if (frameStyle.stroke) {
       frame += `<rect x="${num(box.x)}" y="${num(box.y)}" width="${num(box.width)}" height="${num(box.height)}" rx="${radius}" fill="none" stroke="${frameStyle.strokeStyle}" stroke-width="${frameStyle.strokeWidth}"/>`;
     }
@@ -249,22 +264,38 @@ function blurRegionGeometry(a: Annotation, width: number, height: number) {
   return { bx, by, bw, bh, radius: Math.max(1, a.strokeWidth * overlayScaleFor(width)) };
 }
 
-function annotationsMarkup(scene: EditorScene, width: number, height: number): string {
+/** One blur-region id per annotation (-1 for non-blur rows), assigned in
+ *  annotation order. Computed once and shared by the defs builder and the
+ *  markup pass, so their ids can never drift apart — and no mutable
+ *  module-level counter needs to be reset between calls. */
+function assignBlurRegionIds(scene: EditorScene): number[] {
+  const ids: number[] = [];
+  let next = 0;
+  for (const a of scene.annotations) ids.push(a.type === "blur" ? next++ : -1);
+  return ids;
+}
+
+function annotationsMarkup(scene: EditorScene, width: number, height: number, blurIds: number[]): string {
   if (scene.annotations.length === 0) return "";
   // Overlay chrome scales with the artboard reference width (overlayMetrics),
   // matching the canvas export and the live preview.
   const s = overlayScaleFor(width);
   let out = "";
-  for (const a of scene.annotations) {
+  let gradDefs = "";
+  for (const [i, a] of scene.annotations.entries()) {
     const bx = Math.min(a.x, a.x + a.w) * width;
     const by = Math.min(a.y, a.y + a.h) * height;
     const bw = Math.abs(a.w) * width;
     const bh = Math.abs(a.h) * height;
+    const gradId = `anno-svg-grad-${i}`;
+    const grad = annotationSvgGradientDef(a, gradId, bx, by, bw, bh);
+    if (grad) gradDefs += grad.def;
+    const strokeRef = grad?.ref;
     if (a.type === "blur") {
       // Frosted region: replay the scene group through a Gaussian blur,
       // clipped to the rect. The scene is emitted once as #mocksy-scene and
       // referenced via <use>, so media data URLs are never duplicated.
-      const idx = blurRegionIndex++;
+      const idx = blurIds[i]!;
       out += `<g clip-path="url(#anno-blur-clip-${idx})"><use href="#mocksy-scene" filter="url(#anno-blur-${idx})"/></g>`;
       continue;
     }
@@ -289,9 +320,14 @@ function annotationsMarkup(scene: EditorScene, width: number, height: number): s
          const radius = (a.bgRadius ?? 0) * s;
          bg = `<rect x="${num(boxX)}" y="${num(boxY)}" width="${num(boxW)}" height="${num(boxH)}" rx="${num(radius)}" fill="${a.bgColor}"/>`;
        }
-       out += `${bg}<text x="${num(textX)}" y="${num(by)}" font-size="${num(a.fontSize * s)}" font-weight="${weight}" fill="${a.color}" font-family="${a.fontFamily ?? "Inter, system-ui, sans-serif"}" text-anchor="${anchor}" dominant-baseline="hanging"${style} filter="url(#anno-shadow)">${tspans}</text>`;
+       const fillAttr = strokeRef ? `fill="${strokeRef}"` : `fill="${a.color}"`;
+       out += `${bg}<text x="${num(textX)}" y="${num(by)}" font-size="${num(a.fontSize * s)}" font-weight="${weight}" ${fillAttr} font-family="${a.fontFamily ?? "Inter, system-ui, sans-serif"}" text-anchor="${anchor}" dominant-baseline="hanging"${style} filter="url(#anno-shadow)">${tspans}</text>`;
     } else if (a.type === "rect") {
-      out += `<rect x="${num(bx)}" y="${num(by)}" width="${num(bw)}" height="${num(bh)}" fill="none" stroke="${a.color}" stroke-width="${Math.max(1, a.strokeWidth * s)}"/>`;
+      const strokeAttr = strokeRef ? `stroke="${strokeRef}"` : `stroke="${a.color}"`;
+      out += `<rect x="${num(bx)}" y="${num(by)}" width="${num(bw)}" height="${num(bh)}" fill="none" ${strokeAttr} stroke-width="${Math.max(1, a.strokeWidth * s)}"/>`;
+    } else if (a.type === "circle") {
+      const strokeAttr = strokeRef ? `stroke="${strokeRef}"` : `stroke="${a.color}"`;
+      out += `<ellipse cx="${num(bx + bw / 2)}" cy="${num(by + bh / 2)}" rx="${num(bw / 2)}" ry="${num(bh / 2)}" fill="none" ${strokeAttr} stroke-width="${Math.max(1, a.strokeWidth * s)}"/>`;
     } else {
       const startX = a.x * width;
       const startY = a.y * height;
@@ -305,11 +341,13 @@ function annotationsMarkup(scene: EditorScene, width: number, height: number): s
       const p1y = num(endY + head * Math.sin(a1));
       const p2x = num(endX + head * Math.cos(a2));
       const p2y = num(endY + head * Math.sin(a2));
-      out += `<line x1="${num(startX)}" y1="${num(startY)}" x2="${num(endX)}" y2="${num(endY)}" stroke="${a.color}" stroke-width="${Math.max(1, a.strokeWidth * s)}" stroke-linecap="round"/>`;
-      out += `<polygon points="${num(endX)},${num(endY)} ${p1x},${p1y} ${p2x},${p2y}" fill="${a.color}"/>`;
+      const strokeAttr = strokeRef ? `stroke="${strokeRef}"` : `stroke="${a.color}"`;
+      const fillAttr = strokeRef ? `fill="${strokeRef}"` : `fill="${a.color}"`;
+      out += `<line x1="${num(startX)}" y1="${num(startY)}" x2="${num(endX)}" y2="${num(endY)}" ${strokeAttr} stroke-width="${Math.max(1, a.strokeWidth * s)}" stroke-linecap="round"/>`;
+      out += `<polygon points="${num(endX)},${num(endY)} ${p1x},${p1y} ${p2x},${p2y}" ${fillAttr}/>`;
     }
   }
-  return out;
+  return gradDefs ? `<defs>${gradDefs}</defs>${out}` : out;
 }
 
 function watermarkMarkup(scene: EditorScene, opts: SvgExportOptions): string {
@@ -360,17 +398,20 @@ export function buildSvgMarkup(scene: EditorScene, opts: SvgExportOptions): stri
   const { width, height, groups, zoom = 1 } = opts;
   const shadowDy = num(RENDER.shadowOffsetY * zoom);
   const shadowStd = num((RENDER.shadowBlur / 2) * zoom);
-  // Blur-region ids are shared between the defs below and the markup pass —
-  // keep the counter in lockstep.
-  blurRegionIndex = 0;
+  // Shared blur-region ids: defs below and the annotation markup above the
+  // same array stay in lockstep by construction.
+  const blurIds = assignBlurRegionIds(scene);
 
   const defs = [
-    `<filter id="frame-shadow" x="-60%" y="-250%" width="220%" height="500%"><feDropShadow dx="0" dy="${shadowDy}" stdDeviation="${shadowStd}" flood-color="#000" flood-opacity="${scene.shadowOpacity}"/></filter>`,
+    // Halo-only drop shadow: blur the opaque silhouette's alpha, offset it,
+    // tint it, then subtract the silhouette itself so only the halo renders
+    // (the frame body is painted separately on top, unfiltered).
+    `<filter id="frame-shadow" x="-60%" y="-250%" width="220%" height="500%"><feGaussianBlur in="SourceAlpha" stdDeviation="${shadowStd}"/><feOffset dy="${shadowDy}" result="off"/><feFlood flood-color="#000" flood-opacity="${scene.shadowOpacity}"/><feComposite in2="off" operator="in" result="shadow"/><feComposite in2="SourceAlpha" operator="out"/></filter>`,
     `<filter id="anno-shadow" x="-50%" y="-100%" width="200%" height="300%"><feDropShadow dx="0" dy="${RENDER.annoShadowOffsetY}" stdDeviation="${RENDER.annoShadowBlur / 2}" flood-color="#000" flood-opacity="0.5"/></filter>`,
     scene.backgroundBlur > 0 ? `<filter id="bg-blur"><feGaussianBlur stdDeviation="${num(scene.backgroundBlur / 2)}"/></filter>` : "",
-    ...scene.annotations.flatMap((a) => {
+    ...scene.annotations.flatMap((a, i) => {
       if (a.type !== "blur") return [];
-      const idx = blurRegionIndex++;
+      const idx = blurIds[i]!;
       const { bx, by, bw, bh, radius } = blurRegionGeometry(a, width, height);
       return [
         `<clipPath id="anno-blur-clip-${idx}"><rect x="${num(bx)}" y="${num(by)}" width="${num(bw)}" height="${num(bh)}" rx="${num(Math.min(bw, bh) * 0.12)}"/></clipPath>`,
@@ -381,17 +422,22 @@ export function buildSvgMarkup(scene: EditorScene, opts: SvgExportOptions): stri
       ? `<linearGradient id="glare-sweep" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.32"/><stop offset="0.3" stop-color="#fff" stop-opacity="0.14"/><stop offset="0.52" stop-color="#fff" stop-opacity="0"/></linearGradient>`
       : "",
     ...groups.map((g, i) => groupClipMarkup(g, i)),
-    ...(scene.floorReflection
-      ? groups.flatMap((g, i) => {
-          const r = i + groups.length;
-          const bottom = num(g.box.y + g.box.height);
-          return [
-            groupClipMarkup(g, r),
-            `<linearGradient id="refl-fade-${r}" x1="0" y1="${bottom}" x2="0" y2="${num(g.box.y + g.box.height * 0.45)}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity="0.30"/></linearGradient>`,
-            `<mask id="refl-mask-${r}"><rect x="${num(g.box.x - g.box.width)}" y="${bottom}" width="${num(g.box.width * 3)}" height="${num(g.box.height * 2)}" fill="url(#refl-fade-${r})"/></mask>`
-          ];
-        })
-      : []),
+    ...(groups.flatMap((g, i) => {
+      if (!(g.floorReflection ?? scene.floorReflection)) return [];
+      const r = i + groups.length;
+      const boxBottom = g.box.y + g.box.height;
+      const bottom = num(boxBottom);
+      return [
+        groupClipMarkup(g, r),
+        // Mirrors paintFloorReflection (renderMockup.ts): full alpha at the
+        // device's bottom edge fading to 0 by RENDER.reflectionFade of the
+        // box height BELOW it. The axis must point down into the mirrored
+        // content — pointing up would pad-clamp every sample to the first
+        // stop and hide the whole reflection.
+        `<linearGradient id="refl-fade-${r}" x1="0" y1="${bottom}" x2="0" y2="${num(boxBottom + g.box.height * RENDER.reflectionFade)}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="${RENDER.reflectionOpacity}"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>`,
+        `<mask id="refl-mask-${r}"><rect x="${num(g.box.x - g.box.width)}" y="${bottom}" width="${num(g.box.width * 3)}" height="${num(g.box.height * 2)}" fill="url(#refl-fade-${r})"/></mask>`
+      ];
+    })),
     opts.fontCss ? `<style>${opts.fontCss}</style>` : ""
   ].filter(Boolean);
 
@@ -400,16 +446,15 @@ export function buildSvgMarkup(scene: EditorScene, opts: SvgExportOptions): stri
   const sceneBase =
     `<g id="mocksy-scene">` +
     backgroundMarkup(scene, opts) +
-    (scene.floorReflection ? groups.map((g, i) => reflectionGroupMarkup(scene, g, i, groups.length)).join("") : "") +
+    (groups.map((g, i) => (g.floorReflection ?? scene.floorReflection ? reflectionGroupMarkup(scene, g, i, groups.length) : "")).filter(Boolean).join("")) +
     groups.map((g, i) => frameGroupMarkup(scene, g, i)).join("") +
     `</g>`;
-  blurRegionIndex = 0;
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${num(width)} ${num(height)}" width="${num(width)}" height="${num(height)}">`,
     `<defs>${defs.join("")}</defs>`,
     sceneBase,
-    annotationsMarkup(scene, width, height),
+    annotationsMarkup(scene, width, height, blurIds),
     watermarkMarkup(scene, opts),
     `</svg>`
   ].join("");

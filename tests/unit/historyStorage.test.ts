@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { initialScene, makeDemoScene, useEditorStore } from "@/lib/state/editorStore";
 import {
+  clearPersistedHistory,
   initHistoryPersistence,
   persistHistory,
   readHistory,
@@ -150,6 +151,18 @@ describe("persistHistory / readHistory", () => {
     expect(state.future.map((s) => s.layers[0]?.mediaName)).toEqual(["scene-c"]);
   });
 
+  it("clearPersistedHistory drops the stored stack so it can't be restored later", () => {
+    persistHistory([scene("a")], []);
+    expect(readHistory()?.past).toHaveLength(1);
+    clearPersistedHistory();
+    expect(readHistory()).toBeNull();
+  });
+
+  it("clearPersistedHistory is a no-op when nothing was stored", () => {
+    expect(() => clearPersistedHistory()).not.toThrow();
+    expect(readHistory()).toBeNull();
+  });
+
   it("initHistoryPersistence debounces writes on stack changes", () => {
     vi.useFakeTimers();
     const dispose = initHistoryPersistence();
@@ -167,14 +180,23 @@ describe("persistHistory / readHistory", () => {
     }
   });
 
-  it("stops persisting after dispose", () => {
+  it("flushes the pending write on dispose and stops watching afterwards", () => {
     vi.useFakeTimers();
     const dispose = initHistoryPersistence();
-    dispose();
     useEditorStore.setState({ past: [], future: [], scene: { ...initialScene } });
     useEditorStore.getState().setScene({ backgroundColor: "#112233" });
-    vi.advanceTimersByTime(600);
-    expect(storage.raw.has("mocksy-history")).toBe(false);
+    // Disposing before the debounce elapses must FLUSH the pending write, not
+    // drop it — an SPA unmount would otherwise lose the latest undo steps and
+    // the next mount would restore a stale stack.
+    dispose();
+    expect(storage.raw.has("mocksy-history")).toBe(true);
+    const stored = JSON.parse(storage.raw.get("mocksy-history")!) as { past: EditorScene[] };
+    expect(stored.past[0]!.backgroundColor).toBe("#111827");
+    // After dispose, further stack changes are no longer persisted.
+    useEditorStore.getState().setScene({ backgroundColor: "#223344" });
+    vi.advanceTimersByTime(1000);
+    const after = JSON.parse(storage.raw.get("mocksy-history")!) as { past: EditorScene[] };
+    expect(after).toEqual(stored);
     vi.useRealTimers();
   });
 });

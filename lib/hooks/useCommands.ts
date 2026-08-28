@@ -8,7 +8,9 @@ import type { Command } from "@/lib/types/editor";
 
 export function useCommands(
   onExportPng: () => void,
+  onExportJpeg: () => void,
   onExportWebp: () => void,
+  onExportAvif: () => void,
   onExportSvg: () => void,
   onExportHtml: () => void,
   onExportPdf: () => void,
@@ -16,7 +18,12 @@ export function useCommands(
   onExportWebm: () => void,
   onExportGif: () => void,
   onExportWebpAnim: () => void,
+  onExportZipVideo: () => void,
   onCopyPng: () => void,
+  onCopyJpeg: () => void,
+  onCopyWebp: () => void,
+  onCopySvg: () => void,
+  onCopyHtml: () => void,
   onCopyShareUrl: () => void,
   onSave: () => void,
   onToggleFullscreenPreview: () => void
@@ -39,6 +46,7 @@ export function useCommands(
   const setBackgroundImage = useEditorStore(s => s.setBackgroundImage);
   const setAspectRatio = useEditorStore(s => s.setAspectRatio);
   const addLayer = useEditorStore(s => s.addLayer);
+  const addTextLayer = useEditorStore(s => s.addTextLayer);
   const duplicateLayer = useEditorStore(s => s.duplicateLayer);
   const removeLayer = useEditorStore(s => s.removeLayer);
   const toggleLayerHidden = useEditorStore(s => s.toggleLayerHidden);
@@ -61,21 +69,21 @@ export function useCommands(
     t, scene, activeLayerId, undo, redo, pastLength, futureLength, resetScene,
     setFrame, setStylePreset, setAnimationPreset,
     setBackgroundSolid, setBackgroundGradient, setBackgroundPattern, setBackgroundTransparent, setBackgroundImage,
-    setAspectRatio, addLayer, duplicateLayer, removeLayer, toggleLayerHidden,
+    setAspectRatio, addLayer, addTextLayer, duplicateLayer, removeLayer, toggleLayerHidden,
     selectLayer, reorderLayers, addAnnotation, clearAnnotations,
     toggleWatermark, setExportScale, exportScale,
     activeProjectId, projects, switchProject,
     themeMode, setThemeMode,
-    onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim,
-    onCopyPng, onCopyShareUrl, onSave, onToggleFullscreenPreview
+    onExportPng, onExportJpeg, onExportWebp, onExportAvif, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onExportZipVideo,
+    onCopyPng, onCopyJpeg, onCopyWebp, onCopySvg, onCopyHtml, onCopyShareUrl, onSave, onToggleFullscreenPreview
   ), [
     t, scene, activeLayerId, pastLength, futureLength, activeProjectId, projects, themeMode, exportScale,
-    onExportPng, onExportWebp, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim,
-    onCopyPng, onCopyShareUrl, onSave, onToggleFullscreenPreview,
+    onExportPng, onExportJpeg, onExportWebp, onExportAvif, onExportSvg, onExportHtml, onExportPdf, onExportMp4, onExportWebm, onExportGif, onExportWebpAnim, onExportZipVideo,
+    onCopyPng, onCopyJpeg, onCopyWebp, onCopySvg, onCopyHtml, onCopyShareUrl, onSave, onToggleFullscreenPreview,
     undo, redo, resetScene,
     setFrame, setStylePreset, setAnimationPreset,
     setBackgroundSolid, setBackgroundGradient, setBackgroundPattern, setBackgroundTransparent, setBackgroundImage,
-    setAspectRatio, addLayer, duplicateLayer, removeLayer, toggleLayerHidden,
+    setAspectRatio, addLayer, addTextLayer, duplicateLayer, removeLayer, toggleLayerHidden,
     selectLayer, reorderLayers, addAnnotation, clearAnnotations,
     toggleWatermark, setExportScale, switchProject, setThemeMode
   ]);

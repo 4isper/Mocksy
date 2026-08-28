@@ -28,6 +28,17 @@ export interface RenderTransform {
   offsetY: number;
 }
 
+/** Whether a frame instance should render at all. Mirrors the live preview's
+ *  filter in FrameInstanceGrid (instance layer, falling back to the active
+ *  layer, then the first) so exports can never show frames the preview hides. */
+export function isVisibleFrameInstance(scene: EditorScene, inst: EditorScene["frameInstances"][number]): boolean {
+  const layer =
+    scene.layers.find((l) => l.id === inst.layerId) ??
+    scene.layers.find((l) => l.id === scene.activeLayerId) ??
+    scene.layers[0];
+  return !layer?.hidden;
+}
+
 /**
  * Pure mirror of the single-frame CSS layout (mockupRenderer's contain logic):
  * the frame keeps its own aspect ratio and is contained inside the canvas box.
