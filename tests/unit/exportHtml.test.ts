@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { exportHtml } from "@/lib/export/exportHtml";
+import { copyHtmlToClipboard, exportHtml } from "@/lib/export/exportHtml";
 import { buildAnimationCss, buildGridHtmlSnippet, buildHtmlSnippet, serializeCssProperties } from "@/lib/export/htmlMarkup";
 import { initialScene } from "@/lib/state/editorStore";
 import type { EditorScene, FrameInstance, MediaLayer } from "@/lib/types/editor";
@@ -444,5 +444,189 @@ describe("exportHtml", () => {
     expect(link.download).toBe("mocksy-export.html");
     expect(link.click).toHaveBeenCalled();
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:mock");
+  });
+});
+
+/** Captures what exportHtml downloads and returns the blob content. */
+async function downloadContent(scene: EditorScene, filename = "out") {
+  const link = { href: "", download: "", click: vi.fn() };
+  vi.stubGlobal("document", { createElement: (tag: string) => (tag === "a" ? link : undefined) });
+  const createObjectURL = vi.fn((_blob: Blob) => "blob:mock");
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
+  vi.useFakeTimers();
+  const errors: string[] = [];
+  await exportHtml(scene, "preview", filename, (m) => errors.push(m));
+  await vi.advanceTimersByTimeAsync(300);
+  vi.useRealTimers();
+  const blob = createObjectURL.mock.calls[0]?.[0] as Blob | undefined;
+  return { blob, html: blob ? await blob.text() : null, errors };
+}
+
+/** Serves any non-data URL via fetch (toEmbeddableDataUrl re-encodes through
+ *  FileReader; svgAssetToDataUrl reads the raw text). */
+function stubEmbeddingFetch({ svg = "<svg/>", reject = true } = {}) {
+  const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+    if (url.startsWith("data:")) return { ok: true };
+    if (reject) throw new Error("network down");
+    return {
+      ok: true,
+      blob: async () => new Blob(["fetched"], { type: "image/png" }),
+      text: async () => svg
+    };
+  });
+  vi.stubGlobal("fetch", fetchMock);
+
+  class FakeFileReader {
+    result: string | null = null;
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    readAsDataURL() {
+      this.result = "data:image/png;base64,FETCHED";
+      queueMicrotask(() => this.onload?.());
+    }
+  }
+  vi.stubGlobal("FileReader", FakeFileReader);
+  return fetchMock;
+}
+
+function multiFrameScene(overrides: Partial<EditorScene> = {}): EditorScene {
+  const l1 = layerWith({ id: "l1", mediaUrl: MEDIA });
+  const l2 = layerWith({ id: "l2", mediaUrl: "data:image/png;base64,BBBB" });
+  return sceneWith({
+    backgroundMode: "transparent",
+    watermarkEnabled: false,
+    layers: [l1, l2],
+    frameInstances: [
+      { id: "fi1", frame: "none", x: 0.3, y: 0.5, scale: 0.4, layerId: "l1" },
+      { id: "fi2", frame: "none", x: 0.7, y: 0.5, scale: 0.4, layerId: "l2" }
+    ],
+    ...overrides
+  });
+}
+
+describe("exportHtml media embedding", () => {
+  it("embeds the background and watermark images in a multi-frame grid", async () => {
+    const scene = multiFrameScene({
+      backgroundMode: "image",
+      backgroundImageUrl: "data:image/png;base64,BG",
+      watermarkEnabled: true,
+      watermarkImageUrl: "data:image/png;base64,WM",
+      watermarkSize: 20
+    });
+    const { html, errors } = await downloadContent(scene);
+    expect(errors, errors.join(" | ")).toEqual([]);
+    expect(html).toContain('url("data:image/png;base64,BG")');
+    expect(html).toContain('src="data:image/png;base64,WM"');
+  });
+
+  it("embeds the background and watermark images in a single-frame scene", async () => {
+    const scene = sceneWith({
+      frame: "none",
+      backgroundMode: "image",
+      backgroundImageUrl: "data:image/png;base64,BG",
+      watermarkEnabled: true,
+      watermarkImageUrl: "data:image/png;base64,WM",
+      watermarkSize: 20
+    });
+    const { html, errors } = await downloadContent(scene);
+    expect(errors, errors.join(" | ")).toEqual([]);
+    expect(html).toContain('url("data:image/png;base64,BG")');
+    expect(html).toContain('class="wm wm-logo"');
+  });
+
+  it("fetches a non-data background and re-encodes it to a data URL", async () => {
+    const fetchMock = stubEmbeddingFetch({ reject: false });
+    const scene = multiFrameScene({
+      backgroundMode: "image",
+      backgroundImageUrl: "https://example.com/bg.png"
+    });
+    const { html, errors } = await downloadContent(scene);
+    expect(fetchMock).toHaveBeenCalledWith("https://example.com/bg.png");
+    expect(errors, errors.join(" | ")).toEqual([]);
+    expect(html).toContain('url("data:image/png;base64,FETCHED")');
+  });
+
+  it("inlines the device-skin SVG for overlay frames in a multi-frame grid", async () => {
+    const fetchMock = stubEmbeddingFetch({ reject: false });
+    const scene = sceneWith({
+      backgroundMode: "transparent",
+      watermarkEnabled: false,
+      layers: [layerWith({ id: "l1", mediaUrl: MEDIA })],
+      frameInstances: [{ id: "fi1", frame: "iphone15", x: 0.5, y: 0.5, scale: 0.4, layerId: "l1" }]
+    });
+    const { html, errors } = await downloadContent(scene);
+    expect(fetchMock).toHaveBeenCalledWith("/devices/iphone15.svg");
+    expect(errors, errors.join(" | ")).toEqual([]);
+    expect(html).toContain('src="data:image/svg+xml;utf8,%3Csvg%2F%3E"');
+  });
+
+  it("drops the overlay skin silently when its asset cannot be fetched", async () => {
+    stubEmbeddingFetch({ reject: true });
+    const scene = sceneWith({
+      backgroundMode: "transparent",
+      watermarkEnabled: false,
+      layers: [layerWith({ id: "l1", mediaUrl: MEDIA })],
+      frameInstances: [{ id: "fi1", frame: "iphone15", x: 0.5, y: 0.5, scale: 0.4, layerId: "l1" }]
+    });
+    const { html, errors } = await downloadContent(scene);
+    expect(errors, errors.join(" | ")).toEqual([]);
+    // No overlay inlined, but the export still succeeds.
+    expect(html).not.toContain('class="overlay"');
+  });
+
+  it("routes export failures through onError", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+    const scene = sceneWith({
+      backgroundMode: "transparent",
+      watermarkEnabled: false,
+      layers: [layerWith({ id: "l1", mediaUrl: "https://example.com/media.png" })]
+    });
+    const onError = vi.fn();
+    await exportHtml(scene, "preview", "out", onError);
+    expect(onError).toHaveBeenCalledWith("offline");
+  });
+});
+
+describe("copyHtmlToClipboard", () => {
+  it("reports an error when the clipboard API is unavailable", async () => {
+    vi.stubGlobal("navigator", { clipboard: undefined });
+    const onError = vi.fn();
+    await copyHtmlToClipboard(sceneWith(), "preview", onError);
+    expect(onError).toHaveBeenCalledWith("Clipboard isn't available here (open over https or localhost).");
+  });
+
+  it("copies a standalone HTML document for a single-frame scene", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    const scene = sceneWith({ frame: "none", backgroundMode: "transparent", watermarkEnabled: false });
+    const onError = vi.fn();
+    const onStatus = vi.fn();
+    await copyHtmlToClipboard(scene, "preview", onError, onStatus);
+    expect(onError).not.toHaveBeenCalled();
+    expect(writeText).toHaveBeenCalledTimes(1);
+    expect(String(writeText.mock.calls[0]![0])).toMatch(/^<!doctype html>/);
+    expect(onStatus).toHaveBeenCalledWith("Copied HTML to clipboard");
+  });
+
+  it("copies a live-frame grid for a multi-frame scene", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    const onError = vi.fn();
+    await copyHtmlToClipboard(multiFrameScene(), "preview", onError);
+    expect(onError).not.toHaveBeenCalled();
+    expect(writeText).toHaveBeenCalledTimes(1);
+    const html = String(writeText.mock.calls[0]![0]);
+    expect(html.match(/class="frame-instance"/g)).toHaveLength(2);
+    expect(html).toContain('src="data:image/png;base64,AAAA"');
+  });
+
+  it("routes clipboard write failures through onError", async () => {
+    vi.stubGlobal("navigator", {
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error("Permission denied")) }
+    });
+    const onError = vi.fn();
+    await copyHtmlToClipboard(sceneWith({ frame: "none" }), "preview", onError);
+    expect(onError).toHaveBeenCalledWith("Permission denied");
   });
 });

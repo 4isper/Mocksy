@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildSvgMarkup, exportSvg, inlineSvgAsset, mediaToDataUrl, videoToDataUrl } from "@/lib/export/exportSvg";
+import { buildSvgMarkup, buildStandaloneSvg, copySvgToClipboard, exportSvg, inlineSvgAsset, mediaToDataUrl, videoToDataUrl } from "@/lib/export/exportSvg";
 import { clearImageCache } from "@/lib/render/canvasMedia";
 import { computeFrameBox } from "@/lib/render/frameGeometry";
 import { RENDER } from "@/lib/render/canvasDrawing";
 import { initialScene } from "@/lib/state/editorStore";
-import type { EditorScene } from "@/lib/types/editor";
+import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -574,4 +574,222 @@ describe("exportSvg", () => {
     expect(onError).toHaveBeenCalledWith("Preview area not found.");
   });
 
+  it("routes unexpected build failures through onError", async () => {
+    // A node that exists but can't run querySelector makes the media
+    // resolution throw mid-export; exportSvg degrades through onError.
+    vi.stubGlobal("document", { getElementById: () => ({}) });
+    const onError = vi.fn();
+    await exportSvg(sceneWith({ frame: "none" }), "preview", "out", onError);
+    expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+});
+
+/** Builds a <video> stub that auto-fires load/seek handlers on assignment. */
+function autoFireVideo(): Record<string, unknown> {
+  const video: Record<string, unknown> = {
+    src: "",
+    crossOrigin: "",
+    muted: false,
+    playsInline: false,
+    videoWidth: 640,
+    videoHeight: 360,
+    duration: 5,
+    currentTime: 0,
+    pause: vi.fn()
+  };
+  const fire = (name: string) =>
+    Object.defineProperty(video, name, {
+      configurable: true,
+      get: () => video[`_${name}`],
+      set(fn: unknown) {
+        (video as Record<string, unknown>)[`_${name}`] = fn;
+        if (fn) queueMicrotask(() => (fn as () => void)());
+      }
+    });
+  fire("onloadedmetadata");
+  fire("onseeked");
+  Object.defineProperty(video, "onerror", {
+    configurable: true,
+    get: () => video._onerror,
+    set: (fn: unknown) => {
+      (video as Record<string, unknown>)._onerror = fn;
+    }
+  });
+  return video;
+}
+
+describe("buildStandaloneSvg", () => {
+  const POSTER = "data:image/png;base64,POSTER";
+
+  function videoLayer(): MediaLayer {
+    return {
+      ...initialScene.layers[0]!,
+      id: "vlayer",
+      mediaUrl: "blob:vid",
+      mediaType: "video",
+      mediaName: "clip.mp4",
+      videoPosterTime: 2
+    } as MediaLayer;
+  }
+
+  it("embeds background, watermark and a video poster frame in a multi-frame grid", async () => {
+    const video = autoFireVideo();
+    vi.stubGlobal("Image", class {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      naturalWidth = 320;
+      naturalHeight = 240;
+      set src(_v: string) {
+        queueMicrotask(() => this.onload?.());
+      }
+    });
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => ({ drawImage: vi.fn() }),
+      toDataURL: () => POSTER
+    };
+    vi.stubGlobal("document", {
+      getElementById: () => ({}),
+      createElement: (tag: string) => (tag === "video" ? video : tag === "canvas" ? canvas : undefined)
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ text: async () => "<rect fill='red'/>" }));
+
+    const scene: EditorScene = sceneWith({
+      backgroundMode: "image",
+      backgroundImageUrl: MEDIA,
+      watermarkEnabled: true,
+      watermarkImageUrl: MEDIA,
+      watermarkSize: 20,
+      layers: [
+        { ...initialScene.layers[0]!, id: "ilayer", mediaUrl: MEDIA },
+        videoLayer()
+      ],
+      frameInstances: [
+        { id: "f1", frame: "none", x: 0.25, y: 0.5, scale: 0.4, layerId: "ilayer" },
+        { id: "f2", frame: "iphone15", x: 0.75, y: 0.5, scale: 0.4, layerId: "vlayer" }
+      ]
+    });
+
+    const svg = await buildStandaloneSvg(scene, "preview");
+    expect(svg).not.toBeNull();
+    // The video frame's poster is embedded instead of a blank screen.
+    expect(svg!.markup).toContain(POSTER);
+    // The device-skin SVG is inlined into the overlay group.
+    expect(svg!.markup).toContain("<rect fill='red'/>");
+    // Background and watermark image are embedded as data URLs.
+    expect(svg!.markup).toContain('href="data:image/png;base64,AAAA"');
+    expect(video.pause).toHaveBeenCalled();
+  });
+
+  it("falls back to a freshly decoded poster frame for an undecoded preview video", async () => {
+    vi.stubGlobal("HTMLVideoElement", class {});
+    const videoEl = autoFireVideo();
+    const undecoded = Object.assign(new (vi.mocked(globalThis.HTMLVideoElement))(), { readyState: 1 });
+    const node = {
+      querySelector: (sel: string) => (sel.startsWith("[data-layer-media=") ? undecoded : null)
+    };
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => ({ drawImage: vi.fn() }),
+      toDataURL: () => POSTER
+    };
+    vi.stubGlobal("document", {
+      getElementById: () => node,
+      createElement: (tag: string) => (tag === "video" ? videoEl : tag === "canvas" ? canvas : undefined)
+    });
+    const scene = sceneWith({
+      frame: "none",
+      backgroundMode: "transparent",
+      watermarkEnabled: false,
+      layers: [videoLayer()],
+      activeLayerId: "vlayer"
+    });
+
+    const svg = await buildStandaloneSvg(scene, "preview");
+    expect(svg).not.toBeNull();
+    expect(svg!.markup).toContain(POSTER);
+    expect(videoEl.pause).toHaveBeenCalled();
+  });
+
+  it("keeps the ready preview element when a fresh poster load fails", async () => {
+    vi.stubGlobal("HTMLVideoElement", class {});
+    const undecoded = Object.assign(new (vi.mocked(globalThis.HTMLVideoElement))(), { readyState: 1 });
+    const node = {
+      querySelector: (sel: string) => (sel.startsWith("[data-layer-media=") ? undecoded : null)
+    };
+    vi.stubGlobal("document", {
+      getElementById: () => node,
+      createElement: (tag: string) => {
+        if (tag === "video") {
+          const broken: Record<string, unknown> = {
+            src: "",
+            crossOrigin: "",
+            muted: false,
+            playsInline: false,
+            duration: 5,
+            currentTime: 0,
+            pause: vi.fn(),
+            set onerror(fn: unknown) {
+              queueMicrotask(() => (fn as () => void)());
+            }
+          };
+          return broken;
+        }
+        return undefined;
+      }
+    });
+    const scene = sceneWith({
+      frame: "none",
+      backgroundMode: "transparent",
+      watermarkEnabled: false,
+      layers: [videoLayer()],
+      activeLayerId: "vlayer"
+    });
+
+    // The flat fallback sees an undecoded element with no dimensions, so it
+    // exports an empty screen rather than throwing the whole export away.
+    const svg = await buildStandaloneSvg(scene, "preview");
+    expect(svg).not.toBeNull();
+    expect(svg!.markup).not.toContain(POSTER);
+  });
+});
+
+describe("copySvgToClipboard", () => {
+  it("reports an error when the clipboard API is unavailable", async () => {
+    vi.stubGlobal("navigator", { clipboard: undefined });
+    const onError = vi.fn();
+    await copySvgToClipboard(sceneWith(), "preview", onError);
+    expect(onError).toHaveBeenCalledWith("Clipboard isn't available here (open over https or localhost).");
+  });
+
+  it("copies the standalone SVG markup to the clipboard", async () => {
+    vi.stubGlobal("HTMLImageElement", class {});
+    vi.stubGlobal("HTMLVideoElement", class {});
+    const img = new (globalThis.HTMLImageElement as unknown as new () => HTMLImageElement)();
+    Object.assign(img, { src: MEDIA, complete: true, naturalWidth: 400, naturalHeight: 300 });
+    const node = {
+      querySelector: (sel: string) => (sel.startsWith("[data-layer-media=") ? img : null)
+    };
+    vi.stubGlobal("document", { getElementById: () => node });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    const onError = vi.fn();
+    const onStatus = vi.fn();
+    await copySvgToClipboard(sceneWith({ frame: "none", backgroundMode: "transparent", watermarkEnabled: false }), "preview", onError, onStatus);
+    expect(onError).not.toHaveBeenCalled();
+    expect(writeText).toHaveBeenCalledTimes(1);
+    expect(String(writeText.mock.calls[0]![0])).toMatch(/^<svg /);
+    expect(onStatus).toHaveBeenCalledWith("Copied SVG to clipboard");
+  });
+
+  it("reports when the preview area is missing", async () => {
+    vi.stubGlobal("navigator", { clipboard: { writeText: vi.fn() } });
+    vi.stubGlobal("document", { getElementById: () => null });
+    const onError = vi.fn();
+    await copySvgToClipboard(sceneWith({ frame: "none" }), "preview", onError);
+    expect(onError).toHaveBeenCalledWith("Preview area not found.");
+  });
 });
