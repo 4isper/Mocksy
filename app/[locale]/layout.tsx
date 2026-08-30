@@ -7,7 +7,7 @@ import { PwaRegister } from "@/components/editor/PwaRegister";
 import { SkipLink } from "@/components/editor/SkipLink";
 import { ErrorBoundary, LocalizedErrorBoundary } from "@/components/editor/ErrorBoundary";
 import { isRtlLocale } from "@/i18n/request";
-import { isValidLocale } from "@/i18n/locales";
+import { isValidLocale, locales } from "@/i18n/locales";
 import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH } from "@/lib/state/ogScene";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -15,13 +15,20 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const resolvedLocale = isValidLocale(locale) ? locale : "en";
   const messages = await getMessages({ locale: resolvedLocale });
   const t = messages.metadata;
-  const errors = messages.errors;
   const title = t?.title ?? "Mocksy — Free mockup editor";
   const description = t?.description ?? "Create mockups, animations and exports without subscriptions.";
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  // Mirror the hreflang map from sitemap so every localized route advertises
+  // its siblings to search engines. The editor is a single route in [locale].
+  const languages = Object.fromEntries(locales.map((locale) => [locale, `${base}/${locale}`]));
   return {
-    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+    metadataBase: new URL(base),
     title,
     description,
+    alternates: {
+      canonical: `${base}/${resolvedLocale}`,
+      languages
+    },
     openGraph: {
       title,
       description,
@@ -62,7 +69,6 @@ export default async function LocaleLayout({
   const { locale } = await params;
   const resolvedLocale = isValidLocale(locale) ? locale : "en";
   const messages = await getMessages({ locale: resolvedLocale });
-  const errors = messages.errors;
 
   return (
     <html lang={resolvedLocale} dir={isRtlLocale(resolvedLocale) ? "rtl" : "ltr"} suppressHydrationWarning>
