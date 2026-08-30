@@ -15,7 +15,7 @@ import type { SpinRenderResult } from "@/lib/types/spin";
  */
 
 const RENDER_TIMEOUT_MS = 45_000;
-const CACHE_MAX = 40;
+export const CACHE_MAX = 40;
 
 let browserPromise: Promise<Browser> | null = null;
 
@@ -41,13 +41,19 @@ function cacheKey(scene: EditorScene, width: number, height: number): string {
   return createHash("sha256").update(JSON.stringify([scene, width, height])).digest("hex");
 }
 
-/** Simple insertion-order MRU cache: identical (scene, size) spins never
- *  re-render. Bounded so long-running servers don't leak pixels. */
-class PngCache {
+/** Least-recently-used (LRU) cache: identical (scene, size) spins never
+ *  re-render. Reads promote the entry to the most-recent position so eviction
+ *  drops the least-recently-used one. Bounded so long-running servers don't
+ *  leak pixels. */
+export class PngCache {
   private entries = new Map<string, Buffer>();
 
   get(key: string): Buffer | null {
-    return this.entries.get(key) ?? null;
+    const value = this.entries.get(key);
+    if (value === undefined) return null;
+    this.entries.delete(key);
+    this.entries.set(key, value);
+    return value;
   }
 
   set(key: string, value: Buffer): void {
