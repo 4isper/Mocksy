@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/lib/state/editorStore";
 
 /** Footer shown when multiple layers are selected: count + bulk hide/duplicate/
@@ -26,9 +27,7 @@ export function LayerBulkActions({ count, total }: { count: number; total: numbe
   const nudgeStep = 0.02;
 
   // Determine group state for selected layers.
-  const selectedLayers = useEditorStore((s) =>
-    s.scene.layers.filter((l) => s.selectedLayerIds.includes(l.id))
-  );
+  const selectedLayers = useEditorStore(useShallow((s) => s.scene.layers.filter((l) => s.selectedLayerIds.includes(l.id))));
   const selectedGroupIds = new Set(selectedLayers.map((l) => l.groupId).filter((g): g is string => !!g));
   const canGroup = count >= 2;
   const canUngroup = count >= 1 && selectedGroupIds.size === 1 && selectedLayers.every((l) => l.groupId === selectedLayers[0]?.groupId);
