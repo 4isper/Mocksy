@@ -331,6 +331,7 @@
     "screenRecordError": "Screen recording failed. Try a different tab or window.",
     "screenRecordUnsupported": "Screen recording is not supported in this browser",
     "uploadMediaShort": "Upload image or video",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device",
     "mediaByUrl": "Add from URL",
     "mediaByUrlPlaceholder": "Image or video URL (https://…)",
     "mediaByUrlButton": "Add",

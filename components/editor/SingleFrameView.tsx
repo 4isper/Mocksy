@@ -175,7 +175,7 @@ export function SingleFrameView({
           scene.layers.every((l) => !l.mediaUrl) && !scene.layers.some(isTextLayer) ? (
             <label style={sceneCss.emptyMediaStyle}>
               <span>{t("editor.dropToStart")}</span>
-              <input type="file" accept="image/*,video/*" onChange={handleCanvasFile} key={canvasFileInputKey} style={{ display: "none" }} />
+              <input type="file" accept="image/*,video/*" multiple onChange={handleCanvasFile} key={canvasFileInputKey} style={{ display: "none" }} />
             </label>
           ) : null
         }

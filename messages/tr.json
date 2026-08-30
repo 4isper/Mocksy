@@ -385,7 +385,8 @@
     "unlockGroup": "Grubu kilidini aç",
     "ungroup": "Gruplaştırmayı kaldır",
     "gradientType": "Gradyan türü",
-    "layerActions": "Katman işlemleri"
+    "layerActions": "Katman işlemleri",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "Yok",

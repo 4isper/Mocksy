@@ -385,7 +385,8 @@
     "unlockGroup": "Desbloquear grupo",
     "ungroup": "Desagrupar",
     "gradientType": "Tipo de degradado",
-    "layerActions": "Acciones de capa"
+    "layerActions": "Acciones de capa",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "Ninguno",

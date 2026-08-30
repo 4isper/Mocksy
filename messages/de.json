@@ -385,7 +385,8 @@
     "unlockGroup": "Gruppe entsperren",
     "ungroup": "Gruppierung aufheben",
     "gradientType": "Verlaufstyp",
-    "layerActions": "Ebenenaktionen"
+    "layerActions": "Ebenenaktionen",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "Keiner",

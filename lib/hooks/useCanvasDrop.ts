@@ -53,6 +53,51 @@ export function useCanvasDrop({ scene }: UseCanvasDrop) {
     [setMediaUploadError, t]
   );
 
+  /** Media-layer ids (in frame-instance order) that have no screen content yet,
+   *  so a multi-file upload can distribute one file per empty device. Text
+   *  layers and locked layers are skipped. */
+  const nextEmptyLayerIds = useCallback((scene: EditorScene): string[] => {
+    const dedupe = new Set<string>();
+    return scene.frameInstances
+      .map((fi) => fi.layerId)
+      .filter((id): id is string => Boolean(id))
+      .filter((id) => !dedupe.has(id) && (dedupe.add(id), true))
+      .filter((id) => {
+        const layer = scene.layers.find((l) => l.id === id);
+        return Boolean(layer && layer.kind !== "text" && layer.locked !== true && layer.mediaUrl == null);
+      });
+  }, []);
+
+  /** Applies a multi-file selection: one file per empty device in scene order,
+   *  then any leftover files onto the target/active layer. Single-file picks
+   *  keep the existing dedicate-to-active-layer behavior unchanged. */
+  const handleMultipleFiles = useCallback(
+    async (fileList: FileList, layerId?: string) => {
+      const files = Array.from(fileList);
+      if (files.length <= 1) {
+        await loadMediaToLayer(files[0]!, layerId);
+        return;
+      }
+      const emptyLayerIds = nextEmptyLayerIds(useEditorStore.getState().scene);
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]!;
+        try {
+          const { url, mediaType, mediaName } = await loadMediaFromFile(file);
+          setMediaUploadError(null);
+          if (i < emptyLayerIds.length) {
+            useEditorStore.getState().setMediaOnLayer(emptyLayerIds[i]!, url, mediaType, mediaName);
+          } else {
+            useEditorStore.getState().setMedia(url, mediaType, mediaName, layerId);
+          }
+        } catch (err) {
+          setMediaUploadError(err instanceof UnsupportedMediaError ? err.message : t("editor.uploadError"));
+          break;
+        }
+      }
+    },
+    [loadMediaToLayer, nextEmptyLayerIds, setMediaUploadError, t]
+  );
+
   const handleDrop = useCallback(
     async (event: DragEvent<HTMLDivElement>) => {
       event.preventDefault();
@@ -95,12 +140,12 @@ export function useCanvasDrop({ scene }: UseCanvasDrop) {
 
   const handleFile = useCallback(
     async (event: ChangeEvent<HTMLInputElement>, layerId?: string) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-      await loadMediaToLayer(file, layerId);
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+      await handleMultipleFiles(files, layerId);
       setFileInputKey((k) => k + 1);
     },
-    [loadMediaToLayer]
+    [handleMultipleFiles]
   );
 
   const onDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {

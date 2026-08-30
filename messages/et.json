@@ -385,7 +385,8 @@
     "unlockGroup": "Ava rühma lukk",
     "ungroup": "Lõhu rühm",
     "gradientType": "Gradiendi tüüp",
-    "layerActions": "Kihi toimingud"
+    "layerActions": "Kihi toimingud",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "Mitte ükski",

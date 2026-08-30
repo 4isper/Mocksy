@@ -385,7 +385,8 @@
     "unlockGroup": "Atbloķēt grupu",
     "ungroup": "Atgrupēt",
     "gradientType": "Pārejas veids",
-    "layerActions": "Slāņa darbības"
+    "layerActions": "Slāņa darbības",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "Nekur",

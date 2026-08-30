@@ -52,7 +52,7 @@ export const localeCoverage: Record<string, number> = {
   "ta": 48,
   "te": 48,
   "th": 48,
-  "tl": 44,
+  "tl": 43,
   "tr": 99,
   "uk": 100,
   "ur": 48,

@@ -35,26 +35,55 @@ export function MediaSection() {
   const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
   const screenRecording = useScreenRecording();
 
-  const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  /** Media-layer ids (in frame-instance order) with no screen content yet, so
+   *  a multi-file upload can distribute one file per empty device. Text layers
+   *  and locked layers are skipped. */
+  const nextEmptyLayerIds = (): string[] => {
+    const dedupe = new Set<string>();
+    return scene.frameInstances
+      .map((fi) => fi.layerId)
+      .filter((id): id is string => Boolean(id))
+      .filter((id) => !dedupe.has(id) && (dedupe.add(id), true))
+      .filter((id) => {
+        const layer = scene.layers.find((l) => l.id === id);
+        return Boolean(layer && layer.kind !== "text" && layer.locked !== true && layer.mediaUrl == null);
+      });
+  };
+
+  const applyFiles = async (fileList: FileList) => {
+    const files = Array.from(fileList);
+    if (files.length === 0) return;
     // Pin the target layer before the async decode: the user may switch the
     // active layer (or lock it) while the file loads, and landing on whatever
     // is active at completion would drop the media into the wrong layer.
     const targetLayerId = activeLayerId ?? scene.layers[0]?.id ?? null;
-    try {
-      const { url, mediaType, mediaName } = await loadMediaFromFile(file);
-      setMediaUploadError(null);
-      // Drop any palette from the previous media; a fresh one is computed once
-      // the new file decodes in the preview.
-      setScenePalette(null);
-      setMedia(url, mediaType, mediaName, targetLayerId);
-    } catch (err) {
-      if (err instanceof UnsupportedMediaError) setMediaUploadError(err.message);
-      else setMediaUploadError(t("editor.uploadError"));
-    } finally {
-      event.target.value = "";
+    // With several files, fill empty devices first so a multi-frame scene gets
+    // one photo per frame; a single pick behaves exactly as before.
+    const emptyLayerIds = files.length > 1 ? nextEmptyLayerIds() : [];
+    setScenePalette(null);
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]!;
+      try {
+        const { url, mediaType, mediaName } = await loadMediaFromFile(file);
+        setMediaUploadError(null);
+        if (i < emptyLayerIds.length) {
+          useEditorStore.getState().setMediaOnLayer(emptyLayerIds[i]!, url, mediaType, mediaName);
+        } else {
+          setMedia(url, mediaType, mediaName, targetLayerId);
+        }
+      } catch (err) {
+        if (err instanceof UnsupportedMediaError) setMediaUploadError(err.message);
+        else setMediaUploadError(t("editor.uploadError"));
+        break;
+      }
     }
+  };
+
+  const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    await applyFiles(files);
+    event.target.value = "";
   };
 
   const handleUrlSubmit = async () => {
@@ -90,8 +119,9 @@ export function MediaSection() {
         <div className="field">
           <label className="file-trigger">
             {t("editor.uploadMediaShort")}
-            <input type="file" accept="image/*,video/*" onChange={handleFile} />
+            <input type="file" accept="image/*,video/*" multiple onChange={handleFile} />
           </label>
+          <span className="text-dim-sm">{t("editor.uploadMediaShortHint")}</span>
           <button
             type="button"
             className="btn btn-sm"

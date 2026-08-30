@@ -385,7 +385,8 @@
     "unlockGroup": "그룹 잠금 해제",
     "ungroup": "그룹 해제",
     "gradientType": "그라데이션 유형",
-    "layerActions": "레이어 작업"
+    "layerActions": "레이어 작업",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "없음",

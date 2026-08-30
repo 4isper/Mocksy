@@ -331,6 +331,7 @@
     "screenRecordError": "Не удалось записать экран. Попробуйте другую вкладку или окно.",
     "screenRecordUnsupported": "Запись экрана не поддерживается этим браузером",
     "uploadMediaShort": "Загрузить изображение или видео",
+    "uploadMediaShortHint": "Зажмите ⌘/Ctrl, чтобы выбрать несколько — каждое заполнит следующее пустое устройство",
     "mediaByUrl": "Добавить по URL",
     "mediaByUrlPlaceholder": "URL изображения или видео (https://…)",
     "mediaByUrlButton": "Добавить",

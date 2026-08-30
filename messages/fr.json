@@ -385,7 +385,8 @@
     "unlockGroup": "Déverrouiller le groupe",
     "ungroup": "Dissocier",
     "gradientType": "Type de dégradé",
-    "layerActions": "Actions sur le calque"
+    "layerActions": "Actions sur le calque",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "Aucun",

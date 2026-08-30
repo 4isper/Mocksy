@@ -385,7 +385,8 @@
     "unlockGroup": "Otključaj grupu",
     "ungroup": "Razdruži",
     "gradientType": "Vrsta gradijenta",
-    "layerActions": "Akcije sloja"
+    "layerActions": "Akcije sloja",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "Nijedan",

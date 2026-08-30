@@ -385,7 +385,8 @@
     "unlockGroup": "Розблокувати",
     "ungroup": "Розгрупувати",
     "gradientType": "Тип градієнта",
-    "layerActions": "Дії на шар"
+    "layerActions": "Дії на шар",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "Немає",

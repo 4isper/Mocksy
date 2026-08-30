@@ -385,7 +385,8 @@
     "unlockGroup": "Deblochează",
     "ungroup": "Degrupează",
     "gradientType": "Tip gradient",
-    "layerActions": "Acțiuni pe strat"
+    "layerActions": "Acțiuni pe strat",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "Fără",

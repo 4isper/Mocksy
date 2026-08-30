@@ -385,7 +385,8 @@
     "unlockGroup": "Ontgrendelen",
     "ungroup": "Ontgroepen",
     "gradientType": "Gradienttype",
-    "layerActions": "Acties op laag"
+    "layerActions": "Acties op laag",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "Geen",

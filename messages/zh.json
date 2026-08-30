@@ -385,7 +385,8 @@
     "unlockGroup": "解锁组",
     "ungroup": "取消编组",
     "gradientType": "渐变类型",
-    "layerActions": "图层操作"
+    "layerActions": "图层操作",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "无",

@@ -385,7 +385,8 @@
     "unlockGroup": "Avaa ryhmän lukitus",
     "ungroup": "Poista ryhmitys",
     "gradientType": "Gradientin tyyppi",
-    "layerActions": "Kerroksen toiminnot"
+    "layerActions": "Kerroksen toiminnot",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "Ei yhtään",

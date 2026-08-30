@@ -385,7 +385,8 @@
     "unlockGroup": "Odkleni skupino",
     "ungroup": "Razdruži",
     "gradientType": "Vrsta preliva",
-    "layerActions": "Dejanja plasti"
+    "layerActions": "Dejanja plasti",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "Brez",

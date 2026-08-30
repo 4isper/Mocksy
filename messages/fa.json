@@ -385,7 +385,8 @@
     "unlockGroup": "باز کردن قفل گروه",
     "ungroup": "تفکیک گروه",
     "gradientType": "نوع گرادیان",
-    "layerActions": "عملیات لایه"
+    "layerActions": "عملیات لایه",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "هیچ",

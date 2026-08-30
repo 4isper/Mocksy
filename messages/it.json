@@ -385,7 +385,8 @@
     "unlockGroup": "Sblocca gruppo",
     "ungroup": "Sciogli",
     "gradientType": "Tipo di gradiente",
-    "layerActions": "Azioni livello"
+    "layerActions": "Azioni livello",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "Nessuno",

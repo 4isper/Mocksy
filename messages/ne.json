@@ -385,7 +385,8 @@
     "unlockGroup": "Unlock group",
     "ungroup": "Ungroup",
     "gradientType": "Gradient type",
-    "layerActions": "Layer actions"
+    "layerActions": "Layer actions",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "कुनै छैन",

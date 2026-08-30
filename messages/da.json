@@ -385,7 +385,8 @@
     "unlockGroup": "Lås op gruppe",
     "ungroup": "Fjern gruppering",
     "gradientType": "Gradienttype",
-    "layerActions": "Laghandlinger"
+    "layerActions": "Laghandlinger",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "Ingen",

@@ -385,7 +385,8 @@
     "unlockGroup": "समूह अनलॉक करें",
     "ungroup": "समूह अलग करें",
     "gradientType": "ग्रेडिएंट प्रकार",
-    "layerActions": "परत क्रियाएँ"
+    "layerActions": "परत क्रियाएँ",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "कोई नहीं",

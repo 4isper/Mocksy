@@ -385,7 +385,8 @@
     "unlockGroup": "Atrakinti grupę",
     "ungroup": "Išgrupuoti",
     "gradientType": "Gradiento tipas",
-    "layerActions": "Sluoksnio veiksmai"
+    "layerActions": "Sluoksnio veiksmai",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "Nėra",

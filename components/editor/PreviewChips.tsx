@@ -95,6 +95,7 @@ function UploadChip({
         ref={inputRef}
         type="file"
         accept="image/*,video/*"
+        multiple
         onChange={(e) => onFile(e, targetLayerId)}
         key={fileInputKey}
         style={{ display: "none" }}

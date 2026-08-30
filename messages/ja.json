@@ -385,7 +385,8 @@
     "unlockGroup": "グループのロックを解除",
     "ungroup": "グループ解除",
     "gradientType": "グラデーションの種類",
-    "layerActions": "レイヤー操作"
+    "layerActions": "レイヤー操作",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "なし",

@@ -385,7 +385,8 @@
     "unlockGroup": "Odblokuj grupę",
     "ungroup": "Rozgrupuj",
     "gradientType": "Typ gradientu",
-    "layerActions": "Akcje warstwy"
+    "layerActions": "Akcje warstwy",
+    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
   },
   "frame": {
     "none": "Żaden",
