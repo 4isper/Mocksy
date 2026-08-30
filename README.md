@@ -2,7 +2,7 @@
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Free browser-based mockup editor. No auth, no paywall, no subscriptions — and 100% client-side: your media never leaves the device.
+Free browser-based mockup editor. No auth, no paywall, no subscriptions — and the editor is 100% client-side: your media never leaves the device (an optional server [Spin API](#spin-api) can render PNGs for you — see below).
 
 **Try it live: [mocksy-ashen.vercel.app](https://mocksy-ashen.vercel.app)**
 
@@ -48,6 +48,7 @@ npm start
 
 - Multi-panel layout: controls, canvas preview, layers, annotations, templates, projects
 - Undo/redo (`⌘Z` / `⇧⌘Z`) with keyboard shortcuts; rapid slider drags coalesce into one step
+- Rebindable keyboard shortcuts — click-to-record in the Shortcuts dialog, overrides persist and remap instantly
 - Command palette (`⌘K`) with actions grouped by category and match highlighting
 - Right-click context menus for canvas, frames, annotations and layers
 - "Surprise me" action — randomizes style, background, shadow and corners; media stays untouched
@@ -63,7 +64,7 @@ npm start
 - Auto layout presets for multi-frame scenes: grid, fan, cascade, masonry, stack
 - Align (left/center/right/top/middle/bottom) and distribute buttons for frame instances
 - Smart guides snap frame instances to canvas edges and sibling frames while dragging
-- Drop a file onto a specific device in multi-frame mode — it targets that device's layer
+- Drop a file onto a specific device in multi-frame mode — it targets that device's layer; dropping a batch distributes the files across empty devices
 - View navigation over the canvas: smooth wheel zoom anchored at the cursor (25–400%, snaps to familiar stops), continuous slider with −/+ steps, Space+drag / middle-button panning, pinch on touch, double-click to reset — pure view state, exports are unaffected
 - `⌘C`/`⌘V` copies and duplicates the selected annotation or frame instance (media paste still wins when the OS clipboard holds files)
 - 3D tilt (`tiltX`/`tiltY`, ±25°) kept in sync across CSS preview, canvas/SVG exports and video
@@ -201,6 +202,15 @@ npm start
 - Share dialog renders a QR code for the URL
 - Reset confirmation modal before clearing
 
+### Spin API
+
+`POST /api/spin` — a public, CORS-open endpoint that rolls a seeded "spin" roulette and returns a ready-to-embed mockup as JSON or a server-rendered PNG.
+
+- Request body (all optional): `pack` — weighted rules (`frames`, `backgrounds`, `styles`, a `tilt`/`shadow` range, `borderRadius` pool, `aspectRatio` list, `watermark`) — plus `media` (image/video `data:` URL, ≤32MB) with `mediaType`, `seed` for deterministic output, and `format: "json" | "png"` (also selectable via `?format=`), `scale` (1–4) and `width`/`height`
+- JSON response `{ scene, seed }`: a fully normalized `EditorScene` you can load straight into the editor
+- PNG response: rendered server-side by headless Chromium (playwright-core) through the `[locale]/spin-render` harness, which runs the exact same pipeline as the client export — API renders match what the editor would produce; results are LRU-cached per (scene, size), and the endpoint falls back to JSON with `image: null` when the renderer is unavailable
+- Deterministic: the same pack + seed always produces the same scene
+
 ---
 
 ## Stack
@@ -214,8 +224,8 @@ npm start
 | Video | @ffmpeg/ffmpeg (client-side WebM→MP4 / GIF / WebP) |
 | AI | @huggingface/transformers (in-browser background removal) |
 | i18n | next-intl (57 locales) |
-| Unit tests | Vitest (1,765 tests, 127 files) |
-| E2E tests | Playwright (120 tests: 75 editor, 8 UX flows, 9 visual regression, 2 a11y, 7 mobile, 19 preview/export parity) |
+| Unit tests | Vitest (2,333 tests, 154 files) |
+| E2E tests | Playwright (128 tests: 75 editor, 11 UX flows, 12 a11y, 9 visual regression, 7 mobile, 4 preview/export parity, 4 spin render, 2 export shadow, 2 i18n, 2 tablet) |
 | Language | TypeScript (strict) |
 
 ---
@@ -223,9 +233,9 @@ npm start
 ## Project layout
 
 ```
-app/                    Next.js router ([locale]/layout, page, error boundary)
+app/                    Next.js router ([locale]/layout, page, error boundary, og/spin-render harness pages) + api/spin route
 proxy.ts                Locale detection middleware for next-intl
-components/editor/      50 React components
+components/editor/      52 React components
   EditorShell            Main orchestrator with keyboard shortcuts
   ControlPanel           Frame, style, media, background, watermark controls
   sections/              Control panel sections (frame, media, position, filters, animation)
@@ -266,7 +276,8 @@ lib/
   media/                 File loading, demo image, palette extraction, AI background removal
   presets/               Background swatches, scene style presets
   hooks/                 Client hooks (commands, shortcuts, frame transform, palette)
-  search/                Frame search utilities
+  shortcuts/             Single source of truth for keyboard shortcuts + rebinding store
+  server/                Server-side PNG renderer for the spin API (headless Chromium)
   types/                 TypeScript interfaces
 messages/               57 locale JSON files (en.json is the source of truth)
 public/devices/          SVG device skins for overlay frames
@@ -282,7 +293,7 @@ tests/
 
 ```bash
 npm run typecheck       # TypeScript strict check
-npm run test            # Vitest (1,765 tests, 127 files)
+npm run test            # Vitest (2,333 tests, 154 files)
 npm run test:coverage   # Unit tests with coverage report
 npm run test:e2e        # Playwright (requires browser install)
 npm run test:vrt        # Visual regression tests
@@ -299,7 +310,7 @@ npm run lint            # ESLint (Next.js core-web-vitals)
 
 ## Keyboard shortcuts
 
-Press `?` in the editor (or click the Shortcuts button) for the in-app cheat sheet. `⌘` is Cmd on macOS, Ctrl on Windows/Linux.
+Press `?` in the editor (or click the Shortcuts button) for the in-app cheat sheet. `⌘` is Cmd on macOS, Ctrl on Windows/Linux. Most shortcuts are rebindable — click the pencil icon on a row and press the new combo to record it; overrides persist per browser and remap instantly.
 
 | Shortcut | Action |
 |----------|--------|
@@ -314,6 +325,11 @@ Press `?` in the editor (or click the Shortcuts button) for the in-app cheat she
 | `⌘E` / `Ctrl+E` | Export PNG |
 | `⇧⌘C` / `Ctrl+⇧C` | Copy PNG to clipboard |
 | `⌘C` / `Ctrl+C` | Copy selected annotation / frame instance |
+| `⇧⌘T` / `Ctrl+⇧T` | Add text annotation |
+| `⇧⌘I` / `Ctrl+⇧I` | Add arrow annotation |
+| `⇧⌘R` / `Ctrl+⇧R` | Add rectangle annotation |
+| `⇧⌘O` / `Ctrl+⇧O` | Add circle annotation |
+| `⇧⌘B` / `Ctrl+⇧B` | Add blur-region annotation |
 | `⇧⌘E` / `Ctrl+⇧E` | Export MP4 |
 | `⇧⌘G` / `Ctrl+⇧G` | Export GIF |
 | `⇧⌘W` / `Ctrl+⇧W` | Export WebM |
@@ -326,6 +342,7 @@ Press `?` in the editor (or click the Shortcuts button) for the in-app cheat she
 | `⌘D` / `Ctrl+D` | Duplicate active layer |
 | `⌘↑` / `⌘↓` | Move active layer up/down |
 | `⌘[` / `⌘]` | Select previous / next layer |
+| `⌘1` / `⌘2` / `⌘3` | Switch to the Layers / Annotations / History panel |
 | `F` | Toggle full-screen preview |
 | `Esc` | Exit full-screen preview |
 | `R` | Reset to defaults |
