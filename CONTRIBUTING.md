@@ -54,7 +54,7 @@ tests/e2e/                  Playwright e2e tests (editor, UX, visual regression,
 ### Path alias
 
 The project uses `@/` as an alias for the project root (configured in
-`tsconfig.json` and `vitest.config.ts`). Import like:
+`tsconfig.json` and `vitest.config.mts`). Import like:
 
 ```ts
 import { normalizeScene } from "@/lib/state/normalizeScene";

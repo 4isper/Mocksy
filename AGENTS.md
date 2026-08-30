@@ -21,7 +21,7 @@ Free browser-based mockup editor (Next.js 16 + React 19 + TypeScript). Media is 
 
 ### Path alias
 
-`@/` maps to the project root (configured in `tsconfig.json` and `vitest.config.ts`). Always use `@/lib/...` imports, never relative paths above one level.
+`@/` maps to the project root (configured in `tsconfig.json` and `vitest.config.mts`). Always use `@/lib/...` imports, never relative paths above one level.
 
 ### Generated files
 
