@@ -597,6 +597,25 @@ describe("exportVideo orchestration", () => {
     expect(canvas.height).toBe(Math.max(360, Math.round((800 * 9 / 16) * 1.5)));
   });
 
+  it("caps the auto-sized canvas so high-DPI portrait scenes don't blow up the encode", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+
+    // Portrait 9:16 scene at medium quality (dpr 2 → resolvePixelRatio 1.5)
+    // would otherwise be 1600×2134 — a multi-megapixel canvas that makes the
+    // WASM H.264 encode take minutes. The long edge must be capped, keeping
+    // the aspect ratio.
+    const scene = { ...sceneWithLayer({ mediaUrl: null, mediaType: "none" }), aspectRatio: "9 / 16" };
+    await exportWebm(scene, undefined, undefined, undefined, undefined, undefined, undefined);
+    expect(canvas.width).toBeLessThanOrEqual(1440);
+    expect(canvas.height).toBeLessThanOrEqual(1440);
+    // Aspect ratio preserved (9:16 → h > w).
+    expect(canvas.height).toBeGreaterThan(canvas.width);
+    expect(canvas.width / canvas.height).toBeCloseTo(9 / 16, 2);
+  });
+
   it("transcodes an animated WebP through FFmpeg", async () => {
     const preview = fakePreview();
     const canvas = fakeCanvas();

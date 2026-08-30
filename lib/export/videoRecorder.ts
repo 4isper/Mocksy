@@ -85,6 +85,38 @@ export async function waitForPresentedFrame(video: HTMLVideoElement, timeoutMs =
   });
 }
 
+/** Waits for playback to genuinely begin producing frames after play(). The
+ *  first frames of a just-started video can be a blank/still poster while the
+ *  decoder spins up; recording from that point would bake the blank head into
+ *  the export. Resolves once currentTime advances meaningfully past `from`, or
+ *  after `timeoutMs` (degrade to today's behavior for damaged inputs). */
+export function waitForPlayback(
+  video: HTMLVideoElement,
+  from: number,
+  timeoutMs = 600
+): Promise<void> {
+  return new Promise((resolve) => {
+    const done = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    const timer = setTimeout(done, timeoutMs);
+    const poll = () => {
+      // Rate-check: once we're clearly past the starting position the clock is
+      // ticking and real frames are being produced. A tiny margin keeps a
+      // frozen-then-plays quirk from resolving prematurely. Paused is NOT a
+      // success state — a video that hasn't begun the transition to playing is
+      // still blank; only the timeout backstops that case.
+      if (Math.abs(video.currentTime - from) > 0.06) {
+        done();
+        return;
+      }
+      setTimeout(poll, 20);
+    };
+    poll();
+  });
+}
+
 export async function recordCanvasToWebm(
   scene: EditorScene,
   canvas: HTMLCanvasElement,
@@ -113,12 +145,17 @@ export async function recordCanvasToWebm(
   const fps = 30;
   // Attach the canvas to the DOM (off-screen) before capturing: some browsers
   // won't deliver frames from captureStream() on a detached canvas, which
-  // yields an empty recording.
+  // yields an empty recording. A *zero* opacity is also risky: the compositor
+  // may treat a fully transparent element as nothing to present and stall the
+  // first frames the stream reports — the blank lead we're trying to banish.
+  // A tiny non-zero opacity keeps the canvas composited (frames flow) while
+  // remaining visually invisible.
   canvas.style.position = "fixed";
   canvas.style.left = "-9999px";
   canvas.style.top = "0";
-  canvas.style.opacity = "0";
+  canvas.style.opacity = "0.004";
   canvas.style.pointerEvents = "none";
+  canvas.style.zIndex = "-1";
   document.body.appendChild(canvas);
 
   // Resolve the active layer before stream setup so the audio capture branch
@@ -210,9 +247,17 @@ export async function recordCanvasToWebm(
 
     const chunks: BlobPart[] = [];
     const mimeType = chooseWebmMimeType();
+    // A generous bitrate for the lossy VP8/VP9 intermediate. The webm is only a
+    // stepping stone to the MP4, and the browser default is low, so re-encoding
+    // a low-quality intermediate through H.264 can't recover the lost detail —
+    // it just passes the blockiness along. Capture clean, let the final encode
+    // set the real quality/size tradeoff.
+    const intermediateBitsPerSecond = 16_000_000;
     let recorder: MediaRecorder;
     try {
-      recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType, videoBitsPerSecond: intermediateBitsPerSecond })
+        : new MediaRecorder(stream);
     } catch {
       // Engines that can't record any requested WebM codec (e.g. Safari)
       // throw NotSupportedError from the constructor; fall back to the
@@ -238,7 +283,21 @@ export async function recordCanvasToWebm(
       if (Math.abs(media.currentTime - start) > 0.001) media.currentTime = start;
       await waitForSeek(media, start);
       await media.play().catch(() => null);
+      // Playback startup latency: wait until the clock is actually advancing
+      // (poster frame ≠ playing frame) so the frame we render next is a real
+      // frame and not the still blank poster.
+      await waitForPlayback(media, start);
     }
+
+    // Multi-frame scene: every frame-instance video is drawn simultaneously via
+    // drawImage. Each must be past its own playback startup latency too, or the
+    // shared poster/still frame lands as a blank head. Only then require a
+    // presented frame. waiting from each video's *current* position confirms its
+    // own clock is genuinely advancing, independent of per-layer trim values.
+    const videos = allVideos as HTMLVideoElement[];
+    await Promise.all(
+      videos.map((v) => waitForPlayback(v, v.currentTime))
+    );
 
     // Ensure every video source that will be drawn has presented a frame BEFORE
     // the recorder starts, so the recording doesn't open with blank/black
@@ -248,6 +307,37 @@ export async function recordCanvasToWebm(
     // cap keeps a damaged file from hanging the export — it degrades to today's
     // head-black output.
     await Promise.all(allVideos.map((v) => waitForPresentedFrame(v)));
+
+    // Paint the prepared media again so the recorder's very first captured
+    // frame reflects the now-presented video, not the pre-play warm-up draw.
+    // The recorder's first chunk reflects whatever the capture stream last
+    // sampled. Frame sampling runs on its own cadence (~1000/fps ms), so a
+    // freshly-painted canvas can be missed until the next sample — leaving
+    // the blank pre-media warm-up in the opening frames. 'requestFrame()'
+    // patches this on Chromium; a settle-wait of one sampling period is the
+    // portable equivalent (Safari/Firefox) that guarantees the recorder
+    // starts reading a canvas that already shows the media.
+    try {
+      const sampled = sampleVideoTransform(activeForCapture ?? scene.layers[0], 0);
+      const transform: RenderTransform = { zoom: sampled.zoom, offsetX: sampled.x, offsetY: sampled.y };
+      renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId, watermarkImage);
+    } catch {
+      // A render exception is still caught by the tick loop; don't abort here.
+    }
+    // Force the freshly-painted frame into the capture stream immediately.
+    // Chromium-only: CanvasCaptureMediaStreamTrack.requestFrame() reads the
+    // canvas bitmap straight away. On engines without it this is a no-op, so
+    // the settle-wait below is what actually guarantees a non-blank head.
+    if (stream && typeof stream.getVideoTracks === "function") {
+      const frameTrack = stream.getVideoTracks()[0] as (MediaStreamTrack & { requestFrame?: () => void }) | undefined;
+      frameTrack?.requestFrame?.();
+    }
+    // One full sampling period guarantees the capture stream has already
+    // taken a frame of the freshly-painted canvas before the recorder's
+    // first chunk is opened. A plain timer is more robust than rAF here:
+    // it fires even in a hidden/throttled tab and can't resolve early,
+    // before the sampler at 1000/fps cadence has seen the paint.
+    await new Promise<void>((resolve) => setTimeout(resolve, Math.ceil(1000 / fps) + 32));
 
     await new Promise<void>((resolve, reject) => {
       let raf = 0;
@@ -279,15 +369,6 @@ export async function recordCanvasToWebm(
           bgGain.gain.setValueAtTime(1, t0 + Math.max(fadeIn, durationSec - fadeOut));
           bgGain.gain.linearRampToValueAtTime(0.0001, t0 + durationSec);
         }
-      }
-      // Paint the prepared media again so the recorder's very first captured
-      // frame reflects the now-presented video, not the pre-play warm-up draw.
-      try {
-        const sampled = sampleVideoTransform(activeForCapture ?? scene.layers[0], 0);
-        const transform: RenderTransform = { zoom: sampled.zoom, offsetX: sampled.x, offsetY: sampled.y };
-        renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId, watermarkImage);
-      } catch {
-        // A render exception is still caught by the tick loop; don't abort here.
       }
       recorder.start(200);
 

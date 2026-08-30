@@ -1,21 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { waitForDecodedFrame, waitForPresentedFrame, waitForSeek } from "@/lib/export/videoRecorder";
+import { waitForDecodedFrame, waitForPlayback, waitForPresentedFrame, waitForSeek } from "@/lib/export/videoRecorder";
 
 interface TestVideo {
   readyState: number;
   videoWidth: number;
   currentTime: number;
+  paused: boolean;
   addEventListener: ReturnType<typeof vi.fn>;
   removeEventListener: ReturnType<typeof vi.fn>;
   fire: (type: string) => void;
 }
 
-function video(readyState: number, opts: { currentTime?: number; videoWidth?: number } = {}): HTMLVideoElement {
+function video(readyState: number, opts: { currentTime?: number; videoWidth?: number; paused?: boolean } = {}): HTMLVideoElement {
   const handlers: Record<string, () => void> = {};
   const el = {
     readyState,
     videoWidth: opts.videoWidth ?? 0,
     currentTime: opts.currentTime ?? 0,
+    paused: opts.paused ?? false,
     addEventListener: vi.fn((type: string, cb: () => void) => {
       handlers[type] = cb;
     }),
@@ -110,6 +112,42 @@ describe("waitForSeek", () => {
     expect(settled).toBe(true);
   });
 });
+
+describe("waitForPlayback", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("resolves once the clock has advanced past the starting position", async () => {
+    const v = video(2, { currentTime: 0 });
+    const promise = waitForPlayback(v, 0).then(() => true);
+    // advanceTime() must be awaited *before* mutating currentTime so the poll
+    // has a chance to run.
+    await vi.advanceTimersByTimeAsync(1);
+    (v as unknown as TestVideo).currentTime = 0.1;
+    await vi.advanceTimersByTimeAsync(25);
+    await expect(promise).resolves.toBe(true);
+  });
+
+  it("does not resolve while the clock is frozen (still blank), only at the timeout cap", async () => {
+    const v = video(2, { currentTime: 0, paused: true });
+    let settled = false;
+    const promise = waitForPlayback(v, 0, 200).then(() => {
+      settled = true;
+    });
+    // A whole wall of freeze — no playback advance → must NOT resolve.
+    await vi.advanceTimersByTimeAsync(150);
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    await vi.advanceTimersByTimeAsync(100);
+    await promise;
+    expect(settled).toBe(true);
+  });
+});
+
 
 describe("waitForPresentedFrame", () => {
   beforeEach(() => {

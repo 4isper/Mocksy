@@ -38,7 +38,7 @@ vi.mock("@/lib/export/exportVideoCore", () => ({
   captureWebmWithRetry: (...args: unknown[]) => captureWebmWithRetry(...args),
   getFfmpegInstance: vi.fn(),
   cleanupFfmpegTempFiles: vi.fn(),
-  QUALITY: { low: { qscale: 10 }, medium: { qscale: 5 }, high: { qscale: 2 } },
+  QUALITY: { low: { crf: 26 }, medium: { crf: 20 }, high: { crf: 16 } },
   activeLayerOf: (scene: EditorScene, id?: string | null) =>
     scene.layers.find((l) => l.id === (id ?? scene.activeLayerId)) ?? scene.layers[0] ?? null
 }));

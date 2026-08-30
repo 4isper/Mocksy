@@ -155,9 +155,11 @@ export async function exportVideoBatchZip(
           videoCore.QUALITY.medium;
         const code = await ffmpeg.exec([
           "-i", inputName,
-          "-c:v", "mpeg4",
-          "-q:v", String(quality.qscale),
+          "-c:v", "libx264",
+          "-preset", "ultrafast",
+          "-crf", String(quality.crf),
           "-pix_fmt", "yuv420p",
+          "-movflags", "+faststart",
           outputName
         ]);
         if (code !== 0) throw new Error("Video encoding failed.");

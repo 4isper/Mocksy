@@ -70,11 +70,19 @@ export async function exportVideo(
   await ffmpeg.writeFile(inputName, new Uint8Array(await webmBlob.arrayBuffer()));
   onProgress?.(50);
   signal?.throwIfAborted();
+  // H.264 (libx264, bundled in @ffmpeg/core) with CRF quality control: far
+  // smaller files with better quality than the legacy mpeg4 encoder. The WASM
+  // build is single-threaded, so encode time is the dominant cost — an
+  // ultrafast preset is the biggest safe lever (CRF, not the preset, governs
+  // quality). +faststart moves the moov atom to the front so the video starts
+  // streaming/playing immediately.
   const code = await ffmpeg.exec([
     "-i", inputName,
-    "-c:v", "mpeg4",
-    "-q:v", String(quality.qscale),
+    "-c:v", "libx264",
+    "-preset", "ultrafast",
+    "-crf", String(quality.crf),
     "-pix_fmt", "yuv420p",
+    "-movflags", "+faststart",
     outputName,
   ]);
   // FFmpeg returns 0 on success; a non-zero code means the encode failed

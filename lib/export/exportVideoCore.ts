@@ -56,8 +56,25 @@ export async function captureWebm(
     ? fitRatioForCustomSize(scene, customSize)
     : resolvePixelRatio(exportQuality) * (typeof scale === "number" && scale > 0 ? scale / 2 : 1);
   const canvas = document.createElement("canvas");
-  canvas.width = Math.max(hasCustomSize ? 1 : 640, Math.round(hasCustomSize ? customSize.width : base.width * pixelRatio));
-  canvas.height = Math.max(hasCustomSize ? 1 : 360, Math.round(hasCustomSize ? customSize.height : base.height * pixelRatio));
+  let canvasW = Math.max(hasCustomSize ? 1 : 640, Math.round(hasCustomSize ? customSize.width : base.width * pixelRatio));
+  let canvasH = Math.max(hasCustomSize ? 1 : 360, Math.round(hasCustomSize ? customSize.height : base.height * pixelRatio));
+  // Cap the auto-sized video canvas so a high-DPI scene doesn't hand the WASM
+  // H.264 encoder a 2-3k (multi-megapixel) frame — a 4-minute encode for a
+  // short clip. Full HD's long edge is more than enough detail for a moving
+  // mockup and encodes in a fraction of the time. Explicit custom resolutions
+  // are respected as the user chose them exactly.
+  if (!hasCustomSize) {
+    const maxEdge = 1440;
+    if (canvasW >= canvasH && canvasW > maxEdge) {
+      canvasH = Math.round((canvasH * maxEdge) / canvasW);
+      canvasW = maxEdge;
+    } else if (canvasH > canvasW && canvasH > maxEdge) {
+      canvasW = Math.round((canvasW * maxEdge) / canvasH);
+      canvasH = maxEdge;
+    }
+  }
+  canvas.width = canvasW;
+  canvas.height = canvasH;
 
   // When exporting a video scene we create a detached <video> from the active
   // video layer's URL; track it so we can stop/remove it and free its blob: URL

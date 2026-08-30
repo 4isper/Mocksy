@@ -70,12 +70,12 @@ export function chooseWebmMimeType(): string | null {
 
 /**
  * Per-quality export tuning. fps and the VPX/webm capture rate stay fixed; the
- * MP4 encode quality (mpeg4 has no real bitrate control, so we use -q:v, lower
- * is better) and the capture resolution scale drive the output size. "high"
- * keeps the full device-pixel-ratio canvas; lower tiers downscale it.
+ * MP4 encode quality (H.264 CRF, lower is better) and the capture resolution
+ * scale drive the output size. "high" keeps the full device-pixel-ratio canvas;
+ * lower tiers downscale it.
  */
-export const QUALITY: Record<VideoQuality, { qscale: number; scale: number }> = {
-  low: { qscale: 10, scale: 0.5 },
-  medium: { qscale: 5, scale: 0.75 },
-  high: { qscale: 2, scale: 1 }
+export const QUALITY: Record<VideoQuality, { crf: number; scale: number }> = {
+  low: { crf: 26, scale: 0.5 },
+  medium: { crf: 20, scale: 0.75 },
+  high: { crf: 16, scale: 1 }
 };
