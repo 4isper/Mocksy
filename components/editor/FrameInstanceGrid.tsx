@@ -386,7 +386,7 @@ export function FrameInstanceGrid({
                           loop={layer.videoLoop}
                           autoPlay={layer.videoAutoplay}
                           crossOrigin="anonymous"
-                          style={{ ...instCss.mediaStyle, objectFit: "contain", backgroundColor: "var(--panel-solid)", cursor: "grab", ...blendCss }}
+                          style={{ ...instCss.mediaStyle, backgroundColor: "var(--panel-solid)", cursor: "grab", ...blendCss }}
                           onPointerDown={() => selectLayer(layer.id)}
                           onLoadedData={(e) => {
                             setMediaLoading(false);

@@ -128,7 +128,7 @@ export function SingleFrameView({
                     controls
                     crossOrigin="anonymous"
                     data-layer-media={layer.id}
-                    style={{ ...sceneCss.mediaStyle, objectFit: "contain", backgroundColor: "var(--panel-solid)", ...blendCss }}
+                    style={{ ...sceneCss.mediaStyle, backgroundColor: "var(--panel-solid)", ...blendCss }}
                     onPointerDown={() => selectLayer(layer.id)}
                     onLoadedMetadata={(e) => {
                       const duration = e.currentTarget.duration || 0;
