@@ -386,7 +386,7 @@
     "ungroup": "আনগ্রুপ",
     "gradientType": "গ্র্যাডিয়েন্টের ধরন",
     "layerActions": "স্তরের অ্যাকশন",
-    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
+    "uploadMediaShortHint": "⌘/Ctrl চেপে ধরে রাখুন একাধিক বেছে নিতে — প্রতিটি পরের খালি ডিভাইসটি পূরণ করবে"
   },
   "frame": {
     "none": "কোনোটি নয়",

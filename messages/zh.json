@@ -386,7 +386,7 @@
     "ungroup": "取消编组",
     "gradientType": "渐变类型",
     "layerActions": "图层操作",
-    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
+    "uploadMediaShortHint": "按住 ⌘/Ctrl 可选择多个 — 每个文件会填充下一个空白设备"
   },
   "frame": {
     "none": "无",

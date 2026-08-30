@@ -386,7 +386,7 @@
     "ungroup": "グループ解除",
     "gradientType": "グラデーションの種類",
     "layerActions": "レイヤー操作",
-    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
+    "uploadMediaShortHint": "⌘/Ctrl を押しながら複数選択 — 各ファイルが次の空きデバイスに入ります"
   },
   "frame": {
     "none": "なし",

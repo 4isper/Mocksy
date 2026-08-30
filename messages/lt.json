@@ -386,7 +386,7 @@
     "ungroup": "Išgrupuoti",
     "gradientType": "Gradiento tipas",
     "layerActions": "Sluoksnio veiksmai",
-    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
+    "uploadMediaShortHint": "Laikykite ⌘/Ctrl paspaudę, kad pasirinktumėte kelis — kiekvienas užpildo kitą laisvą įrenginį"
   },
   "frame": {
     "none": "Nėra",

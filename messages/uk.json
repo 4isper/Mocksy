@@ -177,7 +177,7 @@
     "uploadedMediaAlt": "Завантажено media",
     "uploadError": "Kon dat файл niet laden.",
     "uploadMedia": "Media завантажити",
-    "uploadMediaShort": "Завантажити зображення of video",
+    "uploadMediaShort": "Завантажити зображення або відео",
     "videoLabel": "Відео",
     "watermark": "Водяний знак",
     "watermarkPosition": "Watermerkpositie",
@@ -386,7 +386,7 @@
     "ungroup": "Розгрупувати",
     "gradientType": "Тип градієнта",
     "layerActions": "Дії на шар",
-    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
+    "uploadMediaShortHint": "Затисніть ⌘/Ctrl, щоб вибрати кілька — кожне заповнить наступний порожній пристрій"
   },
   "frame": {
     "none": "Немає",

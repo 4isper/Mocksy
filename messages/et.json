@@ -386,7 +386,7 @@
     "ungroup": "Lõhu rühm",
     "gradientType": "Gradiendi tüüp",
     "layerActions": "Kihi toimingud",
-    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
+    "uploadMediaShortHint": "Hoidke ⌘/Ctrl all, et valida mitu — igaüks täidab järgmise vaba seadme"
   },
   "frame": {
     "none": "Mitte ükski",

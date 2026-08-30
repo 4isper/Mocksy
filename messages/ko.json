@@ -386,7 +386,7 @@
     "ungroup": "그룹 해제",
     "gradientType": "그라데이션 유형",
     "layerActions": "레이어 작업",
-    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
+    "uploadMediaShortHint": "⌘/Ctrl을 누른 채 여러 개를 선택하세요 — 각 파일이 다음 빈 기기를 채웁니다"
   },
   "frame": {
     "none": "없음",

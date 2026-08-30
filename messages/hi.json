@@ -386,7 +386,7 @@
     "ungroup": "समूह अलग करें",
     "gradientType": "ग्रेडिएंट प्रकार",
     "layerActions": "परत क्रियाएँ",
-    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
+    "uploadMediaShortHint": "⌘/Ctrl दबाकर रखें और कई चुनें — हर एक अगला खाली डिवाइस भरेगा"
   },
   "frame": {
     "none": "कोई नहीं",

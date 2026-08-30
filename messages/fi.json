@@ -386,7 +386,7 @@
     "ungroup": "Poista ryhmitys",
     "gradientType": "Gradientin tyyppi",
     "layerActions": "Kerroksen toiminnot",
-    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
+    "uploadMediaShortHint": "Pidä ⌘/Ctrl pohjassa valitaksesi useita — jokainen täyttää seuraavan vapaan laitteen"
   },
   "frame": {
     "none": "Ei yhtään",

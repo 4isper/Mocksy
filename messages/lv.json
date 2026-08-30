@@ -386,7 +386,7 @@
     "ungroup": "Atgrupēt",
     "gradientType": "Pārejas veids",
     "layerActions": "Slāņa darbības",
-    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
+    "uploadMediaShortHint": "Turiet ⌘/Ctrl nospiestu, lai izvēlētos vairākus — katrs aizpilda nākamo brīvo ierīci"
   },
   "frame": {
     "none": "Nekur",

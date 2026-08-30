@@ -386,7 +386,7 @@
     "ungroup": "فك التجميع",
     "gradientType": "نوع التدرج",
     "layerActions": "إجراءات الطبقة",
-    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
+    "uploadMediaShortHint": "اضغط مطولاً على ⌘/Ctrl لاختيار عدة ملفات — يملأ كل منها الجهاز الفارغ التالي"
   },
   "frame": {
     "none": "بلا",

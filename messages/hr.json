@@ -386,7 +386,7 @@
     "ungroup": "Razdruži",
     "gradientType": "Vrsta gradijenta",
     "layerActions": "Akcije sloja",
-    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
+    "uploadMediaShortHint": "Držite ⌘/Ctrl pritisnutim da odaberete više — svaki ispunjava sljedeći prazan uređaj"
   },
   "frame": {
     "none": "Nijedan",

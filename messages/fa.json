@@ -386,7 +386,7 @@
     "ungroup": "تفکیک گروه",
     "gradientType": "نوع گرادیان",
     "layerActions": "عملیات لایه",
-    "uploadMediaShortHint": "Hold ⌘/Ctrl to pick several — each fills the next empty device"
+    "uploadMediaShortHint": "⌘/Ctrl را نگه دارید تا چند مورد انتخاب کنید — هر مورد دستگاه خالی بعدی را پر می‌کند"
   },
   "frame": {
     "none": "هیچ",
