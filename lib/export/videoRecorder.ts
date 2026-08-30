@@ -27,6 +27,64 @@ export async function waitForDecodedFrame(videos: HTMLVideoElement[], timeoutMs 
   });
 }
 
+interface RfcVideo {
+  requestVideoFrameCallback: (callback: VideoFrameRequestCallback) => number;
+  cancelVideoFrameCallback: (handle: number) => void;
+}
+
+/** Waits until a <video>'s async seek to `time` has completed, so a later
+ *  drawImage shows the trimmed start instead of the pre-load poster. Resolves
+ *  without waiting when the seek isn't actually needed or never lands within
+ *  `timeoutMs`. */
+export function waitForSeek(video: HTMLVideoElement, time: number, timeoutMs = 3000): Promise<void> {
+  return new Promise((resolve) => {
+    if (video.readyState === 0 || Math.abs(video.currentTime - time) < 0.001) {
+      resolve();
+      return;
+    }
+    let timer: ReturnType<typeof setTimeout> | 0 = 0;
+    const done = () => {
+      clearTimeout(timer);
+      video.removeEventListener("seeked", done);
+      resolve();
+    };
+    timer = setTimeout(done, timeoutMs);
+    video.addEventListener("seeked", done);
+  });
+}
+
+/** Waits until a <video> is actually displaying a decodable frame with non-zero
+ *  dimensions, so drawImage returns real pixels instead of the black rectangle
+ *  of an unpainted element. readyState >= 2 alone isn't enough: it can be
+ *  satisfied by the position the element was pre-load-seeked to, before the
+ *  frame at the current playhead has been presented. Prefers
+ *  requestVideoFrameCallback, falling back to a short poll. */
+export async function waitForPresentedFrame(video: HTMLVideoElement, timeoutMs = 3000): Promise<void> {
+  const deadline = performance.now() + timeoutMs;
+  if (typeof (video as RfcVideo).requestVideoFrameCallback === "function") {
+    await new Promise<void>((resolve) => {
+      const onFrame = () => {
+        const rfc = video as RfcVideo;
+        if (typeof rfc.cancelVideoFrameCallback === "function") rfc.cancelVideoFrameCallback(handle);
+        resolve();
+      };
+      const handle = (video as RfcVideo).requestVideoFrameCallback(onFrame);
+      setTimeout(resolve, timeoutMs);
+    });
+    return;
+  }
+  await new Promise<void>((resolve) => {
+    const poll = () => {
+      if (performance.now() >= deadline || (video.readyState >= 2 && video.videoWidth > 0)) {
+        resolve();
+        return;
+      }
+      setTimeout(poll, 25);
+    };
+    poll();
+  });
+}
+
 export async function recordCanvasToWebm(
   scene: EditorScene,
   canvas: HTMLCanvasElement,
@@ -169,22 +227,27 @@ export async function recordCanvasToWebm(
     const isVideo = media instanceof HTMLVideoElement;
     const duration = computeCaptureDuration(scene, activeLayerId);
 
+    const allVideos = [media, ...(layerMedias?.values() ?? [])].filter((m): m is HTMLVideoElement => m instanceof HTMLVideoElement);
     if (media instanceof HTMLVideoElement) {
-      media.currentTime = start;
       media.playbackRate = Math.max(0.5, Math.min(2, activeForCapture?.playbackSpeed ?? 1));
       media.muted = activeForCapture?.videoMuted !== false;
+      // Seek to the trim start, then begin playback BEFORE the recorder starts:
+      // MediaRecorder captures the live canvas stream the moment start() runs,
+      // and anything painted before the video is playing/presented would land as
+      // a blank frame at the head of the export.
+      if (Math.abs(media.currentTime - start) > 0.001) media.currentTime = start;
+      await waitForSeek(media, start);
+      await media.play().catch(() => null);
     }
 
-    // Ensure every video source that will be drawn has decoded a frame BEFORE
-    // the recorder starts. MediaRecorder begins capturing the live stream the
-    // moment start() is called, and drawImage of an undecoded <video> renders
-    // a black rectangle — the "black flash" at the head of video exports (for
-    // short clips, plainly wrong leading frames). Loading is already kicked off
-    // by the caller; this only waits for it to land. The cap keeps a damaged
-    // file from hanging the export — it degrades to today's head-black output.
-    await waitForDecodedFrame(
-      [media, ...(layerMedias?.values() ?? [])].filter((m): m is HTMLVideoElement => m instanceof HTMLVideoElement)
-    );
+    // Ensure every video source that will be drawn has presented a frame BEFORE
+    // the recorder starts, so the recording doesn't open with blank/black
+    // frames. drawImage of a video whose frame hasn't been presented renders a
+    // black rectangle — the "black flash" at the head of video exports. Loading
+    // is already kicked off by the caller; this only waits for it to land. The
+    // cap keeps a damaged file from hanging the export — it degrades to today's
+    // head-black output.
+    await Promise.all(allVideos.map((v) => waitForPresentedFrame(v)));
 
     await new Promise<void>((resolve, reject) => {
       let raf = 0;
@@ -217,12 +280,18 @@ export async function recordCanvasToWebm(
           bgGain.gain.linearRampToValueAtTime(0.0001, t0 + durationSec);
         }
       }
+      // Paint the prepared media again so the recorder's very first captured
+      // frame reflects the now-presented video, not the pre-play warm-up draw.
+      try {
+        const sampled = sampleVideoTransform(activeForCapture ?? scene.layers[0], 0);
+        const transform: RenderTransform = { zoom: sampled.zoom, offsetX: sampled.x, offsetY: sampled.y };
+        renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId, watermarkImage);
+      } catch {
+        // A render exception is still caught by the tick loop; don't abort here.
+      }
       recorder.start(200);
 
       const startedAt = performance.now();
-      if (media instanceof HTMLVideoElement) {
-        media.play().catch(() => null);
-      }
 
       // rAF pauses entirely while the tab is hidden, which would stall the
       // stop conditions and balloon the recording with frozen frames until
