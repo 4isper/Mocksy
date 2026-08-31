@@ -443,6 +443,7 @@ describe("exportHtml", () => {
     expect(link.href).toBe("blob:mock");
     expect(link.download).toBe("mocksy-export.html");
     expect(link.click).toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(5000);
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:mock");
   });
 });

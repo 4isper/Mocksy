@@ -280,9 +280,11 @@ export async function exportImage(
   /** Absolute output size in pixels; overrides `scale` when set. */
   customSize?: ExportSize | null,
   activeLayerId: string | null = scene.activeLayerId
-) {
+): Promise<boolean> {
   const blob = await renderSceneToPngBlob(scene, containerId, onError, scale, customSize, activeLayerId);
-  if (blob) downloadBlob(blob, `${filename}.png`);
+  if (!blob) return false;
+  downloadBlob(blob, `${filename}.png`);
+  return true;
 }
 
 /**
@@ -300,9 +302,11 @@ export async function exportWebp(
   /** Absolute output size in pixels; overrides `scale` when set. */
   customSize?: ExportSize | null,
   activeLayerId: string | null = scene.activeLayerId
-) {
+): Promise<boolean> {
   const blob = await renderSceneToImageBlob(scene, containerId, "image/webp", onError, scale, customSize, activeLayerId);
-  if (blob) downloadBlob(blob, `${filename}.webp`);
+  if (!blob) return false;
+  downloadBlob(blob, `${filename}.webp`);
+  return true;
 }
 
 /**
@@ -320,9 +324,11 @@ export async function exportJpeg(
   /** Absolute output size in pixels; overrides `scale` when set. */
   customSize?: ExportSize | null,
   activeLayerId: string | null = scene.activeLayerId
-) {
+): Promise<boolean> {
   const blob = await renderSceneToImageBlob(scene, containerId, "image/jpeg", onError, scale, customSize, activeLayerId);
-  if (blob) downloadBlob(blob, `${filename}.jpg`);
+  if (!blob) return false;
+  downloadBlob(blob, `${filename}.jpg`);
+  return true;
 }
 
 /**
@@ -338,13 +344,14 @@ export async function exportAvif(
   scale?: number,
   customSize?: ExportSize | null,
   activeLayerId: string | null = scene.activeLayerId
-) {
+): Promise<boolean> {
   const blob = await renderSceneToImageBlob(scene, containerId, "image/avif", onError, scale, customSize, activeLayerId);
   if (!blob) {
     onError?.("AVIF export is not supported in this browser. Try Chrome or Edge.");
-    return;
+    return false;
   }
   downloadBlob(blob, `${filename}.avif`);
+  return true;
 }
 
 /**

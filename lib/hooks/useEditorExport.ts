@@ -90,6 +90,7 @@ export function useEditorExport(
 
   // Transient status messages auto-dismiss so a success/error toast doesn't
   // stay pinned in the toolbar forever after a copy/export/share action.
+  // (Single owner for the copyStatus timer — a second effect below would race.)
   useEffect(() => {
     if (!copyStatus) return;
     const id = setTimeout(() => setCopyStatus(null), 5000);
@@ -143,7 +144,9 @@ export function useEditorExport(
   const handleExportPng = useCallback(() => {
     setExportError(null);
     void Promise.resolve(exportImage(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId)).then(
-      () => setCopyStatus(t("editor.exported"))
+      (ok) => {
+        if (ok) setCopyStatus(t("editor.exported"));
+      }
     );
   }, [scene, exportScale, customExportSize, activeLayerId, t]);
 
@@ -185,21 +188,27 @@ export function useEditorExport(
   const handleExportJpeg = useCallback(() => {
     setExportError(null);
     void Promise.resolve(exportJpeg(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId)).then(
-      () => setCopyStatus(t("editor.exported"))
+      (ok) => {
+        if (ok) setCopyStatus(t("editor.exported"));
+      }
     );
   }, [scene, exportScale, customExportSize, activeLayerId, t]);
 
   const handleExportWebp = useCallback(() => {
     setExportError(null);
     void Promise.resolve(exportWebp(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId)).then(
-      () => setCopyStatus(t("editor.exported"))
+      (ok) => {
+        if (ok) setCopyStatus(t("editor.exported"));
+      }
     );
   }, [scene, exportScale, customExportSize, activeLayerId, t]);
 
   const handleExportAvif = useCallback(() => {
     setExportError(null);
     void Promise.resolve(exportAvif(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId)).then(
-      () => setCopyStatus(t("editor.exported"))
+      (ok) => {
+        if (ok) setCopyStatus(t("editor.exported"));
+      }
     );
   }, [scene, exportScale, customExportSize, activeLayerId, t]);
 
@@ -232,7 +241,9 @@ export function useEditorExport(
       exportPdf(scene, "preview-canvas", "mocksy-export", setExportError, exportScale, customExportSize, activeLayerId, (key) => {
         setExportWarning(t(key as Parameters<typeof t>[0]));
       })
-    ).then(() => setCopyStatus(t("editor.exported")));
+    ).then((ok) => {
+      if (ok) setCopyStatus(t("editor.exported"));
+    });
   }, [scene, exportScale, customExportSize, activeLayerId, t]);
 
   const handleExportZip = useCallback(async () => {
@@ -417,14 +428,6 @@ export function useEditorExport(
     onExportDialogClose();
     void handleCopyPng();
   }, [onExportDialogClose, handleCopyPng]);
-
-  // Clear the transient "Copied" status after a moment so it doesn't
-  // linger in the toolbar like the persistent Saved indicator.
-  useEffect(() => {
-    if (!copyStatus) return;
-    const timeout = setTimeout(() => setCopyStatus(null), 1500);
-    return () => clearTimeout(timeout);
-  }, [copyStatus]);
 
   return {
     videoExportStatus,

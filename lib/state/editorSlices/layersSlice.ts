@@ -86,6 +86,10 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
   const locked = (s: EditorStoreState) => isLayerLocked(s.scene, s.activeLayerId);
   return {
     setMedia: (mediaUrl, mediaType, mediaName = null, targetLayerId = null) => {
+      // Acceptance is resolved inside the updater; the recent-media side
+      // effect must only run when the swap actually happened — a drop on a
+      // locked layer is rejected and must not pollute the recent list.
+      let accepted = false;
       set((s) => {
         // A pinned target layer (captured before an async decode) wins even if
         // the user switched the active layer while the media loaded — otherwise
@@ -95,6 +99,7 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         const pinned = targetLayerId != null ? s.scene.layers.find((l) => l.id === targetLayerId) : undefined;
         if (pinned?.locked === true) return {};
         if (!pinned && locked(s)) return {};
+        accepted = true;
         const layer = pinned ?? activeLayer(s.scene, s.activeLayerId);
         const nextLayers = layer
           ? s.scene.layers.map((l) =>
@@ -122,7 +127,7 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
           isMediaLoading: mediaUrl != null
         };
       });
-      if (mediaUrl && mediaType && mediaType !== "none") {
+      if (accepted && mediaUrl && mediaType && mediaType !== "none") {
         useRecentMediaStore.getState().addEntry(mediaUrl, mediaType, mediaName);
       }
     },
@@ -232,7 +237,11 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         const frameInstances = s.scene.frameInstances.filter((fi) => fi.layerId !== id);
         const activeLayerId = s.activeLayerId === id ? layers[0]?.id ?? null : s.activeLayerId;
         const selectedLayerIds = s.selectedLayerIds.filter((x) => x !== id);
-        return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId, selectedLayerIds };
+        // Frame selection must not dangle on instances dropped with the layer.
+        const aliveFrameIds = new Set(frameInstances.map((fi) => fi.id));
+        const activeFrameInstanceId = s.activeFrameInstanceId && aliveFrameIds.has(s.activeFrameInstanceId) ? s.activeFrameInstanceId : frameInstances[frameInstances.length - 1]?.id ?? null;
+        const selectedFrameIds = s.selectedFrameIds.filter((fid) => aliveFrameIds.has(fid));
+        return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId, selectedLayerIds, activeFrameInstanceId, selectedFrameIds };
       }),
     duplicateLayers: (ids) =>
       set((s) => {
@@ -274,7 +283,11 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         const first = layers[0]?.id ?? null;
         const activeLayerId = s.activeLayerId != null && idSet.has(s.activeLayerId) ? first : s.activeLayerId;
         const selectedLayerIds = s.selectedLayerIds.filter((x) => !idSet.has(x));
-        return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId, selectedLayerIds };
+        // Frame selection must not dangle on instances dropped with the layers.
+        const aliveFrameIds = new Set(frameInstances.map((fi) => fi.id));
+        const activeFrameInstanceId = s.activeFrameInstanceId && aliveFrameIds.has(s.activeFrameInstanceId) ? s.activeFrameInstanceId : frameInstances[frameInstances.length - 1]?.id ?? null;
+        const selectedFrameIds = s.selectedFrameIds.filter((fid) => aliveFrameIds.has(fid));
+        return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId, selectedLayerIds, activeFrameInstanceId, selectedFrameIds };
       }),
     transformLayers: (ids, patch) =>
       set((s) => {
@@ -318,7 +331,10 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
       set((s) => {
         const exists = s.selectedLayerIds.includes(id);
         const next = exists ? s.selectedLayerIds.filter((x) => x !== id) : [...s.selectedLayerIds, id];
-        return { activeLayerId: id, selectedLayerIds: next.length > 0 ? next : [id] };
+        // Deselecting must re-point the active layer at the last remaining
+        // selection (mirrors toggleFrameSelected/selectAnnotation) — keeping
+        // the toggled-off id would put the active layer outside the selection.
+        return { activeLayerId: exists ? (next[next.length - 1] ?? null) : id, selectedLayerIds: next.length > 0 ? next : [id] };
       }),
     selectLayerRange: (id, additive = false) =>
       set((s) => {

@@ -1,7 +1,7 @@
 "use client";
 
 import type { EditorScene, ExportSize } from "@/lib/types/editor";
-import { intrinsicExportSize, fitRatioForCustomSize } from "@/lib/export/exportSize";
+import { intrinsicExportSize } from "@/lib/export/exportSize";
 import { renderSceneToPngBlob } from "@/lib/export/exportImage";
 import { downloadBlob } from "@/lib/export/downloadBlob";
 import { buildStandaloneSvg } from "@/lib/export/exportSvg";
@@ -11,10 +11,10 @@ export function pdfPageSize(scene: EditorScene, customSize?: ExportSize | null):
   // A custom size is only meaningful when both dimensions are present; a
   // partial size would yield a degenerate fitRatio (0) and a 1x1pt page.
   if (!customSize?.width || !customSize?.height) return base;
-  const ratio = fitRatioForCustomSize(scene, customSize);
-  const width = Math.max(1, Math.round(base.width * ratio));
-  const height = Math.max(1, Math.round(base.height * ratio));
-  return { width, height };
+  // The page keeps the custom size verbatim: the raster fallback renders the
+  // canvas at exactly customSize (letterboxed), so a page in the scene's
+  // aspect would stretch the image when the aspects differ.
+  return { width: Math.max(1, Math.round(customSize.width)), height: Math.max(1, Math.round(customSize.height)) };
 }
 
 async function renderVectorPdf(
@@ -91,7 +91,7 @@ export async function exportPdf(
   customSize?: ExportSize | null,
   activeLayerId: string | null = scene.activeLayerId,
   onWarning?: (message: string) => void
-) {
+): Promise<boolean> {
   const pageSize = pdfPageSize(scene, customSize);
   let blob: Blob | null = null;
   let vectorError: unknown = null;
@@ -106,7 +106,7 @@ export async function exportPdf(
       blob = await renderRasterPdf(scene, containerId, onError, scale, customSize ?? null, activeLayerId, pageSize);
     } catch (err) {
       onError?.(err instanceof Error ? err.message : "PDF export failed.");
-      return;
+      return false;
     }
     if (vectorError instanceof Error && !/Preview area not found/.test(vectorError.message)) {
       console.warn("Vector PDF export failed, used raster fallback.", vectorError);
@@ -115,4 +115,5 @@ export async function exportPdf(
   }
 
   downloadBlob(blob, `${filename}.pdf`);
+  return true;
 }

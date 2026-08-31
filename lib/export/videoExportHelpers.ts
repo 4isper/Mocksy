@@ -79,3 +79,25 @@ export const QUALITY: Record<VideoQuality, { crf: number; scale: number }> = {
   medium: { crf: 20, scale: 0.75 },
   high: { crf: 16, scale: 1 }
 };
+
+/**
+ * libx264 with yuv420p (4:2:0 chroma subsampling) rejects odd width/height
+ * ("height not divisible by 2"), which surfaces as "Video encoding failed."
+ * Capture dimensions are rounded down to the nearest even value — at most a
+ * one-pixel difference, imperceptible in motion.
+ */
+export function toEvenDimension(value: number): number {
+  return Math.max(2, Math.floor(value / 2) * 2);
+}
+
+/**
+ * True when the error is a deliberate cancellation (signal.throwIfAborted or
+ * the recorder's "Export cancelled" DOMException). A user-initiated cancel is
+ * not a failure: catch paths must skip onError for it, or the UI shows a
+ * misleading "The operation was aborted." toast right after the user cancels.
+ */
+export function isAbortError(err: unknown): boolean {
+  return err instanceof DOMException
+    ? err.name === "AbortError"
+    : err instanceof Error && err.name === "AbortError";
+}

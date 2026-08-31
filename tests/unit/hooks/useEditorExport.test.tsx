@@ -84,7 +84,7 @@ describe("useEditorExport", () => {
     expect(mockImage.copyPngToClipboard).toHaveBeenCalledTimes(1);
     expect(api.copyStatus).toBe("Copied PNG to clipboard");
     act(() => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(5000);
     });
     expect(api.copyStatus).toBeNull();
   });

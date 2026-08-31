@@ -134,7 +134,10 @@ export async function startScreenRecording(options: {
     if (event.data && event.data.size > 0) chunks.push(event.data);
   };
   recorder.onstop = () => {
-    finish(chunks.length > 0 ? new Blob(chunks, { type: "video/webm" }) : null);
+    // Label the blob with the recorder's ACTUAL format — when no explicit
+    // mimeType was requested (Safari) the default can be MP4, and a hardcoded
+    // "video/webm" would mislabel the bytes.
+    finish(chunks.length > 0 ? new Blob(chunks, { type: recorder.mimeType || "video/webm" }) : null);
   };
 
   // The browser's native "Stop sharing" control ends the video track.

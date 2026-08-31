@@ -59,9 +59,11 @@ describe("tilt consistency across renderers", () => {
       const sQuad = projectTiltedRect(small, tx, ty);
       const sm = parseMatrix(tiltMatrixSvg(scene(tx, ty), small));
       const smap = (x: number, y: number) => ({ x: sm.a * x + sm.c * y + sm.e, y: sm.b * x + sm.d * y + sm.f });
-      const stl = smap(0, 0);
-      const str = smap(small.width, 0);
-      const sbl = smap(0, small.height);
+      // The matrix maps the rect's ABSOLUTE corners (SVG content is drawn in
+      // box coordinates): (rect.x, rect.y) must land on the projected tl.
+      const stl = smap(small.x, small.y);
+      const str = smap(small.x + small.width, small.y);
+      const sbl = smap(small.x, small.y + small.height);
       // SVG serializes its matrix to 2 decimals, so anchor corners on this
       // 40px-wide rect stay within a quarter-pixel of the exact projection.
       expect(Math.abs(stl.x - sQuad.tl.x)).toBeLessThan(0.25);
@@ -75,21 +77,23 @@ describe("tilt consistency across renderers", () => {
       const quad = projectTiltedRect(big, tx, ty);
       const m = parseMatrix(tiltMatrixSvg(scene(tx, ty), big));
       const map = (x: number, y: number) => ({ x: m.a * x + m.c * y + m.e, y: m.b * x + m.d * y + m.f });
-      const tl = map(0, 0);
-      const tr = map(big.width, 0);
-      const bl = map(0, big.height);
-      const br = map(big.width, big.height);
+      const tl = map(big.x, big.y);
+      const tr = map(big.x + big.width, big.y);
+      const bl = map(big.x, big.y + big.height);
+      const br = map(big.x + big.width, big.y + big.height);
 
       // On a full-size frame the SVG affine matrix (2-decimal rounding plus the
       // inherent parallelogram approximation of the perspective trapezoid)
-      // keeps the three anchor corners within ~2px of the exact canvas
-      // projection — visually consistent at export resolution.
-      expect(Math.abs(tl.x - quad.tl.x)).toBeLessThan(2);
-      expect(Math.abs(tl.y - quad.tl.y)).toBeLessThan(2);
-      expect(Math.abs(tr.x - quad.tr.x)).toBeLessThan(2);
-      expect(Math.abs(tr.y - quad.tr.y)).toBeLessThan(2);
-      expect(Math.abs(bl.x - quad.bl.x)).toBeLessThan(2);
-      expect(Math.abs(bl.y - quad.bl.y)).toBeLessThan(2);
+      // keeps the three anchor corners within a few px of the exact canvas
+      // projection. The 2-decimal rounding is amplified by the absolute
+      // coordinates the matrix multiplies (~500px × 0.005 ≈ 2.5px), hence the
+      // 3px bound — visually consistent at export resolution.
+      expect(Math.abs(tl.x - quad.tl.x)).toBeLessThan(3);
+      expect(Math.abs(tl.y - quad.tl.y)).toBeLessThan(3);
+      expect(Math.abs(tr.x - quad.tr.x)).toBeLessThan(3);
+      expect(Math.abs(tr.y - quad.tr.y)).toBeLessThan(3);
+      expect(Math.abs(bl.x - quad.bl.x)).toBeLessThan(3);
+      expect(Math.abs(bl.y - quad.bl.y)).toBeLessThan(3);
 
       // The fourth corner is an affine approximation of the perspective
       // trapezoid: SVG has no perspective, so it can only match three corners

@@ -96,6 +96,10 @@ export function waitForPlayback(
   timeoutMs = 600
 ): Promise<void> {
   return new Promise((resolve) => {
+    // Date.now rather than performance.now: the capture loop reads
+    // performance.now for its elapsed-time accounting, and extra consumers
+    // would skew setups that stub it (wall-clock is fine for a 600ms cap).
+    const deadline = Date.now() + timeoutMs;
     const done = () => {
       clearTimeout(timer);
       resolve();
@@ -108,6 +112,13 @@ export function waitForPlayback(
       // success state — a video that hasn't begun the transition to playing is
       // still blank; only the timeout backstops that case.
       if (Math.abs(video.currentTime - from) > 0.06) {
+        done();
+        return;
+      }
+      // Enforce the deadline inside the chain itself: the outer timer only
+      // resolves the promise — without this check a video that never plays
+      // keeps re-arming 20 ms polls forever (timer leak per export).
+      if (Date.now() >= deadline) {
         done();
         return;
       }
@@ -202,14 +213,18 @@ export async function recordCanvasToWebm(
     if (scene.backgroundAudioUrl) {
       try {
         bgAudioEl = document.createElement("audio");
+        // crossOrigin before src — the CORS mode is captured at fetch start.
+        bgAudioEl.crossOrigin = "anonymous";
         bgAudioEl.src = scene.backgroundAudioUrl;
         bgAudioEl.loop = true;
-        bgAudioEl.crossOrigin = "anonymous";
         await bgAudioEl.play();
         const videoTrack = stream.getVideoTracks()[0];
         if (videoTrack && typeof AudioContext !== "undefined") {
           // Route element → gain → destination so linear ramps shape the fades.
           bgAudioCtx = new AudioContext();
+          // An AudioContext created outside a live user gesture starts
+          // suspended; the fades then never run and the export is silent.
+          if (bgAudioCtx.state === "suspended") await bgAudioCtx.resume().catch(() => undefined);
           const source = bgAudioCtx.createMediaElementSource(bgAudioEl);
           bgGain = bgAudioCtx.createGain();
           bgGain.gain.value = 1;

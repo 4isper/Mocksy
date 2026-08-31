@@ -45,13 +45,13 @@ export const useRecentMediaStore = create<RecentMediaState>()(
     {
       name: STORAGE_KEY,
       partialize: (state) => ({
-        entries: state.entries.map((e) => ({
-          ...e,
-          // Keep thumbnails short in localStorage — truncate data URLs > 4 KB
-          // to avoid blowing the 5 MB quota. Full URLs are still available in
-          // memory for the current session.
-          dataUrl: e.dataUrl.length > 4096 ? e.dataUrl.slice(0, 4096) : e.dataUrl
-        }))
+        entries: state.entries.filter(
+          // Keep localStorage small — drop oversized data URLs instead of
+          // truncating them (a truncated base64 URL is invalid and would be
+          // rehydrated as corrupt state, then applied to layers). Full URLs
+          // stay in memory for the current session.
+          (e) => e.dataUrl.length <= 4096
+        )
       })
     }
   )

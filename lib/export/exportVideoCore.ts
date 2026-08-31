@@ -5,7 +5,7 @@ import { loadImage } from "@/lib/render/canvasMedia";
 import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
 import { recordCanvasToWebm } from "@/lib/export/videoRecorder";
-import { QUALITY, resolvePixelRatio } from "@/lib/export/videoExportHelpers";
+import { QUALITY, resolvePixelRatio, toEvenDimension } from "@/lib/export/videoExportHelpers";
 import { layerMediaSelector } from "@/lib/export/exportImageCore";
 import { fitRatioForCustomSize, intrinsicExportSize } from "@/lib/export/exportSize";
 import { singleFrameCssSize } from "@/lib/render/frameGeometry";
@@ -73,6 +73,10 @@ export async function captureWebm(
       canvasH = maxEdge;
     }
   }
+  // H.264/yuv420p (MP4 re-encode) rejects odd dimensions, so the recorded
+  // canvas must be even in every path — quality tiers, custom sizes included.
+  canvasW = toEvenDimension(canvasW);
+  canvasH = toEvenDimension(canvasH);
   canvas.width = canvasW;
   canvas.height = canvasH;
 
@@ -88,8 +92,12 @@ export async function captureWebm(
   let media: HTMLVideoElement | HTMLImageElement | null = null;
   if (activeLayer && isVideoLayer(activeLayer) && activeLayer.mediaUrl) {
     sourceVideo = document.createElement("video");
-    sourceVideo.src = activeLayer.mediaUrl;
+    // crossOrigin must be set BEFORE src: the CORS mode is captured when the
+    // fetch begins, so assigning it afterwards is a silent no-op and an
+    // uncors http(s) source would taint the canvas (SecurityError at
+    // captureStream) instead of loading anonymously.
     sourceVideo.crossOrigin = "anonymous";
+    sourceVideo.src = activeLayer.mediaUrl;
     sourceVideo.muted = activeLayer?.videoMuted !== false;
     sourceVideo.playbackRate = Math.max(0.5, Math.min(2, activeLayer.playbackSpeed ?? 1));
     sourceVideo.playsInline = true;
@@ -155,8 +163,9 @@ export async function captureWebm(
               // plays stays undecoded, and drawImage of an undecoded video
               // renders an empty frame.
               const v = document.createElement("video");
-              v.src = layer.mediaUrl;
+              // crossOrigin before src — the CORS mode is captured at fetch start.
               v.crossOrigin = "anonymous";
+              v.src = layer.mediaUrl;
               v.muted = true;
               v.playbackRate = Math.max(0.5, Math.min(2, layer.playbackSpeed ?? 1));
               v.playsInline = true;

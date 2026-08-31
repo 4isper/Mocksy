@@ -333,6 +333,31 @@ describe("computeFrameInstances landscape orientation", () => {
     expect(nativeCx).toBeCloseTo(expectedDx + drawW / 2);
     expect(nativeCy).toBeCloseTo(expectedDy + drawH / 2);
   });
+
+  it("exposes a native rect centered on the box center for rotated renderers", () => {
+    const s = scene({
+      frameInstances: [{ id: "l", frame: "iphone15", x: 0.5, y: 0.5, scale: 0.4, layerId: null, orientation: "landscape" }]
+    });
+    const box = computeFrameInstances(s, 1600, 900, 1)[0]!;
+    // Portrait boxes need no separate native rect.
+    expect(box.nativeRect).toBeDefined();
+    const native = box.nativeRect!;
+    // The native footprint is the swapped box, sharing its center — drawing
+    // it inside the rotated context lands exactly on the landscape box.
+    expect(native.width).toBeCloseTo(box.height);
+    expect(native.height).toBeCloseTo(box.width);
+    expect(native.x + native.width / 2).toBeCloseTo(box.x + box.width / 2);
+    expect(native.y + native.height / 2).toBeCloseTo(box.y + box.height / 2);
+  });
+
+  it("omits the native rect for portrait instances", () => {
+    const s = scene({
+      frameInstances: [{ id: "p", frame: "iphone15", x: 0.5, y: 0.5, scale: 0.4, layerId: null }]
+    });
+    const box = computeFrameInstances(s, 1600, 900, 1)[0]!;
+    expect(box.rotation).toBeUndefined();
+    expect(box.nativeRect).toBeUndefined();
+  });
 });
 
 describe("isVisibleFrameInstance", () => {

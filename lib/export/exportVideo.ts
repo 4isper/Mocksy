@@ -13,6 +13,7 @@ import {
   resolvePixelRatio,
   computeCaptureDuration,
   chooseWebmMimeType,
+  isAbortError,
   QUALITY,
   captureWebm,
   captureWebmWithRetry,
@@ -75,9 +76,12 @@ export async function exportVideo(
   // build is single-threaded, so encode time is the dominant cost — an
   // ultrafast preset is the biggest safe lever (CRF, not the preset, governs
   // quality). +faststart moves the moov atom to the front so the video starts
-  // streaming/playing immediately.
+  // streaming/playing immediately. The scale filter is a no-op for the even
+  // capture dimensions and a safety net for odd sources: yuv420p rejects
+  // width/height not divisible by 2.
   const code = await ffmpeg.exec([
     "-i", inputName,
+    "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
     "-c:v", "libx264",
     "-preset", "ultrafast",
     "-crf", String(quality.crf),
@@ -112,7 +116,7 @@ export async function exportVideo(
     // Best-effort temp-file cleanup so the FFmpeg singleton doesn't carry
     // stale input/output between failed exports.
     await cleanupFfmpegTempFiles(getFfmpegSingleton(), [inputName, outputName]);
-    onError?.(err instanceof Error ? err.message : "Video export failed.");
+    if (!isAbortError(err)) onError?.(err instanceof Error ? err.message : "Video export failed.");
   }
 }
 
@@ -138,7 +142,7 @@ export async function exportWebm(
     onStatus?.("Done");
     onProgress?.(100);
   } catch (err) {
-    onError?.(err instanceof Error ? err.message : "WebM export failed.");
+    if (!isAbortError(err)) onError?.(err instanceof Error ? err.message : "WebM export failed.");
   }
 }
 
@@ -201,7 +205,7 @@ export async function exportWebpAnim(
     onProgress?.(100);
   } catch (err) {
     await cleanupFfmpegTempFiles(getFfmpegSingleton(), [inputName, outputName]);
-    onError?.(err instanceof Error ? err.message : "Animated WebP export failed.");
+    if (!isAbortError(err)) onError?.(err instanceof Error ? err.message : "Animated WebP export failed.");
   }
 }
 
@@ -272,6 +276,6 @@ export async function exportGif(
     onProgress?.(100);
   } catch (err) {
     await cleanupFfmpegTempFiles(getFfmpegSingleton(), [inputName, outputName]);
-    onError?.(err instanceof Error ? err.message : "GIF export failed.");
+    if (!isAbortError(err)) onError?.(err instanceof Error ? err.message : "GIF export failed.");
   }
 }

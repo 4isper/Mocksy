@@ -25,7 +25,7 @@ describe("downloadBlob", () => {
     expect(link.download).toBe("result.txt");
     expect(link.click).toHaveBeenCalledTimes(1);
 
-    vi.advanceTimersByTime(200);
+    vi.advanceTimersByTime(5000);
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:mock");
   });
 });

@@ -36,6 +36,7 @@ vi.mock("@ffmpeg/ffmpeg", () => ({
 }));
 
 import { exportVideo, exportWebm, exportWebpAnim, exportGif, exportBaseName, sanitizeFilename, resolvePixelRatio, computeCaptureDuration, chooseWebmMimeType, terminateFfmpeg } from "@/lib/export/exportVideo";
+import { toEvenDimension } from "@/lib/export/videoExportHelpers";
 import { getFfmpegInstance } from "@/lib/export/ffmpegLoader";
 
 const ORIGINAL_WINDOW = globalThis.window;
@@ -394,7 +395,8 @@ describe("exportVideo orchestration", () => {
       controller.signal
     );
     expect(statuses).not.toContain("Done");
-    expect(errors.join(" ")).toMatch(/abort/i);
+    // A user-initiated cancel is not a failure: no error toast, no file.
+    expect(errors).toEqual([]);
   });
 
   it("plays detached videos so multi-frame captures render the media", async () => {
@@ -590,11 +592,15 @@ describe("exportVideo orchestration", () => {
 
     // medium quality, dpr 2 → resolvePixelRatio = max(2,2)*0.75 = 1.5.
     // Size anchors to the scene's intrinsic artboard, not the preview box:
-    // the demo scene is 16/9, so the base height is 450 (800×9/16).
+    // the demo scene is 16/9, so the base height is 450 (800×9/16). The raw
+    // height 675 is odd; H.264/yuv420p rejects odd dimensions, so the capture
+    // rounds down to the nearest even value.
     const scene = sceneWithLayer({ mediaUrl: null, mediaType: "none" });
     await exportWebm(scene);
-    expect(canvas.width).toBe(Math.max(640, Math.round(800 * 1.5)));
-    expect(canvas.height).toBe(Math.max(360, Math.round((800 * 9 / 16) * 1.5)));
+    expect(canvas.width).toBe(toEvenDimension(Math.max(640, Math.round(800 * 1.5))));
+    expect(canvas.height).toBe(toEvenDimension(Math.max(360, Math.round((800 * 9 / 16) * 1.5))));
+    expect(canvas.height % 2).toBe(0);
+    expect(canvas.width % 2).toBe(0);
   });
 
   it("caps the auto-sized canvas so high-DPI portrait scenes don't blow up the encode", async () => {

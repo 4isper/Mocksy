@@ -146,6 +146,15 @@ describe("waitForPlayback", () => {
     await promise;
     expect(settled).toBe(true);
   });
+
+  it("stops re-arming polls after the deadline (no unbounded timer chain)", async () => {
+    const v = video(2, { currentTime: 0, paused: true });
+    const promise = waitForPlayback(v, 0, 200);
+    await vi.advanceTimersByTimeAsync(1000);
+    await promise;
+    const pending = vi.getTimerCount();
+    expect(pending).toBe(0);
+  });
 });
 
 

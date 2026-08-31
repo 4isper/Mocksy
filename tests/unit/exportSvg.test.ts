@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildSvgMarkup, buildStandaloneSvg, copySvgToClipboard, exportSvg, inlineSvgAsset, mediaToDataUrl, videoToDataUrl } from "@/lib/export/exportSvg";
 import { clearImageCache } from "@/lib/render/canvasMedia";
-import { computeFrameBox } from "@/lib/render/frameGeometry";
+import { computeFrameBox, computeFrameInstances } from "@/lib/render/frameGeometry";
+import { projectTiltedRectRotated } from "@/lib/render/tilt";
 import { RENDER } from "@/lib/render/canvasDrawing";
 import { initialScene } from "@/lib/state/editorStore";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
@@ -243,6 +244,55 @@ describe("buildSvgMarkup", () => {
     });
     expect(markup).toContain('clip-path="url(#clip-0)"');
     expect(markup).not.toContain("matrix(");
+  });
+
+  it("draws a landscape instance's body/skin in native dims inside the rotate group", () => {
+    const scene = sceneWith({
+      frame: "none",
+      backgroundMode: "transparent",
+      frameInstances: [{ id: "l", frame: "none" as const, x: 0.5, y: 0.5, scale: 0.4, layerId: null, orientation: "landscape" as const }]
+    });
+    const box = computeFrameInstances(scene, 800, 600, 1)[0]!;
+    const markup = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      groups: [{ box, mediaHref: MEDIA, mediaWidth: 400, mediaHeight: 300, isOverlay: false, overlayInner: null, orientation: 90, frame: "none" }]
+    });
+    // The rotate wrapper is centered on the (landscape) box.
+    expect(markup).toContain(`rotate(90 ${Math.round(box.x + box.width / 2)} ${Math.round(box.y + box.height / 2)})`);
+    // Inside the group, the body rect must use the NATIVE orientation (the
+    // swapped box), never the landscape extents — otherwise the device lands
+    // squashed into a center strip.
+    const native = box.nativeRect!;
+    expect(markup).toContain(`width="${Math.round(native.width)}" height="${Math.round(native.height)}"`);
+    expect(markup).not.toContain(`width="${Math.round(box.width)}" height="${Math.round(box.height)}"`);
+  });
+
+  it("tilts a landscape instance by projecting the native rect and rotating the matrix", () => {
+    const scene = sceneWith({
+      frame: "none",
+      backgroundMode: "transparent",
+      tiltX: 12,
+      tiltY: 8,
+      frameInstances: [{ id: "l", frame: "none" as const, x: 0.5, y: 0.5, scale: 0.4, layerId: null, orientation: "landscape" as const }]
+    });
+    const box = computeFrameInstances(scene, 800, 600, 1)[0]!;
+    const markup = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      groups: [{ box, mediaHref: MEDIA, mediaWidth: 400, mediaHeight: 300, isOverlay: false, overlayInner: null, orientation: 90, frame: "none" }]
+    });
+    const m = markup.match(/matrix\(([^)]+)\)/)![1]!.split(" ").map(Number);
+    const [a, b, c, d, e, f] = m as [number, number, number, number, number, number];
+    const apply = (x: number, y: number) => ({ x: a * x + c * y + e, y: b * x + d * y + f });
+    // The native rect's top-left must map to the rotated projection's top-left
+    // (up to the matrix's 2-decimal rounding, amplified by the rect offset).
+    const native = box.nativeRect!;
+    const quad = projectTiltedRectRotated(native, Math.PI / 2, 12, 8);
+    expect(apply(native.x, native.y).x).toBeCloseTo(quad.tl.x, -1);
+    expect(apply(native.x, native.y).y).toBeCloseTo(quad.tl.y, -1);
   });
 
   it("renders an empty media screen when no media is provided", () => {
@@ -561,6 +611,7 @@ describe("exportSvg", () => {
     expect(link.href).toBe("blob:mock");
     expect(link.download).toBe("mocksy-export.svg");
     expect(link.click).toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(5000);
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:mock");
 
     vi.useRealTimers();

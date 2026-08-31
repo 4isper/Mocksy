@@ -72,6 +72,11 @@ function pick<T extends string>(value: unknown, allowed: readonly T[], fallback:
 }
 
 function num(value: unknown, fallback: number, min: number, max: number): number {
+  // null/false/"" coerce to 0 via Number() — finite, so the fallback would
+  // never apply. They are "missing field" signals for untrusted payloads
+  // (e.g. "opacity": null must stay 100, not become an invisible layer), so
+  // short-circuit before the coercion.
+  if (value === null || value === undefined || value === "" || typeof value === "boolean") return fallback;
   const n = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(n)) return fallback;
   return Math.min(max, Math.max(min, n));

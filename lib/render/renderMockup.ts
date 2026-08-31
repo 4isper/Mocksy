@@ -7,7 +7,7 @@ import { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
 import { createLayerCanvas, layerContext } from "@/lib/render/canvasFactory";
 import type { FrameBox, RenderTransform } from "@/lib/render/frameGeometry";
 import { computeFrameBox, computeFrameInstances, isVisibleFrameInstance } from "@/lib/render/frameGeometry";
-import { TILT_PERSPECTIVE, drawTiltedQuad, hasTilt, projectTiltedRect } from "@/lib/render/tilt";
+import { TILT_PERSPECTIVE, drawTiltedQuad, hasTilt, projectTiltedRectRotated } from "@/lib/render/tilt";
 import { paintBackground } from "@/lib/render/renderBackground";
 
 export { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
@@ -15,7 +15,10 @@ export type { FrameBox, RenderTransform } from "@/lib/render/frameGeometry";
 
 /** Renders one frame with the 3D tilt: draws the flat frame composite (device
  *  + media + shadow) into an offscreen canvas padded so the drop shadow fits,
- *  then warps it into the projected quad. Only used when the scene is tilted. */
+ *  then warps it into the projected quad. Only used when the scene is tilted.
+ *  Landscape instances are composited in their NATIVE orientation and the
+ *  projected quad is rotated afterwards (mirroring the preview, where the
+ *  parent rotor's rotate(90deg) applies after the child's 3D tilt). */
 function drawTiltedFrame(
   ctx: CanvasRenderingContext2D,
   scene: EditorScene,
@@ -28,33 +31,40 @@ function drawTiltedFrame(
   overlay: CanvasImageSource | null,
   screen: ScreenChrome = scene.screen
 ) {
+  const landscape = !!box.rotation && !!box.nativeRect;
+  const native = box.nativeRect ?? { x: box.x, y: box.y, width: box.width, height: box.height };
   const padX = RENDER.shadowBlur * dpiScale * zoom + 4;
   const padY = (RENDER.shadowBlur + RENDER.shadowOffsetY) * dpiScale * zoom + 4;
-  const w = Math.ceil(box.width + padX * 2);
-  const h = Math.ceil(box.height + padY * 2);
+  const w = Math.ceil(native.width + padX * 2);
+  const h = Math.ceil(native.height + padY * 2);
   const off = createLayerCanvas(w, h);
   const octx = layerContext(off);
   if (!octx) return;
 
-  // box.x/y (and innerX/innerY) are absolute coordinates on the full export
+  // native.x/y (and innerX/innerY) are absolute coordinates on the full export
   // canvas. The offscreen buffer is a small canvas local to just this frame,
   // so every coordinate needs to be re-based to that local origin — not just
-  // x/y, but innerX/innerY too, or they'll still point at the old absolute
-  // position and draw off-buffer for any frame instance not near (0,0).
-  const dx = box.x - padX;
-  const dy = box.y - padY;
+  // the frame rect, but innerX/innerY too, or they'll still point at the old
+  // absolute position and draw off-buffer for any frame instance not near (0,0).
+  const dx = native.x - padX;
+  const dy = native.y - padY;
   const localBox: FrameBox = {
     ...box,
-    x: box.x - dx,       // === padX
-    y: box.y - dy,       // === padY
+    x: padX,
+    y: padY,
+    nativeRect: { x: padX, y: padY, width: native.width, height: native.height },
     innerX: box.innerX - dx,
     innerY: box.innerY - dy
   };
 
   drawFrameAndMedia(octx, scene, spec, layer, localBox, dpiScale, zoom, media, overlay, screen);
 
-  const quad = projectTiltedRect(
-    { x: box.x - padX, y: box.y - padY, width: w, height: h },
+  // Project the flat composite (device + shadow padding, native orientation),
+  // then rotate the projected quad about the assembly center for landscape
+  // instances — the same order the CSS preview composes rotor and tilt.
+  const quad = projectTiltedRectRotated(
+    { x: native.x - padX, y: native.y - padY, width: w, height: h },
+    landscape ? box.rotation! : 0,
     scene.tiltX,
     scene.tiltY,
     TILT_PERSPECTIVE * dpiScale
@@ -142,7 +152,10 @@ export function renderMockupToCanvas(
   ctx.clearRect(0, 0, width, height);
 
   if (scene.frameInstances.length > 0) {
-    paintBackground(ctx, scene, width, height, dpiScale, backgroundFill, backgroundImage);
+    // Same fallback arg as the single-frame path below: a transparent
+    // multi-frame scene with no video-export fill must stay transparent,
+    // not pick up the default near-white wash.
+    paintBackground(ctx, scene, width, height, dpiScale, backgroundFill, backgroundImage, "rgba(0,0,0,0)");
 
     const frameBoxes = computeFrameInstances(scene, width, height, pixelRatio, transform, activeLayerId);
     // Hidden layers' instances are invisible in the live preview; zip the
@@ -169,22 +182,30 @@ export function renderMockupToCanvas(
       const frameMedia = layer?.id ? (layerMedias?.get(layer.id) ?? null) : media;
       const overlay = layer?.id && instSpec.isOverlay ? (frameOverlays?.get(layer.id) ?? null) : null;
 
-      // Landscape instances carry swapped box dimensions plus a rotation —
-      // the whole assembly (skin, media, chrome) turns around the box center,
-      // which also composes correctly with the tilted-quad path below.
+      // Landscape instances carry swapped box dimensions plus a rotation.
+      // Every part of the assembly is drawn in its NATIVE orientation inside
+      // the rotated context (matching the preview's rotor): the native rect
+      // for skin/body/shadow/URL, and the already-native inner rect for the
+      // media. Drawing the landscape box itself inside the rotated context
+      // would re-swap its extents and squash the device into a center strip.
       const rotated = !!box.rotation;
-      if (rotated) {
-        target.save();
-        target.translate(box.x + box.width / 2, box.y + box.height / 2);
-        target.rotate(box.rotation!);
-        target.translate(-(box.x + box.width / 2), -(box.y + box.height / 2));
-      }
+      const drawBox: FrameBox = box.nativeRect
+        ? { ...box, x: box.nativeRect.x, y: box.nativeRect.y, width: box.nativeRect.width, height: box.nativeRect.height }
+        : box;
       if (hasTilt(scene)) {
+        // The tilt path handles orientation itself (native composite + rotated
+        // quad) — no context rotation here or the tilt is applied twice.
         drawTiltedFrame(target, scene, instSpec, layer, box, dpiScale, instZoom, frameMedia, overlay, inst.screen ?? scene.screen);
       } else {
-        drawFrameAndMedia(target, scene, instSpec, layer, box, dpiScale, instZoom, frameMedia, overlay, inst.screen ?? scene.screen);
+        if (rotated) {
+          target.save();
+          target.translate(box.x + box.width / 2, box.y + box.height / 2);
+          target.rotate(box.rotation!);
+          target.translate(-(box.x + box.width / 2), -(box.y + box.height / 2));
+        }
+        drawFrameAndMedia(target, scene, instSpec, layer, drawBox, dpiScale, instZoom, frameMedia, overlay, inst.screen ?? scene.screen);
+        if (rotated) target.restore();
       }
-      if (rotated) target.restore();
     };
 
     const reflected = visible.filter(({ inst }) => inst.floorReflection ?? scene.floorReflection);

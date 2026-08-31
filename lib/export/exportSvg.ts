@@ -176,8 +176,12 @@ export async function buildStandaloneSvg(
         // logo and other layers' media.
         const el = node.querySelector(layerMediaSelector(activeLayer.id));
         if (el instanceof HTMLVideoElement) {
+          // Always snapshot the poster frame like the PNG and multi-frame SVG
+          // paths do: the preview playhead is transient, so whatever frame it
+          // happens to show would make SVG exports diverge from PNG exports
+          // of the same scene.
           let src: HTMLVideoElement = el;
-          if (el.readyState < 2 && isVideoLayer(activeLayer) && activeLayer.mediaUrl) {
+          if (isVideoLayer(activeLayer) && activeLayer.mediaUrl) {
             try {
               src = await loadVideoFrame(activeLayer.mediaUrl, activeLayer.videoPosterTime ?? 0);
             } catch {

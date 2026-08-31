@@ -44,6 +44,14 @@ export function useCanvasGestures({ frameRef, activeLayer }: UseCanvasGestures) 
   const onTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
     if (e.touches.length < 2) pinchStart.current = null;
   };
+  // A cancelled touch sequence (incoming call, browser gesture takeover,
+  // edge-swipe nav) fires touchcancel and never touchend. Without clearing
+  // here the stale pinch baseline hijacks the next unrelated two-finger touch
+  // anywhere on the page (the move listener is window-level) and preventDefaults
+  // its scrolling. Mirrors useCanvasViewport's touchcancel handling.
+  const onTouchCancel = () => {
+    pinchStart.current = null;
+  };
 
   // The move half of the pinch is a native non-passive listener: React
   // registers synthetic touchmove handlers as passive, so preventDefault()
@@ -111,6 +119,7 @@ export function useCanvasGestures({ frameRef, activeLayer }: UseCanvasGestures) 
     canPan,
     onTouchStart,
     onTouchEnd,
+    onTouchCancel,
     onPanDown,
     onPanMove,
     onPanUp

@@ -42,7 +42,10 @@ export async function loadRecordedClip(blob: Blob | null): Promise<void> {
   // the clip into the wrong layer or drop it silently.
   const st = useEditorStore.getState();
   const targetLayerId = st.activeLayerId ?? st.scene.layers[0]?.id ?? null;
-  const file = new File([blob], "Screen recording.webm", { type: "video/webm" });
+  // Name/type follow the recorder's actual output — Safari's default recorder
+  // produces MP4 bytes, so a hardcoded webm name would mislabel the file.
+  const ext = blob.type.includes("mp4") ? "mp4" : "webm";
+  const file = new File([blob], `Screen recording.${ext}`, { type: blob.type || "video/webm" });
   const { url, mediaType, mediaName } = await loadMediaFromFile(file);
   useEditorStore.getState().setMediaUploadError(null);
   useEditorStore.getState().setScenePalette(null);

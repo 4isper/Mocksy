@@ -52,6 +52,19 @@ describe("normalizeScene", () => {
     expect(s.shadowOpacity).toBe(1);
   });
 
+  it("treats null/false/empty-string numerics as missing (fallback, not 0)", () => {
+    // Number(null) === 0 is finite, so without the guard a null field would
+    // coerce to 0 instead of the fallback — e.g. an invisible layer.
+    const s = normalizeScene({
+      layers: [{ opacity: null, zoom: false, rotation: "" }],
+      shadowOpacity: null
+    });
+    expect(s.layers[0]!.opacity).toBe(initialScene.layers[0]!.opacity);
+    expect(s.layers[0]!.zoom).toBe(initialScene.layers[0]!.zoom);
+    expect(s.layers[0]!.rotation).toBe(initialScene.layers[0]!.rotation);
+    expect(s.shadowOpacity).toBe(initialScene.shadowOpacity);
+  });
+
   it("migrates a legacy single-media payload into one layer", () => {
     const s = normalizeScene({ mediaUrl: "x.png", mediaType: "image", frame: "iphone16pro" });
     expect(s.layers).toHaveLength(1);

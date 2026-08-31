@@ -1,6 +1,7 @@
 "use client";
 
 import type { ChangeEvent } from "react";
+import { useSyncExternalStore } from "react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useShallow } from "zustand/react/shallow";
@@ -15,6 +16,11 @@ import { useRecentMediaStore } from "@/lib/state/recentMediaStore";
 function formatElapsed(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
+
+/** Static subscribe/snapshots for the client-only "mounted" flag. */
+const noSubscribe = () => () => {};
+const clientTrue = () => true;
+const clientFalse = () => false;
 
 export function MediaSection() {
   const t = useTranslations();
@@ -194,8 +200,15 @@ function RecentMediaGrid() {
   const removeEntry = useRecentMediaStore((s) => s.removeEntry);
   const setMedia = useEditorStore((s) => s.setMedia);
   const setScenePalette = useEditorStore((s) => s.setScenePalette);
+  // zustand persist rehydrates synchronously from localStorage during module
+  // evaluation — before React hydration. Rendering persisted entries on the
+  // first client pass would disagree with the server's empty list (hydration
+  // error), so hold the grid back until after mount. useSyncExternalStore
+  // serves false on the server and true on the client without a
+  // setState-in-effect cascade.
+  const mounted = useSyncExternalStore(noSubscribe, clientTrue, clientFalse);
 
-  if (entries.length === 0) return null;
+  if (!mounted || entries.length === 0) return null;
 
   return (
     <div className="field">

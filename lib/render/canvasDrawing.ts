@@ -180,6 +180,10 @@ export function drawAnnotations(
         ctx.strokeStyle = a.color;
         ctx.fillStyle = a.color;
       }
+      // Without an explicit width the shaft strokes at the ambient 1px
+      // regardless of the user's stroke width (preview/SVG scale it).
+      ctx.lineWidth = Math.max(1, a.strokeWidth * s);
+      ctx.lineCap = "round";
       ctx.beginPath();
       ctx.moveTo(startX, startY);
       ctx.lineTo(endX, endY);
@@ -204,7 +208,10 @@ export function drawWatermark(
 ) {
   if (!scene.watermarkEnabled) return;
   const hasImage = scene.watermarkImageUrl != null;
-  if (!hasImage && !scene.watermarkText) return;
+  // A configured image that failed to load (watermarkImage null) must not fall
+  // through to the text branch — with watermarkText null that would draw the
+  // literal string "null" in the corner.
+  if ((!hasImage || !watermarkImage) && !scene.watermarkText) return;
   const s = overlayScaleFor(width);
   const watermarkSize = scene.watermarkSize * s;
   const inset = RENDER.watermarkInset * s;
@@ -343,6 +350,11 @@ export function drawFrameAndMedia(  ctx: CanvasRenderingContext2D,
   screen: ScreenChrome = scene.screen
 ) {
   const { x, y, width: frameW, height: frameH, outerRadius, innerX, innerY, innerW, innerH, innerRadius } = box;
+  // Landscape callers pass the NATIVE-orientation assembly rect as the box
+  // (see renderMockup.renderInstance) so the skin/body/shadow/URL land inside
+  // the rotated context exactly like the preview's rotor; the inner screen
+  // rect is native in both orientations. This alias keeps the intent explicit.
+  const drawBox = box;
   // Overlay screens clip to the skin's squircle cutout so the media fills the
   // transparent hole exactly; CSS-only frames keep the circular clip.
   const cutout = instSpec.isOverlay ? instSpec.cutout : null;
@@ -458,8 +470,9 @@ export function drawFrameAndMedia(  ctx: CanvasRenderingContext2D,
 
   // Browser frame: the URL text sits above the window skin (the skin paints
   // the toolbar and pill; only the text is dynamic). Drawn without shadow so
-  // it stays crisp over the pill.
+  // it stays crisp over the pill. Uses the assembly rect the skin was drawn
+  // with so both stay aligned inside a rotated (landscape) context.
   if (instSpec.urlBar) {
-    drawBrowserUrl(ctx, box, instSpec, scene.browserUrl, scene.browserChromeTheme);
+    drawBrowserUrl(ctx, drawBox, instSpec, scene.browserUrl, scene.browserChromeTheme);
   }
 }

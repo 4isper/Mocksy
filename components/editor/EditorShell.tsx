@@ -80,7 +80,9 @@ export function EditorShell() {
   const bootstrapped = useRef(false);
   const historyCleanupRef = useRef<(() => void) | null>(null);
 
-  const resetTrapRef = useFocusTrap(confirmResetOpen);
+  // ResetConfirmDialog owns its own focus trap (like every other dialog);
+  // a second one here would run side by side with it, double-locking scroll
+  // and restoring focus to the wrong element on close.
   const controlsSheetTrapRef = useFocusTrap(mobileSheet === "controls");
   const rightSheetTrapRef = useFocusTrap(mobileSheet === "right");
 
@@ -96,6 +98,14 @@ export function EditorShell() {
   }, [confirmResetOpen, exportOpen, shortcutsOpen, commandPaletteOpen, exportApi.shareQrUrl]);
 
   const { saved, saveToast, savedSceneRef, saveNow, markSaved } = useAutosaveStatus(scene, activeLayerId, bootstrapped);
+
+  // Stable per-fullscreenPreview change: an inline closure passed straight to
+  // useCommands would defeat its useMemo and rebuild the command list on
+  // every render (the always-mounted palette re-renders with it).
+  const toggleFullscreenPreview = useCallback(
+    () => setFullscreenPreview(!fullscreenPreview),
+    [setFullscreenPreview, fullscreenPreview]
+  );
 
   const commands = useCommands(
     exportApi.handleExportPng,
@@ -117,7 +127,7 @@ export function EditorShell() {
     exportApi.handleCopyHtml,
     exportApi.copyShareUrl,
     saveNow,
-    () => setFullscreenPreview(!fullscreenPreview)
+    toggleFullscreenPreview
   );
 
   const handleReset = useCallback(() => setConfirmResetOpen(true), []);
@@ -141,7 +151,7 @@ export function EditorShell() {
     onCopyPng: exportApi.handleCopyPng,
     onOpenShortcuts: () => setShortcutsOpen(true),
     onOpenCommandPalette: () => setCommandPaletteOpen(true),
-    onToggleFullscreen: () => setFullscreenPreview(!fullscreenPreview),
+    onToggleFullscreen: toggleFullscreenPreview,
     isModalOpen: () => hasOpenModalRef.current
   });
   // ⌘V pastes screenshots / copied media files (or an image URL) into the

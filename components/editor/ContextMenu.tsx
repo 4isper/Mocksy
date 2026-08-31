@@ -119,13 +119,17 @@ export function ContextMenu({ x, y, items, onClose }: { x: number; y: number; it
     // dismiss the menu mid-interaction. Outside pointer-down does NOT restore
     // focus (it belongs to whatever the user just clicked); keyboard/resize
     // closes do.
+    // One stable reference for add and remove — a fresh arrow passed to
+    // removeEventListener never matches, leaking the listener (and, worse,
+    // firing a stale closeMenu that steals focus on every later resize).
+    const onResize = () => closeMenu(true);
     window.addEventListener("pointerdown", onDown, true);
     window.addEventListener("keydown", onKey);
-    window.addEventListener("resize", () => closeMenu(true));
+    window.addEventListener("resize", onResize);
     return () => {
       window.removeEventListener("pointerdown", onDown, true);
       window.removeEventListener("keydown", onKey);
-      window.removeEventListener("resize", () => closeMenu(true));
+      window.removeEventListener("resize", onResize);
     };
   }, [closeMenu]);
 

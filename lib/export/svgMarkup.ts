@@ -2,7 +2,7 @@ import type { Annotation, EditorScene, MediaLayer, MockupFrame, ScreenChrome } f
 import { buildTextLayerSvg } from "@/lib/render/layerText";
 import { computeFrameBox, computeFrameInstances, type FrameBox } from "@/lib/render/frameGeometry";
 import { frameViewBox, frameOs, getFrameSpec, DEFAULT_VIEWBOX } from "@/lib/render/frames";
-import { tiltMatrixSvg } from "@/lib/render/tilt";
+import { tiltMatrixSvg, tiltMatrixSvgRotated } from "@/lib/render/tilt";
 import { hasAnnotationGradient, annotationSvgGradientDef } from "@/lib/render/annotationGradient";
 import { RENDER, resolveFrameStyle } from "@/lib/render/canvasDrawing";
 import { watermarkEdges } from "@/lib/render/watermark";
@@ -164,29 +164,36 @@ function groupClipMarkup(group: SvgFrameGroup, index: number): string {
 
 function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: number): string {
   const { box } = group;
+  // Native-orientation assembly rect: landscape instances are drawn (and
+  // tilted) in their native orientation and rotated as a whole, exactly like
+  // the preview's rotor — the swapped landscape box itself must never be used
+  // for the device footprint inside the rotated context.
+  const assembly: FrameBox = box.nativeRect
+    ? { ...box, x: box.nativeRect.x, y: box.nativeRect.y, width: box.nativeRect.width, height: box.nativeRect.height }
+    : box;
 
   const mediaFit = group.mediaFit ?? "cover";
-  const scale = mediaScale(mediaFit, box.innerW, box.innerH, group.mediaWidth || box.innerW, group.mediaHeight || box.innerH);
-  const dw = (group.mediaWidth || box.innerW) * scale;
-  const dh = (group.mediaHeight || box.innerH) * scale;
+  const scale = mediaScale(mediaFit, assembly.innerW, assembly.innerH, group.mediaWidth || assembly.innerW, group.mediaHeight || assembly.innerH);
+  const dw = (group.mediaWidth || assembly.innerW) * scale;
+  const dh = (group.mediaHeight || assembly.innerH) * scale;
   const offX = group.offsetX ?? 0;
   const offY = group.offsetY ?? 0;
-  const dx = box.innerX + (box.innerW - dw) / 2 + (offX * (box.innerW - dw)) / 2;
-  const dy = box.innerY + (box.innerH - dh) / 2 + (offY * (box.innerH - dh)) / 2;
+  const dx = assembly.innerX + (assembly.innerW - dw) / 2 + (offX * (assembly.innerW - dw)) / 2;
+  const dy = assembly.innerY + (assembly.innerH - dh) / 2 + (offY * (assembly.innerH - dh)) / 2;
 
   const mediaRaw =
     group.textLayer
       ? // Text layer: nested aspect-exact SVG stretched over the screen box
         // (same layout constants the CSS preview and canvas export use).
-        buildTextLayerSvg(group.textLayer, box.innerW / box.innerH) ??
-        `<rect x="${num(box.innerX)}" y="${num(box.innerY)}" width="${num(box.innerW)}" height="${num(box.innerH)}" fill="${RENDER.emptyMediaFill}"/>`
+        buildTextLayerSvg(group.textLayer, assembly.innerW / assembly.innerH) ??
+        `<rect x="${num(assembly.innerX)}" y="${num(assembly.innerY)}" width="${num(assembly.innerW)}" height="${num(assembly.innerH)}" fill="${RENDER.emptyMediaFill}"/>`
       : group.mediaHref != null
       ? `<image href="${group.mediaHref}" x="${num(dx)}" y="${num(dy)}" width="${num(dw)}" height="${num(dh)}"/>`
-      : `<rect x="${num(box.innerX)}" y="${num(box.innerY)}" width="${num(box.innerW)}" height="${num(box.innerH)}" fill="${RENDER.emptyMediaFill}"/>`;
+      : `<rect x="${num(assembly.innerX)}" y="${num(assembly.innerY)}" width="${num(assembly.innerW)}" height="${num(assembly.innerH)}" fill="${RENDER.emptyMediaFill}"/>`;
   // Rotate the media about the inner screen's center to match the CSS preview
   // (transform-origin: center). The rotation is applied only to the media so
   // the device bezel and chrome stay put.
-  let media = group.rotation ? `<g transform="rotate(${num(group.rotation)} ${num(box.innerX + box.innerW / 2)} ${num(box.innerY + box.innerH / 2)})">${mediaRaw}</g>` : mediaRaw;
+  let media = group.rotation ? `<g transform="rotate(${num(group.rotation)} ${num(assembly.innerX + assembly.innerW / 2)} ${num(assembly.innerY + assembly.innerH / 2)})">${mediaRaw}</g>` : mediaRaw;
   if (group.opacity != null && group.opacity !== 100) {
     const alpha = Math.max(0, Math.min(1, group.opacity / 100));
     media = `<g opacity="${alpha}">${media}</g>`;
@@ -198,28 +205,35 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
   const chromeScreen = group.screen ?? scene.screen;
   const chromeMarkup =
     chromeScreen.enabled
-      ? `<g transform="translate(${num(box.innerX)} ${num(box.innerY)})">${screenChromeElements({ ...chromeScreen, os: frameOs(group.frame) }, box.innerW, box.innerH, `sc-${index}`)}</g>`
+      ? `<g transform="translate(${num(assembly.innerX)} ${num(assembly.innerY)})">${screenChromeElements({ ...chromeScreen, os: frameOs(group.frame) }, assembly.innerW, assembly.innerH, `sc-${index}`)}</g>`
       : "";
 
+  const assemblyGroup: SvgFrameGroup = { ...group, box: assembly };
+
   // SVG has no perspective, so a tilted scene uses the affine best-fit matrix.
-  // The clip moves inside the transformed group so its coordinates stay in
-  // the group's (rotated) user space instead of the root one.
-  const tilt = tiltMatrixSvg(scene, box);
+  // The matrix projects the NATIVE assembly rect (rotating the projected
+  // result for landscape instances — the preview's rotor composes after the
+  // tilt) and every coordinate inside stays in the assembly's user space.
+  const tilt = group.orientation
+    ? tiltMatrixSvgRotated(scene, assembly, (group.orientation * Math.PI) / 180)
+    : tiltMatrixSvg(scene, assembly);
   if (tilt) {
-    return `<g transform="${tilt}"><clipPath id="clip-t${index}">${groupClipRect(group)}</clipPath><g clip-path="url(#clip-t${index})">${media}${chromeMarkup}</g>${frameGroupInner(scene, group)}</g>`;
+    return `<g transform="${tilt}"><clipPath id="clip-t${index}">${groupClipRect(assemblyGroup)}</clipPath><g clip-path="url(#clip-t${index})">${media}${chromeMarkup}</g>${frameGroupInner(scene, assemblyGroup)}</g>`;
   }
   const glareMarkup = scene.screenGlare
     ? group.cutout
-      ? `<path d="${squirclePathD(box.innerX, box.innerY, box.innerW, box.innerH, (group.cutout.rx / group.cutout.w) * box.innerW, (group.cutout.rx / group.cutout.h) * box.innerH, group.cutout.power ?? CORNER_POWER_CIRCLE)}" fill="url(#glare-sweep)"/>`
-      : `<rect x="${num(box.innerX)}" y="${num(box.innerY)}" width="${num(box.innerW)}" height="${num(box.innerH)}" rx="${num(group.isCircular ? Math.min(box.innerW, box.innerH) / 2 : Math.min(box.innerRadius, Math.min(box.innerW, box.innerH) / 2))}" fill="url(#glare-sweep)"/>`
+      ? `<path d="${squirclePathD(assembly.innerX, assembly.innerY, assembly.innerW, assembly.innerH, (group.cutout.rx / group.cutout.w) * assembly.innerW, (group.cutout.rx / group.cutout.h) * assembly.innerH, group.cutout.power ?? CORNER_POWER_CIRCLE)}" fill="url(#glare-sweep)"/>`
+      : `<rect x="${num(assembly.innerX)}" y="${num(assembly.innerY)}" width="${num(assembly.innerW)}" height="${num(assembly.innerH)}" rx="${num(group.isCircular ? Math.min(assembly.innerW, assembly.innerH) / 2 : Math.min(assembly.innerRadius, Math.min(assembly.innerW, assembly.innerH) / 2))}" fill="url(#glare-sweep)"/>`
     : "";
-  let inner = `<g clip-path="url(#clip-${index})">${media}${chromeMarkup}${glareMarkup}</g>${frameGroupInner(scene, group)}`;
+  let inner = `<g clip-path="url(#clip-${index})">${media}${chromeMarkup}${glareMarkup}</g>${frameGroupInner(scene, assemblyGroup)}`;
   if (group.orientation) {
-    // The clip must live inside the rotated group so its rect rotates with
-    // it (same trick as the tilt branch above).
+    // The clip must live inside the rotated group so its rect rotates with it.
+    // Everything inside — media, chrome, clip AND the frame body/skin — is
+    // expressed in the NATIVE orientation centered on the box center, so the
+    // single rotate(90°) turns the whole assembly exactly like the rotor.
     const cx = num(box.x + box.width / 2);
     const cy = num(box.y + box.height / 2);
-    inner = `<g transform="rotate(${num(group.orientation)} ${cx} ${cy})"><clipPath id="clip-o${index}">${groupClipRect(group)}</clipPath><g clip-path="url(#clip-o${index})">${media}${chromeMarkup}</g>${frameGroupInner(scene, group)}</g>`;
+    inner = `<g transform="rotate(${num(group.orientation)} ${cx} ${cy})"><clipPath id="clip-o${index}">${groupClipRect(assemblyGroup)}</clipPath><g clip-path="url(#clip-o${index})">${media}${chromeMarkup}</g>${frameGroupInner(scene, assemblyGroup)}</g>`;
   }
   return inner;
 }

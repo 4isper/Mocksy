@@ -109,7 +109,14 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
         const activeLayerId = layers.some((l) => l.id === s.activeLayerId)
           ? s.activeLayerId
           : layers[0]?.id ?? null;
-        return { ...pushHistory(s, { ...s.scene, layers, frameInstances: remaining }), activeLayerId };
+        // Re-point/clear frame selection so it never dangles on a removed id —
+        // a stale activeFrameInstanceId makes setFrameMaterial silently no-op.
+        const activeFrameInstanceId = s.activeFrameInstanceId === id
+          ? remaining[remaining.length - 1]?.id ?? null
+          : s.activeFrameInstanceId;
+        const aliveIds = new Set(remaining.map((fi) => fi.id));
+        const selectedFrameIds = s.selectedFrameIds.filter((fid) => aliveIds.has(fid));
+        return { ...pushHistory(s, { ...s.scene, layers, frameInstances: remaining }), activeLayerId, activeFrameInstanceId, selectedFrameIds };
       }),
     updateFrameInstance: (id, patch, coalesce) =>
       set((s) => {
