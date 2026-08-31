@@ -124,7 +124,8 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
           activeLayerId,
           videoCurrentTime: 0,
           // A real upload decodes asynchronously; clear media stops loading.
-          isMediaLoading: mediaUrl != null
+          isMediaLoading: mediaUrl != null,
+          mediaLoadingLayerId: mediaUrl != null ? (activeLayerId ?? null) : null
         };
       });
       if (accepted && mediaUrl && mediaType && mediaType !== "none") {
@@ -152,7 +153,8 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         return {
           ...pushHistory(s, { ...s.scene, layers }),
           videoCurrentTime: 0,
-          isMediaLoading: mediaUrl != null
+          isMediaLoading: mediaUrl != null,
+          mediaLoadingLayerId: mediaUrl != null ? layerId : null
         };
       }),
     addLayer: (mediaUrl, mediaType, mediaName = null) =>
@@ -170,7 +172,8 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
           ...pushHistory(s, { ...s.scene, layers }),
           activeLayerId: newLayer.id,
           videoCurrentTime: 0,
-          isMediaLoading: mediaUrl != null
+          isMediaLoading: mediaUrl != null,
+          mediaLoadingLayerId: mediaUrl != null ? newLayer.id : null
         };
       }),
     addTextLayer: (textContent) =>
@@ -217,7 +220,14 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
     toggleLayerHidden: (id) =>
       set((s) => {
         const layers = s.scene.layers.map((l) => (l.id === id ? { ...l, hidden: !l.hidden } : l));
-        return pushHistory(s, { ...s.scene, layers });
+        // Hiding the layer whose media is loading stops its <img>/<video>
+        // from ever mounting, so its onLoad/onLoadedData can't clear the
+        // spinner — clear it here or the loading indicator sticks forever.
+        const orphanSpinner = s.isMediaLoading && s.mediaLoadingLayerId === id;
+        return {
+          ...pushHistory(s, { ...s.scene, layers }),
+          ...(orphanSpinner ? { isMediaLoading: false, mediaLoadingLayerId: null } : {})
+        };
       }),
     toggleLayersLocked: (ids) =>
       set((s) => {
@@ -241,7 +251,17 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         const aliveFrameIds = new Set(frameInstances.map((fi) => fi.id));
         const activeFrameInstanceId = s.activeFrameInstanceId && aliveFrameIds.has(s.activeFrameInstanceId) ? s.activeFrameInstanceId : frameInstances[frameInstances.length - 1]?.id ?? null;
         const selectedFrameIds = s.selectedFrameIds.filter((fid) => aliveFrameIds.has(fid));
-        return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId, selectedLayerIds, activeFrameInstanceId, selectedFrameIds };
+        // Same stuck-spinner rule as toggleLayerHidden: a removed layer's
+        // media element never mounts.
+        const orphanSpinner = s.isMediaLoading && s.mediaLoadingLayerId === id;
+        return {
+          ...pushHistory(s, { ...s.scene, layers, frameInstances }),
+          activeLayerId,
+          selectedLayerIds,
+          activeFrameInstanceId,
+          selectedFrameIds,
+          ...(orphanSpinner ? { isMediaLoading: false, mediaLoadingLayerId: null } : {})
+        };
       }),
     duplicateLayers: (ids) =>
       set((s) => {

@@ -34,10 +34,26 @@ export function useAutosaveStatus(
   const [saved, setSaved] = useState(true);
   const [saveToast, setSaveToast] = useState<string | null>(null);
   const savedSceneRef = useRef<EditorScene | null>(null);
+  const latestSceneRef = useRef(scene);
+
+  // A project switch swaps `scene` wholesale (activateEditorScene), which the
+  // edit-detector below would otherwise read as a user edit and flash a false
+  // "Unsaved → Saved" toast pair on every switch. Watching the active project
+  // id lets us re-baseline before the scene effect runs.
+  const activeProjectId = useProjectsStore((s) => s.activeProjectId);
+  const prevProjectIdRef = useRef(activeProjectId);
+  useEffect(() => {
+    if (prevProjectIdRef.current !== activeProjectId) {
+      prevProjectIdRef.current = activeProjectId;
+      // Re-baseline to the incoming scene and clear any pending "unsaved"
+      // state from the outgoing project.
+      savedSceneRef.current = latestSceneRef.current;
+      setSaved(true);
+    }
+  }, [activeProjectId]);
 
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latestSceneRef = useRef(scene);
 
   const showSavedToast = useCallback((msg: string) => {
     setSaveToast(msg);

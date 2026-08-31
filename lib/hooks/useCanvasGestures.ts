@@ -86,8 +86,12 @@ export function useCanvasGestures({ frameRef, activeLayer }: UseCanvasGestures) 
   const canPan = !!activeLayer?.mediaUrl;
   const onPanDown = (e: React.PointerEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
-    // Let the Clear button and watermark keep their own click behavior.
-    if (target.closest("button") || target.closest(".preview-watermark")) return;
+    // Let the Clear button, watermark and native <video controls> keep their
+    // own behavior: pointer events on video controls are retargeted to the
+    // <video>, so `closest("button")` doesn't see them and the pan gesture
+    // would otherwise capture the pointer away from play/seek UI (mirrors
+    // FrameInstanceGrid's video guard).
+    if (target.closest("button") || target.closest(".preview-watermark") || target.closest("video")) return;
     if (!activeLayer?.mediaUrl) return;
     panState.current = {
       x: e.clientX,

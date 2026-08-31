@@ -2,8 +2,9 @@
 
 import type { EditorScene, MediaLayer, ScreenChrome } from "@/lib/types/editor";
 import { frameViewBox, getFrameSpec } from "@/lib/render/frames";
-import { RENDER, drawAnnotations, drawFrameAndMedia, drawWatermark } from "@/lib/render/canvasDrawing";
+import { RENDER, drawAnnotations, drawFrameAndMedia, drawWatermark, type MediaStackEntry } from "@/lib/render/canvasDrawing";
 import { loadImage, loadVideoFrame } from "@/lib/render/canvasMedia";
+import { isTextLayer } from "@/lib/render/layerText";
 import { createLayerCanvas, layerContext } from "@/lib/render/canvasFactory";
 import type { FrameBox, RenderTransform } from "@/lib/render/frameGeometry";
 import { computeFrameBox, computeFrameInstances, isVisibleFrameInstance } from "@/lib/render/frameGeometry";
@@ -29,7 +30,8 @@ function drawTiltedFrame(
   zoom: number,
   media: CanvasImageSource | null,
   overlay: CanvasImageSource | null,
-  screen: ScreenChrome = scene.screen
+  screen: ScreenChrome = scene.screen,
+  mediaStack?: MediaStackEntry[]
 ) {
   const landscape = !!box.rotation && !!box.nativeRect;
   const native = box.nativeRect ?? { x: box.x, y: box.y, width: box.width, height: box.height };
@@ -57,7 +59,7 @@ function drawTiltedFrame(
     innerY: box.innerY - dy
   };
 
-  drawFrameAndMedia(octx, scene, spec, layer, localBox, dpiScale, zoom, media, overlay, screen);
+  drawFrameAndMedia(octx, scene, spec, layer, localBox, dpiScale, zoom, media, overlay, screen, mediaStack);
 
   // Project the flat composite (device + shadow padding, native orientation),
   // then rotate the projected quad about the assembly center for landscape
@@ -123,6 +125,19 @@ function paintFloorReflection(
   ctx.drawImage(layer as CanvasImageSource, 0, 0);
 }
 
+/** Builds the single-frame media stack: every visible layer paired with its
+ *  decoded media in paint order (bottom → top), mirroring the CSS preview's
+ *  media slot. The `resolve` callback supplies each layer's media (already
+ *  loaded by the caller). */
+function buildMediaStack(
+  scene: EditorScene,
+  resolve: (layer: MediaLayer) => CanvasImageSource | null
+): MediaStackEntry[] {
+  return scene.layers
+    .filter((l) => !l.hidden)
+    .map((layer) => ({ layer, media: resolve(layer) }));
+}
+
 export function renderMockupToCanvas(
   canvas: HTMLCanvasElement | OffscreenCanvas,
   scene: EditorScene,
@@ -180,7 +195,9 @@ export function renderMockupToCanvas(
       const instZoom = isActiveInstance ? Math.max(RENDER.minZoom, transform?.zoom ?? layer?.zoom ?? 1) : Math.max(RENDER.minZoom, layer?.zoom ?? 1);
 
       const frameMedia = layer?.id ? (layerMedias?.get(layer.id) ?? null) : media;
-      const overlay = layer?.id && instSpec.isOverlay ? (frameOverlays?.get(layer.id) ?? null) : null;
+      // Overlay skins are keyed by instance id: two instances can share a
+      // layer with different materials, each needing its own skin.
+      const overlay = instSpec.isOverlay ? (frameOverlays?.get(inst.id) ?? null) : null;
 
       // Landscape instances carry swapped box dimensions plus a rotation.
       // Every part of the assembly is drawn in its NATIVE orientation inside
@@ -224,8 +241,10 @@ export function renderMockupToCanvas(
     for (const { box, inst } of visible) {
       renderInstance(ctx, box, inst);
     }
-    drawWatermark(ctx, scene, width, height, watermarkImage);
+    // Paint order matches the preview and SVG export: annotations first, the
+    // watermark on top of them.
     if (scene.annotations.length > 0) drawAnnotations(ctx, scene.annotations, width, height);
+    drawWatermark(ctx, scene, width, height, watermarkImage);
     return;
   }
 
@@ -236,6 +255,18 @@ export function renderMockupToCanvas(
   const activeLayerForRender2 = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
    const actualZoom = Math.max(RENDER.minZoom, transform?.zoom ?? activeLayerForRender2?.zoom ?? 1);
 
+  // Multi-layer single-frame scenes must export every visible layer, matching
+  // the preview's media slot. `layerMedias` keyed by layer id (worker path and
+  // media-stack callers) wins; otherwise the stack holds just the active layer,
+  // which is the historical single-media behavior.
+  const singleFrameStack = buildMediaStack(scene, (layer) =>
+    layerMedias && layerMedias.has(layer.id) ? layerMedias.get(layer.id)! : layer.id === activeLayerForRender2?.id ? media : null
+  );
+  const hasStackContent = singleFrameStack.some((e) => e.media != null || isTextLayer(e.layer));
+  const stack: MediaStackEntry[] = hasStackContent
+    ? singleFrameStack
+    : [{ layer: (activeLayerForRender2 ?? scene.layers[0]!) as MediaLayer, media: null }];
+
 
   if (scene.floorReflection) {
     paintFloorReflection(
@@ -243,9 +274,9 @@ export function renderMockupToCanvas(
       [box],
       (target) => {
         if (hasTilt(scene)) {
-          drawTiltedFrame(target, scene, spec, activeLayerForRender2 ?? scene.layers[0], box, dpiScale, actualZoom, media, frameOverlay ?? null);
+          drawTiltedFrame(target, scene, spec, activeLayerForRender2 ?? scene.layers[0], box, dpiScale, actualZoom, media, frameOverlay ?? null, undefined, stack);
         } else {
-          drawFrameAndMedia(target, scene, spec, activeLayerForRender2 ?? scene.layers[0], box, dpiScale, actualZoom, media, frameOverlay ?? null);
+          drawFrameAndMedia(target, scene, spec, activeLayerForRender2 ?? scene.layers[0], box, dpiScale, actualZoom, media, frameOverlay ?? null, undefined, stack);
         }
       },
       width,
@@ -254,16 +285,17 @@ export function renderMockupToCanvas(
   }
 
   if (hasTilt(scene)) {
-    drawTiltedFrame(ctx, scene, spec, activeLayerForRender2, box, dpiScale, actualZoom, media, frameOverlay ?? null);
+    drawTiltedFrame(ctx, scene, spec, activeLayerForRender2, box, dpiScale, actualZoom, media, frameOverlay ?? null, undefined, stack);
   } else {
-    drawFrameAndMedia(ctx, scene, spec, activeLayerForRender2, box, dpiScale, actualZoom, media, frameOverlay ?? null);
+    drawFrameAndMedia(ctx, scene, spec, activeLayerForRender2, box, dpiScale, actualZoom, media, frameOverlay ?? null, undefined, stack);
   }
 
-  if (scene.watermarkEnabled && (scene.watermarkText || scene.watermarkImageUrl)) {
-    drawWatermark(ctx, scene, width, height, watermarkImage);
-  }
-
+  // Paint order matches the preview and SVG export: annotations first, the
+  // watermark on top of them.
   if (scene.annotations.length > 0) {
     drawAnnotations(ctx, scene.annotations, width, height);
+  }
+  if (scene.watermarkEnabled && (scene.watermarkText || scene.watermarkImageUrl)) {
+    drawWatermark(ctx, scene, width, height, watermarkImage);
   }
 }

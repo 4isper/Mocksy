@@ -91,30 +91,44 @@ export async function renderSceneToImageBlob(
     const active = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
     let media: CanvasImageSource | null = null;
 
-    // A hidden active layer renders nothing, matching the preview.
-    if (!active?.hidden && active) {
-      // Resolve the active layer's media element by identity, never by DOM
-      // order: the preview container also holds unrelated <img>s (device-skin
-      // overlays, the watermark logo) and other layers' media, which a blind
-      // querySelector would export with this layer's fit/filters applied.
-      const el = node.querySelector(layerMediaSelector(active.id));
-      if (el instanceof HTMLVideoElement) {
-        // Always capture the layer's poster frame for a video layer: reusing
-        // the preview element would snapshot whatever frame its playhead
-        // happens to be on, making the export depend on transient preview
-        // state (and differ from the multi-frame path, which always loads the
-        // poster frame).
-        if (isVideoLayer(active) && active.mediaUrl) {
+    // Single-frame mode paints EVERY visible layer's media (the CSS preview
+    // stacks them in the media slot), so resolve media per layer, not just for
+    // the active one. Multi-frame mode loads per-instance media further below.
+    let singleFrameMedias: Map<string, CanvasImageSource | null> | undefined;
+    if (!isMultiFrame) {
+      singleFrameMedias = new Map();
+      for (const layer of scene.layers) {
+        if (layer.hidden || !layer.mediaUrl) continue;
+        if (isVideoLayer(layer)) {
+          // Always capture the layer's poster frame for a video layer: reusing
+          // the preview element would snapshot whatever frame its playhead
+          // happens to be on, making the export depend on transient preview
+          // state (and differ from the multi-frame path, which always loads
+          // the poster frame).
           try {
-            media = await loadVideoFrame(active.mediaUrl, active.videoPosterTime ?? 0);
+            singleFrameMedias.set(layer.id, await loadVideoFrame(layer.mediaUrl, layer.videoPosterTime ?? 0));
           } catch {
-            media = null;
+            singleFrameMedias.set(layer.id, null);
+          }
+          continue;
+        }
+        // Resolve the layer's media element by identity, never by DOM order:
+        // the preview container also holds unrelated <img>s (device-skin
+        // overlays, the watermark logo) and other layers' media, which a blind
+        // querySelector would export with this layer's fit/filters applied.
+        const el = node.querySelector(layerMediaSelector(layer.id));
+        if (el instanceof HTMLImageElement) {
+          await waitForImage(el);
+          singleFrameMedias.set(layer.id, el);
+        } else {
+          try {
+            singleFrameMedias.set(layer.id, await loadImage(layer.mediaUrl));
+          } catch {
+            singleFrameMedias.set(layer.id, null);
           }
         }
-      } else if (el instanceof HTMLImageElement) {
-        await waitForImage(el);
-        media = el;
       }
+      media = (active && singleFrameMedias.get(active.id)) || null;
     }
 
     const hasCustomSize = customSize !== null && customSize !== undefined && customSize.width > 0 && customSize.height > 0;
@@ -184,46 +198,46 @@ export async function renderSceneToImageBlob(
       // Hidden layers' instances aren't rendered — skip their media too. All
       // loads run concurrently: each instance waits on its own media + skin
       // fetch instead of queueing behind every earlier frame's round-trip.
-      const visible = scene.frameInstances.filter((inst) => isVisibleFrameInstance(scene, inst));
-      const loaded = await Promise.all(
-        visible.map(async (inst) => {
-          const layer = scene.layers.find((l) => l.id === inst.layerId);
-          let media: CanvasImageSource | null = null;
-          let hasMedia = false;
-          if (layer?.mediaUrl) {
-            hasMedia = true;
-            try {
-              // An <img> can't decode a video URL; load video frames through a
-              // <video> element that has actually decoded a frame, so the static
-              // export shows the poster frame instead of an empty screen.
-              media = isVideoLayer(layer)
-                ? await loadVideoFrame(layer.mediaUrl, layer.videoPosterTime ?? 0)
-                : await loadImage(layer.mediaUrl);
-            } catch {
-              media = null;
+        const visible = scene.frameInstances.filter((inst) => isVisibleFrameInstance(scene, inst));
+        const loaded = await Promise.all(
+          visible.map(async (inst) => {
+            const layer = scene.layers.find((l) => l.id === inst.layerId);
+            let media: CanvasImageSource | null = null;
+            let hasMedia = false;
+            if (layer?.mediaUrl) {
+              hasMedia = true;
+              try {
+                // An <img> can't decode a video URL; load video frames through a
+                // <video> element that has actually decoded a frame, so the static
+                // export shows the poster frame instead of an empty screen.
+                media = isVideoLayer(layer)
+                  ? await loadVideoFrame(layer.mediaUrl, layer.videoPosterTime ?? 0)
+                  : await loadImage(layer.mediaUrl);
+              } catch {
+                media = null;
+              }
             }
-          }
-          // Load overlay for this frame instance if it uses an overlay frame
-          let overlay: CanvasImageSource | null = null;
-          let hasOverlay = false;
-          const instSpec = getFrameSpec(inst.frame, scene.customFrame, inst.material);
-          if (instSpec.isOverlay && instSpec.asset) {
-            try {
-              overlay = await loadImage(instSpec.asset);
-              hasOverlay = true;
-            } catch {
-              // Overlay failed to load - leave empty
+            // Load the overlay skin for this instance's frame + material.
+            let overlay: CanvasImageSource | null = null;
+            let hasOverlay = false;
+            const instSpec = getFrameSpec(inst.frame, scene.customFrame, inst.material);
+            if (instSpec.isOverlay && instSpec.asset) {
+              try {
+                overlay = await loadImage(instSpec.asset);
+                hasOverlay = true;
+              } catch {
+                // Overlay failed to load - leave empty
+              }
             }
-          }
-          return { layerId: layer?.id ?? null, media, hasMedia, overlay, hasOverlay };
-        })
-      );
-      // Apply in instance order so a layer shared by several frames keeps the
-      // sequential semantics (the last visible instance wins).
-      for (const { layerId, media, hasMedia, overlay, hasOverlay } of loaded) {
-        if (!layerId) continue;
-        if (hasMedia) layerMedias.set(layerId, media);
-        if (hasOverlay && overlay) frameOverlays.set(layerId, overlay);
+            return { inst, layerId: layer?.id ?? null, media, hasMedia, overlay, hasOverlay };
+          })
+        );
+      // Apply in instance order. Skins are keyed by instance id (two
+      // instances can share a layer with different materials); media stays
+      // keyed by layer id (shared between instances).
+      for (const { inst, layerId, media, hasMedia, overlay, hasOverlay } of loaded) {
+        if (hasMedia && layerId) layerMedias.set(layerId, media);
+        if (hasOverlay && overlay && inst.id) frameOverlays.set(inst.id, overlay);
       }
     }
 
@@ -240,7 +254,7 @@ export async function renderSceneToImageBlob(
       jpegFlattenFill,
       overlay,
       backgroundImage,
-      layerMedias,
+      isMultiFrame ? layerMedias : singleFrameMedias,
       frameOverlays,
       activeLayerId,
       watermarkImage

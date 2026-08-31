@@ -32,6 +32,7 @@ export const useEditorStore = create<EditorStoreState>()((set) => ({
   lastHistoryKey: null,
   lastHistoryAt: 0,
   isMediaLoading: false,
+  mediaLoadingLayerId: null,
   isRemovingBackground: false,
   mediaUploadError: null,
   scenePalette: null,

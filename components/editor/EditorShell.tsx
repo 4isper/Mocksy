@@ -5,6 +5,7 @@ import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { useEditorExport } from "@/lib/hooks/useEditorExport";
 import { useAutosaveStatus } from "@/lib/hooks/useAutosaveStatus";
 import { STORAGE_FULL_ERROR_KEY } from "@/lib/state/projectsStore";
+import { hasOpenModalSurface } from "@/lib/state/modalRegistry";
 import { warmUpFfmpeg } from "@/lib/export/exportVideo";
 import { useEditorShortcuts } from "@/lib/hooks/useEditorShortcuts";
 import { useClipboardPaste } from "@/lib/hooks/useClipboardPaste";
@@ -93,8 +94,17 @@ export function EditorShell() {
   // is open the global shortcuts are parked so keystrokes land in the dialog,
   // not the editor. The Share-QR dialog is stateful inside exportApi, so it's
   // folded in here as a final boolean rather than a separate local state.
+  // Dialogs whose open state lives inside panels (inline confirmations, the
+  // onboarding tour, mobile sheets) register in the modal registry through
+  // their focus trap and are picked up via hasOpenModalSurface().
   useEffect(() => {
-    hasOpenModalRef.current = confirmResetOpen || exportOpen || shortcutsOpen || commandPaletteOpen || exportApi.shareQrUrl !== null;
+    hasOpenModalRef.current =
+      confirmResetOpen ||
+      exportOpen ||
+      shortcutsOpen ||
+      commandPaletteOpen ||
+      exportApi.shareQrUrl !== null ||
+      hasOpenModalSurface();
   }, [confirmResetOpen, exportOpen, shortcutsOpen, commandPaletteOpen, exportApi.shareQrUrl]);
 
   const { saved, saveToast, savedSceneRef, saveNow, markSaved } = useAutosaveStatus(scene, activeLayerId, bootstrapped);

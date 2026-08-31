@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  ACTIVE_MEDIA_KEY,
   OVERLAY_KEY_PREFIX,
   buildRenderWorkerPayload,
   canRenderSceneInWorker,
@@ -52,9 +51,16 @@ describe("canRenderSceneInWorker", () => {
     video.layers[0] = { ...video.layers[0]!, mediaType: "video" as never };
     expect(canRenderSceneInWorker(video)).toBe(false);
 
+    const videoOnSecondLayer = baseScene();
+    videoOnSecondLayer.layers[1] = { ...videoOnSecondLayer.layers[1]!, mediaType: "video" as never };
+    expect(canRenderSceneInWorker(videoOnSecondLayer)).toBe(false);
+
+    // A hidden active layer still renders the other visible layers, so the
+    // worker path remains viable — only video layers force the main-thread
+    // path (an all-hidden scene has nothing to decode).
     const hidden = baseScene();
     hidden.layers[0] = { ...hidden.layers[0]!, hidden: true };
-    expect(canRenderSceneInWorker(hidden)).toBe(false);
+    expect(canRenderSceneInWorker(hidden)).toBe(true);
   });
 
   it("rejects multi-frame scenes whose instance layers are not all renderable", () => {
@@ -72,7 +78,7 @@ describe("canRenderSceneInWorker", () => {
 });
 
 describe("buildRenderWorkerPayload", () => {
-  it("collects the active media and overlay skin for single-frame scenes", () => {
+  it("collects every visible layer's media and the overlay skin for single-frame scenes", () => {
     const payload = buildRenderWorkerPayload({
       id: 7,
       scene: baseScene(),
@@ -83,7 +89,11 @@ describe("buildRenderWorkerPayload", () => {
     });
     expect(payload).not.toBeNull();
     expect(payload!.id).toBe(7);
-    expect(payload!.images).toEqual([{ key: ACTIVE_MEDIA_KEY, url: "data:image/png;base64,AAA" }]);
+    // Single-frame mode renders every visible layer's media, keyed by layer id.
+    expect(payload!.images).toEqual([
+      { key: "l1", url: "data:image/png;base64,AAA" },
+      { key: "l2", url: "data:image/png;base64,BBB" }
+    ]);
     // The default iphone frame is now an overlay skin.
     expect(payload!.overlayUrl).toBe("/devices/iphone.svg");
     expect(payload!.backgroundImageUrl).toBeNull();
@@ -105,7 +115,9 @@ describe("buildRenderWorkerPayload", () => {
       mimeType: "image/webp"
     });
     const keys = payload!.images.map((i) => i.key).sort();
-    expect(keys).toEqual(["l1", "l2", `${OVERLAY_KEY_PREFIX}l1`, `${OVERLAY_KEY_PREFIX}l2`]);
+    // Skins are keyed by instance id so two instances sharing a layer with
+    // different materials each keep their own skin.
+    expect(keys).toEqual(["l1", "l2", `${OVERLAY_KEY_PREFIX}f1`, `${OVERLAY_KEY_PREFIX}f2`]);
     const skins = payload!.images.filter((i) => i.key.startsWith(OVERLAY_KEY_PREFIX));
     expect(new Set(skins.map((i) => i.url))).toEqual(new Set(["/devices/iphone16pro.svg", "/devices/macbook.svg"]));
     expect(payload!.mimeType).toBe("image/webp");

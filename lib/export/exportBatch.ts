@@ -37,7 +37,8 @@ export async function exportBatchZip(
   onError?: (message: string) => void,
   scale?: number,
   activeLayerId: string | null = scene.activeLayerId,
-  onProgress?: (current: number, total: number) => void
+  onProgress?: (current: number, total: number) => void,
+  signal?: AbortSignal
 ): Promise<void> {
   const instances = scene.frameInstances;
   if (instances.length === 0) {
@@ -46,12 +47,14 @@ export async function exportBatchZip(
   }
 
   try {
+    signal?.throwIfAborted();
     const { default: JSZip } = await import("jszip");
     const zip = new JSZip();
     let exported = 0;
 
     for (let i = 0; i < instances.length; i++) {
       const inst = instances[i]!;
+      signal?.throwIfAborted();
       onProgress?.(i + 1, instances.length);
       // Rendering a single-instance scene variant reuses the exact export
       // geometry: the frame sits at its own layout position with the shared

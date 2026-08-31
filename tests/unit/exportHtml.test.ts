@@ -235,7 +235,10 @@ describe("buildHtmlSnippet", () => {
     });
     const html = buildHtmlSnippet(scene, { mediaHref: null, mediaType: null, backgroundHref: null, overlayHref: null });
     expect(html).toContain('<svg class="anno" viewBox="0 0 16 9"');
-    expect(html).toContain('<line x1="1.6" y1="2.7" x2="8" y2="4.5" stroke="#00ff00" stroke-width="2" stroke-linecap="round"/>');
+    // Stroke width is authored in reference px (canvas scales by width/800);
+    // in the 16-unit-wide viewBox that's 2 * 16/800 = 0.04 units, which lands
+    // back at 2px once the SVG stretches over the stage.
+    expect(html).toContain('<line x1="1.6" y1="2.7" x2="8" y2="4.5" stroke="#00ff00" stroke-width="0.04" stroke-linecap="round"/>');
     expect(html).toContain('<polygon points="8,4.5 ');
   });
 
@@ -364,7 +367,11 @@ describe("buildGridHtmlSnippet", () => {
     const html = buildGridHtmlSnippet(scene, [
       { inst: scene.frameInstances[0]!, mediaHref: MEDIA, mediaType: "video", overlayHref: null }
     ]);
-    expect(html).toContain('<video class="media" src="data:image/png;base64,AAAA" controls muted loop autoplay playsinline style="object-fit: contain" data-rate="1.5">');
+    expect(html).toContain('<video class="media" src="data:image/png;base64,AAAA" controls muted loop autoplay playsinline style=');
+    // The default mediaFit is cover (matching the preview), not the old
+    // hardcoded contain.
+    expect(html).toContain("object-fit: cover;");
+    expect(html).toContain('data-rate="1.5"');
     expect(html).toContain('v.playbackRate=parseFloat(v.dataset.rate)');
   });
 

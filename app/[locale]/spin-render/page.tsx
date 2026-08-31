@@ -25,15 +25,11 @@ export default function SpinRenderPage() {
         if (!root) return { error: "render container missing" };
 
         root.replaceChildren();
-        const active =
-          req.scene.layers.find((l) => l.id === req.scene.activeLayerId) ?? req.scene.layers[0];
-        if (active && active.mediaUrl && !active.hidden && active.mediaType !== "video") {
-          const img = document.createElement("img");
-          img.src = active.mediaUrl;
-          img.dataset.layerMedia = active.id;
-          img.decoding = "async";
-          root.appendChild(img);
-        }
+        // No manual DOM seeding needed: the export pipeline (fixed
+        // renderSceneToImageBlob) loads every visible layer's media itself —
+        // images via loadImage and video layers via loadVideoFrame (poster
+        // frame), directly from the scene's data URLs. The old <img>-only
+        // seeding silently rendered video scenes with an empty device screen.
 
         const blob = await renderSceneToImageBlob(
           req.scene,

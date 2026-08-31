@@ -73,6 +73,11 @@ export function AnnotationContent({
         onPointerDown={(e) => e.stopPropagation()}
         onInput={(e) => onTextInput(e.currentTarget.textContent ?? "")}
         onKeyDown={(e) => {
+          // While editing, every key belongs to the text editor: without this
+          // the keydown bubbles to #preview-canvas (whose Delete/Backspace
+          // handler removes the annotation being typed in) and to the global
+          // shortcut handler. Escape still ends editing first.
+          e.stopPropagation();
           if (e.key === "Escape") {
             e.currentTarget.blur();
           }

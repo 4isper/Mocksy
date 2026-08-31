@@ -79,6 +79,12 @@ function annotationsHtml(scene: EditorScene, arW: number, arH: number): string {
         ? `border:none;background:${gradientCSS} padding-box,${gradientCSS} border-box;-webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;padding:${Math.max(1, a.strokeWidth)}px`
         : `border:${Math.max(1, a.strokeWidth)}px solid ${a.color}`;
       out += `<div class="anno" style="left:${num(bx)}%;top:${num(by)}%;width:${num(bw)}%;height:${num(bh)}%;${borderStyle}"></div>`;
+    } else if (a.type === "circle") {
+      const gradientCSS = annotationGradientCSS(a);
+      const borderStyle = gradientCSS
+        ? `border:none;background:${gradientCSS} padding-box,${gradientCSS} border-box;-webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;padding:${Math.max(1, a.strokeWidth)}px;border-radius:50%`
+        : `border:${Math.max(1, a.strokeWidth)}px solid ${a.color};border-radius:50%`;
+      out += `<div class="anno" style="left:${num(bx)}%;top:${num(by)}%;width:${num(bw)}%;height:${num(bh)}%;${borderStyle}"></div>`;
     } else if (a.type === "blur") {
       // Frosted-glass region: blurs whatever the page paints beneath it —
       // mirrors backdrop-filter in the live preview and the canvas export's
@@ -90,7 +96,14 @@ function annotationsHtml(scene: EditorScene, arW: number, arH: number): string {
       const ex = (a.x + a.w) * arW;
       const ey = (a.y + a.h) * arH;
       const angle = Math.atan2(ey - sy, ex - sx);
-      const head = arW * 0.015;
+      // The SVG's viewBox is in artboard-ratio units (arW × arH), so all
+      // reference-px sizes (annotation stroke, arrowhead) must be converted:
+      // 1 reference px = arW / 800 viewBox units (the canvas export scales
+      // chrome by canvasWidth/800). Without this, a 4px stroke renders as
+      // tens of px wide once the SVG stretches over the stage.
+      const unitsPerRefPx = arW / 800;
+      const head = RENDER.arrowHead * unitsPerRefPx;
+      const strokeUnits = Math.max(0.5 * unitsPerRefPx, a.strokeWidth * unitsPerRefPx);
       const a1 = angle + Math.PI - 0.45;
       const a2 = angle + Math.PI + 0.45;
       const p1x = num(ex + head * Math.cos(a1));
@@ -111,7 +124,7 @@ function annotationsHtml(scene: EditorScene, arW: number, arH: number): string {
         const y2 = (50 + Math.sin(rad) * 50).toFixed(1);
         return `<linearGradient id="html-anno-grad-${i}" x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%"><stop offset="0%" stop-color="${a.gradientFrom}"/>${a.gradientVia ? `<stop offset="50%" stop-color="${a.gradientVia}"/>` : ""}<stop offset="100%" stop-color="${a.gradientTo}"/></linearGradient>`;
       })() : "";
-      out += `<svg class="anno" viewBox="0 0 ${num(arW)} ${num(arH)}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="position:absolute;inset:0">${gradDef ? `<defs>${gradDef}</defs>` : ""}<line x1="${num(sx)}" y1="${num(sy)}" x2="${num(ex)}" y2="${num(ey)}" stroke="${strokeColor}" stroke-width="${Math.max(1, a.strokeWidth)}" stroke-linecap="round"/><polygon points="${num(ex)},${num(ey)} ${p1x},${p1y} ${p2x},${p2y}" fill="${strokeColor}"/></svg>`;
+      out += `<svg class="anno" viewBox="0 0 ${num(arW)} ${num(arH)}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="position:absolute;inset:0">${gradDef ? `<defs>${gradDef}</defs>` : ""}<line x1="${num(sx)}" y1="${num(sy)}" x2="${num(ex)}" y2="${num(ey)}" stroke="${strokeColor}" stroke-width="${num(strokeUnits)}" stroke-linecap="round"/><polygon points="${num(ex)},${num(ey)} ${p1x},${p1y} ${p2x},${p2y}" fill="${strokeColor}"/></svg>`;
     }
   }
   return out;
@@ -172,11 +185,19 @@ function gridItemHtml(scene: EditorScene, tiltPrefix: string, item: GridItemOpti
   frameCss += `\nwidth: 100%;\nheight: 100%;\nposition: relative;\ntransform: ${tiltPrefix}scale(${num(zoom)});\ntransform-origin: center;`;
 
   const mediaCss = serializeCssProperties(css.mediaStyle);
+  // The preview applies the layer's blend mode via mixBlendMode on the media
+  // element (SingleFrameView/FrameInstanceGrid) — mirror it here or the export
+  // silently drops the blend.
+  const mediaBlend = layer?.blendMode && layer.blendMode !== "normal" ? `mix-blend-mode: ${layer.blendMode};` : "";
+  // The video must carry the same positioning/fit styles as the <img>: without
+  // them it isn't placed inside the skin's cutout (position/size/clip-path are
+  // lost) and a hardcoded object-fit ignores the layer's mediaFit.
+  const videoMediaCss = `${mediaCss}\n${mediaBlend}\nobject-fit: ${(layer?.mediaFit ?? "cover") === "contain" ? "contain" : "cover"};`;
   const media =
     item.mediaType === "video" && item.mediaHref
-      ? `<video class="media" src="${item.mediaHref}" controls muted loop autoplay playsinline style="object-fit: contain"${(layer?.playbackSpeed ?? 1) !== 1 ? ` data-rate="${num(Math.max(0.5, Math.min(2, layer?.playbackSpeed ?? 1)))}"` : ""}></video>`
+      ? `<video class="media" src="${item.mediaHref}" controls muted loop autoplay playsinline style="${videoMediaCss}"${(layer?.playbackSpeed ?? 1) !== 1 ? ` data-rate="${num(Math.max(0.5, Math.min(2, layer?.playbackSpeed ?? 1)))}"` : ""}></video>`
       : item.mediaHref
-        ? `<img class="media" src="${item.mediaHref}" alt="" style="${mediaCss}"/>`
+        ? `<img class="media" src="${item.mediaHref}" alt="" style="${mediaCss}${mediaBlend}"/>`
         : "";
 
   const glare = css.screenGlareStyle
@@ -349,6 +370,11 @@ export function buildHtmlSnippet(scene: EditorScene, opts: HtmlSnippetOptions, a
     frameCss += `\ntransform: ${tiltPrefix}${transformFor(activeLayer.zoom, 0, 0)};`;
   }
   const mediaCss = serializeCssProperties(css.mediaStyle);
+  // The preview applies the active layer's blend mode via mixBlendMode on the
+  // media element — mirror it here or the export silently drops the blend.
+  const singleBlend = activeLayer?.blendMode && activeLayer.blendMode !== "normal"
+    ? `mix-blend-mode: ${activeLayer.blendMode};`
+    : "";
   const backgroundCss = css.backgroundImage
     ? `.bg {\n  position: absolute;\n  inset: -${css.backgroundBlur + 6}px;\n  z-index: 0;\n  background-image: url("${opts.backgroundHref ?? css.backgroundImage}");\n  background-size: cover;\n  background-position: center;\n${css.backgroundBlur > 0 ? `  filter: blur(${css.backgroundBlur}px);\n` : ""}}`
     : "";
@@ -429,6 +455,7 @@ ${frameCss}
 .media {
   display: block;
 ${mediaCss}
+${singleBlend}
 }
 .overlay {
   position: absolute;

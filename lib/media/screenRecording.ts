@@ -19,6 +19,13 @@ interface ActiveRecording {
 export type RecordingListener = (active: boolean) => void;
 
 let active: ActiveRecording | null = null;
+/** True between a start request and the moment the session is either running
+ *  or definitively not started. The getDisplayMedia picker can stay open for
+ *  seconds — without this guard a second start request (e.g. toolbar button +
+ *  command palette) passes the `active` check, both recorders launch, and the
+ *  first session's stream becomes unreachable through this module: its tracks
+ *  keep the screen-capture indicator alive until the page reloads. */
+let starting = false;
 /** Last state announced to listeners; guards against duplicate notifications
  *  because `active` is reassigned before/around cleanup. */
 let announcedActive = false;
@@ -73,83 +80,89 @@ export async function startScreenRecording(options: {
     options.onDone(null);
     return;
   }
-  if (active) {
+  if (active || starting) {
     options.onError?.("A screen recording is already in progress.");
     return;
   }
-
-  let stream: MediaStream;
+  starting = true;
   try {
-    stream = await navigator.mediaDevices.getDisplayMedia({
-      video: { frameRate: 30 },
-      audio: false
-    });
-  } catch (err) {
-    // Permission denial / picker dismissal is a normal cancel — not an error.
-    if (err instanceof DOMException && (err.name === "NotAllowedError" || err.name === "AbortError")) {
-      options.onDone(null);
-      return;
-    }
-    options.onError?.(err instanceof Error ? err.message : "Failed to start screen recording.");
-    options.onDone(null);
-    return;
-  }
-
-  let recorder: MediaRecorder;
-  try {
-    const mimeType = chooseWebmMimeType();
-    recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-  } catch {
-    // Some platforms refuse explicit mime types; fall back to the default.
+    let stream: MediaStream;
     try {
-      recorder = new MediaRecorder(stream);
+      stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { frameRate: 30 },
+        audio: false
+      });
     } catch (err) {
-      teardown(stream);
-      options.onError?.(err instanceof Error ? err.message : "Screen recording is not supported here.");
+      // Permission denial / picker dismissal is a normal cancel — not an error.
+      if (err instanceof DOMException && (err.name === "NotAllowedError" || err.name === "AbortError")) {
+        options.onDone(null);
+        return;
+      }
+      options.onError?.(err instanceof Error ? err.message : "Failed to start screen recording.");
       options.onDone(null);
       return;
     }
-  }
 
-  const chunks: BlobPart[] = [];
-  let finished = false;
+    let recorder: MediaRecorder;
+    try {
+      const mimeType = chooseWebmMimeType();
+      recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+    } catch {
+      // Some platforms refuse explicit mime types; fall back to the default.
+      try {
+        recorder = new MediaRecorder(stream);
+      } catch (err) {
+        teardown(stream);
+        options.onError?.(err instanceof Error ? err.message : "Screen recording is not supported here.");
+        options.onDone(null);
+        return;
+      }
+    }
 
-  const cleanup = () => {
-    stream.getVideoTracks().forEach((track) => {
-      track.onended = null;
-    });
-    teardown(stream);
-    setActive(null);
-  };
+    const chunks: BlobPart[] = [];
+    let finished = false;
 
-  const finish = (blob: Blob | null) => {
-    if (finished) return;
-    finished = true;
-    cleanup();
-    active = null;
-    options.onDone(blob);
-  };
-
-  recorder.ondataavailable = (event) => {
-    if (event.data && event.data.size > 0) chunks.push(event.data);
-  };
-  recorder.onstop = () => {
-    // Label the blob with the recorder's ACTUAL format — when no explicit
-    // mimeType was requested (Safari) the default can be MP4, and a hardcoded
-    // "video/webm" would mislabel the bytes.
-    finish(chunks.length > 0 ? new Blob(chunks, { type: recorder.mimeType || "video/webm" }) : null);
-  };
-
-  // The browser's native "Stop sharing" control ends the video track.
-  stream.getVideoTracks().forEach((track) => {
-    track.onended = () => {
-      if (recorder.state !== "inactive") recorder.stop();
+    const cleanup = () => {
+      stream.getVideoTracks().forEach((track) => {
+        track.onended = null;
+      });
+      teardown(stream);
+      setActive(null);
     };
-  });
 
-  active = { recorder, stream, finish };
-  setActive(active);
-  recorder.start(200);
+    const finish = (blob: Blob | null) => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      active = null;
+      options.onDone(blob);
+    };
+
+    recorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) chunks.push(event.data);
+    };
+    recorder.onstop = () => {
+      // Label the blob with the recorder's ACTUAL format — when no explicit
+      // mimeType was requested (Safari) the default can be MP4, and a hardcoded
+      // "video/webm" would mislabel the bytes.
+      finish(chunks.length > 0 ? new Blob(chunks, { type: recorder.mimeType || "video/webm" }) : null);
+    };
+
+    // The browser's native "Stop sharing" control ends the video track.
+    stream.getVideoTracks().forEach((track) => {
+      track.onended = () => {
+        if (recorder.state !== "inactive") recorder.stop();
+      };
+    });
+
+    active = { recorder, stream, finish };
+    setActive(active);
+    recorder.start(200);
+  } finally {
+    // `active` is already set for a running session (later calls are blocked
+    // by the `active` check); the flag only guards the async start window.
+    starting = false;
+  }
 }
 
 /** Finalizes the current recording and delivers its blob. */

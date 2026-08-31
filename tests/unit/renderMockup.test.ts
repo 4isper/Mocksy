@@ -767,9 +767,8 @@ describe("renderMockupToCanvas background image mode", () => {
 });
 
 describe("renderMockupToCanvas video media", () => {
-  it("uses videoWidth/videoHeight for video media", () => {
-    let captured: { dw: number; dh: number } | null = null;
-    const ctx = {
+  function mockCtx(captured: { dw: number; dh: number }) {
+    return {
       clearRect: () => {},
       fillRect: () => {},
       save: () => {},
@@ -784,23 +783,44 @@ describe("renderMockupToCanvas video media", () => {
       stroke: () => {},
       createLinearGradient: () => ({ addColorStop: () => {} }),
       drawImage: (img: any, dx: number, dy: number, dw: number, dh: number) => {
-        captured = { dw, dh };
-      },
-      set fillStyle(_v: unknown) {},
-      set strokeStyle(_v: unknown) {},
-      set lineWidth(_v: unknown) {},
-      set filter(_v: unknown) {}
+        captured.dw = dw;
+        captured.dh = dh;
+      }
     };
+  }
+
+  function videoScene() {
+    return {
+      ...initialScene,
+      layers: [{ ...initialScene.layers[0]!, id: "v1", mediaType: "video" as const, mediaUrl: "data:video/mp4;base64,AAA" }]
+    };
+  }
+
+  it("uses videoWidth/videoHeight for video media", () => {
+    const captured = { dw: 0, dh: 0 };
+    const ctx = mockCtx(captured);
     const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
     // Video with explicit videoWidth/videoHeight (different from natural dimensions)
     const video = { videoWidth: 320, videoHeight: 180 } as unknown as CanvasImageSource;
-    renderMockupToCanvas(canvas, { ...initialScene, layers: [] }, video, undefined, undefined, 400, 300, 2);
-    expect(captured).not.toBeNull();
+    renderMockupToCanvas(canvas, videoScene(), null, undefined, undefined, 400, 300, 2, undefined, undefined, undefined, undefined, new Map([["v1", video]]), undefined, "v1");
+    expect(captured.dw).not.toBe(0);
   });
 
   it("falls back to natural dimensions for video without videoWidth", () => {
-    let captured: { dw: number; dh: number } | null = null;
-    const ctx = {
+    const captured = { dw: 0, dh: 0 };
+    const ctx = mockCtx(captured);
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    // Video without videoWidth uses naturalWidth
+    const video = { naturalWidth: 640, naturalHeight: 360 } as unknown as CanvasImageSource;
+    renderMockupToCanvas(canvas, videoScene(), null, undefined, undefined, 400, 300, 2, undefined, undefined, undefined, undefined, new Map([["v1", video]]), undefined, "v1");
+    expect(captured.dw).not.toBe(0);
+  });
+});
+
+describe("renderMockupToCanvas single-frame media stack", () => {
+  /** Minimal 2D-context mock that records every media draw. */
+  function stackCtx(draws: Array<{ id?: string; dw: number; dh: number }>) {
+    return {
       clearRect: () => {},
       fillRect: () => {},
       save: () => {},
@@ -815,18 +835,90 @@ describe("renderMockupToCanvas video media", () => {
       stroke: () => {},
       createLinearGradient: () => ({ addColorStop: () => {} }),
       drawImage: (img: any, dx: number, dy: number, dw: number, dh: number) => {
-        captured = { dw, dh };
+        draws.push({ id: img?.id, dw, dh });
+      }
+    };
+  }
+
+  function layer(id: string, mediaUrl: string, overrides: Record<string, unknown> = {}) {
+    return { ...initialScene.layers[0]!, id, mediaUrl, ...overrides };
+  }
+
+  it("draws every visible layer's media, matching the preview's stacked media slot", () => {
+    const draws: Array<{ id?: string; dw: number; dh: number }> = [];
+    const ctx = stackCtx(draws);
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    const scene = {
+      ...initialScene,
+      layers: [layer("l1", "data:image/png;base64,A"), layer("l2", "data:image/png;base64,B")]
+    };
+    const medias = new Map<string, CanvasImageSource | null>([
+      ["l1", { id: "l1-media" } as CanvasImageSource],
+      ["l2", { id: "l2-media" } as CanvasImageSource]
+    ]);
+    renderMockupToCanvas(canvas, scene, null, undefined, undefined, 400, 300, 2, undefined, undefined, undefined, undefined, medias, undefined, "l1");
+    // Two layers → two media draws, in layer order.
+    expect(draws.map((d) => d.id)).toEqual(["l1-media", "l2-media"]);
+  });
+
+  it("skips hidden layers' media", () => {
+    const draws: Array<{ id?: string; dw: number; dh: number }> = [];
+    const ctx = stackCtx(draws);
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    const scene = {
+      ...initialScene,
+      layers: [layer("l1", "data:image/png;base64,A"), layer("l2", "data:image/png;base64,B", { hidden: true })]
+    };
+    const medias = new Map<string, CanvasImageSource | null>([
+      ["l1", { id: "l1-media" } as CanvasImageSource],
+      ["l2", { id: "l2-media" } as CanvasImageSource]
+    ]);
+    renderMockupToCanvas(canvas, scene, null, undefined, undefined, 400, 300, 2, undefined, undefined, undefined, undefined, medias, undefined, "l1");
+    expect(draws.map((d) => d.id)).toEqual(["l1-media"]);
+  });
+
+  it("applies a layer's blend mode via globalCompositeOperation", () => {
+    const draws: Array<{ id?: string; dw: number; dh: number }> = [];
+    const ops: string[] = [];
+    const base = stackCtx(draws) as Record<string, unknown>;
+    const ctx = {
+      ...base,
+      drawImage: (img: any, dx: number, dy: number, dw: number, dh: number) => {
+        draws.push({ id: img?.id, dw, dh });
       },
-      set fillStyle(_v: unknown) {},
-      set strokeStyle(_v: unknown) {},
-      set lineWidth(_v: unknown) {},
-      set filter(_v: unknown) {}
+      set globalCompositeOperation(v: string) {
+        ops.push(v);
+      }
     };
     const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
-    // Video without videoWidth uses naturalWidth
-    const video = { naturalWidth: 640, naturalHeight: 360 } as unknown as CanvasImageSource;
-    renderMockupToCanvas(canvas, { ...initialScene, layers: [] }, video, undefined, undefined, 400, 300, 2);
-    expect(captured).not.toBeNull();
+    const scene = {
+      ...initialScene,
+      layers: [layer("l1", "data:image/png;base64,A"), layer("l2", "data:image/png;base64,B", { blendMode: "multiply" })]
+    };
+    const medias = new Map<string, CanvasImageSource | null>([
+      ["l1", { id: "l1-media" } as CanvasImageSource],
+      ["l2", { id: "l2-media" } as CanvasImageSource]
+    ]);
+    renderMockupToCanvas(canvas, scene, null, undefined, undefined, 400, 300, 2, undefined, undefined, undefined, undefined, medias, undefined, "l1");
+    expect(ops).toContain("multiply");
+  });
+
+  it("falls back to the empty-media fill when no visible layer has content", () => {
+    let fillStyle = "";
+    const base = stackCtx([]) as Record<string, unknown>;
+    const ctx = {
+      ...base,
+      set fillStyle(v: unknown) {
+        fillStyle = String(v);
+      }
+    };
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    const scene = {
+      ...initialScene,
+      layers: [layer("l1", "", { mediaUrl: null })]
+    };
+    renderMockupToCanvas(canvas, scene, null, undefined, undefined, 400, 300, 2, undefined, undefined, undefined, undefined, new Map(), undefined, "l1");
+    expect(fillStyle).toBe("rgba(255,255,255,0.04)");
   });
 });
 
@@ -1351,7 +1443,8 @@ describe("renderMockupToCanvas multi-frame mode", () => {
       ]
     };
     const frameOverlays = new Map<string, CanvasImageSource | null>();
-    frameOverlays.set(l.id, { width: 100, height: 200 } as unknown as CanvasImageSource);
+    // Overlay skins are keyed by frame-instance id.
+    frameOverlays.set("f1", { width: 100, height: 200 } as unknown as CanvasImageSource);
     const layerMedias = new Map<string, CanvasImageSource | null>();
     layerMedias.set(l.id, { width: 200, height: 400 } as unknown as CanvasImageSource);
     renderMockupToCanvas(canvas, sceneWithFrames, null, undefined, undefined, 200, 400, 2, undefined, "transparent", undefined, undefined, layerMedias, frameOverlays);
@@ -1398,8 +1491,9 @@ describe("renderMockupToCanvas multi-frame mode", () => {
       ]
     };
     const frameOverlays = new Map<string, CanvasImageSource | null>();
-    frameOverlays.set(layer1.id, { width: 100, height: 200 } as unknown as CanvasImageSource);
-    frameOverlays.set(layer2.id, { width: 100, height: 200 } as unknown as CanvasImageSource);
+    // Overlay skins are keyed by frame-instance id.
+    frameOverlays.set("f1", { width: 100, height: 200 } as unknown as CanvasImageSource);
+    frameOverlays.set("f2", { width: 100, height: 200 } as unknown as CanvasImageSource);
     const layerMedias = new Map<string, CanvasImageSource | null>();
     layerMedias.set(layer1.id, null);
     layerMedias.set(layer2.id, { width: 200, height: 400 } as unknown as CanvasImageSource);

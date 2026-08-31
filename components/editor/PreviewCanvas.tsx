@@ -80,7 +80,10 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   // The whole-mockup zoom/animation is applied to the frame container so the
   // device skin and media scale together, matching the export.
   const frameRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  // Per-layer <video> elements (single-frame mode): the timeline seek targets
+  // the active layer's own video — a shared ref would track whichever video
+  // mounted last and scrub the wrong clip when several are visible.
+  const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const canvasRef = useRef<HTMLDivElement>(null);
   const tiltPrefix = useMemo(() => tiltCss(scene), [scene.tiltX, scene.tiltY]); // eslint-disable-line react-hooks/exhaustive-deps
   useFrameTransform(frameRef, activeLayer, scene.animationDurationMs, tiltPrefix);
@@ -214,6 +217,11 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         onContextMenu={openContextMenu}
         onKeyDown={(e) => {
           // Delete/Backspace removes the selected annotation when the canvas is focused.
+          // Never fire while typing in the inline annotation editor (or any
+          // other contentEditable): the caret's Backspace must not delete the
+          // annotation itself.
+          const target = e.target instanceof HTMLElement ? e.target : null;
+          if (target?.isContentEditable) return;
           if ((e.key === "Delete" || e.key === "Backspace") && selectedAnnotationId) {
             e.preventDefault();
             removeAnnotation(selectedAnnotationId);
@@ -288,7 +296,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             sceneCss={sceneCss}
             canPan={canPan}
             frameRef={frameRef}
-            videoRef={videoRef}
+            videoRefs={videoRefs}
             onPanDown={onPanDown}
             onPanMove={onPanMove}
             onPanUp={onPanUp}

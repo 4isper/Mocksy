@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import type { CSSProperties } from "react";
 import { useTranslations } from "next-intl";
 import { useEditorStore } from "@/lib/state/editorStore";
+import { openModalSurface } from "@/lib/state/modalRegistry";
 
 /** localStorage flag marking the tour as seen; survives reloads and projects. */
 export const ONBOARDING_SEEN_KEY = "mocksy.onboardingSeen";
@@ -131,7 +132,14 @@ export function OnboardingTour() {
       if (e.key === "Escape") finish();
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    // Register with the shortcut gate: without this, R/F/⌘N keep firing
+    // underneath the tour (its open state is store-backed, so the focus-trap
+    // registry doesn't see it).
+    const unregister = openModalSurface("onboarding-tour");
+    return () => {
+      unregister();
+      window.removeEventListener("keydown", onKey);
+    };
   }, [open, finish]);
 
   if (!open) return null;

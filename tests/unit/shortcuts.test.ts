@@ -116,7 +116,7 @@ describe("shortcutsStore", () => {
     expect(useShortcutsStore.getState().overrides).toEqual({});
   });
 
-  it("findConflict detects effective bindings, skipping self and fixed rows", () => {
+  it("findConflict detects effective bindings, skipping self", () => {
     // Defaults collide across defs bound to the same letter with different
     // modifiers: rebinding export-mp4 onto ⌘E hits export-png.
     const hit = findConflict("mod+e", "export-mp4", {});
@@ -129,8 +129,12 @@ describe("shortcutsStore", () => {
     const overrides = { "export-webp": "mod+j" };
     expect(findConflict("mod+j", "export-png", overrides)?.otherId).toBe("export-webp");
 
-    // Non-remappable rows (⌘K palette) are excluded from conflicts.
-    expect(findConflict("mod+k", "export-png", {})).toBeNull();
+    // Fixed rows (⌘K command palette, ⌘V paste) DO conflict: their combos own
+    // fixed behaviors, so a rebind onto them would silently break paste or
+    // shadow the palette instead of being caught at capture time.
+    expect(findConflict("mod+k", "export-png", {})?.otherId).toBe("open-command-palette");
+    expect(findConflict("mod+v", "export-png", {})?.otherId).toBe("paste-media");
+    expect(findConflict("r", "export-png", {})?.otherId).toBe("reset-scene");
   });
 
   it("keeps every default combo unique across remappable defs", () => {

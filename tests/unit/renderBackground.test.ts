@@ -29,7 +29,11 @@ function mockCtx(): CanvasRenderingContext2D {
     }),
     putImageData: vi.fn(),
     createLinearGradient: () => grad,
-    createRadialGradient: () => grad,
+    // Record the radial radius so tests can pin the gradient geometry.
+    createRadialGradient: (_x0: number, _y0: number, _r0: number, _x1: number, _y1: number, r1: number) => {
+      (ctx as { radialRadius?: number }).radialRadius = r1;
+      return grad;
+    },
     measureText: (t: string) => ({ width: t.length * 10 }),
     set fillStyle(v: unknown) { fillStyles.push(String(v)); },
     get fillStyle() { return fillStyles[fillStyles.length - 1]; },
@@ -69,6 +73,15 @@ describe("fillGradientBackground", () => {
     const ctx = mockCtx();
     fillGradientBackground(ctx, sceneWith({ gradientType: "radial", gradientFrom: "#111", gradientTo: "#222" }), 100, 100);
     expect(ctx.fillRect).toHaveBeenCalledWith(0, 0, 100, 100);
+  });
+
+  it("matches the CSS preview's farthest-corner radial radius", () => {
+    // `radial-gradient(circle at center)` defaults to farthest-corner:
+    // radius = hypot(w, h) / 2. Math.max(w, h) / 2 (the old behavior) paints a
+    // visibly different gradient on non-square canvases.
+    const ctx = mockCtx();
+    fillGradientBackground(ctx, sceneWith({ gradientType: "radial" }), 800, 600);
+    expect((ctx as { radialRadius?: number }).radialRadius).toBe(Math.hypot(800, 600) / 2);
   });
 
   it("uses linear gradient with an explicit via stop", () => {

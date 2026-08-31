@@ -287,7 +287,10 @@ export async function recordCanvasToWebm(
     const isVideo = media instanceof HTMLVideoElement;
     const duration = computeCaptureDuration(scene, activeLayerId);
 
-    const allVideos = [media, ...(layerMedias?.values() ?? [])].filter((m): m is HTMLVideoElement => m instanceof HTMLVideoElement);
+    // Dedupe: the active layer's element appears both as `media` and in
+    // `layerMedias` (single-frame stack) — waiting on it twice would double
+    // every startup latency for no benefit.
+    const allVideos = [...new Set([media, ...(layerMedias?.values() ?? [])])].filter((m): m is HTMLVideoElement => m instanceof HTMLVideoElement);
     if (media instanceof HTMLVideoElement) {
       media.playbackRate = Math.max(0.5, Math.min(2, activeForCapture?.playbackSpeed ?? 1));
       media.muted = activeForCapture?.videoMuted !== false;

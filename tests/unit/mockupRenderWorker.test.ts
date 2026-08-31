@@ -112,12 +112,15 @@ describe("mockupRenderWorker", () => {
     expect(args[10]).toBe(skin);
     expect(args[14]).toBe("l1");
     const layerMedias = args[12] as Map<string, unknown>;
-    expect(layerMedias.get("active")).toBe(args[2]);
+    // Single-frame slots are keyed by layer id; the `media` argument mirrors
+    // the active layer's entry.
+    expect(layerMedias.get("l1")).toBe(args[2]);
+    expect(layerMedias.get("l2")).toBeTruthy();
     expect(args[13]).toBeUndefined();
     expect(convertCalls[0]).toEqual({ type: "image/png" });
     expect(posted).toEqual([expect.objectContaining({ id: 7, blob: expect.any(Blob) })]);
-    // Only the media slot was fetched; the SVG skin arrived pre-decoded.
-    expect(fetch).toHaveBeenCalledTimes(1);
+    // Both layers' media slots were fetched; the SVG skin arrived pre-decoded.
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 
   it("partitions multi-frame slots into per-layer media and skins", async () => {
@@ -145,10 +148,10 @@ describe("mockupRenderWorker", () => {
     const layerMedias = args[12] as Map<string, FakeBitmap>;
     const frameOverlays = args[13] as Map<string, FakeBitmap>;
     expect(new Set(layerMedias.keys())).toEqual(new Set(["l1", "l2"]));
-    expect(frameOverlays.get("l1")).toBe(skin1);
-    expect(frameOverlays.get("l2")).toBe(skin2);
-    // No dedicated active-media slot in multi-frame mode.
-    expect(args[2]).toBeNull();
+    expect(frameOverlays.get("f1")).toBe(skin1);
+    expect(frameOverlays.get("f2")).toBe(skin2);
+    // The `media` argument mirrors the active layer's map entry (l1 here).
+    expect(args[2]).toBe(layerMedias.get("l1"));
   });
 
   it("degrades optional background/watermark decode failures to null", async () => {

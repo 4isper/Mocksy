@@ -144,6 +144,29 @@ describe("screenRecording", () => {
     stopScreenRecording();
   });
 
+  it("refuses a second start while the picker is still open", async () => {
+    const capture = stubCapture();
+    let resolvePicker: (stream: MediaStream) => void = () => {};
+    capture.getDisplayMedia.mockImplementationOnce(
+      () => new Promise<MediaStream>((resolve) => { resolvePicker = resolve; })
+    );
+    const onDone = vi.fn();
+    const first = startScreenRecording({ onDone });
+    // The picker is open (getDisplayMedia pending): `active` is still null,
+    // but a second request must be blocked or both recorders would run and
+    // the first stream would leak.
+    const onError = vi.fn();
+    const second = vi.fn();
+    await startScreenRecording({ onDone: second, onError });
+    expect(second).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledTimes(1);
+    // The first session proceeds normally once the user picks a surface.
+    resolvePicker(capture.stream);
+    await first;
+    expect(isScreenRecordingActive()).toBe(true);
+    stopScreenRecording();
+  });
+
   it("notifies listeners when recording starts and stops", async () => {
     const capture = stubCapture();
     const events: boolean[] = [];

@@ -40,7 +40,7 @@ const props = {
   sceneCss,
   canPan: true,
   frameRef: { current: null } as React.RefObject<HTMLDivElement | null>,
-  videoRef: { current: null } as React.MutableRefObject<HTMLVideoElement | null>,
+  videoRefs: { current: new Map<string, HTMLVideoElement>() } as React.MutableRefObject<Map<string, HTMLVideoElement>>,
   onPanDown: vi.fn(),
   onPanMove: vi.fn(),
   onPanUp: vi.fn(),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CACHE_MAX, PngCache } from "@/lib/server/pngRender";
+import { CACHE_MAX, CACHE_MAX_BYTES, PngCache } from "@/lib/server/pngRender";
 
 describe("PngCache", () => {
   it("returns null for a missing key", () => {
@@ -37,5 +37,18 @@ describe("PngCache", () => {
     let count = 0;
     for (let i = CACHE_MAX * 2 - 1; i >= 0; i--) if (cache.get(`k${i}`) !== null) count++;
     expect(count).toBe(CACHE_MAX);
+  });
+
+  it("evicts oldest entries when the byte budget is exceeded even under CACHE_MAX", () => {
+    const cache = new PngCache();
+    // Fewer than CACHE_MAX entries, but each far above the byte budget —
+    // count-only bounds would let dozens of 8K PNGs pin gigabytes of RSS.
+    const big = Buffer.alloc(CACHE_MAX_BYTES + 1);
+    cache.set("a", big);
+    cache.set("b", Buffer.from([1]));
+    // The oversized entry alone exceeds the budget; it is kept (size > 1
+    // guard) but any further entry pushes it out.
+    expect(cache.get("a")).toBeNull();
+    expect(cache.get("b")).not.toBeNull();
   });
 });

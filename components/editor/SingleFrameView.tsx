@@ -15,7 +15,9 @@ interface SingleFrameViewProps {
   sceneCss: SceneCss;
   canPan: boolean;
   frameRef: React.RefObject<HTMLDivElement | null>;
-  videoRef: React.MutableRefObject<HTMLVideoElement | null>;
+  /** Live <video> elements keyed by layer id: with several visible video
+   *  layers, the timeline must drive the active layer's own element. */
+  videoRefs: React.MutableRefObject<Map<string, HTMLVideoElement>>;
   onPanDown: (e: React.PointerEvent<HTMLDivElement>) => void;
   onPanMove: (e: React.PointerEvent<HTMLDivElement>) => void;
   onPanUp: (e: React.PointerEvent<HTMLDivElement>) => void;
@@ -34,7 +36,7 @@ export function SingleFrameView({
   sceneCss,
   canPan,
   frameRef,
-  videoRef,
+  videoRefs,
   onPanDown,
   onPanMove,
   onPanUp,
@@ -48,14 +50,16 @@ export function SingleFrameView({
   selectLayer
 }: SingleFrameViewProps) {
   const t = useTranslations();
+  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   // Subscribe here (not in PreviewCanvas) so the whole preview tree — all
   // annotations, the watermark and the frame grid — doesn't re-render on every
-  // video time tick. The seek mirrors the Timeline scrubber onto the <video>:
-  // onTimeUpdate writes the time back to the store, so we only seek when the
-  // delta is large enough to be a user scrub rather than playback echo.
+  // video time tick. The seek mirrors the Timeline scrubber onto the active
+  // layer's <video>: onTimeUpdate writes the time back to the store, so we
+  // only seek when the delta is large enough to be a user scrub rather than
+  // playback echo.
   const videoCurrentTime = useEditorStore((s) => s.videoCurrentTime);
   useEffect(() => {
-    const video = videoRef.current;
+    const video = videoRefs.current.get(activeLayer?.id ?? "");
     if (!video) return;
     if (Math.abs(video.currentTime - videoCurrentTime) > 0.1) {
       try {
@@ -64,20 +68,19 @@ export function SingleFrameView({
         // Seeking before metadata is ready can throw; ignore until it loads.
       }
     }
-  }, [videoCurrentTime, videoRef]);
+  }, [videoCurrentTime, videoRefs, activeLayer?.id]);
   // Mirror the active layer's playback speed onto the preview element (the
   // export pipeline sets it independently on its own detached <video>).
-  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   const playbackSpeed = Math.max(0.5, Math.min(2, activeLayer?.playbackSpeed ?? 1));
   useEffect(() => {
-    const video = videoRef.current;
+    const video = videoRefs.current.get(activeLayer?.id ?? "");
     if (!video || video.playbackRate === playbackSpeed) return;
     try {
       video.playbackRate = playbackSpeed;
     } catch {
       // Not all engines allow changing the rate before metadata; retried below.
     }
-  }, [playbackSpeed, videoRef]);
+  }, [playbackSpeed, videoRefs, activeLayer?.id]);
   return (
     <div
       ref={frameRef}
@@ -119,7 +122,10 @@ export function SingleFrameView({
                 isVideoLayer(layer) ? wrap(
                   <video
                     key={layer.id}
-                    ref={videoRef}
+                    ref={(el) => {
+                      if (el) videoRefs.current.set(layer.id, el);
+                      else videoRefs.current.delete(layer.id);
+                    }}
                     src={layer.mediaUrl}
                     muted={layer.videoMuted}
                     loop={layer.videoLoop}

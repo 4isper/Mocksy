@@ -160,6 +160,7 @@ export async function buildStandaloneSvg(
           offsetY: layer?.mediaOffsetY,
           rotation: layer?.rotation ?? 0,
           opacity: layer?.opacity,
+          blendMode: layer?.blendMode,
           orientation: box.rotation ? (box.rotation * 180) / Math.PI : undefined,
           frame: inst.frame,
           screen: inst.screen ?? scene.screen,
@@ -219,6 +220,7 @@ export async function buildStandaloneSvg(
         screen: scene.screen,
         floorReflection: scene.floorReflection,
         opacity: activeLayer?.opacity,
+        blendMode: activeLayer?.blendMode,
         textLayer: isTextLayer(activeLayer) ? activeLayer : null
       });
     }

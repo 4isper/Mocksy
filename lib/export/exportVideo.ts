@@ -138,7 +138,11 @@ export async function exportWebm(
       return;
     }
     signal?.throwIfAborted();
-    downloadBlob(webmBlob, `${exportBaseName(scene, activeLayerId)}.webm`);
+    // Name the file after the blob's ACTUAL container: engines that can't
+    // record WebM (Safari) fall back to the browser's default recorder format
+    // (MP4), and an MP4 payload named .webm won't open in most players.
+    const ext = webmBlob.type.includes("mp4") ? "mp4" : "webm";
+    downloadBlob(webmBlob, `${exportBaseName(scene, activeLayerId)}.${ext}`);
     onStatus?.("Done");
     onProgress?.(100);
   } catch (err) {

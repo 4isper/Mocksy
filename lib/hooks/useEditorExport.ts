@@ -70,6 +70,19 @@ export function useEditorExport(
   const [shareQrUrl, setShareQrUrl] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  /** Registers a new export controller, cancelling any still-running one.
+   *  Exports can also start from the command palette / shortcuts while the
+   *  dialog blocks the toolbar button, so two captures could otherwise run
+   *  concurrently and cancelExport would only stop the last one. */
+  const abortPreviousExport = useCallback((next: AbortController) => {
+    abortRef.current?.abort();
+    abortRef.current = next;
+  }, []);
+
+  const isAbortError = useCallback((err: unknown): boolean => {
+    return err instanceof DOMException && err.name === "AbortError";
+  }, []);
+
   const cancelExport = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
@@ -248,6 +261,11 @@ export function useEditorExport(
 
   const handleExportZip = useCallback(async () => {
     setExportError(null);
+    // Register a controller so this export is cancellable and superseded like
+    // the video exports (an image ZIP renders instance-by-instance and can
+    // run for a while).
+    const ctrl = new AbortController();
+    abortPreviousExport(ctrl);
     try {
       const { exportBatchZip } = await import("@/lib/export/exportBatch");
       await exportBatchZip(
@@ -260,20 +278,24 @@ export function useEditorExport(
         (current, total) => {
           setVideoExportStatus(t("export.exportingZip", { current, total }));
           setVideoExportProgress(Math.round((current / total) * 100));
-        }
+        },
+        ctrl.signal
       );
       setCopyStatus(t("editor.exported"));
     } catch (err) {
-      setExportError(err instanceof Error ? err.message : t("export.zipFailed"));
+      if (!isAbortError(err)) {
+        setExportError(err instanceof Error ? err.message : t("export.zipFailed"));
+      }
     } finally {
+      if (abortRef.current === ctrl) abortRef.current = null;
       setTimeout(clearVideoStatus, STATUS_CLEAR_DELAY);
     }
-  }, [scene, exportScale, t, clearVideoStatus, activeLayerId]);
+  }, [scene, exportScale, t, clearVideoStatus, activeLayerId, abortPreviousExport, isAbortError]);
 
   const handleExportZipVideo = useCallback(async () => {
     setExportError(null);
     const ctrl = new AbortController();
-    abortRef.current = ctrl;
+    abortPreviousExport(ctrl);
     try {
       setVideoExportStatus(t("export.exportingZipVideo"));
       setVideoExportProgress(0);
@@ -295,12 +317,12 @@ export function useEditorExport(
       if (abortRef.current === ctrl) abortRef.current = null;
       setTimeout(clearVideoStatus, STATUS_CLEAR_DELAY);
     }
-  }, [scene, exportScale, t, clearVideoStatus, activeLayerId]);
+  }, [scene, exportScale, t, clearVideoStatus, activeLayerId, abortPreviousExport]);
 
   const handleExportMp4 = useCallback(async () => {
     setExportError(null);
     const ctrl = new AbortController();
-    abortRef.current = ctrl;
+    abortPreviousExport(ctrl);
     try {
       setVideoExportStatus(t("export.exportingVideo"));
       setVideoExportProgress(0);
@@ -310,12 +332,12 @@ export function useEditorExport(
       if (abortRef.current === ctrl) abortRef.current = null;
       setTimeout(clearVideoStatus, STATUS_CLEAR_DELAY);
     }
-  }, [scene, exportScale, customExportSize, t, clearVideoStatus, activeLayerId]);
+  }, [scene, exportScale, customExportSize, t, clearVideoStatus, activeLayerId, abortPreviousExport]);
 
   const handleExportWebm = useCallback(async () => {
     setExportError(null);
     const ctrl = new AbortController();
-    abortRef.current = ctrl;
+    abortPreviousExport(ctrl);
     try {
       setVideoExportStatus(t("export.exportingWebm"));
       setVideoExportProgress(0);
@@ -325,12 +347,12 @@ export function useEditorExport(
       if (abortRef.current === ctrl) abortRef.current = null;
       setTimeout(clearVideoStatus, STATUS_CLEAR_DELAY);
     }
-  }, [scene, exportScale, customExportSize, t, clearVideoStatus, activeLayerId]);
+  }, [scene, exportScale, customExportSize, t, clearVideoStatus, activeLayerId, abortPreviousExport]);
 
   const handleExportWebpAnim = useCallback(async () => {
     setExportError(null);
     const ctrl = new AbortController();
-    abortRef.current = ctrl;
+    abortPreviousExport(ctrl);
     try {
       setVideoExportStatus(t("export.exportingWebpAnim"));
       setVideoExportProgress(0);
@@ -340,12 +362,12 @@ export function useEditorExport(
       if (abortRef.current === ctrl) abortRef.current = null;
       setTimeout(clearVideoStatus, STATUS_CLEAR_DELAY);
     }
-  }, [scene, exportScale, customExportSize, t, clearVideoStatus, activeLayerId]);
+  }, [scene, exportScale, customExportSize, t, clearVideoStatus, activeLayerId, abortPreviousExport]);
 
   const handleExportGif = useCallback(async () => {
     setExportError(null);
     const ctrl = new AbortController();
-    abortRef.current = ctrl;
+    abortPreviousExport(ctrl);
     try {
       setGifExportStatus(t("export.exportingGif"));
       setGifExportProgress(0);
@@ -355,7 +377,7 @@ export function useEditorExport(
       if (abortRef.current === ctrl) abortRef.current = null;
       setTimeout(clearGifStatus, STATUS_CLEAR_DELAY);
     }
-  }, [scene, exportScale, customExportSize, t, clearGifStatus, activeLayerId]);
+  }, [scene, exportScale, customExportSize, t, clearGifStatus, activeLayerId, abortPreviousExport]);
 
   const handleExport = useCallback(
     (format: ExportFormat) => {

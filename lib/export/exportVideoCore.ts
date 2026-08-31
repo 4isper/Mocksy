@@ -1,6 +1,6 @@
 "use client";
 
-import type { EditorScene, ExportSize } from "@/lib/types/editor";
+import type { EditorScene, ExportSize, MediaLayer } from "@/lib/types/editor";
 import { loadImage } from "@/lib/render/canvasMedia";
 import { getFrameSpec } from "@/lib/render/frames";
 import { isVideoLayer } from "@/lib/render/mediaKind";
@@ -23,6 +23,42 @@ export * from "@/lib/export/videoExportHelpers";
 
 /** Detached <video> loads must reject instead of hanging the export forever. */
 const MEDIA_LOAD_TIMEOUT = 10_000;
+
+/** Creates a detached <video> for one layer's video export, seeked to the
+ *  layer's trim start. The CORS mode is captured at fetch start, so
+ *  crossOrigin must be set BEFORE src: assigning it afterwards is a silent
+ *  no-op and an uncors http(s) source would taint the canvas (SecurityError
+ *  at captureStream) instead of loading anonymously. */
+async function loadExportVideo(layer: MediaLayer, muted: boolean): Promise<HTMLVideoElement> {
+  const v = document.createElement("video");
+  v.crossOrigin = "anonymous";
+  v.src = layer.mediaUrl!;
+  v.muted = muted;
+  v.playbackRate = Math.max(0.5, Math.min(2, layer.playbackSpeed ?? 1));
+  v.playsInline = true;
+  await new Promise<void>((resolve, reject) => {
+    // A stalled load/seek must not hang the export forever.
+    const timer = setTimeout(() => reject(new Error("Timed out loading video for export")), MEDIA_LOAD_TIMEOUT);
+    const finish = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    v.onloadedmetadata = () => {
+      const start = Math.max(0, layer.videoTrimStart || 0);
+      if (start > 0) {
+        v.currentTime = start;
+        v.onseeked = finish;
+      } else {
+        finish();
+      }
+    };
+    v.onerror = () => {
+      clearTimeout(timer);
+      reject(new Error("Unable to load video for export"));
+    };
+  });
+  return v;
+}
 
 /**
  * Captures the preview animation to a WebM blob, shared by the MP4, GIF, WebM
@@ -80,53 +116,71 @@ export async function captureWebm(
   canvas.width = canvasW;
   canvas.height = canvasH;
 
-  // When exporting a video scene we create a detached <video> from the active
-  // video layer's URL; track it so we can stop/remove it and free its blob: URL
-  // afterwards. For image scenes we reuse the element already in the preview.
   const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
   // Resolve the active layer's media element by identity, never by DOM order:
   // the preview also holds device-skin overlays, the watermark logo and other
   // layers' media, which a blind querySelector would export instead.
-  const mediaInPreview = activeLayer ? previewNode.querySelector(layerMediaSelector(activeLayer.id)) : null;
   let sourceVideo: HTMLVideoElement | null = null;
   let media: HTMLVideoElement | HTMLImageElement | null = null;
-  if (activeLayer && isVideoLayer(activeLayer) && activeLayer.mediaUrl) {
-    sourceVideo = document.createElement("video");
-    // crossOrigin must be set BEFORE src: the CORS mode is captured when the
-    // fetch begins, so assigning it afterwards is a silent no-op and an
-    // uncors http(s) source would taint the canvas (SecurityError at
-    // captureStream) instead of loading anonymously.
-    sourceVideo.crossOrigin = "anonymous";
-    sourceVideo.src = activeLayer.mediaUrl;
-    sourceVideo.muted = activeLayer?.videoMuted !== false;
-    sourceVideo.playbackRate = Math.max(0.5, Math.min(2, activeLayer.playbackSpeed ?? 1));
-    sourceVideo.playsInline = true;
-    await new Promise<void>((resolve, reject) => {
-      // A stalled load/seek must not hang the export forever.
-      const timer = setTimeout(() => reject(new Error("Timed out loading video for export")), MEDIA_LOAD_TIMEOUT);
-      const finish = () => {
-        clearTimeout(timer);
-        resolve();
-      };
-      sourceVideo!.onloadedmetadata = () => {
-        const start = Math.max(0, activeLayer?.videoTrimStart || 0);
-        if (start > 0) {
-          sourceVideo!.currentTime = start;
-          sourceVideo!.onseeked = finish;
+  // Per-layer media for the render: single-frame scenes paint EVERY visible
+  // layer's media (the preview stacks them), multi-frame scenes paint each
+  // instance's layer. Videos play during capture; images load statically.
+  let layerMedias: Map<string, CanvasImageSource | null> | undefined;
+  let frameOverlays: Map<string, CanvasImageSource | null> | undefined;
+  // Detached <video> elements created for the export: they play while the
+  // recorder samples them, so the finally block below must stop and drop
+  // every one of them after the capture.
+  const instanceVideos: HTMLVideoElement[] = [];
+
+  if (scene.frameInstances.length === 0) {
+    layerMedias = new Map();
+    for (const layer of scene.layers) {
+      if (layer.hidden || !layer.mediaUrl) continue;
+      try {
+        if (isVideoLayer(layer)) {
+          const v = await loadExportVideo(
+            layer,
+            layer.id === activeLayer?.id ? (activeLayer?.videoMuted !== false) : true
+          );
+          if (layer.id === activeLayer?.id) {
+            // The active layer's video also drives the recorder's stop
+            // conditions and (unmuted) its audio capture — keep it in `media`.
+            sourceVideo = v;
+            media = v;
+          } else {
+            // Must be played before the recorder samples it: an element that
+            // never plays stays undecoded, and drawImage renders an empty
+            // frame.
+            v.play().catch(() => null);
+            instanceVideos.push(v);
+          }
+          layerMedias.set(layer.id, v);
         } else {
-          finish();
+          // Reuse the element already in the preview when present.
+          const el = previewNode.querySelector(layerMediaSelector(layer.id));
+          if (el instanceof HTMLImageElement) {
+            layerMedias.set(layer.id, el);
+          } else {
+            layerMedias.set(layer.id, await loadImage(layer.mediaUrl));
+          }
+          if (layer.id === activeLayer?.id && layerMedias.get(layer.id) instanceof HTMLImageElement) {
+            media = layerMedias.get(layer.id) as HTMLImageElement;
+          }
         }
-      };
-      sourceVideo!.onerror = () => {
-        clearTimeout(timer);
-        reject(new Error("Unable to load video for export"));
-      };
-    });
+      } catch {
+        layerMedias.set(layer.id, null);
+      }
+    }
+  } else if (activeLayer && isVideoLayer(activeLayer) && activeLayer.mediaUrl) {
+    sourceVideo = await loadExportVideo(activeLayer, activeLayer.videoMuted !== false);
     media = sourceVideo;
-  } else if (mediaInPreview instanceof HTMLImageElement) {
-    media = mediaInPreview;
-  } else if (mediaInPreview instanceof HTMLVideoElement) {
-    media = mediaInPreview;
+  } else {
+    const mediaInPreview = activeLayer ? previewNode.querySelector(layerMediaSelector(activeLayer.id)) : null;
+    if (mediaInPreview instanceof HTMLImageElement) {
+      media = mediaInPreview;
+    } else if (mediaInPreview instanceof HTMLVideoElement) {
+      media = mediaInPreview;
+    }
   }
 
   const isMultiFrame = scene.frameInstances.length > 0;
@@ -136,13 +190,7 @@ export async function captureWebm(
   const frameHeight = frameCss ? Math.max(1, Math.round(frameCss.h * pixelRatio)) : undefined;
 
   // For multi-frame mode, load media for each frame's layer and per-instance overlays
-  let layerMedias: Map<string, CanvasImageSource | null> | undefined;
-  let frameOverlays: Map<string, CanvasImageSource | null> | undefined;
-  // Detached <video> elements created for frame-instance layers: they play
-  // while the recorder samples them, so the finally block below must stop
-  // and drop every one of them after the capture.
-  const instanceVideos: HTMLVideoElement[] = [];
-  if (isMultiFrame) {
+  if (scene.frameInstances.length > 0) {
     layerMedias = new Map();
     frameOverlays = new Map();
     // Hidden layers' instances aren't rendered — skip their media too. All
@@ -217,15 +265,15 @@ export async function captureWebm(
             // overlay failed to load
           }
         }
-        return { layerId: layer?.id ?? null, media, hasMedia, overlay, hasOverlay };
+        return { inst, layerId: layer?.id ?? null, media, hasMedia, overlay, hasOverlay };
       })
     );
-    // Apply in instance order so a layer shared by several frames keeps the
-    // sequential semantics (the last visible instance wins).
-    for (const { layerId, media, hasMedia, overlay, hasOverlay } of loaded) {
-      if (!layerId) continue;
-      if (hasMedia) layerMedias.set(layerId, media);
-      if (hasOverlay && overlay) frameOverlays.set(layerId, overlay);
+    // Apply in instance order. Skins are keyed by instance id (two instances
+    // can share a layer with different materials); media stays keyed by layer
+    // id (shared between instances).
+    for (const { inst, layerId, media, hasMedia, overlay, hasOverlay } of loaded) {
+      if (hasMedia && layerId) layerMedias.set(layerId, media);
+      if (hasOverlay && overlay && inst.id) frameOverlays.set(inst.id, overlay);
     }
   }
 

@@ -47,6 +47,9 @@ export interface SvgFrameGroup {
   /** Media opacity, percent 0–100 (default 100). Applied to the media only —
    *  chrome and device skin stay at full strength. */
   opacity?: number;
+  /** Layer blend mode applied to the media element (CSS mix-blend-mode
+   *  equivalent via SVG's mix-blend-mode, which shares the same names). */
+  blendMode?: string;
   /** Whole-group rotation for landscape instances (90). The box already
    *  carries swapped dimensions; this turns skin+media+chrome together. */
   orientation?: number;
@@ -95,7 +98,12 @@ function backgroundMarkup(scene: EditorScene, opts: SvgExportOptions): string {
       // a 3-stop "via" color and radial gradients, so the SVG must too — a
       // static linear 2-stop here would diverge from PNG/video exports.
       if (scene.gradientType === "radial") {
-        return `<rect width="${width}" height="${height}" fill="url(#bg-gradient)"/><radialGradient id="bg-gradient" cx="50%" cy="50%" r="50%">${stops}</radialGradient>`;
+        // The CSS preview's `radial-gradient(circle at center)` defaults to
+        // farthest-corner: radius = hypot(w, h) / 2. `r="50%"` in SVG's
+        // objectBoundingBox space degrades the circle into an ellipse on
+        // non-square artboards, so use userSpaceOnUse with the exact radius.
+        const radius = Math.hypot(width, height) / 2;
+        return `<rect width="${width}" height="${height}" fill="url(#bg-gradient)"/><radialGradient id="bg-gradient" gradientUnits="userSpaceOnUse" cx="${num(width / 2)}" cy="${num(height / 2)}" r="${num(radius)}">${stops}</radialGradient>`;
       }
       const rad = ((scene.gradientAngle ?? RENDER.gradientAngleDeg) * Math.PI) / 180;
       const dx = Math.sin(rad);
@@ -194,6 +202,10 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
   // (transform-origin: center). The rotation is applied only to the media so
   // the device bezel and chrome stay put.
   let media = group.rotation ? `<g transform="rotate(${num(group.rotation)} ${num(assembly.innerX + assembly.innerW / 2)} ${num(assembly.innerY + assembly.innerH / 2)})">${mediaRaw}</g>` : mediaRaw;
+  if (group.blendMode && group.blendMode !== "normal") {
+    // SVG supports the same mix-blend-mode keywords as CSS.
+    media = `<g style="mix-blend-mode:${group.blendMode}">${media}</g>`;
+  }
   if (group.opacity != null && group.opacity !== 100) {
     const alpha = Math.max(0, Math.min(1, group.opacity / 100));
     media = `<g opacity="${alpha}">${media}</g>`;
@@ -210,6 +222,16 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
 
   const assemblyGroup: SvgFrameGroup = { ...group, box: assembly };
 
+  // Screen glare: diagonal light sweep clipped to the screen, painted above
+  // media/chrome and below the device skin — same stops the CSS preview and
+  // canvas export use. Computed up front so EVERY assembly path (flat, tilted,
+  // landscape-rotated) includes it; it used to vanish whenever tilt was set.
+  const glareMarkup = scene.screenGlare
+    ? group.cutout
+      ? `<path d="${squirclePathD(assembly.innerX, assembly.innerY, assembly.innerW, assembly.innerH, (group.cutout.rx / group.cutout.w) * assembly.innerW, (group.cutout.rx / group.cutout.h) * assembly.innerH, group.cutout.power ?? CORNER_POWER_CIRCLE)}" fill="url(#glare-sweep)"/>`
+      : `<rect x="${num(assembly.innerX)}" y="${num(assembly.innerY)}" width="${num(assembly.innerW)}" height="${num(assembly.innerH)}" rx="${num(group.isCircular ? Math.min(assembly.innerW, assembly.innerH) / 2 : Math.min(assembly.innerRadius, Math.min(assembly.innerW, assembly.innerH) / 2))}" fill="url(#glare-sweep)"/>`
+    : "";
+
   // SVG has no perspective, so a tilted scene uses the affine best-fit matrix.
   // The matrix projects the NATIVE assembly rect (rotating the projected
   // result for landscape instances — the preview's rotor composes after the
@@ -218,13 +240,8 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
     ? tiltMatrixSvgRotated(scene, assembly, (group.orientation * Math.PI) / 180)
     : tiltMatrixSvg(scene, assembly);
   if (tilt) {
-    return `<g transform="${tilt}"><clipPath id="clip-t${index}">${groupClipRect(assemblyGroup)}</clipPath><g clip-path="url(#clip-t${index})">${media}${chromeMarkup}</g>${frameGroupInner(scene, assemblyGroup)}</g>`;
+    return `<g transform="${tilt}"><clipPath id="clip-t${index}">${groupClipRect(assemblyGroup)}</clipPath><g clip-path="url(#clip-t${index})">${media}${chromeMarkup}${glareMarkup}</g>${frameGroupInner(scene, assemblyGroup)}</g>`;
   }
-  const glareMarkup = scene.screenGlare
-    ? group.cutout
-      ? `<path d="${squirclePathD(assembly.innerX, assembly.innerY, assembly.innerW, assembly.innerH, (group.cutout.rx / group.cutout.w) * assembly.innerW, (group.cutout.rx / group.cutout.h) * assembly.innerH, group.cutout.power ?? CORNER_POWER_CIRCLE)}" fill="url(#glare-sweep)"/>`
-      : `<rect x="${num(assembly.innerX)}" y="${num(assembly.innerY)}" width="${num(assembly.innerW)}" height="${num(assembly.innerH)}" rx="${num(group.isCircular ? Math.min(assembly.innerW, assembly.innerH) / 2 : Math.min(assembly.innerRadius, Math.min(assembly.innerW, assembly.innerH) / 2))}" fill="url(#glare-sweep)"/>`
-    : "";
   let inner = `<g clip-path="url(#clip-${index})">${media}${chromeMarkup}${glareMarkup}</g>${frameGroupInner(scene, assemblyGroup)}`;
   if (group.orientation) {
     // The clip must live inside the rotated group so its rect rotates with it.
@@ -233,7 +250,7 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
     // single rotate(90°) turns the whole assembly exactly like the rotor.
     const cx = num(box.x + box.width / 2);
     const cy = num(box.y + box.height / 2);
-    inner = `<g transform="rotate(${num(group.orientation)} ${cx} ${cy})"><clipPath id="clip-o${index}">${groupClipRect(assemblyGroup)}</clipPath><g clip-path="url(#clip-o${index})">${media}${chromeMarkup}</g>${frameGroupInner(scene, assemblyGroup)}</g>`;
+    inner = `<g transform="rotate(${num(group.orientation)} ${cx} ${cy})"><clipPath id="clip-o${index}">${groupClipRect(assemblyGroup)}</clipPath><g clip-path="url(#clip-o${index})">${media}${chromeMarkup}${glareMarkup}</g>${frameGroupInner(scene, assemblyGroup)}</g>`;
   }
   return inner;
 }

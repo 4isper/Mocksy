@@ -90,6 +90,9 @@ export interface EditorStoreState {
   lastHistoryAt: number;
   /** True while uploaded media is decoding (between setMedia and onLoad). */
   isMediaLoading: boolean;
+  /** Id of the layer whose media is loading, or null. Lets visibility/
+   *  removal changes orphan the loader element and clear the stuck spinner. */
+  mediaLoadingLayerId: string | null;
   /** True while the AI background removal runs on the active layer (the
    *  first run also downloads the wasm/model assets). Kept out of `scene`. */
   isRemovingBackground: boolean;

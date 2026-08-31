@@ -185,6 +185,27 @@ describe("buildSvgMarkup", () => {
     expect(noRotation).not.toContain("rotate(");
   });
 
+  it("applies the layer's blend mode to the media group", () => {
+    const scene = sceneWith({ frame: "none", backgroundMode: "transparent" });
+    const box = boxFor(scene);
+    const markup = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      zoom: 1,
+      groups: [{ box, mediaHref: MEDIA, mediaWidth: 400, mediaHeight: 100, isOverlay: false, overlayInner: null, blendMode: "multiply" }]
+    });
+    expect(markup).toContain('<g style="mix-blend-mode:multiply"><image href="data:image/png;base64,AAAA"');
+    const normal = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      zoom: 1,
+      groups: [{ box, mediaHref: MEDIA, mediaWidth: 400, mediaHeight: 100, isOverlay: false, overlayInner: null, blendMode: "normal" }]
+    });
+    expect(normal).not.toContain("mix-blend-mode");
+  });
+
   it("embeds the screen chrome inside the screen clip when enabled", () => {
     const scene = sceneWith({ frame: "none", backgroundMode: "transparent", screen: { ...initialScene.screen, enabled: true } });
     const box = boxFor(scene);
@@ -230,6 +251,41 @@ describe("buildSvgMarkup", () => {
     expect(markup).toContain('<clipPath id="clip-t0">');
     // the root-space clip stays unused when tilted
     expect(markup).not.toContain('clip-path="url(#clip-0)"');
+  });
+
+  it("keeps the screen glare inside the tilted group", () => {
+    // The glare used to be computed after the tilt branch's early return and
+    // silently vanished from tilted SVG exports.
+    const scene = sceneWith({ frame: "none", backgroundMode: "transparent", tiltX: 15, tiltY: 10, screenGlare: true });
+    const box = boxFor(scene);
+    const markup = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      zoom: 1,
+      groups: [{ box, mediaHref: MEDIA, mediaWidth: 400, mediaHeight: 300, isOverlay: false, overlayInner: null }]
+    });
+    expect(markup).toContain('fill="url(#glare-sweep)"');
+    // It sits in the tilted, clipped group next to the media.
+    expect(markup).toMatch(/clip-path="url\(#clip-t0\)"[^]*glare-sweep[^]*<\/g>/);
+  });
+
+  it("keeps the screen glare inside a landscape instance's rotated group", () => {
+    const scene = sceneWith({
+      frame: "none",
+      backgroundMode: "transparent",
+      screenGlare: true,
+      frameInstances: [{ id: "l", frame: "none" as const, x: 0.5, y: 0.5, scale: 0.4, layerId: null, orientation: "landscape" as const }]
+    });
+    const box = computeFrameInstances(scene, 800, 600, 1)[0]!;
+    const markup = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      zoom: 1,
+      groups: [{ box, mediaHref: MEDIA, mediaWidth: 400, mediaHeight: 300, isOverlay: false, overlayInner: null, orientation: 90 }]
+    });
+    expect(markup).toMatch(/clip-path="url\(#clip-o0\)"[^]*glare-sweep/);
   });
 
   it("keeps the plain clip when the scene is not tilted", () => {

@@ -16,6 +16,10 @@ import type { SpinRenderResult } from "@/lib/types/spin";
 
 const RENDER_TIMEOUT_MS = 45_000;
 export const CACHE_MAX = 40;
+/** Hard byte ceiling for the cache in addition to the entry count: a single
+ *  8192×8192 PNG can be tens of MB, so 40 count-only entries could pin
+ *  gigabytes of RSS on the unauthenticated spin endpoint. */
+export const CACHE_MAX_BYTES = 256 * 1024 * 1024;
 
 let browserPromise: Promise<Browser> | null = null;
 
@@ -32,6 +36,13 @@ function getBrowser(): Promise<Browser> {
           browserPromise = null;
         });
         return browser;
+      })
+      .catch((err) => {
+        // A failed launch must not be cached forever: a rejected promise here
+        // would make every subsequent render reuse the same failure until the
+        // process restarts, even after the underlying cause clears.
+        browserPromise = null;
+        throw err;
       });
   }
   return browserPromise;
@@ -43,10 +54,11 @@ function cacheKey(scene: EditorScene, width: number, height: number): string {
 
 /** Least-recently-used (LRU) cache: identical (scene, size) spins never
  *  re-render. Reads promote the entry to the most-recent position so eviction
- *  drops the least-recently-used one. Bounded so long-running servers don't
- *  leak pixels. */
+ *  drops the least-recently-used one. Bounded by BOTH entry count and total
+ *  bytes so long-running servers don't leak pixels. */
 export class PngCache {
   private entries = new Map<string, Buffer>();
+  private totalBytes = 0;
 
   get(key: string): Buffer | null {
     const value = this.entries.get(key);
@@ -57,11 +69,27 @@ export class PngCache {
   }
 
   set(key: string, value: Buffer): void {
-    if (this.entries.size >= CACHE_MAX) {
-      const oldest = this.entries.keys().next().value;
-      if (oldest !== undefined) this.entries.delete(oldest);
+    const existing = this.entries.get(key);
+    if (existing !== undefined) {
+      this.totalBytes -= existing.length;
+      this.entries.delete(key);
     }
     this.entries.set(key, value);
+    this.totalBytes += value.length;
+    while (this.entries.size > CACHE_MAX) {
+      const oldest = this.entries.keys().next().value;
+      if (oldest === undefined) break;
+      const dropped = this.entries.get(oldest)!;
+      this.totalBytes -= dropped.length;
+      this.entries.delete(oldest);
+    }
+    while (this.totalBytes > CACHE_MAX_BYTES && this.entries.size > 1) {
+      const oldest = this.entries.keys().next().value;
+      if (oldest === undefined) break;
+      const dropped = this.entries.get(oldest)!;
+      this.totalBytes -= dropped.length;
+      this.entries.delete(oldest);
+    }
   }
 }
 
@@ -101,14 +129,26 @@ export async function renderSceneToPngBuffer(opts: RenderSceneToPngOptions): Pro
         null,
         { timeout: RENDER_TIMEOUT_MS }
       );
-      const result = (await page.evaluate(
+      // A timeout only REJECTS the in-page promise when racing — the evaluate
+      // itself has no deadline, so a hung in-page render (image load that
+      // never settles) would otherwise hold the request open forever.
+      const evaluate = page.evaluate(
         async (req) => {
           const api = (window as Window & { __mocksyRender?: (r: unknown) => Promise<SpinRenderResult> }).__mocksyRender;
           if (!api) return { error: "harness not ready" } satisfies SpinRenderResult;
           return await api(req);
         },
         { scene, width, height }
-      )) as SpinRenderResult;
+      );
+      // The context close below settles a hung evaluate; swallow its
+      // rejection so it can't surface as an unhandled promise rejection.
+      evaluate.catch(() => undefined);
+      const result = await Promise.race([
+        evaluate,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("In-page render timed out")), RENDER_TIMEOUT_MS)
+        )
+      ]) as SpinRenderResult;
 
       if (!result.dataUrl) {
         if (result.error) console.error("[spin-render]", result.error);

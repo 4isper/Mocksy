@@ -45,6 +45,21 @@ export interface ResolvedFrameStyle {
   strokeStyle: string;
 }
 
+/** One entry of the single-frame media stack: a visible layer and its decoded
+ *  media (null for text layers or failed loads). Mirrors the CSS preview,
+ *  which stacks every visible layer's media element in the media slot. */
+export interface MediaStackEntry {
+  layer: MediaLayer;
+  media: CanvasImageSource | null;
+}
+
+/** Maps a layer's blend mode onto the canvas composite operation that matches
+ *  the CSS preview's mix-blend-mode. */
+function blendCompositeOp(layer: MediaLayer): GlobalCompositeOperation {
+  if (!layer.blendMode || layer.blendMode === "normal") return "source-over";
+  return layer.blendMode;
+}
+
 /**
  * Maps a style preset to its frame chrome (fill + optional stroke). Shared by
  * the canvas and SVG renderers so adding a preset stays in one place and the
@@ -338,6 +353,76 @@ function drawFrameShadow(
   ctx.drawImage(layer as CanvasImageSource, box.x - padX, box.y - padY);
 }
 
+/** Draws one media source with the layer's fit/offset/rotation/filter inside
+ *  the (already clipped) screen rect. Opacity and blend are managed by the
+ *  caller via globalAlpha / globalCompositeOperation. */
+function drawMediaSource(
+  ctx: CanvasRenderingContext2D,
+  layer: MediaLayer | undefined,
+  media: CanvasImageSource,
+  innerX: number,
+  innerY: number,
+  innerW: number,
+  innerH: number
+) {
+  const m = media as { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number; videoWidth?: number; videoHeight?: number };
+  const mw = m.videoWidth || m.naturalWidth || m.width || innerW;
+  const mh = m.videoHeight || m.naturalHeight || m.height || innerH;
+  const fit = layer?.mediaFit ?? "cover";
+  const scale = fit === "contain" ? Math.min(innerW / mw, innerH / mh) : Math.max(innerW / mw, innerH / mh);
+  const dw = mw * scale;
+  const dh = mh * scale;
+  const offsetX = layer?.mediaOffsetX ?? 0;
+  const offsetY = layer?.mediaOffsetY ?? 0;
+  const dx = innerX + (innerW - dw) / 2 + offsetX * (innerW - dw) / 2;
+  const dy = innerY + (innerH - dh) / 2 + offsetY * (innerH - dh) / 2;
+  const rotation = layer?.rotation ?? 0;
+  if (rotation) {
+    // Rotate the media about the inner screen's center so the rotation pivot
+    // matches the CSS preview (transform-origin: center) and stays inside the
+    // rounded-screen clip.
+    ctx.translate(innerX + innerW / 2, innerY + innerH / 2);
+    ctx.rotate((rotation * Math.PI) / 180);
+    ctx.translate(-(innerX + innerW / 2), -(innerY + innerH / 2));
+  }
+  ctx.filter = buildLayerFilterCss(layer);
+  ctx.drawImage(media, dx, dy, dw, dh);
+}
+
+/** Draws the media stack for one frame: every visible layer's media (or text)
+ *  in paint order, each with its own opacity/blend, mirroring how the CSS
+ *  preview stacks the media elements in the media slot. */
+function drawMediaStackEntries(
+  ctx: CanvasRenderingContext2D,
+  entries: MediaStackEntry[],
+  innerX: number,
+  innerY: number,
+  innerW: number,
+  innerH: number
+) {
+  const hasContent = entries.some((e) => e.media != null || isTextLayer(e.layer));
+  if (!hasContent) {
+    ctx.fillStyle = RENDER.emptyMediaFill;
+    ctx.fillRect(innerX, innerY, innerW, innerH);
+    return;
+  }
+  for (const entry of entries) {
+    const entryOpacity = Math.max(0, Math.min(1, (entry.layer.opacity ?? 100) / 100));
+    if (!entry.media && !isTextLayer(entry.layer)) continue;
+    ctx.save();
+    ctx.globalAlpha = entryOpacity;
+    ctx.globalCompositeOperation = blendCompositeOp(entry.layer);
+    if (entry.media) {
+      drawMediaSource(ctx, entry.layer, entry.media, innerX, innerY, innerW, innerH);
+    } else {
+      // Text layers paint styled text instead of media, using the exact layout
+      // the CSS/SVG renderers embed (same constants from layerText.ts).
+      drawTextLayer(ctx, entry.layer, innerX, innerY, innerW, innerH);
+    }
+    ctx.restore();
+  }
+}
+
 export function drawFrameAndMedia(  ctx: CanvasRenderingContext2D,
   scene: EditorScene,
   instSpec: ReturnType<typeof getFrameSpec>,
@@ -347,7 +432,11 @@ export function drawFrameAndMedia(  ctx: CanvasRenderingContext2D,
   zoom: number,
   media: CanvasImageSource | null,
   overlay: CanvasImageSource | null,
-  screen: ScreenChrome = scene.screen
+  screen: ScreenChrome = scene.screen,
+  /** All visible layers' media in paint order (bottom → top). When provided it
+   *  replaces the single `media`/`layer` pair so multi-layer single-frame
+   *  scenes export every layer, matching the live preview. */
+  mediaStack?: MediaStackEntry[]
 ) {
   const { x, y, width: frameW, height: frameH, outerRadius, innerX, innerY, innerW, innerH, innerRadius } = box;
   // Landscape callers pass the NATIVE-orientation assembly rect as the box
@@ -394,31 +483,22 @@ export function drawFrameAndMedia(  ctx: CanvasRenderingContext2D,
   // Layer opacity applies to the media only — chrome/glare/bezel below stay
   // at full strength, mirroring the CSS preview's per-element opacity.
   const layerOpacity = Math.max(0, Math.min(1, (layer?.opacity ?? 100) / 100));
-  if (media) {
+  if (mediaStack) {
+    // Multi-layer single-frame scene: paint every visible layer in order with
+    // its own opacity/blend, exactly like the preview's media slot.
+    drawMediaStackEntries(ctx, mediaStack, innerX, innerY, innerW, innerH);
+  } else if (media) {
     ctx.globalAlpha = layerOpacity;
-    const m = media as { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number; videoWidth?: number; videoHeight?: number };
-    const mw = m.videoWidth || m.naturalWidth || m.width || innerW;
-    const mh = m.videoHeight || m.naturalHeight || m.height || innerH;
-    const fit = layer?.mediaFit ?? "cover";
-    const scale = fit === "contain" ? Math.min(innerW / mw, innerH / mh) : Math.max(innerW / mw, innerH / mh);
-    const dw = mw * scale;
-    const dh = mh * scale;
-    const offsetX = layer?.mediaOffsetX ?? 0;
-    const offsetY = layer?.mediaOffsetY ?? 0;
-    const dx = innerX + (innerW - dw) / 2 + offsetX * (innerW - dw) / 2;
-    const dy = innerY + (innerH - dh) / 2 + offsetY * (innerH - dh) / 2;
-    const rotation = layer?.rotation ?? 0;
-    if (rotation) {
-      // Rotate the media about the inner screen's center so the rotation pivot
-      // matches the CSS preview (transform-origin: center) and stays inside the
-      // rounded-screen clip.
-      ctx.translate(innerX + innerW / 2, innerY + innerH / 2);
-      ctx.rotate((rotation * Math.PI) / 180);
-      ctx.translate(-(innerX + innerW / 2), -(innerY + innerH / 2));
+    // Blend the media like the preview's mix-blend-mode (canvas composite ops
+    // share the CSS keyword names).
+    if (layer && layer.blendMode && layer.blendMode !== "normal") {
+      ctx.globalCompositeOperation = blendCompositeOp(layer);
     }
-    ctx.filter = buildLayerFilterCss(layer);
-    ctx.drawImage(media, dx, dy, dw, dh);
+    drawMediaSource(ctx, layer, media, innerX, innerY, innerW, innerH);
     ctx.globalAlpha = 1;
+    if (layer && layer.blendMode && layer.blendMode !== "normal") {
+      ctx.globalCompositeOperation = "source-over";
+    }
   } else if (isTextLayer(layer)) {
     // Text layers paint styled text instead of media, using the exact layout
     // the CSS/SVG renderers embed (same constants from layerText.ts).

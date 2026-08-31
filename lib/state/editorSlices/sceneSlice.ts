@@ -117,7 +117,7 @@ export function createSceneSlice(set: EditorStoreSetter): SceneSlice {
           activeLayerId: reconcileActiveLayerId(nextScene, s.activeLayerId)
         };
       }),
-    setMediaLoading: (loading) => set({ isMediaLoading: loading }),
+    setMediaLoading: (loading) => set(loading ? {} : { isMediaLoading: false, mediaLoadingLayerId: null }),
     setRemovingBackground: (loading) => set({ isRemovingBackground: loading }),
     setMediaUploadError: (msg) => {
       // Auto-clear the shared error so it doesn't linger until the next action,
