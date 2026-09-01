@@ -1,6 +1,8 @@
 "use client";
 
+import { useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { ContextMenu, type ContextMenuItem } from "@/components/editor/ContextMenu";
 import { LocaleSwitcher } from "@/components/editor/LocaleSwitcher";
 import { useThemeStore } from "@/lib/state/themeStore";
 
@@ -55,9 +57,50 @@ export function EditorToolbar({
   const themeMode = useThemeStore((s) => s.mode);
   const setThemeMode = useThemeStore((s) => s.setMode);
 
+  // Secondary actions collapse behind a “…” menu at the <=980px breakpoint so
+  // the toolbar stays a single row on phones and portrait tablets; the menu is
+  // presentational here and only visible via CSS (.toolbar-more).
+  const [overflowMenu, setOverflowMenu] = useState<{ x: number; y: number } | null>(null);
+  const moreRef = useRef<HTMLButtonElement>(null);
+
+  const openOverflow = () => {
+    if (overflowMenu) {
+      setOverflowMenu(null);
+      return;
+    }
+    const r = moreRef.current?.getBoundingClientRect();
+    if (!r) return;
+    // Anchor just below the trigger and right-align the menu with it; the
+    // ContextMenu clamps into the viewport if the toolbar sits near an edge.
+    setOverflowMenu({ x: r.right - 180, y: r.bottom + 6 });
+  };
+
+  const overflowItems = useMemo<ContextMenuItem[]>(() => {
+    const themes: ContextMenuItem[] = (
+      [
+        ["light", themeMode === "light"],
+        ["dark", themeMode === "dark"],
+        ["system", themeMode === "system"]
+      ] as const
+    ).map(([mode, checked]) => ({
+      id: `theme-${mode}`,
+      label: t(`editor.${mode}Theme`),
+      checked,
+      onSelect: () => setThemeMode(mode)
+    }));
+    return [
+      ...themes,
+      { id: "share", label: t("editor.shareTitle"), separatorBefore: true, onSelect: onShare },
+      { id: "commands", label: t("editor.commandPaletteTitle"), onSelect: onOpenCommandPalette },
+      { id: "shortcuts", label: t("editor.shortcutsTitle"), onSelect: onOpenShortcuts },
+      { id: "reset", label: t("editor.resetBtnTitle"), onSelect: onReset },
+      { id: "fullscreen", label: t("editor.fullscreenTitle"), onSelect: onToggleFullscreen }
+    ];
+  }, [t, themeMode, setThemeMode, onShare, onOpenCommandPalette, onOpenShortcuts, onReset, onToggleFullscreen]);
+
   return (
     <div className="panel toolbar">
-      <div className="toolbar-group">
+      <div className="toolbar-group toolbar-undo">
         <button type="button" className="btn-tb btn-tb-icon" onClick={onUndo} disabled={!canUndo} title={t("editor.undoTitle")} aria-label={t("editor.undoTitle")}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 3H2v2M2 5l2.5-2.5A4.5 4.5 0 1111.5 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
           {undoCount > 0 ? <span style={{ fontSize: 9, lineHeight: 1, marginLeft: 1, opacity: 0.7 }}>{undoCount}</span> : null}
@@ -124,7 +167,7 @@ export function EditorToolbar({
         </span>
       ) : null}
       <span className="spacer" />
-      <div className="toolbar-group">
+      <div className="toolbar-group toolbar-aux">
         <div className="segmented" style={{ gap: 0 }} role="group" aria-label={t("editor.themeLabel")}>
           <button
             type="button"
@@ -158,7 +201,7 @@ export function EditorToolbar({
           </button>
         </div>
       </div>
-      <div className="toolbar-group">
+      <div className="toolbar-group toolbar-aux">
         <button type="button" className="btn-tb btn-tb-icon" onClick={onShare} title={t("editor.shareTitle")} aria-label={t("editor.shareTitle")}>
           <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M5.5 8.5l3-3M8 5.5l-1-1A2.5 2.5 0 119.5 3l.5.5M6 8.5l1 1A2.5 2.5 0 114.5 11l-.5-.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
@@ -166,10 +209,10 @@ export function EditorToolbar({
           <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="2.5" width="10.5" height="9.5" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M4 5.5h6M4 8.5h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
         </button>
         <button type="button" className="btn-tb btn-tb-icon" onClick={onOpenShortcuts} title={t("editor.shortcutsTitle")} aria-label={t("editor.shortcutsTitle")}>
-          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="1.5" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M5 5l4 4M9 5l-4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="3" width="11" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M4 5.75h.01M7 5.75h.01M10 5.75h.01M4.5 8.5h5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
         </button>
         <button type="button" className="btn-tb btn-tb-icon" onClick={onReset} title={t("editor.resetBtnTitle")} aria-label={t("editor.resetBtnTitle")}>
-          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M4 3H2v2M2 5l2.5-2.5A4.5 4.5 0 1111.5 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M.6 2.3v3.5h3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M2.05 8.75A5.25 5.25 0 1 0 3.29 3.29L.58 5.83" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
         <button type="button" className="btn-tb btn-tb-icon" onClick={onToggleFullscreen} title={t("editor.fullscreenTitle")} aria-label={t("editor.fullscreenTitle")} aria-keyshortcuts="f">
           <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M9 1h4v4M5 13H1V9M13 9v4H9M1 5V1h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -178,6 +221,23 @@ export function EditorToolbar({
       <div className="toolbar-group">
         <LocaleSwitcher />
       </div>
+      <div className="toolbar-group">
+        <button
+          type="button"
+          ref={moreRef}
+          className="btn-tb btn-tb-icon toolbar-more"
+          aria-haspopup="menu"
+          aria-expanded={overflowMenu !== null}
+          onClick={openOverflow}
+          title={t("editor.moreActions")}
+          aria-label={t("editor.moreActions")}
+        >
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="2.6" cy="7" r="1.1" fill="currentColor"/><circle cx="7" cy="7" r="1.1" fill="currentColor"/><circle cx="11.4" cy="7" r="1.1" fill="currentColor"/></svg>
+        </button>
+      </div>
+      {overflowMenu ? (
+        <ContextMenu x={overflowMenu.x} y={overflowMenu.y} items={overflowItems} triggerRef={moreRef} onClose={() => setOverflowMenu(null)} />
+      ) : null}
     </div>
   );
 }

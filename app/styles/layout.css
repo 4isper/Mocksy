@@ -133,12 +133,12 @@ body.panel-resizing {
   }
 }
 
-/* ---- Mobile bottom-sheet layout (<=768px) ----
-   The preview stays in flow at the top; both side panels become fixed
-   bottom sheets toggled from the tab bar, so editing controls are always
-   one tap away without scrolling past them to reach the canvas. */
-/* Desktop: the hosts are layout-transparent so the editor grid keeps seeing
-   the panels as its direct children (min-height/scroll chains stay intact). */
+/* ---- Mobile bottom-sheet layout (<=980px) ----
+   Phones and portrait tablets: the preview stays in flow at the top; both
+   side panels become fixed bottom sheets toggled from the tab bar, so editing
+   controls are always one tap away without scrolling past them to reach the
+   canvas. The 769–980px band used to stack the panels in flow with no tab bar,
+   burying the controls below the fold — it now shares the bottom navigation. */
 .sheet-host {
   display: contents;
 }
@@ -148,7 +148,7 @@ body.panel-resizing {
   display: none;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 980px) {
   .editor-shell {
     /* Keep the toolbar above the fixed tab bar. */
     padding-bottom: calc(74px + env(safe-area-inset-bottom));
@@ -200,7 +200,7 @@ body.panel-resizing {
 
   .mobile-tabbar {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 4px;
     position: fixed;
     left: 0;
@@ -217,6 +217,7 @@ body.panel-resizing {
   .mtab {
     appearance: none;
     font: inherit;
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -235,6 +236,26 @@ body.panel-resizing {
   }
   .mtab:hover {
     color: var(--text);
+  }
+  .mtab:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .mtab-badge {
+    position: absolute;
+    top: 2px;
+    right: 6px;
+    min-width: 16px;
+    height: 16px;
+    display: grid;
+    place-items: center;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
   }
   .mtab.is-active {
     color: var(--accent);

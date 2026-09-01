@@ -1,5 +1,5 @@
 import { activePosterTime, pushHistory } from "@/lib/state/editorHelpers";
-import { buildFreshScene } from "@/lib/state/editorScene";
+import { buildEmptyScene } from "@/lib/state/editorScene";
 import type { EditorScene } from "@/lib/types/editor";
 import type { EditorStoreSetter, EditorStoreState } from "../editorStoreTypes";
 
@@ -53,7 +53,7 @@ export function createSceneSlice(set: EditorStoreSetter): SceneSlice {
       }),
     resetScene: () =>
       set((s) => {
-        const fresh = buildFreshScene();
+        const fresh = buildEmptyScene();
         return { ...pushHistory(s, fresh), activeLayerId: reconcileActiveLayerId(fresh, s.activeLayerId) };
       }),
     clearHistory: () =>

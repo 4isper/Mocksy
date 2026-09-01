@@ -82,7 +82,7 @@ export interface EditorStoreState {
   rightTab: RightTabId;
   /** Mobile bottom-sheet navigation: which side panel is currently open as a
    *  bottom sheet over the preview (null = preview only). Only meaningful at
-   *  the <=768px breakpoint, where the tab bar replaces the side-by-side
+   *  the <=980px breakpoint, where the tab bar replaces the side-by-side
    *  panels. Pure view state — never persisted or undone. */
   mobileSheet: "controls" | "right" | null;
   /** Groups rapid same-field edits (e.g. slider drags) into one undo step. */
@@ -297,6 +297,8 @@ export interface EditorStoreState {
    *  annotations in one undo step. */
   applyAnnotationPatches: (patches: Record<string, Partial<Annotation>>) => void;
   removeAnnotation: (id: string) => void;
+  /** Removes many annotations in a single undo step (multi-select delete). */
+  removeAnnotations: (ids: string[]) => void;
   selectAnnotation: (id: string | null, additive?: boolean) => void;
   selectAnnotations: (ids: string[]) => void;
   selectFrameInstance: (id: string | null) => void;

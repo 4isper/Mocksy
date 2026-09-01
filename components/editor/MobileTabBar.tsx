@@ -22,16 +22,27 @@ const icons = {
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
       <path d="M9 2.5v8m0 0 3-3m-3 3-3-3M3.5 12v2a1.5 1.5 0 0 0 1.5 1.5h8A1.5 1.5 0 0 0 14.5 14v-2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  ),
+  undo: (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <path d="M6 4H3.5v2.5M3.5 6.5l3.2-3.2A6 6 0 1 1 3.2 12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 } as const;
 
-/** Fixed bottom navigation shown at the <=768px breakpoint, where the side
- *  panels live off-flow as bottom sheets. Each tab toggles its sheet; Export
- *  opens the shared export dialog instead of a sheet. */
+/** Fixed bottom navigation shown at the <=980px breakpoint (phones and
+ *  portrait tablets), where the side panels live off-flow as bottom sheets.
+ *  Each tab toggles its sheet; Export opens the shared export dialog instead
+ *  of a sheet. Undo stays reachable on the always-visible bar since the
+ *  desktop toolbar's undo group is hidden at that breakpoint. */
 export function MobileTabBar({ onExport }: { onExport: () => void }) {
   const t = useTranslations();
   const sheet = useEditorStore((s) => s.mobileSheet);
   const setSheet = useEditorStore((s) => s.setMobileSheet);
+  const pastLength = useEditorStore((s) => s.past.length);
+  const canUndo = pastLength > 0;
+  const undoCount = pastLength;
+  const undo = useEditorStore((s) => s.undo);
 
   // Escape closes whichever sheet is open — mirrors the modal dialogs' Esc
   // behaviour without routing through the global shortcut table.
@@ -48,6 +59,18 @@ export function MobileTabBar({ onExport }: { onExport: () => void }) {
 
   return (
     <nav className="mobile-tabbar" aria-label={t("editor.panels")}>
+      <button
+        type="button"
+        className="mtab mtab-undo"
+        disabled={!canUndo}
+        onClick={undo}
+        aria-label={t("editor.undoTitle")}
+      >
+        {icons.undo}
+        {undoCount > 1 ? (
+          <small className="mtab-badge" aria-hidden="true">{undoCount}</small>
+        ) : null}
+      </button>
       <button
         type="button"
         className={sheet === "controls" ? "mtab is-active" : "mtab"}

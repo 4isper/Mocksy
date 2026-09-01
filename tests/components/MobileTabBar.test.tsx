@@ -2,20 +2,53 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MobileTabBar } from "@/components/editor/MobileTabBar";
-import { useEditorStore } from "@/lib/state/editorStore";
+import { useEditorStore, initialScene } from "@/lib/state/editorStore";
 
 afterEach(() => {
   cleanup();
-  useEditorStore.setState({ mobileSheet: null });
+  useEditorStore.setState({ mobileSheet: null, past: [], future: [] });
 });
 
 describe("MobileTabBar", () => {
-  it("renders three tabs", () => {
+  it("renders four tabs including undo", () => {
     render(<MobileTabBar onExport={vi.fn()} />);
     expect(screen.getByRole("navigation", { name: /editor.panels/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /editor.undoTitle/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /editor.controls/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /editor.panelsTab/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /editor.exportTab/ })).toBeInTheDocument();
+  });
+
+  it("disables undo when there is no history", () => {
+    render(<MobileTabBar onExport={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /editor.undoTitle/ })).toBeDisabled();
+  });
+
+  it("enables undo when history exists", () => {
+    useEditorStore.setState({ past: [{ ...initialScene }] });
+    render(<MobileTabBar onExport={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /editor.undoTitle/ })).toBeEnabled();
+  });
+
+  it("shows a step-count badge only for multiple undo steps", () => {
+    useEditorStore.setState({ past: [{ ...initialScene }] });
+    render(<MobileTabBar onExport={vi.fn()} />);
+    const undo = screen.getByRole("button", { name: /editor.undoTitle/ });
+    expect(undo.querySelector(".mtab-badge")).toBeNull();
+
+    cleanup();
+    useEditorStore.setState({ past: [{ ...initialScene }, { ...initialScene }] });
+    render(<MobileTabBar onExport={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /editor.undoTitle/ }).querySelector(".mtab-badge")).toHaveTextContent("2");
+  });
+
+  it("calls undo from the tab", () => {
+    const undo = vi.spyOn(useEditorStore.getState(), "undo").mockImplementation(() => undefined);
+    useEditorStore.setState({ past: [{ ...initialScene }] });
+    render(<MobileTabBar onExport={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /editor.undoTitle/ }));
+    expect(undo).toHaveBeenCalledTimes(1);
+    undo.mockRestore();
   });
 
   it("opens and closes the controls sheet on toggle", () => {

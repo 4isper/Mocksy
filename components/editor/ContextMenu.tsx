@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, RefObject } from "react";
 
 export interface ContextMenuItem {
   id: string;
@@ -9,6 +9,8 @@ export interface ContextMenuItem {
   onSelect: () => void;
   danger?: boolean;
   disabled?: boolean;
+  /** Draws a check mark after the label (single-select option groups). */
+  checked?: boolean;
   /** Draws a separator line above this item. */
   separatorBefore?: boolean;
 }
@@ -25,7 +27,21 @@ interface Positioned {
  * first paint so it never overflows.
  * Purely presentational — callers build the items for their context.
  */
-export function ContextMenu({ x, y, items, onClose }: { x: number; y: number; items: ContextMenuItem[]; onClose: () => void }) {
+export function ContextMenu({
+  x,
+  y,
+  items,
+  onClose,
+  triggerRef
+}: {
+  x: number;
+  y: number;
+  items: ContextMenuItem[];
+  onClose: () => void;
+  /** Button that opens the menu: pointerdown on it must NOT close the menu so
+   *  the same click can toggle it closed (native menu-button behaviour). */
+  triggerRef?: RefObject<HTMLElement | null>;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<Positioned>({ x, y });
 
@@ -109,6 +125,7 @@ export function ContextMenu({ x, y, items, onClose }: { x: number; y: number; it
 
   useEffect(() => {
     const onDown = (e: PointerEvent) => {
+      if (triggerRef?.current?.contains(e.target as Node)) return;
       if (ref.current && !ref.current.contains(e.target as Node)) closeMenu(false);
     };
     const onKey = (e: KeyboardEvent) => {
@@ -131,7 +148,7 @@ export function ContextMenu({ x, y, items, onClose }: { x: number; y: number; it
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("resize", onResize);
     };
-  }, [closeMenu]);
+  }, [closeMenu, triggerRef]);
 
   const style: CSSProperties = {
     position: "fixed",
@@ -161,7 +178,10 @@ export function ContextMenu({ x, y, items, onClose }: { x: number; y: number; it
               }
             }}
             style={{
-              display: "block",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
               width: "100%",
               textAlign: "left",
               padding: "5px 10px",
@@ -177,7 +197,10 @@ export function ContextMenu({ x, y, items, onClose }: { x: number; y: number; it
               if (!item.disabled) setFocusIndex(i);
             }}
           >
-            {item.label}
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{item.label}</span>
+            {item.checked ? (
+              <span aria-hidden="true" className="menu-check" style={{ color: "var(--accent)", flex: "none" }}>✓</span>
+            ) : null}
           </button>
         </div>
       ))}

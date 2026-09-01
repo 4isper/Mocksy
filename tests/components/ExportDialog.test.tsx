@@ -117,6 +117,15 @@ describe("ExportDialog", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it("ignores backdrop clicks while an export is running", async () => {
+    const onClose = vi.fn();
+    const onCancel = vi.fn();
+    render(<ExportDialog {...baseProps} onClose={onClose} busy onCancel={onCancel} />);
+    await userEvent.click(document.querySelector(".modal-backdrop")!);
+    expect(onClose).not.toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
   it("disables buttons when busy", () => {
     render(<ExportDialog {...baseProps} busy />);
     const exportBtn = screen.getByRole("button", { name: "export.exportAction" });

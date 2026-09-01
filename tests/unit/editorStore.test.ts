@@ -186,14 +186,17 @@ describe("editorStore", () => {
     expect(store().scene.stylePreset).toBe(initialScene.stylePreset);
   });
 
-  it("resetScene restores defaults with demo media", () => {
+  it("resetScene clears content back to a blank canvas", () => {
     store().setScene({ frame: "desktop" });
     store().setZoom(1.2);
     store().resetScene();
     expect(store().scene.frame).toBe(initialScene.frame);
-    expect(store().scene.layers[0]!.zoom).toBe(initialScene.layers[0]!.zoom);
-    expect(store().scene.layers[0]!.mediaUrl).toContain("data:image/svg");
-    expect(store().scene.layers[0]!.mediaType).toBe("image");
+    expect(store().scene.layers).toHaveLength(0);
+    expect(store().scene.frameInstances).toHaveLength(0);
+    expect(store().scene.annotations).toHaveLength(0);
+    expect(store().scene.activeLayerId).toBeNull();
+    // Defaults outside the canvas still come back from the initial scene.
+    expect(store().scene.backgroundColor).toBe(initialScene.backgroundColor);
   });
 
   it("records history on a mutation and supports undo/redo", () => {
@@ -514,6 +517,36 @@ describe("annotations", () => {
     store().selectAnnotation(b, true);
     expect(store().selectedAnnotationIds.sort()).toEqual([a, b].sort());
     store().selectAnnotation(b, true);
+    expect(store().selectedAnnotationIds).toEqual([a]);
+  });
+
+  it("removeAnnotations drops the selected annotations in one undo step", () => {
+    reset();
+    store().addAnnotation("rect");
+    const a = store().selectedAnnotationId!;
+    store().addAnnotation("arrow");
+    const b = store().selectedAnnotationId!;
+    store().addAnnotation("text");
+    const c = store().selectedAnnotationId!;
+    const pastBefore = store().past.length;
+    store().selectAnnotations([a, c]);
+    store().removeAnnotations([a, c]);
+    expect(store().scene.annotations.map((x) => x.id)).toEqual([b]);
+    expect(store().selectedAnnotationId).toBeNull();
+    expect(store().selectedAnnotationIds).toEqual([]);
+    expect(store().past.length).toBe(pastBefore + 1);
+  });
+
+  it("removeAnnotations falls back to a remaining selected annotation", () => {
+    reset();
+    store().addAnnotation("rect");
+    const a = store().selectedAnnotationId!;
+    store().addAnnotation("arrow");
+    const b = store().selectedAnnotationId!;
+    store().selectAnnotations([a, b]);
+    store().removeAnnotations([b]);
+    expect(store().scene.annotations.map((x) => x.id)).toEqual([a]);
+    expect(store().selectedAnnotationId).toBe(a);
     expect(store().selectedAnnotationIds).toEqual([a]);
   });
 

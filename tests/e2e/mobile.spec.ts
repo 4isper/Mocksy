@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 // Responsive-viewport coverage for the stacked single-column editor layout
-// (globals.css 769-980px), the mobile bottom-sheet navigation (<=768px), the
+// (<=980px), the mobile/tablet bottom-sheet navigation (<=980px), the
 // slim-panel narrow-desktop range (981-1180px) and coarse-pointer
 // interactions. Runs in the chromium-mobile project only; desktop-only suites
 // (editor flows, video exports, visual regression) are excluded from that
@@ -27,7 +27,7 @@ test.describe("mobile editor layout", () => {
     const controls = page.locator(".sheet-host--controls");
     const right = page.locator(".sheet-host--right");
     const controlsTab = page.getByRole("button", { name: "Controls", exact: true });
-    const layersTab = page.getByRole("button", { name: "Layers", exact: true });
+    const layersTab = page.getByRole("button", { name: "Panels", exact: true });
 
     await controlsTab.click();
     await expect(controls).toHaveClass(/is-open/);
@@ -75,6 +75,15 @@ test.describe("mobile editor layout", () => {
       await expect(page.locator("[data-annotation]")).toHaveCount(1);
     }).toPass({ timeout: 20_000 });
     await expect(page.locator("[data-annotation]")).toHaveCount(1);
+  });
+
+  test("keeps undo reachable in the bottom tab bar", async ({ page }) => {
+    await page.goto("/");
+    const undo = page.locator(".mobile-tabbar").getByRole("button", { name: /Undo/ });
+    // Fresh session: no history yet, but the action is one tap away on the
+    // always-visible bar instead of buried in the wrapped toolbar.
+    await expect(undo).toBeVisible();
+    await expect(undo).toBeDisabled();
   });
 
   test("export dialog opens from the toolbar", async ({ page }) => {

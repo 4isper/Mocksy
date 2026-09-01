@@ -65,9 +65,25 @@ export const initialScene: EditorScene = {
 initialScene.activeLayerId = initialScene.layers[0]?.id ?? null;
 
 /**
+ * A blank canvas: the same defaults as a fresh app (background, frame, style,
+ * screen chrome) but no layers, no frame instances, no annotations or media.
+ * Used by the reset action so "reset" means a clean slate instead of another
+ * round of demo content.
+ */
+export function buildEmptyScene(): EditorScene {
+  return {
+    ...initialScene,
+    layers: [],
+    frameInstances: [],
+    annotations: [],
+    activeLayerId: null
+  };
+}
+
+/**
  * A fresh scene seeded with a grid of demo layers and matching frame
- * instances. Shared by the editor bootstrap, the projects store and the
- * reset action so every "new" scene starts from the same default.
+ * instances. Shared by the editor bootstrap and the projects store so every
+ * "new" scene starts from the same default.
  */
 export function buildFreshScene(
   frame: MockupFrame = "iphone",

@@ -41,6 +41,12 @@ describe("ContextMenu", () => {
     expect(list[2]!.onSelect).not.toHaveBeenCalled();
   });
 
+  it("renders a check mark for checked items", () => {
+    const list = [{ id: "t", label: "Dark", onSelect: vi.fn(), checked: true }];
+    render(<ContextMenu x={0} y={0} items={list} onClose={vi.fn()} />);
+    expect(screen.getByRole("menuitem", { name: "Dark" })).toHaveTextContent("✓");
+  });
+
   it("closes on Escape", () => {
     const onClose = vi.fn();
     render(<ContextMenu x={0} y={0} items={items()} onClose={onClose} />);
@@ -87,6 +93,14 @@ describe("ContextMenu", () => {
     render(<ContextMenu x={0} y={0} items={items()} onClose={onClose} />);
     fireEvent.pointerDown(document.body);
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("does not close on a pointerdown inside the trigger button", () => {
+    const onClose = vi.fn();
+    const trigger = { current: document.createElement("button") };
+    render(<ContextMenu x={0} y={0} items={items()} onClose={onClose} triggerRef={trigger} />);
+    fireEvent.pointerDown(trigger.current!);
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it("keeps the menu open on an inside pointerdown", () => {

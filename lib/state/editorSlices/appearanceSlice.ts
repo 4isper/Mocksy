@@ -33,6 +33,7 @@ export type AppearanceSlice = Pick<
   | "reorderAnnotation"
   | "applyAnnotationPatches"
   | "removeAnnotation"
+  | "removeAnnotations"
   | "selectAnnotation"
   | "selectAnnotations"
   | "clearAnnotations"
@@ -204,6 +205,17 @@ export function createAppearanceSlice(set: EditorStoreSetter): AppearanceSlice {
           ...pushHistory(s, { ...s.scene, annotations }),
           selectedAnnotationId: s.selectedAnnotationId === id ? null : s.selectedAnnotationId,
           selectedAnnotationIds: s.selectedAnnotationIds.filter((x) => x !== id)
+        };
+      }),
+    removeAnnotations: (ids) =>
+      set((s) => {
+        const removable = new Set(ids);
+        const annotations = s.scene.annotations.filter((a) => !removable.has(a.id));
+        const remaining = s.selectedAnnotationIds.filter((x) => !removable.has(x));
+        return {
+          ...pushHistory(s, { ...s.scene, annotations }),
+          selectedAnnotationId: s.selectedAnnotationId !== null && removable.has(s.selectedAnnotationId) ? (remaining.length > 0 ? remaining[remaining.length - 1]! : null) : s.selectedAnnotationId,
+          selectedAnnotationIds: remaining
         };
       }),
     selectAnnotation: (id, additive = false) => {

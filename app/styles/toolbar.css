@@ -266,3 +266,21 @@
   font-size: 12px;
   color: var(--text-dim);
 }
+
+/* ---- Mobile (<=980px): collapse the toolbar ---- */
+/* Undo/redo move to the always-visible bottom tab bar and the secondary
+   actions (theme, share, command palette, shortcuts, reset, fullscreen) fold
+   behind the "…" menu, so the sticky toolbar stays a single row on phones. */
+.toolbar .toolbar-more {
+  display: none;
+}
+
+@media (max-width: 980px) {
+  .toolbar .toolbar-undo,
+  .toolbar .toolbar-aux {
+    display: none;
+  }
+  .toolbar .toolbar-more {
+    display: inline-flex;
+  }
+}

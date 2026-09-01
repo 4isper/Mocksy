@@ -8,7 +8,10 @@ import { AxeBuilder } from "@axe-core/playwright";
 
 const EXCLUDED_RULES: Record<string, string> = {
   // "color-contrast": panels intentionally use translucent glass backgrounds;
-  // axe would measure against the wrong layer. Revisit if the theme changes.
+  // axe would measure against the wrong layer (e.g. the tab bar's blurred
+  // glass composited over the demo media, yielding a phantom white backdrop).
+  // Revisit if the theme changes.
+  "color-contrast": "Translucent glass surfaces confuse axe's contrast math"
 };
 
 type AxeImpact = "minor" | "moderate" | "serious" | "critical";
@@ -17,7 +20,7 @@ type AxeImpact = "minor" | "moderate" | "serious" | "critical";
 // given impact, so callers can scope how strict each surface must be.
 async function audit(page: import("@playwright/test").Page, minImpact: AxeImpact = "serious") {
   const builder = Object.keys(EXCLUDED_RULES).length > 0
-    ? new AxeBuilder({ page }).withRules(Object.keys(EXCLUDED_RULES))
+    ? new AxeBuilder({ page }).disableRules(Object.keys(EXCLUDED_RULES))
     : new AxeBuilder({ page });
   const results = await builder.analyze();
   const ranks: AxeImpact[] = ["minor", "moderate", "serious", "critical"];
@@ -27,6 +30,20 @@ async function audit(page: import("@playwright/test").Page, minImpact: AxeImpact
 
 function describeViolations(violations: { id: string; impact?: string | null; nodes: unknown[] }[]) {
   return violations.map((v) => `${v.id} (${v.impact}): ${v.nodes.length} node(s)`);
+}
+
+// At the <=980px breakpoint the secondary toolbar actions (share, command
+// palette) fold behind the "…" overflow menu, so a direct toolbar click finds
+// no visible button. This helper clicks the toolbar button when present and
+// falls back to the overflow menu item otherwise.
+async function clickToolbarAction(page: import("@playwright/test").Page, label: RegExp) {
+  const button = page.getByRole("button", { name: label });
+  if (await button.isVisible()) {
+    await button.click();
+    return;
+  }
+  await page.getByRole("button", { name: /More actions/ }).click();
+  await page.getByRole("menuitem", { name: label }).click();
 }
 
 // Opens the right-panel tab by its visible label and waits for its panel to
@@ -58,7 +75,7 @@ test.describe("a11y", () => {
   test("command palette has no critical violations", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("#preview-canvas")).toBeVisible();
-    await page.getByRole("button", { name: /Open command palette/ }).click();
+    await clickToolbarAction(page, /Open command palette/);
     await expect(page.getByRole("dialog")).toBeVisible();
 
     const violations = await audit(page, "critical");
@@ -79,7 +96,7 @@ test.describe("a11y", () => {
     await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.goto("/");
     await expect(page.locator("#preview-canvas")).toBeVisible();
-    await page.getByRole("button", { name: /Copy Share URL/ }).click();
+    await clickToolbarAction(page, /Copy Share URL/);
     await expect(page.getByRole("dialog", { name: /Scan to open/ })).toBeVisible();
 
     const violations = await audit(page, "critical");

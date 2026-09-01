@@ -57,6 +57,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const duplicateAnnotation = useEditorStore((s) => s.duplicateAnnotation);
   const reorderAnnotation = useEditorStore((s) => s.reorderAnnotation);
   const removeAnnotation = useEditorStore((s) => s.removeAnnotation);
+  const removeAnnotations = useEditorStore((s) => s.removeAnnotations);
   const duplicateFrameInstance = useEditorStore((s) => s.duplicateFrameInstance);
   const reorderFrameInstance = useEditorStore((s) => s.reorderFrameInstance);
   const removeFrameInstance = useEditorStore((s) => s.removeFrameInstance);
@@ -216,15 +217,16 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         onDoubleClick={view.onDoubleClickReset}
         onContextMenu={openContextMenu}
         onKeyDown={(e) => {
-          // Delete/Backspace removes the selected annotation when the canvas is focused.
+          // Delete/Backspace removes every selected annotation (multi-select
+          // included) when the canvas is focused.
           // Never fire while typing in the inline annotation editor (or any
           // other contentEditable): the caret's Backspace must not delete the
           // annotation itself.
           const target = e.target instanceof HTMLElement ? e.target : null;
           if (target?.isContentEditable) return;
-          if ((e.key === "Delete" || e.key === "Backspace") && selectedAnnotationId) {
+          if ((e.key === "Delete" || e.key === "Backspace") && selectedAnnotationIds.length > 0) {
             e.preventDefault();
-            removeAnnotation(selectedAnnotationId);
+            removeAnnotations(selectedAnnotationIds);
             selectAnnotation(null);
           }
         }}

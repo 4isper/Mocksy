@@ -30,7 +30,6 @@ export function PositionSection() {
       setMediaOffsetY: s.setMediaOffsetY,
       setRotation: s.setRotation,
       setShadowOpacity: s.setShadowOpacity,
-      setFloorReflection: s.setFloorReflection,
       setBorderRadius: s.setBorderRadius,
       setTiltX: s.setTiltX,
       setTiltY: s.setTiltY
@@ -48,6 +47,7 @@ export function PositionSection() {
       )}
     >
       <div className="field-group">
+        <span className="field-label scope-label">{t("editor.positionLayerScope")}</span>
         <Segmented
           label={t("editor.fillFitLabel")}
           value={activeLayer?.mediaFit ?? "cover"}
@@ -85,6 +85,7 @@ export function PositionSection() {
             <span className="range-val">{Math.round(activeLayer?.rotation ?? 0)}°</span>
           </div>
         </label>
+        <span className="field-label scope-label">{t("editor.positionSceneScope")}</span>
         <label className="field">
           <span>{t("editor.shadowOpacity")}</span>
           <div className="range-wrap">

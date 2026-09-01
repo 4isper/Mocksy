@@ -140,6 +140,31 @@ describe("PreviewCanvas", () => {
     fireEvent.click(toggle);
     expect(useEditorStore.getState().showGrid).toBe(false);
   });
+
+  it("deletes every selected annotation on Delete", () => {
+    const annotations = [
+      { id: "a1", type: "text" as const, text: "one", x: 0, y: 0, w: 0.2, h: 0.1, color: "#fff", fontSize: 24, strokeWidth: 2 },
+      { id: "a2", type: "text" as const, text: "two", x: 0, y: 0, w: 0.2, h: 0.1, color: "#fff", fontSize: 24, strokeWidth: 2 },
+    ];
+    useEditorStore.setState({ selectedAnnotationId: "a2", selectedAnnotationIds: ["a1", "a2"] });
+    renderScene({ annotations });
+    const canvas = document.querySelector("#preview-canvas")!;
+    fireEvent.keyDown(canvas, { key: "Delete" });
+    expect(useEditorStore.getState().scene.annotations).toHaveLength(0);
+    expect(useEditorStore.getState().selectedAnnotationIds).toEqual([]);
+  });
+
+  it("deletes the single selected annotation on Backspace", () => {
+    const annotations = [
+      { id: "a1", type: "text" as const, text: "one", x: 0, y: 0, w: 0.2, h: 0.1, color: "#fff", fontSize: 24, strokeWidth: 2 },
+    ];
+    useEditorStore.setState({ selectedAnnotationId: "a1", selectedAnnotationIds: ["a1"] });
+    renderScene({ annotations });
+    const canvas = document.querySelector("#preview-canvas")!;
+    fireEvent.keyDown(canvas, { key: "Backspace" });
+    expect(useEditorStore.getState().scene.annotations).toHaveLength(0);
+    expect(useEditorStore.getState().selectedAnnotationIds).toEqual([]);
+  });
 });
 
 describe("PreviewCanvas media upload", () => {

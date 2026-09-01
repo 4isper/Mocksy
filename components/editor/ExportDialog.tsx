@@ -108,7 +108,7 @@ export function ExportDialog({
   if (!open) return null;
   const formatLabel = t(`export.${format}`);
   return (
-    <div className="modal-backdrop" role="presentation" onClick={() => (busy && onCancel ? onCancel() : onClose())}>
+    <div className="modal-backdrop" role="presentation" onClick={() => (busy ? undefined : onClose())}>
       <div
         className="modal export"
         ref={trapRef}

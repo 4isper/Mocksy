@@ -344,14 +344,15 @@ test("opens with demo media when nothing is saved", async ({ page, context }) =>
   await expect(previewMedia(page)).toBeVisible();
 });
 
-test("Reset restores default settings and demo media", async ({ page }) => {
+test("Reset clears the mockup to an empty canvas", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "Tablet");
   await page.getByRole("button", { name: "Reset" }).click();
   // Reset opens a confirmation modal; confirm it.
   await page.locator(".modal").getByRole("button", { name: "Reset" }).click();
+  // The scene falls back to the default frame with no layers or media left.
   await expect.poll(() => frameIsActive(page, "iPhone")).toBe("true");
-  await expect(previewMedia(page)).toBeVisible();
+  await expect(previewMedia(page)).toHaveCount(0);
 });
 
 test("Layers panel clears media of the active layer", async ({ page }) => {
@@ -654,7 +655,7 @@ test("panels stack and stay within the viewport on a narrow screen", async ({ pa
   // The control panels are reachable by opening their sheets.
   await tabbar.getByRole("button", { name: /Controls/ }).click();
   await expect(page.locator("#control-panel")).toBeVisible();
-  await tabbar.getByRole("button", { name: /Layers/ }).click();
+  await tabbar.getByRole("button", { name: /Panels/ }).click();
   await expect(page.getByText("Scene presets")).toBeVisible();
   // No horizontal overflow on mobile.
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);

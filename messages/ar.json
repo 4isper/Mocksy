@@ -386,7 +386,27 @@
     "ungroup": "فك التجميع",
     "gradientType": "نوع التدرج",
     "layerActions": "إجراءات الطبقة",
-    "uploadMediaShortHint": "اضغط مطولاً على ⌘/Ctrl لاختيار عدة ملفات — يملأ كل منها الجهاز الفارغ التالي"
+    "uploadMediaShortHint": "اضغط مطولاً على ⌘/Ctrl لاختيار عدة ملفات — يملأ كل منها الجهاز الفارغ التالي",
+    "searchControls": "Filter controls",
+    "searchControlsLabel": "Filter control sections",
+    "searchControlsClear": "Clear filter",
+    "noControlsMatch": "No matching sections",
+    "sectionKeywords": {
+      "media": "upload, image, video, url, record, screen recording, clear, add text layer",
+      "text": "text, font, size, weight, color, align",
+      "frame": "device, browser, url, theme, material, grid, layout, align, distribute, aspect, ratio, social, style, rotate, portrait, landscape",
+      "animation": "entrance, loop, easing, duration, parallax, zoom",
+      "position": "fill, fit, zoom, scale, position, x, y, rotation, shadow, corner, radius, tilt, reflection",
+      "filters": "brightness, contrast, saturation, blur, grayscale, sepia, remove background",
+      "background": "solid, gradient, image, pattern, blur, palette, presets, color, transparent",
+      "watermark": "watermark, text, image, position, size",
+      "screen": "chrome, status bar, home indicator, glare, reflection, reset, apply to all",
+      "arrange": "grid, layout, align, distribute, fan, cascade, masonry, stack, instance, position, count"
+    },
+    "arrange": "Arrange",
+    "positionLayerScope": "Layer",
+    "positionSceneScope": "Scene",
+    "moreActions": "More actions"
   },
   "frame": {
     "none": "بلا",

@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { ControlPanel } from "@/components/editor/ControlPanel";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { initialScene } from "@/lib/state/editorStore";
+import { buildFreshScene } from "@/lib/state/editorScene";
 
 afterEach(() => {
   cleanup();
@@ -308,5 +309,68 @@ describe("ControlPanel", () => {
     });
     render(<ControlPanel />);
     expect(screen.getByText("video.options")).toBeInTheDocument();
+  });
+
+  it("filters sections by title and force-opens matches", async () => {
+    render(<ControlPanel />);
+    const input = screen.getByRole("textbox", { name: "editor.searchControlsLabel" });
+    await userEvent.type(input, "watermark");
+    // Only the watermark section header remains visible.
+    expect(screen.getByRole("button", { name: "editor.watermark" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "editor.background" })).not.toBeInTheDocument();
+    // A closed-by-default section is force-opened while filtering.
+    expect(screen.getByRole("checkbox", { name: "editor.watermark" })).toBeVisible();
+  });
+
+  it("restores all sections and their collapsed state when the filter clears", async () => {
+    render(<ControlPanel />);
+    const input = screen.getByRole("textbox", { name: "editor.searchControlsLabel" });
+    await userEvent.type(input, "watermark");
+    await userEvent.clear(input);
+    for (const name of ["editor.media", "editor.frame", "editor.arrange", "editor.animation", "editor.position", "editor.filters", "editor.background", "editor.watermark", "editor.screen"]) {
+      expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    }
+  });
+
+  it("shows a no-results status when nothing matches", async () => {
+    render(<ControlPanel />);
+    const input = screen.getByRole("textbox", { name: "editor.searchControlsLabel" });
+    await userEvent.type(input, "zzzzz");
+    expect(screen.getByText("editor.noControlsMatch")).toBeInTheDocument();
+  });
+
+  it("renders position scope labels separating layer and scene controls", () => {
+    render(<ControlPanel />);
+    expect(screen.getByText("editor.positionLayerScope")).toBeInTheDocument();
+    expect(screen.getByText("editor.positionSceneScope")).toBeInTheDocument();
+    const sceneLabel = screen.getByText("editor.positionSceneScope").closest(".scope-label");
+    expect(sceneLabel).toHaveClass("scope-label");
+  });
+
+  it("hides layout, align and instance tools when there are no frames", () => {
+    useEditorStore.setState({ scene: { ...initialScene, frameInstances: [] } });
+    render(<ControlPanel />);
+    expect(screen.queryByRole("button", { name: "editor.layoutFan" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "editor.alignLeft" })).not.toBeInTheDocument();
+  });
+
+  it("shows layout presets but no align tools with a single frame", () => {
+    useEditorStore.setState({ scene: buildFreshScene("iphone", 1) });
+    render(<ControlPanel />);
+    expect(screen.getByRole("button", { name: "editor.layoutFan" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "editor.alignLeft" })).not.toBeInTheDocument();
+  });
+
+  it("shows align tools but no distribute with two frames", () => {
+    useEditorStore.setState({ scene: buildFreshScene("iphone", 2) });
+    render(<ControlPanel />);
+    expect(screen.getByRole("button", { name: "editor.alignLeft" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "editor.distributeHorizontal" })).not.toBeInTheDocument();
+  });
+
+  it("shows distribute tools with three frames", () => {
+    useEditorStore.setState({ scene: buildFreshScene("iphone", 3) });
+    render(<ControlPanel />);
+    expect(screen.getByRole("button", { name: "editor.distributeHorizontal" })).toBeInTheDocument();
   });
 });

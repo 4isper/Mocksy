@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useSyncExternalStore, type ReactNode } from "react";
 
 const STORAGE_KEY = "mocksy.controlPanel.sections";
 
@@ -34,6 +34,13 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
+const EMPTY_FORCE_OPEN: ReadonlySet<string> = new Set();
+const ForceOpenContext = createContext<ReadonlySet<string>>(EMPTY_FORCE_OPEN);
+
+export function ForceOpenProvider({ ids, children }: { ids: ReadonlySet<string>; children: ReactNode }) {
+  return <ForceOpenContext.Provider value={ids}>{children}</ForceOpenContext.Provider>;
+}
+
 interface SectionProps {
   id: string;
   title: string;
@@ -44,7 +51,8 @@ interface SectionProps {
 
 export function Section({ id, title, icon, defaultOpen = true, children }: SectionProps) {
   const prefs = useSyncExternalStore(subscribe, readPrefs, () => EMPTY_PREFS);
-  const open = prefs[id] ?? defaultOpen;
+  const forceOpenIds = useContext(ForceOpenContext);
+  const open = forceOpenIds.has(id) || (prefs[id] ?? defaultOpen);
 
   const toggle = useCallback(() => {
     const next = { ...readPrefs(), [id]: !(readPrefs()[id] ?? defaultOpen) };
