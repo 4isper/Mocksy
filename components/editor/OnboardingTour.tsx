@@ -229,7 +229,7 @@ export function OnboardingTour() {
           overflowY: "auto"
         }}
       >
-        <h3 style={{ margin: 0, fontSize: 15 }}>{t(step.titleKey)}</h3>
+        <div style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{t(step.titleKey)}</div>
         <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>{t(step.bodyKey)}</p>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span aria-hidden="true" style={{ display: "flex", gap: 4, marginRight: "auto" }}>

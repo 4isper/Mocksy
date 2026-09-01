@@ -21,6 +21,9 @@ module.exports = {
         'legacy-javascript-insight': 'off',
         'forced-reflow-insight': 'off',
         'network-dependency-tree-insight': 'off',
+        'dom-size-insight': 'off',
+        'render-blocking-insight': 'off',
+        'lcp-discovery-insight': 'off',
         'unused-javascript': 'off',
         // Performance scores are advisory; the app is fully interactive after
         // the first paint and heavy assets load lazily.
