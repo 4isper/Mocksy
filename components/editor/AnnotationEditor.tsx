@@ -37,7 +37,7 @@ export function AnnotationEditor({ annotation }: AnnotationEditorProps) {
       {!isBlur ? (
         <label className="field">
           <span>{t("annotation.color")}</span>
-          <input type="color" value={annotation.color} onChange={(e) => updateAnnotation(annotation.id, { color: e.target.value, gradientFrom: undefined, gradientTo: undefined, gradientVia: undefined, gradientType: undefined, gradientAngle: undefined })} />
+          <input type="color" className="color-input" value={annotation.color} onChange={(e) => updateAnnotation(annotation.id, { color: e.target.value, gradientFrom: undefined, gradientTo: undefined, gradientVia: undefined, gradientType: undefined, gradientAngle: undefined })} />
         </label>
       ) : null}
       {!isBlur ? (
@@ -60,20 +60,21 @@ export function AnnotationEditor({ annotation }: AnnotationEditorProps) {
         <>
           <label className="field">
             <span>{t("annotation.gradientFrom")}</span>
-            <input type="color" value={annotation.gradientFrom} onChange={(e) => updateAnnotation(annotation.id, { gradientFrom: e.target.value })} />
+            <input type="color" className="color-input" value={annotation.gradientFrom} onChange={(e) => updateAnnotation(annotation.id, { gradientFrom: e.target.value })} />
           </label>
           <label className="field">
             <span>{t("annotation.gradientTo")}</span>
-            <input type="color" value={annotation.gradientTo} onChange={(e) => updateAnnotation(annotation.id, { gradientTo: e.target.value })} />
+            <input type="color" className="color-input" value={annotation.gradientTo} onChange={(e) => updateAnnotation(annotation.id, { gradientTo: e.target.value })} />
           </label>
           <label className="field">
             <span>{t("annotation.gradientVia")}</span>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input
                 type="color"
+                className="color-input"
+                style={{ flex: 1 }}
                 value={annotation.gradientVia || "#ffffff"}
                 onChange={(e) => updateAnnotation(annotation.id, { gradientVia: e.target.value })}
-                style={{ flex: 1 }}
               />
               {annotation.gradientVia ? (
                 <button type="button" className="btn btn-sm" onClick={() => updateAnnotation(annotation.id, { gradientVia: undefined })}>
@@ -196,9 +197,10 @@ export function AnnotationEditor({ annotation }: AnnotationEditorProps) {
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <input
               type="color"
+              className="color-input"
+              style={{ flex: 1 }}
               value={annotation.bgColor || "#09090b"}
               onChange={(e) => updateAnnotation(annotation.id, { bgColor: e.target.value })}
-              style={{ flex: 1 }}
             />
             {annotation.bgColor ? (
               <button type="button" className="btn btn-sm" onClick={() => updateAnnotation(annotation.id, { bgColor: null })}>

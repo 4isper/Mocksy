@@ -189,7 +189,7 @@ export function ContextMenu({
               borderRadius: 6,
               border: "none",
               background: "transparent",
-              color: item.danger ? "var(--danger)" : "var(--text-primary)",
+              color: item.danger ? "var(--danger)" : "var(--text)",
               cursor: item.disabled ? "not-allowed" : "pointer",
               opacity: item.disabled ? 0.45 : 1
             }}

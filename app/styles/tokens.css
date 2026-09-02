@@ -16,6 +16,7 @@
   --accent-press: #00b8d9;
   --danger: #f87171;
   --danger-bg: rgba(127, 29, 29, 0.85);
+  --success: #4ade80;
   --radius: 16px;
   --radius-sm: 10px;
   --field-bg: #18181b;
@@ -45,6 +46,7 @@
   --accent-press: #005fa3;
   --danger: #dc2626;
   --danger-bg: rgba(254, 226, 226, 0.9);
+  --success: #16a34a;
   --field-bg: #ffffff;
   --field-border: #d4d4db;
   --hover: rgba(0, 0, 0, 0.04);

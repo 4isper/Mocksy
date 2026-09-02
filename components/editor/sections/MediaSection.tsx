@@ -225,7 +225,7 @@ function RecentMediaGrid() {
             type="button"
             title={entry.mediaName ?? t("editor.recentMedia")}
             style={{
-              border: "1px solid var(--border)",
+              border: "1px solid var(--panel-border)",
               borderRadius: 4,
               padding: 0,
               overflow: "hidden",

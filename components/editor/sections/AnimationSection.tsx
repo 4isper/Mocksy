@@ -107,7 +107,7 @@ export function AnimationSection() {
           </div>
         </label>
       </div>
-      <div className="field-group" style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 8 }}>
+      <div className="field-group" style={{ borderTop: "1px solid var(--panel-border)", paddingTop: 12, marginTop: 8 }}>
         <p style={{ color: "var(--text-dim)", fontSize: 12, margin: "0 0 4px" }}>{t("editor.entranceAnimation")}</p>
         <Segmented
           label={t("editor.entranceAnimation")}

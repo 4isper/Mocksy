@@ -1,22 +1,12 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, type CSSProperties } from "react";
+import { useState } from "react";
 import type { ScreenChrome, ScreenChromeStyle, ScreenChromeTheme } from "@/lib/types/editor";
 import type { DeviceOS } from "@/lib/render/frames";
 import { ANDROID_GRID_APPS, GRID_ICON_PRESETS, NOTIFICATION_APPS } from "@/lib/render/screenChrome";
 import { Section } from "@/components/editor/Section";
 import { Segmented } from "@/components/editor/Segmented";
-
-const COLOR_INPUT_STYLE: CSSProperties = {
-  width: 32,
-  height: 28,
-  padding: 0,
-  border: "1px solid var(--panel-border)",
-  borderRadius: 6,
-  cursor: "pointer",
-  background: "none"
-};
 
 interface ScreenControlsProps {
   screen: ScreenChrome;
@@ -40,6 +30,28 @@ interface ScreenControlsProps {
 const STYLES: ScreenChromeStyle[] = ["lock", "home", "statusBar"];
 const THEMES: ScreenChromeTheme[] = ["dark", "light"];
 const OSES: DeviceOS[] = ["ios", "android", "desktop"];
+
+/** 12×12 glyph icons for the collapsible groups (matches ControlPanel style). */
+const SECTION_ICONS = {
+  notifications: (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.5" y="2" width="9" height="2.4" rx="1.2" stroke="currentColor" strokeWidth="1.1"/><rect x="1.5" y="7.6" width="6.5" height="2.4" rx="1.2" stroke="currentColor" strokeWidth="1.1"/></svg>
+  ),
+  clock: (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2"/><path d="M6 3.6V6l1.8 1.2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+  ),
+  dock: (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.5" y="8" width="9" height="2.5" rx="1.25" stroke="currentColor" strokeWidth="1.1"/><circle cx="4" cy="9.25" r="0.7" fill="currentColor"/><circle cx="6" cy="9.25" r="0.7" fill="currentColor"/><circle cx="8" cy="9.25" r="0.7" fill="currentColor"/></svg>
+  ),
+  grid: (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.5" y="1.5" width="3.4" height="3.4" rx="0.9" stroke="currentColor" strokeWidth="1.1"/><rect x="7.1" y="1.5" width="3.4" height="3.4" rx="0.9" stroke="currentColor" strokeWidth="1.1"/><rect x="1.5" y="7.1" width="3.4" height="3.4" rx="0.9" stroke="currentColor" strokeWidth="1.1"/><rect x="7.1" y="7.1" width="3.4" height="3.4" rx="0.9" stroke="currentColor" strokeWidth="1.1"/></svg>
+  ),
+  widgets: (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.5" y="1.5" width="9" height="4" rx="1.2" stroke="currentColor" strokeWidth="1.1"/><rect x="1.5" y="7" width="4" height="3.5" rx="1.2" stroke="currentColor" strokeWidth="1.1"/><rect x="6.8" y="7" width="3.7" height="3.5" rx="1.2" stroke="currentColor" strokeWidth="1.1"/></svg>
+  ),
+  folders: (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1.5 3.2c0-.66.54-1.2 1.2-1.2h2.1l1.2 1.5h3.3c.66 0 1.2.54 1.2 1.2v4.1c0 .66-.54 1.2-1.2 1.2H2.7c-.66 0-1.2-.54-1.2-1.2V3.2z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round"/></svg>
+  )
+} as const;
 
 /** Format a lock-clock factor (0..1) as a readable percentage for aria. */
 function clockFactorPct(v: number): string {
@@ -287,14 +299,14 @@ export function ScreenControls({ screen, setScreenChrome, screenGlare, setScreen
 
       {/* Lock-screen: notification cards editor */}
       {isLock && screen.showNotifications ? (
-        <Section id="screen-notifications" title={t("editor.screenSectionNotifications")} defaultOpen={false}>
+        <Section id="screen-notifications" title={t("editor.screenSectionNotifications")} icon={SECTION_ICONS.notifications} defaultOpen={false}>
           <div className="screen-notifications">
             <p className="field-hint">{t("editor.screenNotificationsHint")}</p>
             {(screen.notifications ?? NOTIFICATION_APPS).slice(0, 4).map((notif, i) => (
               <div key={i} className="screen-notification-row">
                 <input
                   type="color"
-                  style={COLOR_INPUT_STYLE}
+                  className="color-input"
                   disabled={!screen.enabled}
                   value={notif.color}
                   aria-label={`${t("editor.screenNotificationsColor")} ${i + 1}`}
@@ -322,7 +334,7 @@ export function ScreenControls({ screen, setScreenChrome, screenGlare, setScreen
 
       {/* Lock-screen: clock size + position + color */}
       {isLock ? (
-        <Section id="screen-clock" title={t("editor.screenSectionClock")} defaultOpen={false}>
+        <Section id="screen-clock" title={t("editor.screenSectionClock")} icon={SECTION_ICONS.clock} defaultOpen={false}>
           <label className="field">
             <span>{t("editor.screenClockSize")}</span>
             <input
@@ -353,10 +365,10 @@ export function ScreenControls({ screen, setScreenChrome, screenGlare, setScreen
           </label>
           <label className="field">
             <span>{t("editor.screenClockColor")}</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
+            <div className="color-input-row">
               <input
                 type="color"
-                style={COLOR_INPUT_STYLE}
+                className="color-input"
                 disabled={!screen.enabled}
                 value={screen.clockColor ?? (screen.theme === "dark" ? "#ffffff" : "#0a0a0a")}
                 onChange={(e) => setScreenChrome({ clockColor: e.target.value })}
@@ -380,13 +392,13 @@ export function ScreenControls({ screen, setScreenChrome, screenGlare, setScreen
       {/* Home-screen: dock background + dock icon colors */}
       {isHome ? (
         <>
-          <Section id="screen-dock" title={t("editor.screenSectionDock")} defaultOpen={false}>
+          <Section id="screen-dock" title={t("editor.screenSectionDock")} icon={SECTION_ICONS.dock} defaultOpen={false}>
             <label className="field">
               <span>{t("editor.screenDockBackground")}</span>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
+              <div className="color-input-row">
                 <input
                   type="color"
-                  style={COLOR_INPUT_STYLE}
+                  className="color-input"
                   disabled={!screen.enabled}
                   value={screen.dockBackground ?? (screen.theme === "dark" ? "#5a5a5a" : "#505050")}
                   onChange={(e) => setScreenChrome({ dockBackground: e.target.value })}
@@ -400,7 +412,7 @@ export function ScreenControls({ screen, setScreenChrome, screenGlare, setScreen
                   <input
                     key={i}
                     type="color"
-                    style={COLOR_INPUT_STYLE}
+                    className="color-input"
                     disabled={!screen.enabled}
                     value={color}
                     onChange={(e) => {
@@ -425,7 +437,7 @@ export function ScreenControls({ screen, setScreenChrome, screenGlare, setScreen
                 <div key={i} className="screen-notification-row">
                   <input
                     type="color"
-                    style={COLOR_INPUT_STYLE}
+                    className="color-input"
                     disabled={!screen.enabled}
                     value={icon.color}
                     aria-label={`${t("editor.screenDockIconColor")} ${i + 1}`}
@@ -451,7 +463,7 @@ export function ScreenControls({ screen, setScreenChrome, screenGlare, setScreen
           </Section>
 
           {/* Custom Android home grid icons: label + color (+ emoji). */}
-          <Section id="screen-grid" title={t("editor.screenSectionGrid")} defaultOpen={false}>
+          <Section id="screen-grid" title={t("editor.screenSectionGrid")} icon={SECTION_ICONS.grid} defaultOpen={false}>
             <div className="dock-icons-editor">
               <p className="field-hint">{t("editor.screenGridIconsHint")}</p>
               <div className="grid-dims-row">
@@ -502,7 +514,7 @@ export function ScreenControls({ screen, setScreenChrome, screenGlare, setScreen
                 <div key={i} className="screen-notification-row">
                   <input
                     type="color"
-                    style={COLOR_INPUT_STYLE}
+                    className="color-input"
                     disabled={!screen.enabled}
                     value={icon.color}
                     aria-label={`${t("editor.screenGridIcon")} ${i + 1} ${t("editor.screenGridColor")}`}
@@ -538,7 +550,7 @@ export function ScreenControls({ screen, setScreenChrome, screenGlare, setScreen
           </Section>
 
           {/* Android home widgets: clock + weather, rendered above the grid. */}
-          <Section id="screen-widgets" title={t("editor.screenSectionWidgets")} defaultOpen={false}>
+          <Section id="screen-widgets" title={t("editor.screenSectionWidgets")} icon={SECTION_ICONS.widgets} defaultOpen={false}>
             <div className="dock-icons-editor">
               <p className="field-hint">{t("editor.screenWidgetsHint")}</p>
               <label className="toggle">
@@ -565,14 +577,14 @@ export function ScreenControls({ screen, setScreenChrome, screenGlare, setScreen
           </Section>
 
           {/* Android folder cells: label + color. */}
-          <Section id="screen-folders" title={t("editor.screenSectionFolders")} defaultOpen={false}>
+          <Section id="screen-folders" title={t("editor.screenSectionFolders")} icon={SECTION_ICONS.folders} defaultOpen={false}>
             <div className="dock-icons-editor">
               <p className="field-hint">{t("editor.screenFoldersHint")}</p>
               {(screen.folders ?? DEFAULT_FOLDERS).slice(0, 8).map((folder, i) => (
                 <div key={i} className="screen-notification-row">
                   <input
                     type="color"
-                    style={COLOR_INPUT_STYLE}
+                    className="color-input"
                     disabled={!screen.enabled}
                     value={folder.color}
                     aria-label={`${t("editor.screenFolder")} ${i + 1} ${t("editor.screenGridColor")}`}
