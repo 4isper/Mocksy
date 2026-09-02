@@ -217,7 +217,7 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
   const chromeScreen = group.screen ?? scene.screen;
   const chromeMarkup =
     chromeScreen.enabled
-      ? `<g transform="translate(${num(assembly.innerX)} ${num(assembly.innerY)})">${screenChromeElements({ ...chromeScreen, os: frameOs(group.frame) }, assembly.innerW, assembly.innerH, `sc-${index}`)}</g>`
+      ? `<g transform="translate(${num(assembly.innerX)} ${num(assembly.innerY)})">${screenChromeElements({ ...chromeScreen, os: chromeScreen.os ?? frameOs(group.frame) }, assembly.innerW, assembly.innerH, `sc-${index}`, group.frame)}</g>`
       : "";
 
   const assemblyGroup: SvgFrameGroup = { ...group, box: assembly };

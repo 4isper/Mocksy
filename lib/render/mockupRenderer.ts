@@ -210,7 +210,14 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
   // box, so stretch the fixed viewBox onto it ("none") to mirror it precisely.
   const chromePar = spec.isOverlay && spec.cutout ? "xMidYMid meet" : "none";
   const screenChrome = scene.screen.enabled
-    ? screenChromeSvg({ ...scene.screen, os: frameOs(scene.frame) }, chromeW, chromeH, `screen-chrome-${String(scene.frame).replace(/[^a-z0-9]/gi, "")}`, chromePar)
+    ? screenChromeSvg(
+        { ...scene.screen, os: scene.screen.os ?? frameOs(scene.frame) },
+        chromeW,
+        chromeH,
+        `screen-chrome-${String(scene.frame).replace(/[^a-z0-9]/gi, "")}`,
+        chromePar,
+        scene.frame
+      )
     : null;
 
   // Text layers render instead of media, stretched over the same screen box.

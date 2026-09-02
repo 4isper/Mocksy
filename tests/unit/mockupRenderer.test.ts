@@ -279,6 +279,23 @@ describe("buildSceneCss", () => {
     expect(overrideCss.screenChrome).toContain("12:07");
     expect(overrideCss.screenChrome).not.toContain("9:41");
   });
+
+  it("honors a user-set os instead of forcing the frame's OS onto the chrome", () => {
+    // iPhone frame normally resolves to "ios". A user-chosen "android" must be
+    // respected: android keeps the status bar but drops the iOS dock.
+    const home = base({
+      frame: "iphone15",
+      screen: { ...initialScene.screen, enabled: true, style: "home", os: "android" as const }
+    });
+    const androidCss = buildSceneCss(home);
+    expect(androidCss.screenChrome).toContain("9:41"); // status bar remains
+    expect(androidCss.screenChrome).not.toContain('fill="#30d158"'); // no iOS dock icons
+
+    // Leaving os unset falls back to the frame's OS (ios for an iPhone).
+    const noOs = base({ frame: "iphone15", screen: { ...initialScene.screen, enabled: true, style: "home" } });
+    const iosCss = buildSceneCss(noOs);
+    expect(iosCss.screenChrome).toContain('fill="#30d158"'); // iOS dock drawn
+  });
 });
 
 describe("buildEntranceAnimationCss", () => {

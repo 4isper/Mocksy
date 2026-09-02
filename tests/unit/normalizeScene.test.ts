@@ -500,6 +500,10 @@ describe("normalizeScene", () => {
     expect(s.screen.showStatusBar).toBe(false);
     expect(s.screen.showClock).toBe(false);
     expect(s.screen.showHomeIndicator).toBe(false);
+    // notifications is opt-in: absent or "false" stays off, only true enables
+    expect(normalizeScene({}).screen.showNotifications).toBe(false);
+    expect(normalizeScene({ screen: { showNotifications: "yes" } }).screen.showNotifications).toBe(false);
+    expect(normalizeScene({ screen: { showNotifications: true } }).screen.showNotifications).toBe(true);
   });
 
   it("derives the chrome os from the frame", () => {
@@ -585,5 +589,65 @@ describe("normalizeScene", () => {
     expect(s.frameInstances[0]!.floorReflection).toBe(false);
     // f2 has no override and stays undefined (inherits the scene default).
     expect(s.frameInstances[1]!.floorReflection).toBeUndefined();
+  });
+});
+
+describe("ScreenChrome new fields normalization", () => {
+  it("clamps clockSizeFactor into [0.04, 0.25]", () => {
+    const s = normalizeScene({ screen: { clockSizeFactor: 99 } });
+    expect(s.screen.clockSizeFactor).toBe(0.25);
+    const lo = normalizeScene({ screen: { clockSizeFactor: 0.01 } });
+    expect(lo.screen.clockSizeFactor).toBe(0.04);
+    const nan = normalizeScene({ screen: { clockSizeFactor: Number.NaN } });
+    expect(nan.screen.clockSizeFactor).toBe(0.105);
+  });
+
+  it("clamps clockYFactor into [0.08, 0.5]", () => {
+    const s = normalizeScene({ screen: { clockYFactor: 1 } });
+    expect(s.screen.clockYFactor).toBe(0.5);
+    const lo = normalizeScene({ screen: { clockYFactor: 0.01 } });
+    expect(lo.screen.clockYFactor).toBe(0.08);
+    const nan = normalizeScene({ screen: { clockYFactor: Number.NaN } });
+    expect(nan.screen.clockYFactor).toBe(0.175);
+  });
+
+  it("accepts a valid hex color for clockColor", () => {
+    const s = normalizeScene({ screen: { clockColor: "#ff0000" } });
+    expect(s.screen.clockColor).toBe("#ff0000");
+  });
+
+  it("rejects an invalid color string for clockColor", () => {
+    const s = normalizeScene({ screen: { clockColor: "not-a-color" } });
+    expect(s.screen.clockColor).toBeNull();
+  });
+
+  it("accepts a valid hex color for dockBackground", () => {
+    const s = normalizeScene({ screen: { dockBackground: "#123456" } });
+    expect(s.screen.dockBackground).toBe("#123456");
+  });
+
+  it("rejects an invalid color string for dockBackground", () => {
+    const s = normalizeScene({ screen: { dockBackground: "rgb(255,0,0)" } });
+    // rgb() is actually valid per the CSS_COLOR_RE in normalizeScene
+    expect(s.screen.dockBackground).toBe("rgb(255,0,0)");
+    const bad = normalizeScene({ screen: { dockBackground: "hsl(0,100%,50%)" } });
+    expect(bad.screen.dockBackground).toBeNull();
+  });
+
+  it("normalizes dockColors to an array of 4 valid hex colors", () => {
+    const s = normalizeScene({ screen: { dockColors: ["#aabbcc", "#112233", "#ffffff", "#000000"] } });
+    expect(s.screen.dockColors).toEqual(["#aabbcc", "#112233", "#ffffff", "#000000"]);
+  });
+
+  it("truncates dockColors to 4 entries and pads invalids", () => {
+    const s = normalizeScene({ screen: { dockColors: ["#aabbcc", "bad", "#112233", "#ffffff", "#000000"] } });
+    expect(s.screen.dockColors).toHaveLength(4);
+    expect(s.screen.dockColors![0]).toBe("#aabbcc");
+    expect(s.screen.dockColors![1]).toBe("#30d158"); // fallback for "bad"
+  });
+
+  it("dockColors falls back to null for non-array input", () => {
+    const s = normalizeScene({ screen: { dockColors: "not-an-array" } });
+    expect(s.screen.dockColors).toBeNull();
   });
 });

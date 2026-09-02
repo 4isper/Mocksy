@@ -89,6 +89,8 @@ export interface ScreenChrome {
   showClock: boolean;
   /** Date line under the clock (lock style). */
   showDate: boolean;
+  /** Lock-screen notification cards (lock style). */
+  showNotifications: boolean;
   /** Home dock with app icons (home style). */
   showDock: boolean;
   /** Home indicator pill at the bottom of the screen. */
@@ -101,6 +103,22 @@ export interface ScreenChrome {
    *  indicator, dock) and the mobile status bar so Android/desktop frames
    *  don't get iOS UI. Defaults to "ios" when not specified. */
   os?: "ios" | "android" | "desktop";
+  /** Lock-screen large clock size as a fraction of the screen height.
+   *  Absent/null means the default 0.105. Range [0.04, 0.25]. */
+  clockSizeFactor?: number | null;
+  /** Lock-screen clock/date vertical position as a fraction of the screen
+   *  height (the clock's top edge). Absent/null means the default 0.175.
+   *  Range [0.08, 0.5]. */
+  clockYFactor?: number | null;
+  /** Optional hex color override for the lock-screen clock/date text. Absent or
+   *  null derives the color from the chrome theme (dark → white, light → black). */
+  clockColor?: string | null;
+  /** Optional hex color override for the home-dock background. Absent or null
+   *  derives the translucent white/black dock from the chrome theme. */
+  dockBackground?: string | null;
+  /** Optional per-icon colors for the home dock (4 entries). Absent or null
+   *  uses the default SCREEN_CHROME_DOCK_COLORS palette. */
+  dockColors?: string[] | null;
 }
 export type MediaType = "none" | "image" | "video";
 export type VideoQuality = "low" | "medium" | "high";

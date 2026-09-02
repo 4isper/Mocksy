@@ -406,7 +406,13 @@
     "arrange": "Arrange",
     "positionLayerScope": "Layer",
     "positionSceneScope": "Scene",
-    "moreActions": "More actions"
+    "moreActions": "More actions",
+    "screenClockSize": "Clock size",
+    "screenClockPosition": "Clock position",
+    "screenClockColor": "Clock color",
+    "screenDockBackground": "Dock background",
+    "screenDockColors": "Dock icons",
+    "screenShowNotifications": "Notifications"
   },
   "frame": {
     "none": "कोई नहीं",
@@ -986,6 +992,7 @@
     "tvPresentation": "TV प्रेज़ेंटेशन",
     "watchCollection": "वॉच कलेक्शन",
     "galaxyModern": "Galaxy मॉडर्न",
-    "minimalNoFrame": "मिनिमल (बिना फ़्रेम)"
+    "minimalNoFrame": "मिनिमल (बिना फ़्रेम)",
+    "wallpaperPair": "Wallpaper Pair (Lock + Home)"
   }
 }

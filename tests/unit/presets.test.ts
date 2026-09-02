@@ -242,3 +242,43 @@ describe("applySceneTemplate", () => {
     expect(result.frameInstances).toBe(initialScene.frameInstances);
   });
 });
+
+describe("wallpaper-pair template", () => {
+  it("builds one lock and one home screen instance", () => {
+    const tpl = getSceneTemplate("wallpaper-pair")!;
+    expect(tpl).toBeDefined();
+    const result = applySceneTemplate(tpl, initialScene);
+    expect(result.frameInstances).toHaveLength(2);
+    const [lock, home] = result.frameInstances;
+    expect(lock!).toBeTruthy();
+    expect(home!).toBeTruthy();
+    expect(lock!.screen?.style).toBe("lock");
+    expect(lock!.screen?.enabled).toBe(true);
+    expect(lock!.screen?.showClock).toBe(true);
+    expect(lock!.screen?.showDock).toBe(false);
+    expect(home!.screen?.style).toBe("home");
+    expect(home!.screen?.enabled).toBe(true);
+    expect(home!.screen?.showClock).toBe(false);
+    expect(home!.screen?.showDock).toBe(true);
+  });
+
+  it("uses a portrait canvas ratio and gives frame instances fresh ids", () => {
+    const tpl = getSceneTemplate("wallpaper-pair")!;
+    const result = applySceneTemplate(tpl, initialScene);
+    expect(result.aspectRatio).toBe("4 / 5");
+    const ids = result.frameInstances.map((fi) => fi.id);
+    expect(new Set(ids).size).toBe(2);
+    for (const id of ids) expect(id).toMatch(/^frame-/);
+  });
+
+  it("places the two phones side by side without overlap", () => {
+    const tpl = getSceneTemplate("wallpaper-pair")!;
+    const result = applySceneTemplate(tpl, initialScene);
+    const halfW = 0.48 / 2;
+    const leftX = result.frameInstances[0]!.x - halfW;
+    const rightX = result.frameInstances[1]!.x + halfW;
+    expect(leftX).toBeGreaterThanOrEqual(0);
+    expect(rightX).toBeLessThanOrEqual(1);
+    expect(result.frameInstances[0]!.x).toBeLessThan(result.frameInstances[1]!.x);
+  });
+});

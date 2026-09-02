@@ -59,11 +59,19 @@ export function normalizeScreenChrome(raw: unknown, fallback: ScreenChrome = ini
     showStatusBar: r.showStatusBar !== false,
     showClock: r.showClock !== false,
     showDate: r.showDate !== false,
+    showNotifications: r.showNotifications === true,
     showDock: r.showDock !== false,
     showHomeIndicator: r.showHomeIndicator !== false,
     time: str(r.time, fallback.time) ?? fallback.time,
     date: str(r.date, fallback.date) ?? fallback.date,
-    os: pick(r.os, ["ios", "android", "desktop"] as const, frameOs(frame))
+    os: pick(r.os, ["ios", "android", "desktop"] as const, frameOs(frame)),
+    clockSizeFactor: num(r.clockSizeFactor, fallback.clockSizeFactor ?? 0.105, 0.04, 0.25),
+    clockYFactor: num(r.clockYFactor, fallback.clockYFactor ?? 0.175, 0.08, 0.5),
+    clockColor: colorStr(r.clockColor, null),
+    dockBackground: colorStr(r.dockBackground, null),
+    dockColors: Array.isArray(r.dockColors)
+      ? r.dockColors.slice(0, 4).map((c) => colorStr(c, null) ?? "#30d158")
+      : null
   };
 }
 

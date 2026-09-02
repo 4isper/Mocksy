@@ -406,7 +406,13 @@
     "arrange": "Arrange",
     "positionLayerScope": "Layer",
     "positionSceneScope": "Scene",
-    "moreActions": "More actions"
+    "moreActions": "More actions",
+    "screenClockSize": "Clock size",
+    "screenClockPosition": "Clock position",
+    "screenClockColor": "Clock color",
+    "screenDockBackground": "Dock background",
+    "screenDockColors": "Dock icons",
+    "screenShowNotifications": "Notifications"
   },
   "frame": {
     "none": "Mitte ükski",
@@ -986,6 +992,7 @@
     "tvPresentation": "TV esitlus",
     "watchCollection": "Kella kollektsioon",
     "galaxyModern": "Galaxy Kaasaegne",
-    "minimalNoFrame": "Minimalistlik (ilma raamita)"
+    "minimalNoFrame": "Minimalistlik (ilma raamita)",
+    "wallpaperPair": "Wallpaper Pair (Lock + Home)"
   }
 }

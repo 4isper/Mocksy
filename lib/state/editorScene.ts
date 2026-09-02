@@ -11,10 +11,16 @@ export const DEFAULT_SCREEN_CHROME: ScreenChrome = {
   showStatusBar: true,
   showClock: true,
   showDate: true,
+  showNotifications: false,
   showDock: true,
   showHomeIndicator: true,
   time: "9:41",
-  date: "Tuesday, August 4"
+  date: "Tuesday, August 4",
+  clockSizeFactor: 0.105,
+  clockYFactor: 0.175,
+  clockColor: null,
+  dockBackground: null,
+  dockColors: null
 };
 
 /** Default URL shown in the browser frame's address bar. */

@@ -76,12 +76,17 @@ describe("screenChromeElements", () => {
     expect(out).not.toContain('r="12.8"'); // old inner placeholder dot
   });
 
-  it("home dock uses an iOS-like corner radius and 60pt-scale icons", () => {
+  it("home dock uses an iOS-like corner radius and squircle icons", () => {
     const out = screenChromeElements(chrome({ style: "home" }), W, H, "t");
     const dockH = H * 0.112;
     const dockRx = Math.round(dockH * 0.4 * 10) / 10;
     expect(out).toContain(`rx="${dockRx}"`); // rounded rect, not a capsule
-    expect(out).toContain(`width="${W * 0.15}"`); // ~60pt icons
+    // Icons are superellipse squircles (paths closing with Z), not plain rects.
+    expect(out.match(/d="M [^"]+ Z"/g)).toHaveLength(4);
+    // The squircle outline passes through the first icon's edge midpoints.
+    expect(out).toContain("96.7 742.7"); // right-center of the first icon
+    expect(out).toContain("67.5 713.5"); // top-center of the first icon
+    expect(out).not.toContain(`width="${W * 0.15}"`);
     expect(out).not.toContain(`rx="${dockH / 2}"`);
   });
 
@@ -170,6 +175,95 @@ describe("screenChromeElements", () => {
     expect(light).toContain('fill="#0a0a0a"');
     expect(dark).toContain('fill="#ffffff"');
   });
+
+  it("clockSizeFactor scales the lock clock vertically", () => {
+    const baseline = screenChromeElements(chrome(), W, H, "t");
+    const large = screenChromeElements(chrome({ clockSizeFactor: 0.20 }), W, H, "t");
+    // Default clock y ≈ 147.7; with clockYFactor unchanged, only the font-size changes.
+    const baseSize = Number(baseline.match(/font-size="([\d.]+)" font-weight="200"/)![1]);
+    const largeSize = Number(large.match(/font-size="([\d.]+)" font-weight="200"/)![1]);
+    expect(largeSize).toBeGreaterThan(baseSize);
+  });
+
+  it("clockYFactor moves the lock clock up and down", () => {
+    const high = screenChromeElements(chrome({ clockYFactor: 0.10 }), W, H, "t");
+    const low = screenChromeElements(chrome({ clockYFactor: 0.35 }), W, H, "t");
+    // Grab the y attribute of the <text> element that carries the big lock
+    // clock (font-weight="200").
+    const extractClockY = (svg: string) => {
+      const m = svg.match(/<text x="[\d.]+" y="([\d.]+)" font-size="[\d.]+" font-weight="200"/);
+      return m ? Number(m[1]) : NaN;
+    };
+    const highY = extractClockY(high);
+    const lowY = extractClockY(low);
+    expect(lowY).toBeGreaterThan(highY);
+  });
+
+  it("clockColor overrides the theme-derived clock text color", () => {
+    const defaultDark = screenChromeElements(chrome(), W, H, "t");
+    // Default dark theme clock color is #ffffff; override to red.
+    const custom = screenChromeElements(chrome({ clockColor: "#ff0000" }), W, H, "t");
+    // The clock font-weight=200 text (lock clock) uses clockColor
+    expect(custom).toContain('font-weight="200" fill="#ff0000"');
+    // Default dark theme clock uses fg=#ffffff
+    expect(defaultDark).toContain('font-weight="200" fill="#ffffff"');
+  });
+
+  it("clockColor also colors the lock date line", () => {
+    const custom = screenChromeElements(chrome({ clockColor: "#aabbcc" }), W, H, "t");
+    // Date uses clockDim which equals clockColor when set.
+    expect(custom).toContain('font-weight="600" fill="#aabbcc"');
+  });
+
+  it("dockBackground overrides the default translucent dock fill", () => {
+    const out = screenChromeElements(chrome({ style: "home", dockBackground: "#123456" }), W, H, "t");
+    expect(out).toContain('fill="#123456"');
+    // No default translucent fill present
+    expect(out).not.toContain('fill="rgba(255,255,255,0.16)"');
+  });
+
+  it("dockColors overrides the default 4-icon dock palette", () => {
+    const colors = ["#ff0000", "#00ff00", "#0000ff", "#ffff00"];
+    const out = screenChromeElements(chrome({ style: "home", dockColors: colors }), W, H, "t");
+    for (const c of colors) {
+      expect(out).toContain(`fill="${c}"`);
+    }
+    for (const c of SCREEN_CHROME_DOCK_COLORS) {
+      expect(out).not.toContain(`fill="${c}"`);
+    }
+  });
+
+  it("dockColors falls back to default when empty array is provided", () => {
+    const out = screenChromeElements(chrome({ style: "home", dockColors: [] }), W, H, "t");
+    for (const c of SCREEN_CHROME_DOCK_COLORS) {
+      expect(out).toContain(`fill="${c}"`);
+    }
+  });
+});
+
+describe("lock-screen notifications", () => {
+  it("renders two notification cards below the clock when enabled", () => {
+    const out = screenChromeElements(chrome({ showNotifications: true }), W, H, "t");
+    expect(out).toContain("Messages");
+    expect(out).toContain("Calendar");
+    // two app-icon squircles (superellipse paths), matches the card count
+    expect(out.match(/d="M [^"]+ Z" fill="(?:#30d158|#0a84ff)"/g)).toHaveLength(2);
+    expect(out).toContain('fill="#30d158"'); // Messages icon
+    expect(out).toContain('fill="#0a84ff"'); // Calendar icon
+  });
+
+  it("skips notification cards by default", () => {
+    const out = screenChromeElements(chrome(), W, H, "t");
+    expect(out).not.toContain("Messages");
+    expect(out).not.toContain("Calendar");
+  });
+
+  it("renders notification cards even when the clock is hidden", () => {
+    const out = screenChromeElements(chrome({ showNotifications: true, showClock: false, showDate: false, showStatusBar: false }), W, H, "t");
+    // Cards fall back to a fixed position below the top scrim.
+    expect(out).toContain("Messages");
+    expect(out).toContain("Calendar");
+  });
 });
 
 describe("screenChromeSvg", () => {
@@ -226,6 +320,14 @@ describe("drawScreenChrome", () => {
     drawScreenChrome(c as never, chrome(), 0, 0, 390, 844);
     const fillTexts = (c as unknown as { _calls: { fillText: unknown[][] } })._calls.fillText;
     expect(fillTexts.some((args) => args[0] === "9:41")).toBe(true);
+  });
+
+  it("draws lock-screen notification cards when enabled", () => {
+    const c = ctx();
+    drawScreenChrome(c as never, chrome({ showNotifications: true }), 0, 0, 390, 844);
+    const fillTexts = (c as unknown as { _calls: { fillText: unknown[][] } })._calls.fillText;
+    expect(fillTexts.some((args) => args[0] === "Messages")).toBe(true);
+    expect(fillTexts.some((args) => args[0] === "Calendar")).toBe(true);
   });
 
   it("paints nothing when every element is hidden", () => {

@@ -516,7 +516,7 @@ export function drawFrameAndMedia(  ctx: CanvasRenderingContext2D,
   if (screen.enabled) {
     ctx.save();
     clipScreen();
-    drawScreenChrome(ctx, { ...screen, os: frameOs(box.frame) }, innerX, innerY, innerW, innerH);
+    drawScreenChrome(ctx, { ...screen, os: screen.os ?? frameOs(box.frame) }, innerX, innerY, innerW, innerH, box.frame);
     ctx.restore();
   }
 

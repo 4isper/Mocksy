@@ -406,7 +406,13 @@
     "arrange": "Arrange",
     "positionLayerScope": "Layer",
     "positionSceneScope": "Scene",
-    "moreActions": "More actions"
+    "moreActions": "More actions",
+    "screenClockSize": "Clock size",
+    "screenClockPosition": "Clock position",
+    "screenClockColor": "Clock color",
+    "screenDockBackground": "Dock background",
+    "screenDockColors": "Dock icons",
+    "screenShowNotifications": "Notifications"
   },
   "frame": {
     "none": "Ешқандай",
@@ -986,6 +992,7 @@
     "tvPresentation": "TV Presentation",
     "watchCollection": "Watch Collection",
     "galaxyModern": "Galaxy Modern",
-    "minimalNoFrame": "Minimal (No Frame)"
+    "minimalNoFrame": "Minimal (No Frame)",
+    "wallpaperPair": "Wallpaper Pair (Lock + Home)"
   }
 }
