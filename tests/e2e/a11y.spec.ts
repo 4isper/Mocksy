@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { AxeBuilder } from "@axe-core/playwright";
+import { clickToolbarAction, openRightPanel, openRightTab } from "./helpers";
 
 // Accessibility audit of the editor shell and its interactive surfaces. Runs
 // on the chromium project only (desktop viewport); the mobile layout shares
@@ -32,27 +33,8 @@ function describeViolations(violations: { id: string; impact?: string | null; no
   return violations.map((v) => `${v.id} (${v.impact}): ${v.nodes.length} node(s)`);
 }
 
-// At the <=980px breakpoint the secondary toolbar actions (share, command
-// palette) fold behind the "…" overflow menu, so a direct toolbar click finds
-// no visible button. This helper clicks the toolbar button when present and
-// falls back to the overflow menu item otherwise.
-async function clickToolbarAction(page: import("@playwright/test").Page, label: RegExp) {
-  const button = page.getByRole("button", { name: label });
-  if (await button.isVisible()) {
-    await button.click();
-    return;
-  }
-  await page.getByRole("button", { name: /More actions/ }).click();
-  await page.getByRole("menuitem", { name: label }).click();
-}
-
-// Opens the right-panel tab by its visible label and waits for its panel to
-// render. Each tab is a discrete surface worth auditing on its own.
-async function openRightTab(page: import("@playwright/test").Page, label: string) {
-  // The label may carry a count badge (e.g. "Layers2"), so match as a prefix.
-  await page.getByRole("tab", { name: new RegExp(`^${label}`) }).click();
-  await expect(page.locator("#right-panel-content")).toBeVisible();
-}
+// (The clickToolbarAction / openRightTab helpers live in ./helpers — they
+// must handle the mobile bottom-sheet layout, where these specs also run.)
 
 test.describe("a11y", () => {
   test("editor page has no new axe violations", async ({ page }) => {
@@ -106,6 +88,7 @@ test.describe("a11y", () => {
   test("right-panel tabs have no serious violations", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("#preview-canvas")).toBeVisible();
+    await openRightPanel(page);
     await expect(page.locator("#right-panel")).toBeVisible();
 
     for (const label of ["Scene presets", "Layers", "Annotations", "History", "Projects"]) {

@@ -77,7 +77,6 @@ export function EditorShell() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [resetNotice, setResetNotice] = useState(false);
   const resetNoticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hasOpenModalRef = useRef(false);
   const bootstrapped = useRef(false);
   const historyCleanupRef = useRef<(() => void) | null>(null);
 
@@ -96,15 +95,18 @@ export function EditorShell() {
   // folded in here as a final boolean rather than a separate local state.
   // Dialogs whose open state lives inside panels (inline confirmations, the
   // onboarding tour, mobile sheets) register in the modal registry through
-  // their focus trap and are picked up via hasOpenModalSurface().
-  useEffect(() => {
-    hasOpenModalRef.current =
+  // their focus trap and are polled live via hasOpenModalSurface(): a cached
+  // snapshot would go stale when a registry-backed dialog closes without
+  // re-rendering EditorShell, parking every shortcut (⌘K included) forever.
+  const isModalOpen = useCallback(() => {
+    return (
       confirmResetOpen ||
       exportOpen ||
       shortcutsOpen ||
       commandPaletteOpen ||
       exportApi.shareQrUrl !== null ||
-      hasOpenModalSurface();
+      hasOpenModalSurface()
+    );
   }, [confirmResetOpen, exportOpen, shortcutsOpen, commandPaletteOpen, exportApi.shareQrUrl]);
 
   const { saved, saveToast, savedSceneRef, saveNow, markSaved } = useAutosaveStatus(scene, activeLayerId, bootstrapped);
@@ -162,7 +164,7 @@ export function EditorShell() {
     onOpenShortcuts: () => setShortcutsOpen(true),
     onOpenCommandPalette: () => setCommandPaletteOpen(true),
     onToggleFullscreen: toggleFullscreenPreview,
-    isModalOpen: () => hasOpenModalRef.current
+    isModalOpen
   });
   // ⌘V pastes screenshots / copied media files (or an image URL) into the
   // active layer. Passive listener — no shortcut registration needed.

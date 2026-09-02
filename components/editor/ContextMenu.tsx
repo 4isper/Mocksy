@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { CSSProperties, RefObject } from "react";
 
 export interface ContextMenuItem {
@@ -161,7 +162,11 @@ export function ContextMenu({
     gap: 2
   };
 
-  return (
+  // Portalled to document.body: callers render the menu inside stacking
+  // contexts that sit below fixed chrome (the sticky toolbar under the mobile
+  // tab bar), which would clip the popover's z-index and make the last items
+  // untappable. Fixed positioning is unaffected by the portal parent.
+  return createPortal(
     <div ref={ref} className="panel" role="menu" aria-orientation="vertical" onKeyDown={handleKeyDown} style={style}>
       {items.map((item, i) => (
         <div key={item.id}>
@@ -204,6 +209,7 @@ export function ContextMenu({
           </button>
         </div>
       ))}
-    </div>
+    </div>,
+    document.body
   );
 }

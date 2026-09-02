@@ -1,14 +1,22 @@
 import { expect, test } from "@playwright/test";
+import { clickToolbarAction, isMobileLayout, openRightTab } from "./helpers";
 
 // E2E coverage for the UX features: full-screen preview, right-click context
 // menus, the "Surprise me" random style and the onboarding tour. Runs against
-// the real app strings (default en locale).
+// the real app strings (default en locale) on both the desktop and the
+// mobile (stacked bottom-sheet) layouts.
 
 test.describe("full-screen preview", () => {
   test("F hides the panels and Esc restores them", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator(".control-panel")).toBeVisible();
-    await expect(page.locator(".right-panel")).toBeVisible();
+    if (await isMobileLayout(page)) {
+      // Stacked layout: the panels are mounted but parked (hidden) until
+      // their bottom sheet opens, so "restores" means back in the DOM.
+      await expect(page.locator(".control-panel")).toBeHidden();
+    } else {
+      await expect(page.locator(".control-panel")).toBeVisible();
+      await expect(page.locator(".right-panel")).toBeVisible();
+    }
 
     await page.keyboard.press("f");
     await expect(page.locator(".control-panel")).toHaveCount(0);
@@ -17,16 +25,25 @@ test.describe("full-screen preview", () => {
     await expect(page.getByRole("button", { name: "Exit full screen (Esc)" })).toBeVisible();
 
     await page.keyboard.press("Escape");
-    await expect(page.locator(".control-panel")).toBeVisible();
-    await expect(page.locator(".right-panel")).toBeVisible();
+    await expect(page.locator(".control-panel")).toHaveCount(1);
+    await expect(page.locator(".right-panel")).toHaveCount(1);
+    if (!(await isMobileLayout(page))) {
+      await expect(page.locator(".control-panel")).toBeVisible();
+      await expect(page.locator(".right-panel")).toBeVisible();
+    }
   });
 
   test("toolbar button enters full screen", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "Full-screen preview (F)" }).click();
+    // At the mobile breakpoint the fullscreen button folds behind the "…"
+    // overflow menu; the helper falls back to it automatically.
+    await clickToolbarAction(page, /Full-screen preview/);
     await expect(page.locator(".control-panel")).toHaveCount(0);
     await page.getByRole("button", { name: "Exit full screen (Esc)" }).click();
-    await expect(page.locator(".control-panel")).toBeVisible();
+    await expect(page.locator(".control-panel")).toHaveCount(1);
+    if (!(await isMobileLayout(page))) {
+      await expect(page.locator(".control-panel")).toBeVisible();
+    }
   });
 });
 
@@ -61,7 +78,7 @@ test.describe("context menus", () => {
   test("layer row menu duplicates the layer", async ({ page }) => {
     test.skip(test.info().project.name === "chromium-mobile", "touch right-click re-mounts the menu mid-click; covered natively in mobile.spec.ts");
     await page.goto("/");
-    await page.getByRole("tab", { name: "Layers" }).click();
+    await openRightTab(page, "Layers");
     const items = page.locator(".layer-item");
     // The first-run demo scene ships several layers; duplicate one of them.
     await expect(items.first()).toBeVisible();
@@ -76,36 +93,49 @@ test.describe("context menus", () => {
 test.describe("surprise style", () => {
   test("Surprise me applies a random appearance without dropping media", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("tab", { name: "Scene presets" }).click();
+    // On mobile the right panel is a bottom sheet; the helper opens it first.
+    await openRightTab(page, "Scene presets");
 
     const appearance = () =>
       page.evaluate(() => {
         const raw = localStorage.getItem("mocksy-projects");
         if (!raw) return null;
-        const parsed = JSON.parse(raw) as { projects?: Array<{ scene?: { backgroundMode?: string; backgroundColor?: string; stylePreset?: string; layers?: Array<{ mediaUrl: string | null }> } }> };
+        const parsed = JSON.parse(raw) as { projects?: Array<{ scene?: { backgroundMode?: string; backgroundColor?: string; stylePreset?: string; layers?: Array<{ mediaUrl: string | null }> }; updatedAt?: number }> };
         const project = parsed.projects?.[0];
         if (!project?.scene) return null;
         return {
           mode: project.scene.backgroundMode ?? "",
           color: project.scene.backgroundColor ?? "",
           style: project.scene.stylePreset ?? "",
+          // Autosave writes are debounced; the timestamp tells a fresh write
+          // from the previous one, which the loop below waits for.
+          updatedAt: project.updatedAt ?? 0,
           hasMedia: (project.scene.layers ?? []).some((l) => !!l.mediaUrl)
         };
       });
 
-    const before = await appearance();
-    expect(before).not.toBeNull();
+    await expect.poll(appearance, { timeout: 10000 }).not.toBeNull();
+    const before = (await appearance())!;
 
     // The randomizer may legitimately repeat the current look — click until
     // the appearance triple actually changes (bounded to keep the test fast).
+    // Each round waits for the debounced autosave write to land (updatedAt
+    // moves) before comparing, so a fresh read can't see the stale scene.
     const button = page.getByRole("button", { name: "Surprise me" });
-    let after = before!;
-    for (let i = 0; i < 8 && after.mode === before!.mode && after.color === before!.color && after.style === before!.style; i++) {
+    const sameLook = (a: NonNullable<Awaited<ReturnType<typeof appearance>>>, b: NonNullable<Awaited<ReturnType<typeof appearance>>>) =>
+      a.mode === b.mode && a.color === b.color && a.style === b.style;
+    let after = before;
+    for (let i = 0; i < 8 && sameLook(after, before); i++) {
       await button.click();
-      await expect.poll(appearance, { timeout: 5000 }).not.toBeNull();
+      await expect
+        .poll(async () => {
+          const s = await appearance();
+          return s !== null && s.updatedAt !== before.updatedAt;
+        }, { timeout: 10000 })
+        .toBe(true);
       after = (await appearance())!;
     }
-    expect([after.mode, after.color, after.style]).not.toEqual([before!.mode, before!.color, before!.style]);
+    expect([after.mode, after.color, after.style]).not.toEqual([before.mode, before.color, before.style]);
     // Media survives the randomize.
     expect(after.hasMedia).toBe(true);
   });

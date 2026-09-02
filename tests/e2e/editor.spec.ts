@@ -309,8 +309,13 @@ test("watch frame renders with a squircle screen", async ({ page }) => {
   await selectFrame(page, "Watch");
   await expect.poll(() => frameIsActive(page, "Watch")).toBe("true");
   // The watch bezel is a squircle applied via an SVG clip-path (not a CSS
-  // 50% border-radius), shared between preview and canvas export.
-  const clip = await page.locator("[data-mockup-frame] img").first().evaluate((el) => getComputedStyle(el).clipPath);
+  // 50% border-radius), shared between preview and canvas export. Since the
+  // zoom rework the clip lives on the media-slot wrapper (the untransformed
+  // clipping frame), not on the media element itself.
+  const clip = await page
+    .locator("[data-mockup-frame] img")
+    .first()
+    .evaluate((el) => getComputedStyle(el.parentElement!).clipPath);
   expect(clip).toContain("sq");
 });
 
@@ -435,10 +440,17 @@ test("video in the frame grid paints below the skin and chrome", async ({ page }
   const frame = page.locator("[data-mockup-frame]").first();
   await expect(frame.locator("video")).toHaveCount(1);
   // Paint order mirrors the canvas export (media → chrome → skin): the video
-  // must come before the chrome host and the device-skin overlay image.
-  const tags = await frame.evaluate((el) => Array.from(el.children).map((c) => c.tagName));
-  expect(tags.indexOf("VIDEO")).toBeGreaterThanOrEqual(0);
-  expect(tags.indexOf("VIDEO")).toBeLessThan(tags.lastIndexOf("IMG"));
+  // must come before the chrome host and the device-skin overlay image. The
+  // video sits inside its media-slot wrapper (the untransformed clipping
+  // frame), so walk the whole subtree via a depth-first tag walk instead of
+  // comparing direct children.
+  const order = await frame.evaluate((el) => {
+    const walk = (node: Element): string[] =>
+      Array.from(node.children).flatMap((c) => [c.tagName, ...walk(c)]);
+    return walk(el);
+  });
+  expect(order.indexOf("VIDEO")).toBeGreaterThanOrEqual(0);
+  expect(order.indexOf("VIDEO")).toBeLessThan(order.lastIndexOf("IMG"));
 });
 
 test("lock screen renders custom notification cards", async ({ page }) => {
@@ -484,12 +496,13 @@ test("android home screen renders the app grid and Google search", async ({ page
   await page.goto(`/en?scene=${encodeURIComponent(JSON.stringify(scene))}`);
   const frame = page.locator("[data-mockup-frame]").first();
   const svg = frame.locator("svg").first();
-  const text = (await svg.textContent()) ?? "";
-  expect(text).toContain("Search");
-  expect(text).toContain('stroke="#4285f4"');
+  // Attributes and element tags live in the markup, not in textContent.
+  const markup = (await svg.innerHTML()) ?? "";
+  expect(markup).toContain("Search");
+  expect(markup).toContain('stroke="#4285f4"');
   // The app grid + dock render as circles (not the iOS squircle dock).
-  expect((text.match(/<circle /g) || []).length).toBeGreaterThanOrEqual(24);
-  expect(text).not.toContain('fill="#30d158"');
+  expect((markup.match(/<circle /g) || []).length).toBeGreaterThanOrEqual(24);
+  expect(markup).not.toContain('fill="#30d158"');
 });
 
 test("Control panel clears the active layer's media", async ({ page }) => {

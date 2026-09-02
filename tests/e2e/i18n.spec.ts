@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openRightPanel } from "./helpers";
 
 // End-to-end coverage for locale switching: the URL-driven proxy + next-intl
 // pipeline and the LocaleSwitcher. Verifies the whole UI actually re-renders in
@@ -10,8 +11,10 @@ test.describe("i18n", () => {
     await page.goto("/");
     await expect(page.locator("#preview-canvas")).toBeVisible();
 
-    // Default locale is English.
+    // Default locale is English. On mobile the right panel is a parked
+    // bottom sheet; open it so the panel tab is visible.
     await expect(page.getByLabel("Language")).toBeVisible();
+    await openRightPanel(page);
     await expect(page.getByRole("tab", { name: /^Layers/ })).toBeVisible();
 
     await page.locator("select.locale-select").selectOption("ru");
@@ -20,22 +23,28 @@ test.describe("i18n", () => {
     // The re-rendered UI is now Russian: the switcher label and a panel tab
     // both come through the translation layer.
     await expect(page.getByLabel("Язык")).toBeVisible();
+    await openRightPanel(page);
     await expect(page.getByRole("tab", { name: /^Слои/ })).toBeVisible();
   });
 
   test("partial locale renders and applies its translations", async ({ page }) => {
-    // German is ~52% translated: it must still load, show partial coverage in
-    // the switcher, and apply the strings it does have.
+    // German is ~91% translated: it must still load, show partial coverage in
+    // the switcher, and apply the strings it does have. The "(partial)" badge
+    // is a translated key, so on /de it renders in German ("teilweise") —
+    // match either form instead of hardcoding the English one.
     await page.goto("/de");
     await expect(page.locator("#preview-canvas")).toBeVisible();
     await expect(page.getByLabel("Sprache")).toBeVisible();
 
     const select = page.locator("select.locale-select");
     await expect(select).toHaveValue("de");
-    await expect(select.locator("option", { hasText: "Deutsch (partial)" })).toHaveCount(1);
+    await expect(
+      select.locator("option", { hasText: /Deutsch \((partial|teilweise)\)/ })
+    ).toHaveCount(1);
 
     // Translated keys render in German; untranslated ones fall back to English
     // without breaking the editor.
+    await openRightPanel(page);
     await expect(page.getByRole("tab", { name: /^Ebenen/ })).toBeVisible();
     await expect(page.getByText("Something went wrong")).toHaveCount(0);
   });
