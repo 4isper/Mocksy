@@ -81,7 +81,7 @@ export function WatermarkControls({
           ) : null}
         </div>
         {error ? (
-          <span role="alert" style={{ color: "var(--danger)", fontSize: 13 }}>
+          <span role="alert" className="field-error">
             {error}
           </span>
         ) : null}

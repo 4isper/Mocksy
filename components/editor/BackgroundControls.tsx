@@ -168,7 +168,7 @@ export function BackgroundControls({
         <input type="file" accept="image/*" onChange={handleBgFile} />
       </label>
       {error ? (
-        <span role="alert" style={{ color: "var(--danger)", fontSize: 13 }}>
+        <span role="alert" className="field-error">
           {error}
         </span>
       ) : null}

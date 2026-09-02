@@ -40,7 +40,7 @@ export function TextSection() {
       }
     >
       <div className="field-group">
-        {layerLocked ? <span role="status" style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.layerLockedHint")}</span> : null}
+        {layerLocked ? <span role="status" className="text-dim-sm">{t("editor.layerLockedHint")}</span> : null}
         <label className="field">
           <span>{t("text.content")}</span>
           <textarea

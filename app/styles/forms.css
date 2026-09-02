@@ -12,7 +12,7 @@
   height: 28px;
   padding: 0;
   border: 1px solid var(--panel-border);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   cursor: pointer;
   background: none;
 }
@@ -292,16 +292,16 @@
   padding: 9px 15px;
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
-  color: #04141a;
+  color: var(--accent-contrast);
   background: linear-gradient(180deg, var(--accent), var(--accent-press));
-  box-shadow: 0 4px 16px rgba(0, 217, 255, 0.3);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 30%, transparent);
   cursor: pointer;
   transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
 }
 
 .file-trigger:hover {
-  background: linear-gradient(180deg, #2ee3ff, var(--accent));
-  box-shadow: 0 6px 20px rgba(0, 217, 255, 0.4);
+  background: linear-gradient(180deg, var(--accent-hover), var(--accent));
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .file-trigger:active {
@@ -336,6 +336,12 @@
   cursor: pointer;
 }
 
+/* Inline field/alert error message. */
+.field-error {
+  color: var(--danger);
+  font-size: 13px;
+}
+
 /* ---- Custom range slider ---- */
 .range {
   -webkit-appearance: none;
@@ -356,7 +362,7 @@
   border-radius: 50%;
   background: var(--accent);
   border: 2px solid var(--bg);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   transition: transform 0.1s ease;
 }
 
@@ -370,7 +376,7 @@
   border-radius: 50%;
   background: var(--accent);
   border: 2px solid var(--bg);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   cursor: pointer;
 }
 
@@ -393,7 +399,7 @@
   font-size: 12.5px;
   font-weight: 500;
   padding: 7px 10px;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--panel-border);
   background: var(--field-bg);
   color: var(--text-dim);
@@ -456,6 +462,7 @@
   height: 16px;
   border-radius: 50%;
   background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.18s ease;
 }
 
@@ -518,7 +525,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--text-dim);
 }
 
 .video-options .upload-audio-btn {

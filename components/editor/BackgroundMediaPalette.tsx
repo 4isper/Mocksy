@@ -89,7 +89,7 @@ export function BackgroundMediaPalette({
               style={{
                 width: 28,
                 height: 28,
-                borderRadius: 8,
+                borderRadius: "var(--radius-xs)",
                 cursor: "pointer",
                 border: backgroundMode === "solid" && backgroundColor === color ? "2px solid var(--accent)" : "1px solid var(--panel-border)",
                 background: color

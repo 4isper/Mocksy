@@ -10,23 +10,37 @@
   --text: #f4f4f5;
   --text-dim: #a1a1aa;
   --text-faint: rgba(255, 255, 255, 0.55);
-  --text-secondary: #a1a1aa;
   --accent: #00d9ff;
+  --accent-hover: #2ee3ff;
   --accent-soft: rgba(0, 217, 255, 0.14);
   --accent-press: #00b8d9;
+  --accent-contrast: #04141a;
   --danger: #f87171;
   --danger-bg: rgba(127, 29, 29, 0.85);
   --success: #4ade80;
   --radius: 16px;
   --radius-sm: 10px;
+  --radius-xs: 8px;
   --field-bg: #18181b;
   --field-border: #2e2e33;
   --hover: rgba(255, 255, 255, 0.07);
   --shadow-pop: 0 12px 40px rgba(0, 0, 0, 0.5);
   --shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.35);
   --panel-highlight: linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent 35%);
+  --shimmer: rgba(255, 255, 255, 0.04);
   --toolbar-bg: rgba(14, 14, 18, 0.7);
   --range-track: rgba(255, 255, 255, 0.12);
+  --overlay: rgba(0, 0, 0, 0.55);
+  --brand-violet: #7c3aed;
+  /* Global overlay ladder: modal < command palette < popover < tour < toast < skip link.
+     In-canvas stacking (annotations, trim handles) stays local, not part of this scale. */
+  --z-modal: 50;
+  --z-command: 60;
+  --z-popover: 70;
+  --z-tour: 90;
+  --z-tour-card: 95;
+  --z-toast: 100;
+  --z-skip: 110;
 }
 
 /* Light theme tokens */
@@ -40,10 +54,11 @@
   --text: #1a1a1e;
   --text-dim: #6b6b78;
   --text-faint: rgba(0, 0, 0, 0.55);
-  --text-secondary: #52525b;
   --accent: #0077cc;
+  --accent-hover: #1f8ad9;
   --accent-soft: rgba(0, 119, 204, 0.1);
   --accent-press: #005fa3;
+  --accent-contrast: #ffffff;
   --danger: #dc2626;
   --danger-bg: rgba(254, 226, 226, 0.9);
   --success: #16a34a;
@@ -53,8 +68,11 @@
   --shadow-pop: 0 8px 30px rgba(0, 0, 0, 0.1);
   --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.06);
   --panel-highlight: linear-gradient(180deg, rgba(0, 0, 0, 0.04), transparent 35%);
+  --shimmer: rgba(0, 0, 0, 0.05);
   --toolbar-bg: rgba(255, 255, 255, 0.85);
   --range-track: rgba(0, 0, 0, 0.1);
+  --overlay: rgba(0, 0, 0, 0.55);
+  --brand-violet: #7c3aed;
 }
 
 /* Light theme ambient backdrop */

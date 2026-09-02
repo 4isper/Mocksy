@@ -173,14 +173,14 @@ export function ProjectsPanel() {
         </label>
       </div>
       {error ? (
-        <span role="alert" style={{ color: "var(--danger)", fontSize: 13 }}>
+        <span role="alert" className="field-error">
           {error}
         </span>
       ) : null}
       {!hydrated ? (
         <div aria-busy="true" aria-label={t("editor.loadingMedia")} style={{ display: "grid", gap: 6 }}>
           {[0, 1, 2].map((i) => (
-            <div key={i} className="skeleton skeleton-row" style={{ height: 36, borderRadius: 8 }} />
+            <div key={i} className="skeleton skeleton-row" style={{ height: 36 }} />
           ))}
         </div>
       ) : activeProjects.length === 0 && trashedProjects.length === 0 ? (
@@ -216,7 +216,7 @@ export function ProjectsPanel() {
         </ul>
       )}
       <TrashSection trashed={trashedProjects} relativeTime={relTime} onRestore={restoreProject} onEmptyTrash={emptyTrash} />
-      <p style={{ color: "var(--text-dim)", fontSize: 12, margin: 0 }}>
+      <p className="text-dim-sm" style={{ margin: 0 }}>
         {t("projects.autosaveNote")}
       </p>
       {pendingSwitchId && (

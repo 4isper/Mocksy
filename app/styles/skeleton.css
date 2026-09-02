@@ -13,7 +13,7 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.04) 50%,
+    var(--shimmer) 50%,
     transparent 100%
   );
   animation: shimmer 1.5s ease infinite;
@@ -22,7 +22,7 @@
 .skeleton-text {
   height: 14px;
   margin-bottom: 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 
 .skeleton-text:last-child {
@@ -36,6 +36,6 @@
 
 .skeleton-row {
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   margin-bottom: 6px;
 }

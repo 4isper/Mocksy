@@ -63,8 +63,8 @@
   cursor: grab;
 }
 .frame-card[data-drag-over] {
-  border-color: var(--accent, #4f8cff);
-  box-shadow: 0 -2px 0 0 var(--accent, #4f8cff);
+  border-color: var(--accent);
+  box-shadow: 0 -2px 0 0 var(--accent);
 }
 
 .frame-card-head {
@@ -78,7 +78,7 @@
 .frame-card-head .frame-thumb {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   background: var(--range-track);
   overflow: hidden;
   flex: none;
@@ -107,7 +107,7 @@
   min-width: 0;
   font-size: 12px;
   padding: 3px 6px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   background: var(--field-bg);
   border: 1px solid var(--field-border);
   color: var(--text);
@@ -131,7 +131,7 @@
   font-size: 12.5px;
   font-weight: 500;
   padding: 8px 11px;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--panel-border);
   background: var(--field-bg);
   color: var(--text-dim);
@@ -178,7 +178,7 @@
   align-items: center;
   gap: 5px;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   border: 1px solid var(--panel-border);
   background: transparent;
   cursor: grab;
@@ -212,7 +212,7 @@
   align-items: center;
   gap: 5px;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   border: 1px solid var(--panel-border);
   background: transparent;
   cursor: pointer;

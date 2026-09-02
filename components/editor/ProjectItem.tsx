@@ -53,9 +53,9 @@ export function ProjectItem({
         alignItems: "center",
         gap: 5,
         padding: "6px 8px",
-        borderRadius: 8,
+        borderRadius: "var(--radius-xs)",
         border: active ? "2px solid var(--accent)" : "1px solid var(--panel-border)",
-        background: active ? "rgba(0,217,255,0.08)" : "transparent"
+        background: active ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent"
       }}
     >
       <div

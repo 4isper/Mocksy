@@ -158,10 +158,10 @@ export function OnboardingTour() {
         width: measured.width + pad * 2,
         height: measured.height + pad * 2,
         borderRadius: 14,
-        boxShadow: "0 0 0 9999px rgba(0,0,0,0.62)",
+        boxShadow: "0 0 0 9999px var(--overlay)",
         outline: "2px solid var(--accent)",
         pointerEvents: "none",
-        zIndex: 1090,
+        zIndex: "var(--z-tour)",
         transition: "all 0.25s ease"
       }
     : null;
@@ -207,7 +207,7 @@ export function OnboardingTour() {
         <div
           aria-hidden="true"
           onClick={finish}
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.62)", zIndex: 1080 }}
+          style={{ position: "fixed", inset: 0, background: "var(--overlay)", zIndex: "var(--z-tour)" }}
         />
       )}
       <div
@@ -218,7 +218,7 @@ export function OnboardingTour() {
         className="panel"
         style={{
           ...cardStyle,
-          zIndex: 1100,
+          zIndex: "var(--z-tour-card)",
           padding: 16,
           display: "grid",
           gap: 10,
@@ -229,8 +229,8 @@ export function OnboardingTour() {
           overflowY: "auto"
         }}
       >
-        <div style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{t(step.titleKey)}</div>
-        <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>{t(step.bodyKey)}</p>
+        <div style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{t(step.titleKey)}</div>
+        <p className="text-dim-sm" style={{ margin: 0 }}>{t(step.bodyKey)}</p>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span aria-hidden="true" style={{ display: "flex", gap: 4, marginRight: "auto" }}>
             {STEPS.map((_, i) => (

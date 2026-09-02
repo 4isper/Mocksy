@@ -84,7 +84,7 @@
   gap: 6px;
   padding: 8px;
   border: 1px solid var(--panel-border);
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
 }
 
 .nudge-pad {

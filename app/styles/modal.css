@@ -2,10 +2,10 @@
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--overlay);
   display: grid;
   place-items: center;
-  z-index: 50;
+  z-index: var(--z-modal);
   padding: 16px;
   animation: backdropFadeIn 0.2s ease;
 }
@@ -101,7 +101,7 @@
   background: var(--panel-solid);
   border: 1px solid var(--panel-border);
   border-bottom-width: 2px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
 }
 
 .shortcut-label {

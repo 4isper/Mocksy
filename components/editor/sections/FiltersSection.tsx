@@ -120,7 +120,7 @@ export function FiltersSection() {
       )}
     >
       <div className="field-group">
-        {layerLocked ? <span role="status" style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("editor.layerLockedHint")}</span> : null}
+        {layerLocked ? <span role="status" className="text-dim-sm">{t("editor.layerLockedHint")}</span> : null}
         <FilterSlider label={t("editor.filterBrightness", { val: Math.round(activeLayer?.brightness ?? 100) })} value={activeLayer?.brightness ?? 100} min={0} max={200} suffix="%" disabled={layerLocked} onChange={setBrightness} />
         <FilterSlider label={t("editor.filterContrast", { val: Math.round(activeLayer?.contrast ?? 100) })} value={activeLayer?.contrast ?? 100} min={0} max={200} suffix="%" disabled={layerLocked} onChange={setContrast} />
         <FilterSlider label={t("editor.filterSaturate", { val: Math.round(activeLayer?.saturate ?? 100) })} value={activeLayer?.saturate ?? 100} min={0} max={200} suffix="%" disabled={layerLocked} onChange={setSaturate} />

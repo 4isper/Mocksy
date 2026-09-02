@@ -182,7 +182,7 @@ export function MediaSection() {
           </div>
         </div>
         {mediaUploadError ? (
-          <span role="alert" style={{ color: "var(--danger)", fontSize: 13 }}>
+          <span role="alert" className="field-error">
             {mediaUploadError}
           </span>
         ) : null}

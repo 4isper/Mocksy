@@ -163,14 +163,14 @@ export function LayersPanel() {
         <input type="file" accept="image/*,video/*" onChange={handleFile} style={{ display: "none" }} />
       </label>
       {error ? (
-        <span role="alert" style={{ color: "var(--danger)", fontSize: 13 }}>
+        <span role="alert" className="field-error">
           {error}
         </span>
       ) : null}
       {isMediaLoading && scene.layers.length === 0 ? (
         <div aria-busy="true" aria-label={t("editor.loadingMedia")} style={{ display: "grid", gap: 6 }}>
           {[0, 1, 2].map((i) => (
-            <div key={i} className="skeleton skeleton-row" style={{ height: 36, borderRadius: 8 }} />
+            <div key={i} className="skeleton skeleton-row" style={{ height: 36 }} />
           ))}
         </div>
       ) : scene.layers.length === 0 ? (
@@ -179,7 +179,7 @@ export function LayersPanel() {
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.3" /><path d="M3 9h18M9 3v18" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>
           </div>
           <p className="empty-state-text">{t("editor.noLayers")}</p>
-          <p className="empty-state-text" style={{ fontSize: 11, color: "var(--text-dim)" }}>{t("help.layersStack")}</p>
+          <p className="empty-state-text">{t("help.layersStack")}</p>
         </div>
       ) : (
         <>
@@ -231,8 +231,8 @@ export function LayersPanel() {
                     alignItems: "center",
                     gap: 4,
                     padding: "3px 6px",
-                    borderRadius: 6,
-                    background: "rgba(0,217,255,0.04)",
+                    borderRadius: "var(--radius-xs)",
+                    background: "color-mix(in srgb, var(--accent) 4%, transparent)",
                     border: "1px solid var(--panel-border)",
                     marginTop: index > 0 ? 4 : 0,
                   }}
@@ -320,8 +320,8 @@ export function LayersPanel() {
             return items;
           })}
           {isMediaLoading ? (
-            <li className="layer-item" aria-busy="true" aria-label={t("editor.loadingMedia")} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 8px", borderRadius: 8, border: "1px solid var(--panel-border)" }}>
-              <span className="skeleton" style={{ flex: 1, height: 14, borderRadius: 6 }} />
+            <li className="layer-item" aria-busy="true" aria-label={t("editor.loadingMedia")} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 8px", borderRadius: "var(--radius-xs)", border: "1px solid var(--panel-border)" }}>
+              <span className="skeleton skeleton-text" style={{ flex: 1 }} />
             </li>
           ) : null}
           </ul>
@@ -340,7 +340,7 @@ export function LayersPanel() {
           {t("editor.clearMedia")}
         </button>
       ) : null}
-      <p style={{ color: "var(--text-dim)", fontSize: 12, margin: 0 }}>
+      <p className="text-dim-sm" style={{ margin: 0 }}>
         {t("help.layersStack")}
       </p>
       {contextMenu ? (

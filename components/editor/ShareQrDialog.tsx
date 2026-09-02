@@ -26,26 +26,23 @@ export function ShareQrDialog({ url, onClose }: { url: string | null; onClose: (
   if (!url) return null;
 
   return (
-    <div
-      onClick={onClose}
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 1200, display: "grid", placeItems: "center" }}
-    >
+    <div className="modal-backdrop" role="presentation" onClick={onClose}>
       <div
+        className="modal"
         ref={trapRef}
         role="dialog"
         aria-modal="true"
         aria-label={t("editor.qrTitle")}
-        className="panel"
         onClick={(e) => e.stopPropagation()}
-        style={{ padding: 20, display: "grid", gap: 12, justifyItems: "center", maxWidth: "calc(100vw - 32px)" }}
+        style={{ display: "grid", gap: 12, justifyItems: "center" }}
       >
-        <h3 style={{ margin: 0, fontSize: 15 }}>{t("editor.qrTitle")}</h3>
+        <h3 style={{ margin: 0 }}>{t("editor.qrTitle")}</h3>
         <div
           aria-hidden="true"
-          style={{ width: 220, height: 220, background: "#fff", borderRadius: 8, padding: 10 }}
+          style={{ width: 220, height: 220, background: "#fff", borderRadius: "var(--radius-xs)", padding: 10 }}
           dangerouslySetInnerHTML={{ __html: renderSVG(url) }}
         />
-        <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)", textAlign: "center" }}>
+        <p style={{ margin: 0, fontSize: 12, color: "var(--text-dim)", textAlign: "center" }}>
           {t("editor.qrCopiedHint")}
         </p>
         <button type="button" className="btn" onClick={onClose} autoFocus>

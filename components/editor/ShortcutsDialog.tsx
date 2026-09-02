@@ -181,7 +181,7 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
         </div>
         {recordingId ? <p role="status">{t("shortcuts.recordingHint")}</p> : null}
         {conflict ? (
-          <p role="alert" style={{ color: "var(--danger)" }}>
+          <p role="alert" className="field-error">
             {conflict}
           </p>
         ) : null}

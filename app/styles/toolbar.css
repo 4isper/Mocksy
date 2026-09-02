@@ -37,7 +37,7 @@
   gap: 4px;
   height: 28px;
   padding: 0 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-dim);
@@ -57,7 +57,7 @@
   transform: translateY(1px);
 }
 .toolbar .btn-tb:disabled {
-  opacity: 0.35;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 .toolbar .btn-tb.is-active {
@@ -73,13 +73,13 @@
 .toolbar .btn-tb-primary {
   background: linear-gradient(180deg, var(--accent), var(--accent-press));
   border-color: transparent;
-  color: #04141a;
+  color: var(--accent-contrast);
   font-weight: 700;
-  box-shadow: 0 2px 8px rgba(0, 217, 255, 0.25);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 .toolbar .btn-tb-primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #2ee3ff, var(--accent));
-  box-shadow: 0 4px 12px rgba(0, 217, 255, 0.35);
+  background: linear-gradient(180deg, var(--accent-hover), var(--accent));
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .toolbar .btn-tb-icon {
@@ -93,7 +93,7 @@
   font: inherit;
   height: 28px;
   padding: 0 28px 0 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-dim);
@@ -133,9 +133,9 @@
 .brand-mark {
   width: 26px;
   height: 26px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--accent), #7c3aed);
-  box-shadow: 0 4px 12px rgba(0, 217, 255, 0.35);
+  border-radius: var(--radius-xs);
+  background: linear-gradient(135deg, var(--accent), var(--brand-violet));
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 35%, transparent);
   flex: none;
 }
 
@@ -147,6 +147,17 @@
   font-size: 12px;
   color: var(--text-faint);
   min-width: 48px;
+}
+
+/* Toolbar toast text (save/reset/copy notices). Color variant is set inline
+   via --toast-color when the message is success/error. */
+.toolbar .toast-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--toast-color, var(--text-dim));
+  white-space: nowrap;
 }
 
 .toolbar .status.saved {
@@ -189,7 +200,7 @@
   align-items: center;
   gap: 7px;
   padding: 7px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   color: var(--text);
   font: inherit;
   font-size: 12px;
@@ -256,7 +267,7 @@
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(120deg, var(--accent), #7c3aed);
+  background: linear-gradient(120deg, var(--accent), var(--brand-violet));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

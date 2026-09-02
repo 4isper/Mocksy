@@ -54,7 +54,7 @@ export function HistoryPanel() {
         <span className="history-empty">{t("history.empty")}</span>
       ) : null}
       {atCap ? (
-        <span className="history-empty" style={{ fontSize: 11, color: "var(--text-dim)" }}>{t("history.capReached")}</span>
+        <span className="history-empty">{t("history.capReached")}</span>
       ) : null}
     </div>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ContextMenu, type ContextMenuItem } from "@/components/editor/ContextMenu";
@@ -148,12 +149,12 @@ export function EditorToolbar({
         </div>
       ) : null}
       {saveToast ? (
-        <span className="toast-status" role={saveStatusType === "error" ? "alert" : "status"} style={{ color: saveStatusType === "error" ? "var(--danger)" : saveStatusType === "success" ? "var(--success)" : "var(--text-secondary)", fontSize: 12, whiteSpace: "nowrap" }}>
+        <span className="toast-status" role={saveStatusType === "error" ? "alert" : "status"} style={{ "--toast-color": saveStatusType === "error" ? "var(--danger)" : saveStatusType === "success" ? "var(--success)" : "var(--text-dim)" } as CSSProperties}>
           {saveToast}
         </span>
       ) : null}
       {resetNotice ? (
-        <span className="toast-status" role="status" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--text-secondary)", fontSize: 12, whiteSpace: "nowrap" }}>
+        <span className="toast-status" role="status">
           {t("editor.resetDone")}
           <button
             type="button"

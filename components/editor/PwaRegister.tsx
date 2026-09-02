@@ -74,36 +74,22 @@ export function PwaRegister() {
         bottom: "calc(16px + env(safe-area-inset-bottom))",
         left: "50%",
         transform: "translateX(-50%)",
-        zIndex: 1200,
+        zIndex: "var(--z-toast)",
         display: "flex",
         alignItems: "center",
         gap: 12,
         maxWidth: "calc(100vw - 32px)",
         padding: "10px 14px",
-        borderRadius: 12,
+        borderRadius: "var(--radius-sm)",
         border: "1px solid var(--panel-border-strong)",
         background: "var(--panel-solid)",
-        boxShadow: "0 8px 24px rgba(0,0,0,0.28)"
+        boxShadow: "var(--shadow-pop)"
       }}
     >
-      <span style={{ color: "var(--text-secondary)", fontSize: 13, whiteSpace: "nowrap" }}>
+      <span style={{ color: "var(--text-dim)", fontSize: 13, whiteSpace: "nowrap" }}>
         {t("updateReady")}
       </span>
-      <button
-        type="button"
-        onClick={() => window.location.reload()}
-        style={{
-          border: "none",
-          borderRadius: 8,
-          padding: "6px 14px",
-          fontSize: 13,
-          fontWeight: 600,
-          color: "#fff",
-          background: "linear-gradient(180deg, var(--accent), var(--accent-press))",
-          cursor: "pointer",
-          whiteSpace: "nowrap"
-        }}
-      >
+      <button type="button" className="btn btn-sm" onClick={() => window.location.reload()}>
         {t("reload")}
       </button>
     </div>
