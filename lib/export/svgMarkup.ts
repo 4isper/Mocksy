@@ -5,6 +5,7 @@ import { frameViewBox, frameOs, getFrameSpec, DEFAULT_VIEWBOX } from "@/lib/rend
 import { tiltMatrixSvg, tiltMatrixSvgRotated } from "@/lib/render/tilt";
 import { hasAnnotationGradient, annotationSvgGradientDef } from "@/lib/render/annotationGradient";
 import { RENDER, resolveFrameStyle } from "@/lib/render/canvasDrawing";
+import { LAYER_ZOOM } from "@/lib/render/layerFilters";
 import { watermarkEdges } from "@/lib/render/watermark";
 import { overlayScaleFor } from "@/lib/render/overlayMetrics";
 import { screenChromeElements } from "@/lib/render/screenChrome";
@@ -42,6 +43,8 @@ export interface SvgFrameGroup {
   mediaFit?: "cover" | "contain";
   offsetX?: number;
   offsetY?: number;
+  /** Static media zoom of the layer (scales the media inside the screen). */
+  mediaZoom?: number;
   /** Rotation of the media inside the frame, in degrees (clockwise). */
   rotation?: number;
   /** Media opacity, percent 0–100 (default 100). Applied to the media only —
@@ -182,12 +185,25 @@ function frameGroupMarkup(scene: EditorScene, group: SvgFrameGroup, index: numbe
 
   const mediaFit = group.mediaFit ?? "cover";
   const scale = mediaScale(mediaFit, assembly.innerW, assembly.innerH, group.mediaWidth || assembly.innerW, group.mediaHeight || assembly.innerH);
-  const dw = (group.mediaWidth || assembly.innerW) * scale;
-  const dh = (group.mediaHeight || assembly.innerH) * scale;
   const offX = group.offsetX ?? 0;
   const offY = group.offsetY ?? 0;
-  const dx = assembly.innerX + (assembly.innerW - dw) / 2 + (offX * (assembly.innerW - dw)) / 2;
-  const dy = assembly.innerY + (assembly.innerH - dh) / 2 + (offY * (assembly.innerH - dh)) / 2;
+  // Base laid-out rect at zoom 1 (fit + objectPosition-style pan), then the
+  // layer's static media zoom scales it about the screen center — the same
+  // model as drawMediaSource (canvas) and the CSS media element's scale().
+  const baseW = (group.mediaWidth || assembly.innerW) * scale;
+  const baseH = (group.mediaHeight || assembly.innerH) * scale;
+  const baseX = assembly.innerX + (assembly.innerW - baseW) / 2 + (offX * (assembly.innerW - baseW)) / 2;
+  const baseY = assembly.innerY + (assembly.innerH - baseH) / 2 + (offY * (assembly.innerH - baseH)) / 2;
+  const layerZoom = Math.max(LAYER_ZOOM.min, Math.min(LAYER_ZOOM.max, group.mediaZoom ?? 1));
+  const centerX = assembly.innerX + assembly.innerW / 2;
+  const centerY = assembly.innerY + assembly.innerH / 2;
+  // Post-zoom pan headroom — same model as drawMediaSource and the CSS
+  // transform chain R·T·S: layout pan scales with zoom, plus the extra
+  // offset × (zoom − 1) × half-box translate for the post-zoom range.
+  const dx = centerX + (baseX - centerX) * layerZoom + offX * (assembly.innerW - baseW) / 2 * (layerZoom - 1);
+  const dy = centerY + (baseY - centerY) * layerZoom + offY * (assembly.innerH - baseH) / 2 * (layerZoom - 1);
+  const dw = baseW * layerZoom;
+  const dh = baseH * layerZoom;
 
   const mediaRaw =
     group.textLayer

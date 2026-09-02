@@ -19,7 +19,7 @@ import type {
   StylePreset
 } from "@/lib/types/editor";
 import { ALL_FRAMES, ANIMATION_PRESETS, frameOs } from "@/lib/render/frames";
-import { LAYER_FILTER_DEFAULTS } from "@/lib/render/layerFilters";
+import { LAYER_FILTER_DEFAULTS, LAYER_ZOOM } from "@/lib/render/layerFilters";
 // Import from the defining module, not the editorStore barrel: initialScene is
 // mutated after its first assignment (activeLayerId is set a line later), and
 // a re-exported snapshot can drop fields in Turbopack's server bundles.
@@ -223,7 +223,7 @@ function normalizeLayer(raw: unknown, fallback: MediaLayer): MediaLayer {
     fontWeight: pick(r.fontWeight, ["normal", "bold"] as const, fallback.fontWeight ?? "bold"),
     fontFamily: str(r.fontFamily, null) ?? undefined,
     hidden: r.hidden === true,
-    zoom: num(r.zoom, fallback.zoom, 0.1, 3),
+    zoom: num(r.zoom, fallback.zoom, LAYER_ZOOM.min, LAYER_ZOOM.max),
     mediaOffsetX: num(r.mediaOffsetX, fallback.mediaOffsetX, -1, 1),
     mediaOffsetY: num(r.mediaOffsetY, fallback.mediaOffsetY, -1, 1),
     mediaFit: pick(r.mediaFit, MEDIA_FITS, fallback.mediaFit),

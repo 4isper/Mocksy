@@ -60,9 +60,9 @@ describe("computeFrameBox geometry", () => {
     expect(insetRatio(box)).toBeCloseTo(spec.padding / cssWidth, 5);
   });
 
-  it("scales the whole frame box by zoom (device + media together)", () => {
-    // Zoom scales the entire mockup, matching the preview where the transform
-    // is applied to the frame container; the inset ratio is preserved.
+  it("does not scale the frame box by the static media zoom (device stays put)", () => {
+    // Media zoom scales the media inside the screen; the frame box is only
+    // scaled by the sampled animation transform.
     const cssWidth = 600;
     const base = computeFrameBox(scene({ frame: "desktop" }), 1200, 1200, 2, cssWidth * 2, cssWidth * 2 * (10 / 16));
     const zoomed = computeFrameBox(
@@ -73,8 +73,8 @@ describe("computeFrameBox geometry", () => {
       cssWidth * 2,
       cssWidth * 2 * (10 / 16)
     );
-    expect(zoomed.width).toBeCloseTo(base.width * 1.5, 3);
-    expect(zoomed.height).toBeCloseTo(base.height * 1.5, 3);
+    expect(zoomed.width).toBeCloseTo(base.width, 3);
+    expect(zoomed.height).toBeCloseTo(base.height, 3);
     expect(insetRatio(zoomed)).toBeCloseTo(insetRatio(base), 5);
   });
 
@@ -171,15 +171,19 @@ describe("renderMockupToCanvas media geometry", () => {
     expect(captured.dx).toBeCloseTo(expectedDx, 3);
   });
 
-  it("scales the media together with the frame under whole-mockup zoom", () => {
-    // Zoom grows the frame box, and the media (drawn at the cover scale inside
-    // the larger cutout) scales by the same factor, so both dw and frame width
-    // grow 1.5x at zoom 1.5.
+  it("scales the media inside the screen under media zoom (frame box unchanged)", () => {
+    // Media zoom scales the laid-out media about the screen center — the CSS
+    // preview's scale() on the media element — while the frame box stays put.
     const base = renderAndCapture({ zoom: 1 });
     const zoomed = renderAndCapture({ zoom: 1.5 });
     expect(zoomed.captured.dw).toBeCloseTo(base.captured.dw * 1.5, 3);
     expect(zoomed.captured.dh).toBeCloseTo(base.captured.dh * 1.5, 3);
-    expect(zoomed.box.width).toBeCloseTo(base.box.width * 1.5, 3);
+    // The scaled rect stays centered on the screen center.
+    const centerX = (base.box.innerX + base.box.innerW / 2);
+    const centerY = (base.box.innerY + base.box.innerH / 2);
+    expect(zoomed.captured.dx + zoomed.captured.dw / 2).toBeCloseTo(centerX, 3);
+    expect(zoomed.captured.dy + zoomed.captured.dh / 2).toBeCloseTo(centerY, 3);
+    expect(zoomed.box.width).toBeCloseTo(base.box.width, 3);
   });
 });
 

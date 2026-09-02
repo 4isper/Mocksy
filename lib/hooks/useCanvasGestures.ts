@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { resolveZoomScale } from "@/lib/render/previewViewport";
+import { LAYER_ZOOM } from "@/lib/render/layerFilters";
 
 interface UseCanvasGestures {
   frameRef: React.RefObject<HTMLDivElement | null>;
@@ -68,7 +69,7 @@ export function useCanvasGestures({ frameRef, activeLayer }: UseCanvasGestures) 
       const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
       if (dist === 0) return;
       e.preventDefault();
-      const next = Math.min(1.5, Math.max(0.8, start.zoom * (dist / start.dist)));
+      const next = Math.min(LAYER_ZOOM.max, Math.max(LAYER_ZOOM.min, start.zoom * (dist / start.dist)));
       useEditorStore.getState().setZoom(next);
     };
     window.addEventListener("touchmove", onTouchMove, { passive: false });

@@ -118,8 +118,16 @@ export function SingleFrameView({
                 hasEntrance
                   ? <div key={`${layer.id}-${layer.entranceAnimation}`} style={wrapper}>{el}</div>
                   : el;
+              // The media slot is the untransformed clipping frame over the
+              // screen: the media's rotate/scale transforms stay clipped to
+              // the screen instead of spilling over the bezel. Blend lives on
+              // the slot — a clip-path slot creates a stacking context, so a
+              // child mix-blend-mode would be trapped and blend into nothing.
+              const slot = (el: React.ReactNode) => (
+                <div key={layer.id} style={{ ...sceneCss.mediaSlotStyle, ...blendCss }}>{wrap(el)}</div>
+              );
               return layer.mediaUrl ? (
-                isVideoLayer(layer) ? wrap(
+                isVideoLayer(layer) ? slot(
                   <video
                     key={layer.id}
                     ref={(el) => {
@@ -134,7 +142,7 @@ export function SingleFrameView({
                     controls
                     crossOrigin="anonymous"
                     data-layer-media={layer.id}
-                    style={{ ...sceneCss.mediaStyle, backgroundColor: "var(--panel-solid)", ...blendCss }}
+                    style={{ ...sceneCss.mediaStyle, backgroundColor: "var(--panel-solid)" }}
                     onPointerDown={() => selectLayer(layer.id)}
                     onLoadedMetadata={(e) => {
                       const duration = e.currentTarget.duration || 0;
@@ -153,13 +161,13 @@ export function SingleFrameView({
                       analyzeMedia(ev.currentTarget);
                     }}
                   />
-                ) : wrap(
+                ) : slot(
                   <img
                     key={layer.id}
                     src={layer.mediaUrl}
                     alt={t("editor.uploadedMediaAlt")}
                     data-layer-media={layer.id}
-                    style={{ ...sceneCss.mediaStyle, ...blendCss }}
+                    style={{ ...sceneCss.mediaStyle }}
                     onPointerDown={() => selectLayer(layer.id)}
                     onLoad={(e) => {
                       setMediaLoading(false);

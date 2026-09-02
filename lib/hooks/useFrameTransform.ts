@@ -7,16 +7,19 @@ import { PAN_OFFSET_SCALE } from "@/lib/render/frameGeometry";
 import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
 
 /**
- * Drives the frame's zoomIn/zoomOut/parallax in the live preview by writing
- * the transform straight to the frame DOM via rAF — no React re-render per
- * frame, and buildSceneCss (the expensive part) is untouched. The sampled
- * transform mirrors sampleVideoTransform used by the video export, so what you
- * see previews what you export. Zoom/animation scale the whole mockup (device
- * + media together), matching the export where the frame box is multiplied by
- * the zoom. `durationMs` is the length of one animation loop.
+ * Drives the frame's zoomIn/zoomOut/parallax ANIMATION presets in the live
+ * preview by writing the transform straight to the frame DOM via rAF — no
+ * React re-render per frame, and buildSceneCss (the expensive part) is
+ * untouched. The sampled transform mirrors sampleVideoTransform used by the
+ * video export, so what you see previews what you export. Animation presets
+ * scale the whole mockup (device + media together), matching the export where
+ * the frame box is multiplied by the animation transform. The layer's static
+ * media zoom (layer.zoom) is NOT applied here — it scales the media inside
+ * the screen via buildSceneCss's mediaStyle, in every renderer.
+ * `durationMs` is the length of one animation loop.
  * When the user prefers reduced motion, the animation loop is skipped and a
  * static frame is shown instead. `tiltPrefix` (from `tiltCss`) is prepended so
- * the 3D tilt and the zoom/pan compose into a single transform.
+ * the 3D tilt and the animation transform compose into a single transform.
  */
 export function useFrameTransform(
   node: React.RefObject<HTMLDivElement | null>,
@@ -38,8 +41,9 @@ export function useFrameTransform(
       el.style.setProperty("transform", `${tiltPrefix}scale(${zoom}) translate(${x * PAN_OFFSET_SCALE}px, ${y * PAN_OFFSET_SCALE}px)`);
     };
     if (!animates) {
-      const base = sampleVideoTransform(layerRef.current ?? ({} as MediaLayer), 0);
-      apply(base.zoom, base.x, base.y);
+      // Static frame: animations off → identity (the media zoom lives on the
+      // media element, not here).
+      apply(1, 0, 0);
       return;
     }
     const duration = Math.max(100, durationMs);
@@ -57,5 +61,5 @@ export function useFrameTransform(
     // re-applies, and the rAF loop picks up fresh values.
   // mediaOffsetX/Y are intentionally excluded: panning updates them via the
   // ref, so the rAF loop always reads fresh values without restarting.
-  }, [node, animates, durationMs, tiltPrefix, layer?.animationPreset, layer?.zoom]);
+  }, [node, animates, durationMs, tiltPrefix, layer?.animationPreset]);
 }

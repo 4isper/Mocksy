@@ -191,8 +191,9 @@ export function renderMockupToCanvas(
     ) => {
       const layer = scene.layers.find((l) => l.id === inst.layerId) ?? activeLayerForRender;
       const instSpec = getFrameSpec(inst.frame, scene.customFrame);
-      const isActiveInstance = !!layer && layer.id === activeLayerId;
-      const instZoom = isActiveInstance ? Math.max(RENDER.minZoom, transform?.zoom ?? layer?.zoom ?? 1) : Math.max(RENDER.minZoom, layer?.zoom ?? 1);
+      // Frame-level zoom (shadow/box scaling) comes only from the sampled
+      // animation transform; static media zoom is media-level at draw time.
+      const instZoom = Math.max(RENDER.minZoom, transform?.zoom ?? 1);
 
       const frameMedia = layer?.id ? (layerMedias?.get(layer.id) ?? null) : media;
       // Overlay skins are keyed by instance id: two instances can share a
@@ -253,7 +254,9 @@ export function renderMockupToCanvas(
   const box = computeFrameBox(scene, width, height, pixelRatio, frameWidth, frameHeight, transform, frameX, frameY, activeLayerId);
 
   const activeLayerForRender2 = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
-   const actualZoom = Math.max(RENDER.minZoom, transform?.zoom ?? activeLayerForRender2?.zoom ?? 1);
+   // Frame-level zoom (shadow/box scaling) comes only from the sampled
+   // animation transform; static media zoom is media-level at draw time.
+   const actualZoom = Math.max(RENDER.minZoom, transform?.zoom ?? 1);
 
   // Multi-layer single-frame scenes must export every visible layer, matching
   // the preview's media slot. `layerMedias` keyed by layer id (worker path and

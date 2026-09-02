@@ -61,7 +61,11 @@ export default function OgImagePage() {
               <div style={{ ...css.frame, width: "100%", height: "100%", position: "relative" }}>
                 <FrameContent
                   css={css}
-                  media={<img src={layer?.mediaUrl ?? DEMO_MEDIA_URL} alt="" style={css.mediaStyle} />}
+                  media={
+                    <div style={css.mediaSlotStyle}>
+                      <img src={layer?.mediaUrl ?? DEMO_MEDIA_URL} alt="" style={css.mediaStyle} />
+                    </div>
+                  }
                 />
               </div>
             </div>

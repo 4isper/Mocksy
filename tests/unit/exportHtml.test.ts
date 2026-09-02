@@ -109,18 +109,18 @@ describe("buildHtmlSnippet", () => {
     expect(html).toContain(`<video class="media" src="data:image/png;base64,AAAA" controls muted loop autoplay playsinline></video>`);
   });
 
-  it("applies the frame geometry and static transform", () => {
+  it("applies the frame geometry and static identity transform", () => {
     const scene = sceneWith({ frame: "none" });
     const html = buildHtmlSnippet(scene, { mediaHref: MEDIA, mediaType: "image", backgroundHref: null, overlayHref: null });
     expect(html).toContain("border-radius: 20px;");
     expect(html).toContain("object-fit: cover;");
-    expect(html).toContain("transform: scale(1) translate(0px, 0px);");
+    expect(html).toContain("transform: none;");
   });
 
   it("prepends the tilt transform to the static frame", () => {
     const scene = sceneWith({ tiltX: 15, tiltY: 10 });
     const html = buildHtmlSnippet(scene, { mediaHref: MEDIA, mediaType: "image", backgroundHref: null, overlayHref: null });
-    expect(html).toContain("transform: perspective(1200px) rotateY(15deg) rotateX(10deg) scale(1) translate(0px, 0px);");
+    expect(html).toContain("transform: perspective(1200px) rotateY(15deg) rotateX(10deg) none;");
   });
 
   it("embeds the background image and blur", () => {
@@ -327,7 +327,7 @@ describe("buildGridHtmlSnippet", () => {
     expect(html).not.toMatch(/aspect-ratio: 1 \/ [\d.]+/);
   });
 
-  it("applies the per-layer zoom and the shared tilt prefix to each frame", () => {
+  it("keeps the frame wrapper at tilt-only and bakes the media zoom into the media style", () => {
     const layer = layerWith({ zoom: 1.4 });
     const scene = sceneWith({
       tiltX: 12,
@@ -339,7 +339,10 @@ describe("buildGridHtmlSnippet", () => {
     const html = buildGridHtmlSnippet(scene, [
       { inst: scene.frameInstances[0]!, mediaHref: MEDIA, mediaType: "image", overlayHref: null }
     ]);
-    expect(html).toContain("transform: perspective(1200px) rotateY(12deg) rotateX(8deg) scale(1.4);");
+    // Frame wrapper: tilt only. Media zoom appears as scale() on the media
+    // element (mediaStyle), matching the live preview.
+    expect(html).toContain("transform: perspective(1200px) rotateY(12deg) rotateX(8deg) none;");
+    expect(html).toContain("scale(1.4)");
   });
 
   it("embeds the overlay skin and screen chrome inside each instance", () => {

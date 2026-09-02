@@ -3,7 +3,7 @@ import type { FrameBox } from "./frameGeometry";
 import { getFrameSpec, frameOs } from "@/lib/render/frames";
 import { createLayerCanvas, layerContext } from "@/lib/render/canvasFactory";
 import { watermarkEdges } from "@/lib/render/watermark";
-import { buildLayerFilterCss } from "@/lib/render/layerFilters";
+import { buildLayerFilterCss, LAYER_ZOOM } from "@/lib/render/layerFilters";
 import { drawTextLayer, isTextLayer } from "@/lib/render/layerText";
 import { drawScreenChrome } from "@/lib/render/screenChrome";
 import { drawBrowserUrl } from "@/lib/render/browserChrome";
@@ -24,6 +24,9 @@ export const RENDER = {
   glassDarkStroke: "rgba(255,255,255,0.15)",
   glassLightStroke: "rgba(255,255,255,0.45)",
   emptyMediaFill: "rgba(255,255,255,0.04)",
+  /** Backdrop painted behind the media itself (zoom < 100% or contain fit can
+   *  leave the screen uncovered). Matches the CSS media element's background. */
+  mediaBackdrop: "#0a0a0a",
   gradientAngleDeg: 120,
   annoShadowBlur: 3,
   annoShadowOffsetY: 1,
@@ -370,12 +373,28 @@ function drawMediaSource(
   const mh = m.videoHeight || m.naturalHeight || m.height || innerH;
   const fit = layer?.mediaFit ?? "cover";
   const scale = fit === "contain" ? Math.min(innerW / mw, innerH / mh) : Math.max(innerW / mw, innerH / mh);
-  const dw = mw * scale;
-  const dh = mh * scale;
   const offsetX = layer?.mediaOffsetX ?? 0;
   const offsetY = layer?.mediaOffsetY ?? 0;
-  const dx = innerX + (innerW - dw) / 2 + offsetX * (innerW - dw) / 2;
-  const dy = innerY + (innerH - dh) / 2 + offsetY * (innerH - dh) / 2;
+  // Base rect at zoom 1: fit + objectPosition-style pan. This matches the CSS
+  // media element's laid-out (pre-transform) content box.
+  const baseW = mw * scale;
+  const baseH = mh * scale;
+  const baseX = innerX + (innerW - baseW) / 2 + offsetX * (innerW - baseW) / 2;
+  const baseY = innerY + (innerH - baseH) / 2 + offsetY * (innerH - baseH) / 2;
+  // Media zoom (layer.zoom) scales the laid-out media about the screen center,
+  // exactly like the CSS preview's `scale()` on the media element whose box is
+  // the screen rect.
+  const zoom = Math.max(LAYER_ZOOM.min, Math.min(LAYER_ZOOM.max, layer?.zoom ?? 1));
+  const centerX = innerX + innerW / 2;
+  const centerY = innerY + innerH / 2;
+  // Post-zoom pan headroom: offset × (zoom − 1) × half the box. Composes with
+  // the layout pan above exactly like the CSS transform chain R·T·S in
+  // buildSceneCss — without it a fitted axis (cover height on a portrait
+  // screen) could never pan even when zoomed in.
+  const dx = centerX + (baseX - centerX) * zoom + offsetX * (innerW - baseW) / 2 * (zoom - 1);
+  const dy = centerY + (baseY - centerY) * zoom + offsetY * (innerH - baseH) / 2 * (zoom - 1);
+  const dw = baseW * zoom;
+  const dh = baseH * zoom;
   const rotation = layer?.rotation ?? 0;
   if (rotation) {
     // Rotate the media about the inner screen's center so the rotation pivot
@@ -385,7 +404,14 @@ function drawMediaSource(
     ctx.rotate((rotation * Math.PI) / 180);
     ctx.translate(-(innerX + innerW / 2), -(innerY + innerH / 2));
   }
+  // Backdrop behind the media: with zoom < 100% (or a contain fit) the media
+  // no longer covers the whole screen, so the backdrop shows through — same
+  // as the CSS preview's media element background. Drawn inside the rotation
+  // and under the layer filter, matching how the CSS element's background
+  // composes.
   ctx.filter = buildLayerFilterCss(layer);
+  ctx.fillStyle = RENDER.mediaBackdrop;
+  ctx.fillRect(innerX, innerY, innerW, innerH);
   ctx.drawImage(media, dx, dy, dw, dh);
 }
 

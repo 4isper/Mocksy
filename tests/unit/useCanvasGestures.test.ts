@@ -57,7 +57,7 @@ describe("useCanvasGestures", () => {
     expect(useEditorStore.getState().scene.layers[0]?.mediaOffsetX).toBeCloseTo(0.2);
   });
 
-  it("pinch-zooms and clamps zoom to [0.8, 1.5] when it starts on the frame", () => {
+  it("pinch-zooms and clamps zoom to [0.8, 3] when it starts on the frame", () => {
     const layer = activeLayerWith("data:img", 1);
     const frameRef = { current: null } as React.RefObject<HTMLDivElement | null>;
     const { result } = renderHook(() => useCanvasGestures({ frameRef, activeLayer: layer }));
@@ -73,7 +73,7 @@ describe("useCanvasGestures", () => {
     });
     window.dispatchEvent(touchMove);
     expect(touchMove.defaultPrevented).toBe(true);
-    expect(useEditorStore.getState().scene.layers[0]?.zoom).toBe(1.5);
+    expect(useEditorStore.getState().scene.layers[0]?.zoom).toBe(2);
   });
 
   it("leaves layer zoom alone when a pinch starts off the frame", () => {

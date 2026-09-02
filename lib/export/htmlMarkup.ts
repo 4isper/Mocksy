@@ -180,24 +180,31 @@ function gridItemHtml(scene: EditorScene, tiltPrefix: string, item: GridItemOpti
     wrapperCss += "\n-webkit-box-reflect: below 0 linear-gradient(transparent 45%, rgba(255,255,255,0.30));";
   }
 
-  const zoom = layer?.zoom ?? 1;
+  // The frame wrapper carries only the 3D tilt; the layer's media zoom is
+  // already baked into css.mediaStyle (scale on the media element), matching
+  // the live preview and the canvas/SVG exporters.
   let frameCss = serializeCssProperties(css.frame);
-  frameCss += `\nwidth: 100%;\nheight: 100%;\nposition: relative;\ntransform: ${tiltPrefix}scale(${num(zoom)});\ntransform-origin: center;`;
+  frameCss += `\nwidth: 100%;\nheight: 100%;\nposition: relative;\ntransform: ${tiltPrefix}none;\ntransform-origin: center;`;
 
   const mediaCss = serializeCssProperties(css.mediaStyle);
-  // The preview applies the layer's blend mode via mixBlendMode on the media
-  // element (SingleFrameView/FrameInstanceGrid) — mirror it here or the export
-  // silently drops the blend.
-  const mediaBlend = layer?.blendMode && layer.blendMode !== "normal" ? `mix-blend-mode: ${layer.blendMode};` : "";
+  // The slot is the untransformed clipping frame over the screen; the media's
+  // rotate/scale transform stays clipped to the screen (matches the preview
+  // and the canvas/SVG exporters). Blend lives on the slot — a clip-path slot
+  // creates a stacking context, so a child blend would be isolated into an
+  // empty backdrop.
+  const blendSlot = layer?.blendMode && layer.blendMode !== "normal"
+    ? { mixBlendMode: layer.blendMode }
+    : {};
+  const mediaSlotCss = serializeCssProperties({ ...css.mediaSlotStyle, ...blendSlot });
   // The video must carry the same positioning/fit styles as the <img>: without
   // them it isn't placed inside the skin's cutout (position/size/clip-path are
   // lost) and a hardcoded object-fit ignores the layer's mediaFit.
-  const videoMediaCss = `${mediaCss}\n${mediaBlend}\nobject-fit: ${(layer?.mediaFit ?? "cover") === "contain" ? "contain" : "cover"};`;
+  const videoMediaCss = mediaCss;
   const media =
     item.mediaType === "video" && item.mediaHref
-      ? `<video class="media" src="${item.mediaHref}" controls muted loop autoplay playsinline style="${videoMediaCss}"${(layer?.playbackSpeed ?? 1) !== 1 ? ` data-rate="${num(Math.max(0.5, Math.min(2, layer?.playbackSpeed ?? 1)))}"` : ""}></video>`
+      ? `<div style="${mediaSlotCss}"><video class="media" src="${item.mediaHref}" controls muted loop autoplay playsinline style="${videoMediaCss}"${(layer?.playbackSpeed ?? 1) !== 1 ? ` data-rate="${num(Math.max(0.5, Math.min(2, layer?.playbackSpeed ?? 1)))}"` : ""}></video></div>`
       : item.mediaHref
-        ? `<img class="media" src="${item.mediaHref}" alt="" style="${mediaCss}${mediaBlend}"/>`
+        ? `<div style="${mediaSlotCss}"><img class="media" src="${item.mediaHref}" alt="" style="${mediaCss}"/></div>`
         : "";
 
   const glare = css.screenGlareStyle
@@ -367,23 +374,28 @@ export function buildHtmlSnippet(scene: EditorScene, opts: HtmlSnippetOptions, a
   let frameCss = serializeCssProperties(css.frame);
   frameCss += "\nz-index: 1;";
   if (activeLayer && activeLayer.animationPreset === "none") {
-    frameCss += `\ntransform: ${tiltPrefix}${transformFor(activeLayer.zoom, 0, 0)};`;
+    // No animation preset → no frame motion. The layer's static media zoom is
+    // already inside css.mediaStyle (scale on the media element).
+    frameCss += `\ntransform: ${tiltPrefix}none;`;
   }
   const mediaCss = serializeCssProperties(css.mediaStyle);
-  // The preview applies the active layer's blend mode via mixBlendMode on the
-  // media element — mirror it here or the export silently drops the blend.
+  // The slot is the untransformed clipping frame over the screen: the media's
+  // rotate/scale transform stays clipped to the screen. Blend lives on the
+  // slot — a clip-path slot creates a stacking context, so a child blend
+  // would be isolated into an empty backdrop.
   const singleBlend = activeLayer?.blendMode && activeLayer.blendMode !== "normal"
     ? `mix-blend-mode: ${activeLayer.blendMode};`
     : "";
+  const mediaSlotCss = serializeCssProperties(css.mediaSlotStyle) + singleBlend;
   const backgroundCss = css.backgroundImage
     ? `.bg {\n  position: absolute;\n  inset: -${css.backgroundBlur + 6}px;\n  z-index: 0;\n  background-image: url("${opts.backgroundHref ?? css.backgroundImage}");\n  background-size: cover;\n  background-position: center;\n${css.backgroundBlur > 0 ? `  filter: blur(${css.backgroundBlur}px);\n` : ""}}`
     : "";
 
   const media =
     opts.mediaType === "video" && opts.mediaHref
-      ? `<video class="media" src="${opts.mediaHref}" controls muted loop autoplay playsinline></video>`
+      ? `<div style="${mediaSlotCss}"><video class="media" src="${opts.mediaHref}" controls muted loop autoplay playsinline></video></div>`
       : opts.mediaHref
-        ? `<img class="media" src="${opts.mediaHref}" alt="Mockup media"/>`
+        ? `<div style="${mediaSlotCss}"><img class="media" src="${opts.mediaHref}" alt="Mockup media"/></div>`
         : "";
 
   const overlay = opts.overlayHref ? `<img class="overlay" src="${opts.overlayHref}" alt=""/>` : "";
@@ -455,7 +467,6 @@ ${frameCss}
 .media {
   display: block;
 ${mediaCss}
-${singleBlend}
 }
 .overlay {
   position: absolute;

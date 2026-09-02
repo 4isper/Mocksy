@@ -110,9 +110,9 @@ describe("buildVideoTimeline", () => {
 });
 
 describe("sampleVideoTransform", () => {
-  it("returns the layer zoom for the none preset (drives the static preview)", () => {
+  it("pins identity for the none preset (media zoom is a media-level transform)", () => {
     const noneLayer = { ...layer, animationPreset: "none" as const, zoom: 1.2 };
-    expect(sampleVideoTransform(noneLayer, 0).zoom).toBe(1.2);
+    expect(sampleVideoTransform(noneLayer, 0).zoom).toBe(1);
   });
 
   it("interpolates zoomIn from 1 to 1.12 with easing (midpoint is 0.5 of eased range, not linear)", () => {

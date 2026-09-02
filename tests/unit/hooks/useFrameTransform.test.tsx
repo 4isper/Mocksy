@@ -30,29 +30,29 @@ afterEach(() => {
 });
 
 describe("useFrameTransform", () => {
-  it("applies the static transform for a non-animated layer", () => {
+  it("pins identity for a non-animated layer (media zoom lives on the media element)", () => {
     const node = { current: document.createElement("div") };
     const layer = { ...baseLayer, animationPreset: "none" as const, zoom: 2 };
     renderHook(() => useFrameTransform(node, layer, 3000));
-    expect(node.current.style.transform).toBe("scale(2) translate(0px, 0px)");
+    expect(node.current.style.transform).toBe("scale(1) translate(0px, 0px)");
     expect(rafCallbacks.length).toBe(0);
   });
 
-  it("re-applies the static transform when zoom changes", () => {
+  it("keeps the static frame identity when zoom changes (no frame re-seed)", () => {
     const node = { current: document.createElement("div") };
     const layer = { ...baseLayer, animationPreset: "none" as const, zoom: 1 };
     const { rerender } = renderHook(({ l }: { l: MediaLayer }) => useFrameTransform(node, l, 3000), {
       initialProps: { l: layer }
     });
     rerender({ l: { ...layer, zoom: 3 } });
-    expect(node.current.style.transform).toBe("scale(3) translate(0px, 0px)");
+    expect(node.current.style.transform).toBe("scale(1) translate(0px, 0px)");
   });
 
-  it("prepends the tilt prefix to the static transform", () => {
+  it("prepends the tilt prefix to the static identity transform", () => {
     const node = { current: document.createElement("div") };
     const layer = { ...baseLayer, animationPreset: "none" as const, zoom: 2 };
     renderHook(() => useFrameTransform(node, layer, 3000, "perspective(1200px) rotateX(10deg) rotateY(15deg) "));
-    expect(node.current.style.transform).toBe("perspective(1200px) rotateX(10deg) rotateY(15deg) scale(2) translate(0px, 0px)");
+    expect(node.current.style.transform).toBe("perspective(1200px) rotateX(10deg) rotateY(15deg) scale(1) translate(0px, 0px)");
   });
 
   it("prepends the tilt prefix to animated keyframes", () => {
