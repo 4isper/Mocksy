@@ -71,7 +71,16 @@
     height: 32px;
   }
 
-  /* Range sliders outside the video trimmer. */
+  /* Range sliders: default thumbs first, then the compact range-wrap
+     override below keeps its own (smaller) size. */
+  input[type="range"]::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+  }
   .range-wrap input[type="range"]::-webkit-slider-thumb {
     width: 22px;
     height: 22px;

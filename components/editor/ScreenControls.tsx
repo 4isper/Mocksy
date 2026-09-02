@@ -602,7 +602,7 @@ export function ScreenControls({ screen, setScreenChrome, screenGlare, setScreen
               <div className="dock-actions">
                 <button
                   type="button"
-                  className="btn-sm"
+                  className="btn btn-sm"
                   disabled={!screen.enabled}
                   onClick={addFolder}
                 >

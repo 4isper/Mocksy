@@ -1,4 +1,9 @@
 /* ---- Form fields ---- */
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-faint);
+}
+
 .field {
   display: grid;
   gap: 7px;
@@ -60,6 +65,14 @@
   cursor: pointer;
 }
 
+/* Muted helper paragraph above editor rows. */
+.field-hint {
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0;
+}
+
 /* ---- Custom notification cards editor ---- */
 .screen-notifications {
   display: grid;
@@ -68,9 +81,6 @@
 }
 
 .screen-notifications .field-hint {
-  color: var(--text-dim);
-  font-size: 12px;
-  font-weight: 600;
   margin: 0;
 }
 
@@ -114,9 +124,6 @@
 }
 
 .dock-icons-editor .field-hint {
-  color: var(--text-dim);
-  font-size: 12px;
-  font-weight: 600;
   margin: 0;
 }
 
@@ -192,7 +199,8 @@
 .field input[type="text"],
 .field input[type="url"],
 .field input:not([type]),
-.field input[type="number"] {
+.field input[type="number"],
+.field textarea {
   width: 100%;
   font: inherit;
   font-size: 13px;
@@ -202,6 +210,17 @@
   border-radius: var(--radius-sm);
   padding: 8px 11px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field input,
+.field select {
+  color: var(--text);
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 56px;
+  line-height: 1.45;
 }
 
 .field select:focus,

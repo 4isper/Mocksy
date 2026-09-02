@@ -212,7 +212,7 @@ export function FrameInstanceList({
                       <span className="range-val">{Math.round(inst.scale * 100)}%</span>
                     </label>
                     <label className="range-wrap" style={{ display: "grid", gap: 3 }}>
-                      <span className="text-dim-sm" style={{ fontSize: 11, fontWeight: 600 }}>{t("editor.frameLayer")}</span>
+                      <span className="range-label">{t("editor.frameLayer")}</span>
                       <select
                         value={inst.layerId ?? ""}
                         onChange={(e) => updateFrameInstance(inst.id, { layerId: e.target.value || null })}

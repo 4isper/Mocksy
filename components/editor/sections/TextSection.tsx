@@ -49,7 +49,6 @@ export function TextSection() {
             aria-label={t("text.content")}
             disabled={layerLocked}
             onChange={(e) => updateActiveLayer({ textContent: e.target.value })}
-            style={{ resize: "vertical" }}
           />
         </label>
         <div className="field">
