@@ -323,7 +323,7 @@
 }
 
 /* ---- Dual-range trim (video) ---- */
-.trim-range {
+input.trim-range {
   position: absolute;
   left: 0;
   right: 0;

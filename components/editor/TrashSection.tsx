@@ -33,12 +33,7 @@ export function TrashSection({ trashed, relativeTime, onRestore, onEmptyTrash }:
 
   return (
     <div style={{ borderTop: "1px solid var(--panel-border)", paddingTop: 8 }}>
-      <button
-        type="button"
-        className="btn"
-        style={{ width: "100%", fontSize: 12, padding: "7px 10px" }}
-        onClick={() => setShowTrash((v) => !v)}
-      >
+      <button type="button" className="btn btn-compact btn-block" onClick={() => setShowTrash((v) => !v)}>
         {showTrash ? t("projects.hideTrash") : t("projects.showTrash", { n: trashed.length })}
       </button>
       {showTrash ? (

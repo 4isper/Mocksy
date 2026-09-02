@@ -158,7 +158,7 @@ export function LayersPanel() {
 
   return (
     <div style={{ padding: 10, display: "grid", gap: 8, alignContent: "start", overflow: "auto", minHeight: 0, minWidth: 0 }}>
-      <label className="btn" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, padding: "6px 10px", cursor: "pointer" }}>
+      <label className="btn btn-compact">
         + {t("editor.addLayer")}
         <input type="file" accept="image/*,video/*" onChange={handleFile} style={{ display: "none" }} />
       </label>
@@ -241,7 +241,7 @@ export function LayersPanel() {
                     type="button"
                     aria-label={isCollapsed ? t("editor.expandGroup") : t("editor.collapseGroup")}
                     onClick={() => toggleGroupCollapse(groupId)}
-                    style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", color: "var(--text-dim)" }}
+                    className="group-icon-btn"
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s" }}>
                       <path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
@@ -270,7 +270,7 @@ export function LayersPanel() {
                     type="button"
                     aria-label={allHidden ? t("editor.showGroup") : t("editor.hideGroup")}
                     onClick={() => toggleGroupHidden(groupId)}
-                    style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", color: "var(--text-dim)" }}
+                    className="group-icon-btn"
                   >
                     {allHidden ? <EyeOff size={12} /> : <Eye size={12} />}
                   </button>
@@ -278,7 +278,7 @@ export function LayersPanel() {
                     type="button"
                     aria-label={allLocked ? t("editor.unlockGroup") : t("editor.lockGroup")}
                     onClick={() => toggleGroupLocked(groupId)}
-                    style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", color: "var(--text-dim)" }}
+                    className="group-icon-btn"
                   >
                     {allLocked ? <Lock size={12} /> : <LockOpen size={12} />}
                   </button>

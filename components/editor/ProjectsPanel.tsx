@@ -139,10 +139,10 @@ export function ProjectsPanel() {
   return (
     <div style={{ padding: 10, display: "grid", gap: 8, alignContent: "start", overflow: "auto", minHeight: 0 }}>
       <div style={{ display: "flex", gap: 6 }}>
-        <button type="button" className="btn" style={{ flex: 1, fontSize: 12, padding: "7px 10px" }} onClick={handleNew}>
+        <button type="button" className="btn btn-compact btn-flex" onClick={handleNew}>
           {t("projects.newProjectBtn")}
         </button>
-        <label className="btn" style={{ flex: 1, fontSize: 12, padding: "7px 10px", cursor: "pointer", textAlign: "center" }}>
+        <label className="btn btn-compact btn-flex">
           {t("projects.import")}
           <input
             type="file"
@@ -155,14 +155,13 @@ export function ProjectsPanel() {
       <div style={{ display: "flex", gap: 6 }}>
         <button
           type="button"
-          className="btn"
-          style={{ flex: 1, fontSize: 12, padding: "7px 10px" }}
+          className="btn btn-compact btn-flex"
           title={t("projects.templateExportHint")}
           onClick={handleTemplateExport}
         >
           {t("projects.templateExportBtn")}
         </button>
-        <label className="btn" style={{ flex: 1, fontSize: 12, padding: "7px 10px", cursor: "pointer", textAlign: "center" }} title={t("projects.templateImportHint")}>
+        <label className="btn btn-compact btn-flex" title={t("projects.templateImportHint")}>
           {t("projects.templateImportBtn")}
           <input
             type="file"

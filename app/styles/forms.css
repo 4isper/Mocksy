@@ -8,13 +8,32 @@
 
 /* ---- Shared compact color swatch input ---- */
 .color-input {
+  -webkit-appearance: none;
+  appearance: none;
   width: 32px;
   height: 28px;
   padding: 0;
-  border: 1px solid var(--panel-border);
+  border: 1px solid var(--field-border);
   border-radius: var(--radius-xs);
+  background: var(--field-bg);
   cursor: pointer;
-  background: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Neutralize the native swatch chrome so the swatch reads as a field chip
+   consistent with the other inputs. */
+.color-input::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.color-input::-webkit-color-swatch {
+  border: none;
+  border-radius: calc(var(--radius-xs) - 2px);
+}
+
+.color-input::-moz-color-swatch {
+  border: none;
+  border-radius: calc(var(--radius-xs) - 2px);
 }
 
 .color-input:focus {
@@ -29,6 +48,16 @@
   align-items: center;
   gap: 8px;
   font-size: 12px;
+}
+
+/* Plain checkbox/radio with an inline text label. */
+.check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
 }
 
 /* ---- Custom notification cards editor ---- */
@@ -161,6 +190,7 @@
 
 .field select,
 .field input[type="text"],
+.field input[type="url"],
 .field input:not([type]),
 .field input[type="number"] {
   width: 100%;
@@ -342,8 +372,11 @@
   font-size: 13px;
 }
 
-/* ---- Custom range slider ---- */
-.range {
+/* ---- Custom range slider ----
+   Themed look is the DEFAULT for every bare input[type="range"]; the
+   explicit `.range` class is kept for the few callers that need the taller
+   track, and `.trim-range` (overlapping dual thumbs) overrides locally. */
+input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
@@ -354,7 +387,7 @@
   cursor: pointer;
 }
 
-.range::-webkit-slider-thumb {
+input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 16px;
@@ -366,11 +399,11 @@
   transition: transform 0.1s ease;
 }
 
-.range::-webkit-slider-thumb:hover {
+input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.15);
 }
 
-.range::-moz-range-thumb {
+input[type="range"]::-moz-range-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
@@ -380,7 +413,7 @@
   cursor: pointer;
 }
 
-.range:focus-visible {
+input[type="range"]:focus-visible {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 

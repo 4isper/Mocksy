@@ -73,8 +73,7 @@ export function BackgroundPresetGrid({
                       ? `linear-gradient(135deg, ${preset.gradientFrom}, ${preset.gradientTo})`
                       : preset.kind === "pattern"
                         ? buildPatternSwatchStyle(preset.patternId!)
-                        : preset.swatch,
-                  border: active ? "2px solid var(--accent)" : undefined
+                        : preset.swatch
                 }}
               />
             );

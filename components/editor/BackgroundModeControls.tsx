@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { Segmented } from "@/components/editor/Segmented";
 
 interface BackgroundSolidControlsProps {
   backgroundColor: string;
@@ -41,18 +42,17 @@ export function BackgroundGradientControls({
   const t = useTranslations();
   return (
     <>
-      <div role="radiogroup" aria-label={t("editor.gradientType")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
-          <input type="radio" name="grad-type" checked={gradientType === "linear"} onChange={() => setGradientType("linear")} />
-          {t("editor.gradientLinear")}
-        </label>
-        <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
-          <input type="radio" name="grad-type" checked={gradientType === "radial"} onChange={() => setGradientType("radial")} />
-          {t("editor.gradientRadial")}
-        </label>
-      </div>
+      <Segmented
+        label={t("editor.gradientType")}
+        value={gradientType}
+        options={[
+          { value: "linear", label: t("editor.gradientLinear") },
+          { value: "radial", label: t("editor.gradientRadial") }
+        ]}
+        onChange={setGradientType}
+      />
       <div className="color-input-row">
-        <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+        <label className="check-label">
           <input type="checkbox" checked={gradientVia != null} onChange={(e) => setGradientVia(e.target.checked ? (gradientVia ?? "#ffffff") : null)} />
           {t("editor.gradientMiddle")}
         </label>

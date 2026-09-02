@@ -191,7 +191,7 @@ export function ContextMenu({
               background: "transparent",
               color: item.danger ? "var(--danger)" : "var(--text)",
               cursor: item.disabled ? "not-allowed" : "pointer",
-              opacity: item.disabled ? 0.45 : 1
+              opacity: item.disabled ? 0.4 : 1
             }}
             onMouseEnter={() => {
               if (!item.disabled) setFocusIndex(i);

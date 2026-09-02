@@ -128,7 +128,7 @@ export function ArrangeSection() {
         {frameCount >= 1 ? (
           <div className="field field-row">
             <span className="text-dim-sm">{t("editor.layoutLabel")}</span>
-            <label style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12 }}>
+            <label className="check-label">
               {t("editor.layoutCount")}
               <input
                 type="number"

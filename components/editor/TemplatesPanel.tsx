@@ -92,7 +92,6 @@ export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Pro
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSave();
           }}
-          style={{ flex: 1, minWidth: 0, fontSize: 12, padding: "6px 8px" }}
         />
         <button
           type="button"
@@ -100,7 +99,6 @@ export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Pro
           onClick={handleSave}
           disabled={!hydrated}
           title={t("templates.saveTitle")}
-          style={{ whiteSpace: "nowrap" }}
         >
           {t("templates.save")}
         </button>

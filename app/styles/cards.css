@@ -173,6 +173,25 @@
 }
 
 /* ---- Layer items (Layers panel) ---- */
+
+/* Bare 12px icon action inside a group header row (collapse/hide/lock). */
+.group-icon-btn {
+  appearance: none;
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.group-icon-btn:hover {
+  color: var(--text);
+}
+
 .layer-item {
   display: flex;
   align-items: center;

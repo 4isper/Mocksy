@@ -108,7 +108,7 @@ describe("BackgroundControls", () => {
 
   it("switches between linear and radial gradient types", async () => {
     render(<BackgroundControls {...baseProps} backgroundMode="gradient" />);
-    await userEvent.click(screen.getByRole("radio", { name: "editor.gradientRadial" }));
+    await userEvent.click(screen.getByRole("button", { name: "editor.gradientRadial" }));
     expect(setters.setGradientType).toHaveBeenCalledWith("radial");
   });
 

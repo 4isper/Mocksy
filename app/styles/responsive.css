@@ -2,7 +2,7 @@
    two overlapping trim sliders are easy to grab with a finger, and so every
    primary control reaches a comfortable touch-target size (~44px). */
 @media (pointer: coarse) {
-  .trim-range {
+  input.trim-range {
     height: 40px;
   }
   .trim-range::-webkit-slider-thumb {
