@@ -111,3 +111,49 @@ test("keyboard shortcuts dialog renders consistently", async ({ page }) => {
     clip: { x: 0, y: 0, width: 1440, height: 900 }
   });
 });
+
+test("android home screen renders consistently", async ({ page }) => {
+  const scene = {
+    frame: "pixel8pro",
+    aspectRatio: "9 / 16",
+    backgroundMode: "solid",
+    backgroundColor: "#0f2027",
+    layers: [],
+    screen: {
+      enabled: true, theme: "light", time: "9:41", style: "home", os: "android",
+      showStatusBar: true, showDock: true,
+      dockIcons: [
+        { label: "Phone", color: "#1a73e8", emoji: "📞" },
+        { label: "Chrome", color: "#ea4335", emoji: "🌐" },
+        { label: "Gmail", color: "#0f9d58", emoji: "✉️" },
+        { label: "Photos", color: "#ffb300", emoji: "🖼️" }
+      ]
+    }
+  };
+  await page.goto(`/en?scene=${encodeURIComponent(JSON.stringify(scene))}`);
+  await waitForStable(page);
+  await expect(page).toHaveScreenshot("android-home.png", {
+    maxDiffPixels: 80,
+    mask: [page.locator(".autosave-badge")]
+  });
+});
+
+test("android home default dock renders consistently", async ({ page }) => {
+  const scene = {
+    frame: "pixel8pro",
+    aspectRatio: "9 / 16",
+    backgroundMode: "solid",
+    backgroundColor: "#1f2027",
+    layers: [],
+    screen: {
+      enabled: true, theme: "light", time: "9:41", style: "home", os: "android",
+      showStatusBar: true, showDock: true
+    }
+  };
+  await page.goto(`/en?scene=${encodeURIComponent(JSON.stringify(scene))}`);
+  await waitForStable(page);
+  await expect(page).toHaveScreenshot("android-home-default-dock.png", {
+    maxDiffPixels: 80,
+    mask: [page.locator(".autosave-badge")]
+  });
+});

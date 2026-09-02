@@ -42,6 +42,11 @@ const statusBar = { ...BASE_SCREEN, style: "statusBar", showStatusBar: true, sho
 const cases: ScreenCase[] = [
   { name: "lock screen (overlay iphone15)", frame: "iphone15", screen: lock },
   { name: "home screen (overlay iphone15)", frame: "iphone15", screen: home },
+  {
+    name: "android home (overlay pixel8pro)",
+    frame: "pixel8pro",
+    screen: { ...home, os: "android", dockIcons: [{ label: "Phone", color: "#1a73e8", emoji: "📞" }, { label: "Gmail", color: "#0f9d58", emoji: "✉️" }] }
+  },
   { name: "status bar only (overlay iphone15)", frame: "iphone15", screen: statusBar },
   { name: "lock screen (frame none)", frame: "none", screen: lock },
   { name: "home screen (frame none)", frame: "none", screen: home },

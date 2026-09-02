@@ -91,6 +91,8 @@ export interface ScreenChrome {
   showDate: boolean;
   /** Lock-screen notification cards (lock style). */
   showNotifications: boolean;
+  /** Flashlight/camera shortcut circles on the lock screen (iOS only). */
+  showLockShortcuts: boolean;
   /** Home dock with app icons (home style). */
   showDock: boolean;
   /** Home indicator pill at the bottom of the screen. */
@@ -119,6 +121,32 @@ export interface ScreenChrome {
   /** Optional per-icon colors for the home dock (4 entries). Absent or null
    *  uses the default SCREEN_CHROME_DOCK_COLORS palette. */
   dockColors?: string[] | null;
+  /** Optional custom dock icons (label + tile color + optional emoji glyph).
+   *  Absent/null renders the plain colored tiles; when set each entry becomes
+   *  a labeled launcher tile with an optional emoji. */
+  dockIcons?: Array<{ label: string; color: string; emoji?: string }> | null;
+  /** Optional custom Android home-grid app icons (label + tile color + optional
+   *  emoji glyph). Absent/null renders the default 4×5 grid; when set the first
+   *  up-to-20 entries drive the grid cells. */
+  androidGridIcons?: Array<{ label: string; color: string; emoji?: string }> | null;
+  /** Optional Android home app-grid column count (default 4, range [3,5]).
+   *  Absent/null uses this default. */
+  gridCols?: number | null;
+  /** Optional Android home app-grid row count (default 5, range [4,6]).
+   *  Absent/null uses this default. */
+  gridRows?: number | null;
+  /** Optional Android home app folders (label + tile color). Each occupies the
+   *  last grid cells; the app icons fill the remaining leading cells. Absent/null
+   *  draws only app icons. */
+  folders?: Array<{ label: string; color: string }> | null;
+  /** Optional Android home widgets (clock / weather). The first rows of the app
+   *  grid are reserved for them and the app icons shift down below. Absent/null
+   *  draws only the app grid without widgets. */
+  widgets?: Array<{ type: "clock" | "weather" }> | null;
+  /** Notification cards stacked under the lock clock. Absent/null uses the
+   *  default Messages/Calendar pair; when set, each entry drives a card's app
+   *  name, subtitle and icon color. */
+  notifications?: Array<{ app: string; subtitle: string; color: string }> | null;
 }
 export type MediaType = "none" | "image" | "video";
 export type VideoQuality = "low" | "medium" | "high";

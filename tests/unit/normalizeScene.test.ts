@@ -650,4 +650,97 @@ describe("ScreenChrome new fields normalization", () => {
     const s = normalizeScene({ screen: { dockColors: "not-an-array" } });
     expect(s.screen.dockColors).toBeNull();
   });
+
+  it("normalizes notifications and falls back to null for invalid input", () => {
+    const s = normalizeScene({
+      screen: {
+        notifications: [
+          { app: "Instagram", subtitle: "Liked your post", color: "#e1306c" },
+          { app: 42, subtitle: "", color: "bad" }
+        ]
+      }
+    });
+    expect(s.screen.notifications).toEqual([
+      { app: "Instagram", subtitle: "Liked your post", color: "#e1306c" },
+      { app: "", subtitle: "", color: "#0a84ff" }
+    ]);
+    expect(normalizeScene({ screen: { notifications: "nope" } }).screen.notifications).toBeNull();
+    expect(normalizeScene({ screen: {} }).screen.notifications).toBeNull();
+  });
+
+  it("normalizes dockIcons and falls back to null for invalid input", () => {
+    const s = normalizeScene({
+      screen: {
+        dockIcons: [
+          { label: "Mail", color: "#ff3b30", emoji: "✉️" },
+          { label: 42, color: "bad" }
+        ]
+      }
+    });
+    expect(s.screen.dockIcons).toEqual([
+      { label: "Mail", color: "#ff3b30", emoji: "✉️" },
+      { label: "", color: "#0a84ff", emoji: undefined }
+    ]);
+    expect(normalizeScene({ screen: { dockIcons: "nope" } }).screen.dockIcons).toBeNull();
+    expect(normalizeScene({ screen: {} }).screen.dockIcons).toBeNull();
+  });
+
+  it("normalizes androidGridIcons (first 20) and falls back to null for invalid input", () => {
+    const s = normalizeScene({
+      screen: {
+        androidGridIcons: [
+          { label: "Mail", color: "#ff0000", emoji: "✉️" },
+          { label: 42, color: "bad" }
+        ]
+      }
+    });
+    expect(s.screen.androidGridIcons).toEqual([
+      { label: "Mail", color: "#ff0000", emoji: "✉️" },
+      { label: "", color: "#1a73e8", emoji: undefined }
+    ]);
+    const capped = normalizeScene({
+      screen: { androidGridIcons: Array.from({ length: 25 }, (_, i) => ({ label: `L${i}`, color: "#1a73e8" })) }
+    });
+    expect(capped.screen.androidGridIcons!.length).toBe(20);
+    expect(normalizeScene({ screen: { androidGridIcons: "nope" } }).screen.androidGridIcons).toBeNull();
+    expect(normalizeScene({ screen: {} }).screen.androidGridIcons).toBeNull();
+  });
+
+  it("normalizes gridCols/gridRows with clamping and null fallback", () => {
+    const s = normalizeScene({ screen: { gridCols: 2, gridRows: 9 } });
+    expect(s.screen.gridCols).toBe(3);
+    expect(s.screen.gridRows).toBe(6);
+    const s2 = normalizeScene({ screen: { gridCols: 4.6, gridRows: 5 }});
+    expect(s2.screen.gridCols).toBe(5);
+    expect(s2.screen.gridRows).toBe(5);
+    expect(normalizeScene({ screen: { gridCols: "x" } }).screen.gridCols).toBeNull();
+    expect(normalizeScene({ screen: {} }).screen.gridCols).toBeNull();
+    expect(normalizeScene({ screen: {} }).screen.gridRows).toBeNull();
+  });
+
+  it("normalizes folders (first 8) and falls back to null for invalid input", () => {
+    const s = normalizeScene({
+      screen: {
+        folders: [
+          { label: "Social", color: "#5e35b1" },
+          { label: 42, color: "bad" }
+        ]
+      }
+    });
+    expect(s.screen.folders).toEqual([
+      { label: "Social", color: "#5e35b1" },
+      { label: "", color: "#3a4a5a" }
+    ]);
+    expect(normalizeScene({ screen: { folders: "nope" } }).screen.folders).toBeNull();
+    expect(normalizeScene({ screen: {} }).screen.folders).toBeNull();
+  });
+
+  it("normalizes widgets (first 2, type-safe) and falls back to null", () => {
+    const s = normalizeScene({
+      screen: { widgets: [{ type: "weather" }, { type: "clock" }, { type: "clock" }] }
+    });
+    expect(s.screen.widgets).toEqual([{ type: "weather" }, { type: "clock" }]);
+    expect(normalizeScene({ screen: { widgets: "nope" } }).screen.widgets).toBeNull();
+    expect(normalizeScene({ screen: {} }).screen.widgets).toBeNull();
+  });
 });

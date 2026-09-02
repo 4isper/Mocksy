@@ -2,6 +2,7 @@ import type { EditorScene, MockupFrame, ScreenChrome } from "@/lib/types/editor"
 import { ASPECT_RATIOS } from "@/lib/render/frames";
 import { layoutFrameGrid } from "@/lib/state/editorHelpers";
 import { makeDemoLayer, nextLayerId } from "@/lib/state/editorHelpers";
+import { NOTIFICATION_APPS } from "@/lib/render/screenChrome";
 
 /** Default screen decoration. Exported so normalization can fall back to it. */
 export const DEFAULT_SCREEN_CHROME: ScreenChrome = {
@@ -12,6 +13,7 @@ export const DEFAULT_SCREEN_CHROME: ScreenChrome = {
   showClock: true,
   showDate: true,
   showNotifications: false,
+  showLockShortcuts: true,
   showDock: true,
   showHomeIndicator: true,
   time: "9:41",
@@ -20,7 +22,14 @@ export const DEFAULT_SCREEN_CHROME: ScreenChrome = {
   clockYFactor: 0.175,
   clockColor: null,
   dockBackground: null,
-  dockColors: null
+  dockColors: null,
+  dockIcons: null,
+  androidGridIcons: null,
+  gridCols: null,
+  gridRows: null,
+  folders: null,
+  widgets: null,
+  notifications: NOTIFICATION_APPS
 };
 
 /** Default URL shown in the browser frame's address bar. */

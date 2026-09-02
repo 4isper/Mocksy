@@ -441,6 +441,57 @@ test("video in the frame grid paints below the skin and chrome", async ({ page }
   expect(tags.indexOf("VIDEO")).toBeLessThan(tags.lastIndexOf("IMG"));
 });
 
+test("lock screen renders custom notification cards", async ({ page }) => {
+  const scene = {
+    frame: "iphone15",
+    aspectRatio: "9 / 16",
+    backgroundMode: "solid",
+    backgroundColor: "#15151c",
+    layers: [],
+    screen: {
+      enabled: true, theme: "dark", time: "9:41", date: "x", style: "lock",
+      showStatusBar: true, showClock: true, showDate: true, showNotifications: true,
+      notifications: [
+        { app: "Instagram", subtitle: "Liked your post", color: "#e1306c" },
+        { app: "Slack", subtitle: "New message in #design", color: "#4a154b" }
+      ]
+    }
+  };
+  await page.goto(`/en?scene=${encodeURIComponent(JSON.stringify(scene))}`);
+  const frame = page.locator("[data-mockup-frame]").first();
+  const svg = frame.locator("svg").first();
+  const text = (await svg.textContent()) ?? "";
+  expect(text).toContain("Instagram");
+  expect(text).toContain("Liked your post");
+  expect(text).toContain("Slack");
+  expect(text).toContain("New message in #design");
+  // the default Messages/Calendar pair is replaced
+  expect(text).not.toContain("Messages");
+});
+
+test("android home screen renders the app grid and Google search", async ({ page }) => {
+  const scene = {
+    frame: "pixel8pro",
+    aspectRatio: "9 / 16",
+    backgroundMode: "solid",
+    backgroundColor: "#0f2027",
+    layers: [],
+    screen: {
+      enabled: true, theme: "light", time: "9:41", style: "home", os: "android",
+      showStatusBar: true, showDock: true
+    }
+  };
+  await page.goto(`/en?scene=${encodeURIComponent(JSON.stringify(scene))}`);
+  const frame = page.locator("[data-mockup-frame]").first();
+  const svg = frame.locator("svg").first();
+  const text = (await svg.textContent()) ?? "";
+  expect(text).toContain("Search");
+  expect(text).toContain('stroke="#4285f4"');
+  // The app grid + dock render as circles (not the iOS squircle dock).
+  expect((text.match(/<circle /g) || []).length).toBeGreaterThanOrEqual(24);
+  expect(text).not.toContain('fill="#30d158"');
+});
+
 test("Control panel clears the active layer's media", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Upload image or video" }).setInputFiles({

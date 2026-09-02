@@ -160,11 +160,13 @@ describe("en.json is the complete message tree", () => {
       ["filters", "blur"],
       ["background", "gradient"],
       ["watermark", "watermark"],
-      ["screen", "glare"]
+      ["screen", "app grid, folder, widget, dock icons, notification, glare"]
     ];
     const ruKeywords = getByPath(readMessages("ru"), "editor.sectionKeywords") as Record<string, string>;
     for (const [id, word] of aliases) {
-      expect(keywords[id]!.toLowerCase(), `en alias "${word}" missing from sectionKeywords.${id}`).toContain(word);
+      for (const w of word.split(",").map((s) => s.trim()).filter(Boolean)) {
+        expect(keywords[id]!.toLowerCase(), `en alias "${w}" missing from sectionKeywords.${id}`).toContain(w);
+      }
       expect(ruKeywords[id]!.length).toBeGreaterThan(0);
     }
   });

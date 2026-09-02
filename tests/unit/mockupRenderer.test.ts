@@ -282,14 +282,19 @@ describe("buildSceneCss", () => {
 
   it("honors a user-set os instead of forcing the frame's OS onto the chrome", () => {
     // iPhone frame normally resolves to "ios". A user-chosen "android" must be
-    // respected: android keeps the status bar but drops the iOS dock.
+    // respected: android renders the dock (shared) but uses a triangular
+    // signal instead of the iOS 4-bar glyphs.
     const home = base({
       frame: "iphone15",
       screen: { ...initialScene.screen, enabled: true, style: "home", os: "android" as const }
     });
     const androidCss = buildSceneCss(home);
     expect(androidCss.screenChrome).toContain("9:41"); // status bar remains
-    expect(androidCss.screenChrome).not.toContain('fill="#30d158"'); // no iOS dock icons
+    // Android uses a filled right-triangle signal (M L L Z), not iOS bars
+    expect(androidCss.screenChrome).toMatch(/<path d="M [\d.]+ [\d.]+ L [\d.]+ [\d.]+ L [\d.]+ [\d.]+ Z"/);
+    // Android home draws a Google search bar + app grid, not the iOS squircle dock.
+    expect(androidCss.screenChrome).toContain('fill="rgba(255,255,255,0.94)"');
+    expect(androidCss.screenChrome).not.toContain('fill="#30d158"');
 
     // Leaving os unset falls back to the frame's OS (ios for an iPhone).
     const noOs = base({ frame: "iphone15", screen: { ...initialScene.screen, enabled: true, style: "home" } });
