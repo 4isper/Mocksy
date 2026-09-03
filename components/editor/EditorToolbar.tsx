@@ -58,9 +58,10 @@ export function EditorToolbar({
   const themeMode = useThemeStore((s) => s.mode);
   const setThemeMode = useThemeStore((s) => s.setMode);
 
-  // Secondary actions collapse behind a “…” menu at the <=980px breakpoint so
-  // the toolbar stays a single row on phones and portrait tablets; the menu is
-  // presentational here and only visible via CSS (.toolbar-more).
+  // Secondary actions collapse behind a “…” menu on narrow screens (<=1180px
+  // in CSS) so the single-row toolbar never clips; undo moves to the bottom
+  // tab bar at <=980px. The menu is presentational here and only visible
+  // via CSS (.toolbar-more).
   const [overflowMenu, setOverflowMenu] = useState<{ x: number; y: number } | null>(null);
   const moreRef = useRef<HTMLButtonElement>(null);
 
@@ -104,11 +105,11 @@ export function EditorToolbar({
       <div className="toolbar-group toolbar-undo">
         <button type="button" className="btn-tb btn-tb-icon" onClick={onUndo} disabled={!canUndo} title={t("editor.undoTitle")} aria-label={t("editor.undoTitle")}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 3H2v2M2 5l2.5-2.5A4.5 4.5 0 1111.5 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          {undoCount > 0 ? <span style={{ fontSize: 9, lineHeight: 1, marginLeft: 1, opacity: 0.7 }}>{undoCount}</span> : null}
+          {undoCount > 0 ? <span className="undo-count" aria-hidden="true">{undoCount}</span> : null}
         </button>
         <button type="button" className="btn-tb btn-tb-icon" onClick={onRedo} disabled={!canRedo} title={t("editor.redoTitle")} aria-label={t("editor.redoTitle")}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 3h2v2M12 5l-2.5-2.5A4.5 4.5 0 102.5 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          {redoCount > 0 ? <span style={{ fontSize: 9, lineHeight: 1, marginLeft: 1, opacity: 0.7 }}>{redoCount}</span> : null}
+          {redoCount > 0 ? <span className="undo-count" aria-hidden="true">{redoCount}</span> : null}
         </button>
       </div>
       <div className="toolbar-group">
@@ -124,6 +125,10 @@ export function EditorToolbar({
           {t("nav.export")}
         </button>
       </div>
+      {/* Middle status slot: always mounted (even when empty) so transient
+          toasts/progress never shift the action groups on either side.
+          Content is clipped with ellipsis instead of wrapping the toolbar. */}
+      <div className="toolbar-status" aria-live="off">
       {videoExportStatus ? (
         <div className="export-status">
           <span className="label">{videoExportStatus}</span>
@@ -167,7 +172,7 @@ export function EditorToolbar({
           </button>
         </span>
       ) : null}
-      <span className="spacer" />
+      </div>
       <div className="toolbar-group toolbar-aux">
         <div className="segmented" style={{ gap: 0 }} role="group" aria-label={t("editor.themeLabel")}>
           <button

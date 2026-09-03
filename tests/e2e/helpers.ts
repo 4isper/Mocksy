@@ -2,8 +2,9 @@ import { expect, type Page } from "@playwright/test";
 
 // Shared e2e helpers for the responsive editor shell. At the <=980px
 // breakpoint the side panels live in parked bottom sheets behind the fixed
-// tab bar and the secondary toolbar actions fold behind the "…" overflow
-// menu, so tests must not assume the desktop grid layout.
+// tab bar, and the secondary toolbar actions fold behind the "…" overflow
+// menu on narrow screens (<=1180px), so tests must not assume the desktop
+// grid layout.
 
 // True when the editor renders the stacked mobile layout (<=980px).
 export async function isMobileLayout(page: Page): Promise<boolean> {
@@ -34,8 +35,8 @@ export async function openRightTab(page: Page, label: string): Promise<void> {
   await expect(page.locator("#right-panel-content")).toBeVisible();
 }
 
-// Clicks a toolbar action that folds behind the "…" overflow menu at the
-// mobile breakpoint: direct click when the button is visible, overflow
+// Clicks a toolbar action that folds behind the "…" overflow menu on narrow
+// screens: direct click when the button is visible, overflow
 // menu item otherwise.
 export async function clickToolbarAction(page: Page, label: RegExp): Promise<void> {
   const button = page.getByRole("button", { name: label });

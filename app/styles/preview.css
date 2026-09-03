@@ -170,12 +170,16 @@
 }
 
 /* ---- Export progress (video) ---- */
+/* Lives inside .toolbar-status: bounded flex item that shrinks first and
+   never pushes the toolbar action groups. */
 .export-status {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
-  min-width: 160px;
+  flex: 0 1 260px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .export-status .label {
