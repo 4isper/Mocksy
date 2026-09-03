@@ -61,8 +61,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  /* WCAG 2.2 target-size-minimum: keep the clickable box at 24px so the
+     Lighthouse target-size audit passes (do not shrink below this). */
+  flex: none;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: none;
   border-radius: var(--radius-xs);
