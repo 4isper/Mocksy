@@ -45,7 +45,7 @@ export function LayersPanel() {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
 
-  const { dragId, dropTarget, handleDragStart, handleDragOver, handleDrop, handleDragEnd } = useLayerReorder(scene);
+  const { dragId, dropTarget, handleDragStart, handleDragOver, handleDrop, handleDragEnd, handleGripPointerDown, handleGripPointerMove, handleGripPointerUp } = useLayerReorder(scene);
 
   const commitRename = (id: string) => {
     renameLayer(id, draftName.trim());
@@ -314,6 +314,9 @@ export function LayersPanel() {
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 onDragEnd={handleDragEnd}
+                onGripPointerDown={handleGripPointerDown}
+                onGripPointerMove={handleGripPointerMove}
+                onGripPointerUp={handleGripPointerUp}
               />
             );
 

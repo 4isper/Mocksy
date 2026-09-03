@@ -1,15 +1,11 @@
 /* Coarse pointers (touch) need larger thumbs and taller hit areas so the
-   two overlapping trim sliders are easy to grab with a finger, and so every
-   primary control reaches a comfortable touch-target size (~44px). */
+   trim thumbs are easy to grab with a finger, and so every primary control
+   reaches a comfortable touch-target size (~44px). */
 @media (pointer: coarse) {
-  input.trim-range {
+  .trim-track {
     height: 40px;
   }
-  .trim-range::-webkit-slider-thumb {
-    width: 24px;
-    height: 24px;
-  }
-  .trim-range::-moz-range-thumb {
+  .trim-thumb {
     width: 24px;
     height: 24px;
   }
@@ -88,6 +84,14 @@
   .range-wrap input[type="range"]::-moz-range-thumb {
     width: 22px;
     height: 22px;
+  }
+
+  /* Reorder grips (layer rows, frame cards): the visible glyph is small, so
+     pad the hit area to a finger-friendly target without moving layout. */
+  .layer-grip,
+  .frame-grip {
+    padding: 12px 10px;
+    margin: -12px -10px;
   }
 }
 

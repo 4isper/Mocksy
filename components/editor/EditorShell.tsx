@@ -16,6 +16,7 @@ import { ErrorBoundary } from "@/components/editor/ErrorBoundary";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { MobileTabBar } from "@/components/editor/MobileTabBar";
 import { PanelResizeHandles } from "@/components/editor/PanelResizeHandles";
+import { SheetGrabber } from "@/components/editor/SheetGrabber";
 import { LiveAnnouncer } from "@/components/editor/LiveAnnouncer";
 import { hasSeenOnboarding } from "@/components/editor/OnboardingTour";
 import { useCommands } from "@/lib/hooks/useCommands";
@@ -299,6 +300,7 @@ export function EditorShell() {
              desktop so the grid still sees the panels directly; at the
              mobile breakpoint they become fixed bottom sheets. */
           <div ref={controlsSheetTrapRef} className={mobileSheet === "controls" ? "sheet-host sheet-host--controls is-open" : "sheet-host sheet-host--controls"}>
+            <SheetGrabber onDismiss={() => setMobileSheet(null)} />
             <ErrorBoundary message={t("errors.message")} retryLabel={t("errors.tryAgain")}><ControlPanel /></ErrorBoundary>
           </div>
         ) : null}
@@ -354,6 +356,7 @@ export function EditorShell() {
         </section>
         {!fullscreenPreview ? (
           <div ref={rightSheetTrapRef} className={mobileSheet === "right" ? "sheet-host sheet-host--right is-open" : "sheet-host sheet-host--right"}>
+            <SheetGrabber onDismiss={() => setMobileSheet(null)} />
             <ErrorBoundary message={t("errors.message")} retryLabel={t("errors.tryAgain")}>
               <RightPanel onShareTemplate={exportApi.copyTemplateUrl} />
             </ErrorBoundary>

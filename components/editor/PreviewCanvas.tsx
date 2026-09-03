@@ -15,6 +15,7 @@ import { useScenePalette } from "@/lib/hooks/useScenePalette";
 import { useCanvasGestures } from "@/lib/hooks/useCanvasGestures";
 import { useCanvasDrop } from "@/lib/hooks/useCanvasDrop";
 import { useCanvasViewport } from "@/lib/hooks/useCanvasViewport";
+import { useLongPress } from "@/lib/hooks/useLongPress";
 import { ContextMenu, type ContextMenuItem } from "@/components/editor/ContextMenu";
 import { FrameInstanceGrid } from "@/components/editor/FrameInstanceGrid";
 import { SingleFrameView } from "@/components/editor/SingleFrameView";
@@ -100,12 +101,12 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
 
   const { w: arW, h: arH } = parseAspectRatioOr(scene.aspectRatio);
 
-  /** Builds the context-menu items for the right-clicked target: a frame
-   *  instance, an annotation, or the empty canvas (add-annotation actions). */
-  const openContextMenu = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      const target = e.target as HTMLElement;
-      e.preventDefault();
+  /** Builds the context-menu items for the target: a frame instance, an
+   *  annotation, or the empty canvas (add-annotation actions). Shared by the
+   *  desktop `contextmenu` event and the touch long-press (iOS never fires
+   *  `contextmenu`, so the menu would otherwise be unreachable there). */
+  const openContextMenuAt = useCallback(
+    (x: number, y: number, target: HTMLElement) => {
       const frameEl = target.closest("[data-frame-instance-id]");
       const annEl = target.closest("[data-annotation-id]");
 
@@ -116,8 +117,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         const inst = scene.frameInstances.find((fi) => fi.id === id);
         const nextOrientation = inst?.orientation === "landscape" ? "portrait" : "landscape";
         setContextMenu({
-          x: e.clientX,
-          y: e.clientY,
+          x,
+          y,
           items: [
             { id: "rotate", label: t("editor.ctxRotate"), onSelect: () => updateFrameInstance(id, { orientation: nextOrientation }) },
             { id: "dup", label: t("editor.ctxDuplicate"), onSelect: () => duplicateFrameInstance(id) },
@@ -134,8 +135,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         if (!id) return;
         selectAnnotation(id);
         setContextMenu({
-          x: e.clientX,
-          y: e.clientY,
+          x,
+          y,
           items: [
             { id: "dup", label: t("editor.ctxDuplicate"), onSelect: () => duplicateAnnotation(id) },
             { id: "front", label: t("editor.ctxBringToFront"), onSelect: () => reorderAnnotation(id, "front") },
@@ -148,8 +149,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
 
       // Empty canvas: annotation shortcuts plus deselect.
       setContextMenu({
-        x: e.clientX,
-        y: e.clientY,
+        x,
+        y,
         items: [
           { id: "add-text", label: t("editor.ctxAddText"), onSelect: () => addAnnotation("text") },
           { id: "add-arrow", label: t("editor.ctxAddArrow"), onSelect: () => addAnnotation("arrow") },
@@ -165,6 +166,16 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
     },
     [t, selectAnnotation, selectFrameInstance, addAnnotation, duplicateAnnotation, reorderAnnotation, removeAnnotation, duplicateFrameInstance, reorderFrameInstance, removeFrameInstance, updateFrameInstance, scene.frameInstances]
   );
+
+  const openContextMenu = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      openContextMenuAt(e.clientX, e.clientY, e.target as HTMLElement);
+    },
+    [openContextMenuAt]
+  );
+
+  const longPress = useLongPress(openContextMenuAt);
 
   return (
     <div
@@ -210,10 +221,25 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           if (target.closest("[data-annotation]") || target.closest(".preview-watermark")) return;
           selectAnnotation(null);
         }}
-        onPointerDownCapture={view.onPointerDownCapture}
-        onPointerMove={view.onPointerMove}
-        onPointerUp={view.onPointerUp}
-        onPointerCancel={view.onPointerCancel}
+        onPointerDownCapture={(e) => {
+          // Capture phase: annotation drags stopPropagation on pointerdown,
+          // so a long-press started on them would never reach a bubble-phase
+          // handler here.
+          longPress.onPointerDown(e);
+          view.onPointerDownCapture(e);
+        }}
+        onPointerMove={(e) => {
+          longPress.onPointerMove(e);
+          view.onPointerMove(e);
+        }}
+        onPointerUp={(e) => {
+          longPress.onPointerUp(e);
+          view.onPointerUp(e);
+        }}
+        onPointerCancel={(e) => {
+          longPress.onPointerCancel(e);
+          view.onPointerCancel(e);
+        }}
         onDoubleClick={view.onDoubleClickReset}
         onContextMenu={openContextMenu}
         onKeyDown={(e) => {
@@ -240,6 +266,9 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           position: "relative",
           borderRadius: 12,
           overflow: "hidden",
+          // Suppress the iOS long-press callout (copy/lookup popover) so the
+          // synthesized context menu isn't competing with the native one.
+          WebkitTouchCallout: "none",
           cursor: view.viewCursor,
           ...containerStyle
         }}

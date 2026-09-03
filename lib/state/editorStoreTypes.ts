@@ -206,7 +206,7 @@ export interface EditorStoreState {
    *  the rest of the scene. */
   setCustomFrame: (customFrame: import("@/lib/types/editor").CustomFrame | null) => void;
   setFrameInstances: (instances: FrameInstance[]) => void;
-  updateFrameInstance: (id: string, patch: Partial<FrameInstance>, coalesce?: boolean) => void;
+  updateFrameInstance: (id: string, patch: Partial<FrameInstance>, coalesce?: boolean | string) => void;
   /** Appends a new frame instance cloned from the active one (or the default
    *  scene frame when none exist yet), so the user can incrementally add
    *  devices instead of only via grid/layout presets or right-click duplicate. */
@@ -220,7 +220,7 @@ export interface EditorStoreState {
   /** Reorders frame instances to match the given id order (used by drag-and-drop
    *  in the frame list). Unknown/missing ids are ignored; every existing id must
    *  appear exactly once in `orderedIds`. */
-  reorderFrameInstances: (orderedIds: string[]) => void;
+  reorderFrameInstances: (orderedIds: string[], coalesce?: boolean) => void;
   layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") => void;
   applyFrameLayout: (frame: MockupFrame, count: number, layout: import("@/lib/types/editor").LayoutPreset) => void;
   /** Aligns all frame instances to a shared edge/center (one undo step). */

@@ -51,6 +51,24 @@ test.describe("mobile editor layout", () => {
     await expect(controls).not.toHaveClass(/is-open/);
   });
 
+  test("swiping the grabber down dismisses the sheet", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Controls", exact: true }).click();
+    const controls = page.locator(".sheet-host--controls");
+    await expect(controls).toHaveClass(/is-open/);
+    // Wait for the slide-up transition to actually settle (headless frame
+    // scheduling can delay its start well past the 280ms duration) before
+    // grabbing the pill at its final position.
+    await expect.poll(async () => controls.evaluate((el) => getComputedStyle(el).transform)).toBe("none");
+    const box = await controls.locator(".sheet-grabber").boundingBox();
+    expect(box).toBeTruthy();
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + 150, { steps: 10 });
+    await page.mouse.up();
+    await expect(controls).not.toHaveClass(/is-open/);
+  });
+
   test("preview keeps the scene aspect ratio when stacked", async ({ page }) => {
     await page.goto("/");
     const box = await page.locator("#preview-canvas").boundingBox();
@@ -121,5 +139,11 @@ test.describe("narrow desktop layout (981-1180px)", () => {
     }));
     expect(widths.left).toBe("244px");
     expect(widths.right).toBe("276px");
+  });
+
+  test("hides the resize handles, which only drag above 1180px", async ({ page }) => {
+    // The JS gates dragging on (min-width: 1181px); a visible handle below
+    // that is a dead affordance.
+    await expect(page.locator(".panel-resize-handle:visible")).toHaveCount(0);
   });
 });

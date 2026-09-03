@@ -207,11 +207,11 @@ describe("FrameInstanceList", () => {
       />
     );
     fireEvent.change(screen.getByRole("slider", { name: "editor.frameX" }), { target: { value: "0.4" } });
-    expect(updateFrameInstance).toHaveBeenCalledWith("f1", { x: 0.4 });
+    expect(updateFrameInstance).toHaveBeenCalledWith("f1", { x: 0.4 }, "frameSlider:f1:x");
     fireEvent.change(screen.getByRole("slider", { name: "editor.frameY" }), { target: { value: "0.6" } });
-    expect(updateFrameInstance).toHaveBeenCalledWith("f1", { y: 0.6 });
+    expect(updateFrameInstance).toHaveBeenCalledWith("f1", { y: 0.6 }, "frameSlider:f1:y");
     fireEvent.change(screen.getByRole("slider", { name: "editor.frameScale" }), { target: { value: "2" } });
-    expect(updateFrameInstance).toHaveBeenCalledWith("f1", { scale: 2 });
+    expect(updateFrameInstance).toHaveBeenCalledWith("f1", { scale: 2 }, "frameSlider:f1:scale");
   });
 
   it("shows percentage values next to sliders", () => {

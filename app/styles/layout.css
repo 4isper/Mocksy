@@ -5,6 +5,10 @@
   --panel-left-w: 280px;
   --panel-right-w: 310px;
   --grid-gap: 14px;
+  /* Reserved space for the fixed mobile tab bar (64px of buttons/padding +
+     border + safe area). Shared by the shell padding and the sheet offset so
+     an open sheet never hides behind the tab bar. */
+  --tabbar-space: calc(74px + env(safe-area-inset-bottom));
 }
 
 .editor-shell {
@@ -84,7 +88,10 @@ body.panel-resizing {
   user-select: none;
 }
 
-@media (max-width: 980px) {
+/* Resize is gated on the same breakpoint as the JS (DESKTOP_MQ, 1181px):
+   showing a handle that can't be dragged is a dead affordance, and the slim
+   981–1180px band uses fixed token widths instead. */
+@media (max-width: 1180px) {
   .panel-resize-handle {
     display: none;
   }
@@ -148,10 +155,16 @@ body.panel-resizing {
   display: none;
 }
 
+/* Swipe-down grabber: only meaningful inside a bottom sheet, and the host is
+   `display: contents` on desktop, so it must stay out of the grid there. */
+.sheet-grabber {
+  display: none;
+}
+
 @media (max-width: 980px) {
   .editor-shell {
     /* Keep the toolbar above the fixed tab bar. */
-    padding-bottom: calc(74px + env(safe-area-inset-bottom));
+    padding-bottom: var(--tabbar-space);
   }
 
   .sheet-host {
@@ -159,12 +172,15 @@ body.panel-resizing {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
+    /* Float above the tab bar (z 46) instead of hiding its last ~74px of
+       content behind it. */
+    bottom: var(--tabbar-space);
     z-index: 45;
-    /* Parked below the viewport; the open state slides it up. `visibility`
-       keeps the parked panel out of the tab order and off screen readers,
-       and is delayed so the slide-out animation stays visible. */
-    transform: translateY(105%);
+    /* Parked below the viewport (own height + the tab bar gap); the open
+       state slides it up. `visibility` keeps the parked panel out of the tab
+       order and off screen readers, and is delayed so the slide-out
+       animation stays visible. */
+    transform: translateY(calc(100% + var(--tabbar-space)));
     visibility: hidden;
     transition: transform 0.28s ease, visibility 0s linear 0.28s;
     pointer-events: none;
@@ -175,18 +191,56 @@ body.panel-resizing {
     transition: transform 0.28s ease;
     pointer-events: auto;
   }
+  .sheet-host.is-dragging {
+    /* The transform follows the finger 1:1 during a swipe-down. */
+    transition: none;
+  }
   .sheet-host > .panel {
-    border-radius: var(--radius) var(--radius) 0 0;
+    border-radius: var(--radius);
     box-shadow: var(--shadow-pop);
+    /* Room for the grabber pill above the panel content. The panels set
+       `padding` inline, so this needs !important to win. */
+    padding-top: 22px !important;
+  }
+  .sheet-grabber {
+    display: grid;
+    place-items: center;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1;
+    width: 64px;
+    height: 20px;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  .sheet-grabber:active {
+    cursor: grabbing;
+  }
+  .sheet-grabber-bar {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--panel-border-strong);
   }
   .sheet-host--controls .control-panel {
     height: min(72dvh, 640px);
     max-height: none;
     overflow-y: auto;
+    /* Stop scroll chaining: dragging the panel past its end must not scroll
+       the page behind the sheet. */
+    overscroll-behavior: contain;
   }
   .sheet-host--right .right-panel {
     height: min(72dvh, 640px);
     max-height: none;
+  }
+  .sheet-host--right .right-panel-content {
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .sheet-backdrop {

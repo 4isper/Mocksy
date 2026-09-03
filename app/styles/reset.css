@@ -31,6 +31,9 @@ body {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* The editor is an app surface: pull-to-refresh (and the desktop horizontal
+     overscroll bounce) must not reload the page mid-work. */
+  overscroll-behavior-y: none;
 }
 
 /* Subtle ambient backdrop so the editor feels like an app, not a flat page. */

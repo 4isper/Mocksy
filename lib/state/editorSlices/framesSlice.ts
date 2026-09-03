@@ -127,7 +127,10 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
         // merge a drag of instance A and a quick drag of instance B (within the
         // 400ms window) into a single undo step, dropping the intermediate
         // state. Keying per-instance keeps each frame's drag its own step.
-        return pushHistory(s, { ...s.scene, frameInstances }, coalesce ? `frameInstanceDrag:${id}` : undefined);
+        // Callers may pass an explicit key (e.g. per-slider) to keep distinct
+        // controls from merging with each other.
+        const key = coalesce === true ? `frameInstanceDrag:${id}` : typeof coalesce === "string" ? coalesce : undefined;
+        return pushHistory(s, { ...s.scene, frameInstances }, key);
       }),
     addFrameInstance: () =>
       set((s) => {
@@ -195,13 +198,13 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
         else frameInstances.unshift(item);
         return pushHistory(s, { ...s.scene, frameInstances });
       }),
-    reorderFrameInstances: (orderedIds) =>
+    reorderFrameInstances: (orderedIds, coalesce) =>
       set((s) => {
         const byId = new Map(s.scene.frameInstances.map((fi) => [fi.id, fi]));
         const reordered = orderedIds.map((id) => byId.get(id)).filter((fi): fi is (typeof s.scene.frameInstances)[number] => Boolean(fi));
         // Ignore invalid input that doesn't cover every existing instance.
         if (reordered.length !== s.scene.frameInstances.length) return {};
-        return pushHistory(s, { ...s.scene, frameInstances: reordered });
+        return pushHistory(s, { ...s.scene, frameInstances: reordered }, coalesce ? "frameOrder" : undefined);
       }),
     layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") =>
       set((s) => {

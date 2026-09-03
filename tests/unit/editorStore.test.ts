@@ -936,6 +936,23 @@ describe("frame control", () => {
     expect(store().scene.frameInstances[1]!.x).toBe(0.2);
   });
 
+  it("an explicit coalesce key collapses slider repeats and stays distinct per control", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0.5, scale: 1, layerId: null }
+    ]);
+    const afterSetup = store().past.length;
+    store().updateFrameInstance("fi1", { x: 0.1 }, "frameSlider:fi1:x");
+    store().updateFrameInstance("fi1", { x: 0.2 }, "frameSlider:fi1:x");
+    // Same slider, same window: one undo step.
+    expect(store().past.length).toBe(afterSetup + 1);
+    store().updateFrameInstance("fi1", { y: 0.6 }, "frameSlider:fi1:y");
+    // A different control gets its own step.
+    expect(store().past.length).toBe(afterSetup + 2);
+    expect(store().scene.frameInstances[0]!.x).toBe(0.2);
+    expect(store().scene.frameInstances[0]!.y).toBe(0.6);
+  });
+
   it("updateFrameInstance leaves other instances unchanged", () => {
     reset();
     store().setFrameInstances([

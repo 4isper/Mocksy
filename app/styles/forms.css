@@ -394,7 +394,8 @@ textarea::placeholder {
 /* ---- Custom range slider ----
    Themed look is the DEFAULT for every bare input[type="range"]; the
    explicit `.range` class is kept for the few callers that need the taller
-   track, and `.trim-range` (overlapping dual thumbs) overrides locally. */
+   track. The video trim control is a custom dual-thumb widget (`.trim-track`),
+   not a range input. */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
