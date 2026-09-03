@@ -49,6 +49,48 @@
   max-width: 420px;
 }
 
+/* Export header: title + explicit close (backdrop/Esc also close; closing
+   never cancels a running export — progress stays in the toolbar). */
+.modal.export .export-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.modal.export .export-head h3 {
+  margin: 0;
+}
+
+.modal.export .export-close {
+  appearance: none;
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: var(--radius-xs);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.modal.export .export-close:hover {
+  background: var(--hover);
+  color: var(--text);
+  border-color: var(--panel-border);
+}
+
+.modal.export .export-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 .shortcut-list {
   display: flex;
   flex-direction: column;

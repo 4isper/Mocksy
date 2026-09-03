@@ -661,7 +661,23 @@
     "exportingZipVideo": "Video'lar dışa aktarılıyor…",
     "jpeg": "JPEG",
     "pdfRasterFallback": "Vektör dışa aktarma kullanılamıyor — yerine raster görüntü olarak dışa aktarıldı.",
-    "avif": "AVIF"
+    "avif": "AVIF",
+    "platformAspectNote": "Platform presets also set the canvas aspect to the closest match.",
+    "hint": {
+      "png": "Lossless and crisp. Large files, best for UI shots.",
+      "jpeg": "Small files, no transparency. Best for photos.",
+      "webp": "Modern raster, smaller than PNG or JPEG. Good default for the web.",
+      "avif": "Smallest files, slower to encode. Chromium only.",
+      "zip": "One PNG per frame, bundled as a ZIP archive.",
+      "svg": "Vector markup. Scales infinitely, media stays embedded.",
+      "html": "Self-contained snippet for embedding elsewhere.",
+      "pdf": "Single-page document for sharing or printing.",
+      "mp4": "Universal video. Plays everywhere, includes sound.",
+      "webm": "Smaller web video. Best for browsers.",
+      "zipVideo": "One MP4 per frame, bundled as a ZIP archive.",
+      "gif": "Looping image without sound. Large files.",
+      "webpAnim": "Looping animation, smaller than GIF."
+    }
   },
   "shortcuts": {
     "title": "Klavye kısayolları",

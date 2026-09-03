@@ -381,11 +381,10 @@ export function useEditorExport(
 
   const handleExport = useCallback(
     (format: ExportFormat) => {
-      // Raster/image exports are synchronous downloads, so close the dialog
-      // immediately. Video exports show live progress with a cancel button,
-      // so keep the dialog open and let the toolbar/timer close it.
-      const isVideo = format === "mp4" || format === "webm" || format === "gif" || format === "webpAnim" || format === "zipVideo";
-      if (!isVideo) onExportDialogClose();
+      // The dialog always closes on export: progress and the cancel button
+      // live in the toolbar, so a long video job never traps the user in
+      // a modal. Closing never cancels — only the explicit Cancel does.
+      onExportDialogClose();
       switch (format) {
         case "png":
           handleExportPng();

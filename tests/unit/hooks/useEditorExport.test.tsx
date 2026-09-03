@@ -98,6 +98,15 @@ describe("useEditorExport", () => {
     expect(closeDialog).toHaveBeenCalledTimes(1);
   });
 
+  it("closes the dialog on video export too (progress lives in the toolbar)", async () => {
+    renderHook();
+    await act(async () => {
+      api.handleExport("mp4");
+    });
+    expect(mockVideo.exportVideo).toHaveBeenCalledTimes(1);
+    expect(closeDialog).toHaveBeenCalledTimes(1);
+  });
+
   it("exports SVG via the lazy module", async () => {
     renderHook();
     await act(async () => {
