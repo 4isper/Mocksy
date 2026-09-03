@@ -131,3 +131,26 @@ export function buildFreshScene(
 export function makeDemoScene(): EditorScene {
   return buildFreshScene();
 }
+
+/**
+ * Upgrades a legacy single-frame scene (no `frameInstances`, device type held
+ * only in top-level `frame`) to a single movable instance. Such scenes arise
+ * from old autosaves / share URLs / the pre-hydration `initialScene`: the
+ * device renders centered but cannot be moved or scaled, the frames list stays
+ * hidden, and annotations can paint behind it. A migrated scene behaves exactly
+ * like a multi-frame scene with one device — the case users confirm works.
+ *
+ * Empty scenes (no layers, e.g. after reset) and frameless (`frame: "none"`)
+ * scenes are left untouched: there is no device to make movable.
+ */
+export function upgradeLegacySingleFrameScene(scene: EditorScene): EditorScene {
+  if (scene.frameInstances.length > 0) return scene;
+  if (scene.frame === "none") return scene;
+  if (scene.layers.length === 0) return scene;
+  const [pos] = layoutFrameGrid(scene.frame, 1, "horizontal", scene.aspectRatio, scene.customFrame);
+  if (!pos) return scene;
+  return {
+    ...scene,
+    frameInstances: [{ ...pos, layerId: scene.activeLayerId ?? scene.layers[0]?.id ?? null }]
+  };
+}

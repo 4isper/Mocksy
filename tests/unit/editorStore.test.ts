@@ -1183,6 +1183,23 @@ describe("frame control", () => {
     expect(store().scene.layers.some((l) => l.id === added.layerId)).toBe(true);
   });
 
+  it("addFrameInstance creates a centered height-capped first device without cloning the layer", () => {
+    reset();
+    const layersBefore = store().scene.layers.length;
+    const activeBefore = store().activeLayerId;
+    store().addFrameInstance();
+    expect(store().scene.frameInstances.length).toBe(1);
+    const added = store().scene.frameInstances[0]!;
+    expect(added.x).toBe(0.5);
+    expect(added.y).toBe(0.5);
+    expect(added.scale).toBeLessThan(1);
+    // Bound straight to the existing layer so nothing is orphaned.
+    expect(added.layerId).toBe(activeBefore);
+    expect(store().scene.layers.length).toBe(layersBefore);
+    expect(store().activeFrameInstanceId).toBe(added.id);
+    expect(store().selectedFrameIds).toEqual([added.id]);
+  });
+
   it("addFrameInstance records undo history on the new instance", () => {
     reset();
     store().addLayer("data:image/png;base64,l2", "image");

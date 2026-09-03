@@ -347,10 +347,14 @@ describe("ControlPanel", () => {
     expect(sceneLabel).toHaveClass("scope-label");
   });
 
-  it("hides layout, align and instance tools when there are no frames", () => {
+  it("shows layout and add-frame tools but hides align when there are no frames", () => {
     useEditorStore.setState({ scene: { ...initialScene, frameInstances: [] } });
     render(<ControlPanel />);
-    expect(screen.queryByRole("button", { name: "editor.layoutFan" })).not.toBeInTheDocument();
+    // Empty canvas (legacy single / reset) still offers a way back to a movable
+    // device: layout presets create instances from zero and the frames list
+    // carries the Add button. Align needs 2+ frames so it stays hidden.
+    expect(screen.getByRole("button", { name: "editor.layoutFan" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "editor.addFrame" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "editor.alignLeft" })).not.toBeInTheDocument();
   });
 

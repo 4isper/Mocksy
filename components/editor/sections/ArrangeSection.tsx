@@ -125,44 +125,42 @@ export function ArrangeSection() {
             ))}
           </div>
         </div>
-        {frameCount >= 1 ? (
-          <div className="field field-row">
-            <span className="text-dim-sm">{t("editor.layoutLabel")}</span>
-            <label className="check-label">
-              {t("editor.layoutCount")}
-              <input
-                type="number"
-                min={1}
-                max={12}
-                value={effectiveCount}
-                onChange={(e) => {
-                  const n = Number.parseInt(e.target.value, 10);
-                  setLayoutCount(Number.isFinite(n) ? Math.min(12, Math.max(1, n)) : 1);
-                  setCountEdited(true);
-                }}
-                className="frame-count-input"
-                aria-label={t("editor.layoutCount")}
-              />
-            </label>
-            <div className="field-row-full">
-              {layoutPresets.map((layout) => {
-                const label = t(`editor.layout${layout.charAt(0).toUpperCase() + layout.slice(1)}`);
-                return (
-                  <button
-                    key={layout}
-                    type="button"
-                    className="btn btn-sm"
-                    title={label}
-                    aria-label={label}
-                    onClick={() => applyFrameLayout(scene.frame, effectiveCount, layout)}
-                  >
-                    <LayoutIcon layout={layout} />
-                  </button>
-                );
-              })}
-            </div>
+        <div className="field field-row">
+          <span className="text-dim-sm">{t("editor.layoutLabel")}</span>
+          <label className="check-label">
+            {t("editor.layoutCount")}
+            <input
+              type="number"
+              min={1}
+              max={12}
+              value={effectiveCount}
+              onChange={(e) => {
+                const n = Number.parseInt(e.target.value, 10);
+                setLayoutCount(Number.isFinite(n) ? Math.min(12, Math.max(1, n)) : 1);
+                setCountEdited(true);
+              }}
+              className="frame-count-input"
+              aria-label={t("editor.layoutCount")}
+            />
+          </label>
+          <div className="field-row-full">
+            {layoutPresets.map((layout) => {
+              const label = t(`editor.layout${layout.charAt(0).toUpperCase() + layout.slice(1)}`);
+              return (
+                <button
+                  key={layout}
+                  type="button"
+                  className="btn btn-sm"
+                  title={label}
+                  aria-label={label}
+                  onClick={() => applyFrameLayout(scene.frame, effectiveCount, layout)}
+                >
+                  <LayoutIcon layout={layout} />
+                </button>
+              );
+            })}
           </div>
-        ) : null}
+        </div>
         {frameCount >= 2 ? (
           <div className="field field-row">
             <span className="text-dim-sm">{t("editor.alignLabel")}</span>
@@ -207,22 +205,20 @@ export function ArrangeSection() {
             </div>
           </div>
         ) : null}
-        {frameCount >= 1 ? (
-          <FrameInstanceList
-            scene={scene}
-            expandedFrameId={expandedFrameId}
-            setExpandedFrameId={setExpandedFrameId}
-            selectFrameInstance={selectFrameInstance}
-            selectFrameIds={selectFrameIds}
-            toggleFrameSelected={toggleFrameSelected}
-            selectedFrameIds={selectedFrameIds}
-            setFrameInstances={setFrameInstances}
-            updateFrameInstance={updateFrameInstance}
-            removeFrameInstance={removeFrameInstance}
-            addFrameInstance={addFrameInstance}
-            reorderFrameInstances={reorderFrameInstances}
-          />
-        ) : null}
+        <FrameInstanceList
+          scene={scene}
+          expandedFrameId={expandedFrameId}
+          setExpandedFrameId={setExpandedFrameId}
+          selectFrameInstance={selectFrameInstance}
+          selectFrameIds={selectFrameIds}
+          toggleFrameSelected={toggleFrameSelected}
+          selectedFrameIds={selectedFrameIds}
+          setFrameInstances={setFrameInstances}
+          updateFrameInstance={updateFrameInstance}
+          removeFrameInstance={removeFrameInstance}
+          addFrameInstance={addFrameInstance}
+          reorderFrameInstances={reorderFrameInstances}
+        />
       </div>
     </Section>
   );

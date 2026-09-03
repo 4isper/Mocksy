@@ -137,9 +137,32 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
         const src = s.activeFrameInstanceId
           ? s.scene.frameInstances.find((fi) => fi.id === s.activeFrameInstanceId)
           : s.scene.frameInstances[s.scene.frameInstances.length - 1];
-        const base = src
-          ? { frame: src.frame, layerId: src.layerId, scale: src.scale, material: src.material, orientation: src.orientation }
-          : { frame: s.scene.frame, layerId: s.activeLayerId, scale: 1, material: s.scene.frameMaterial, orientation: undefined };
+        // First device on an empty canvas (legacy single-frame scene or a fresh
+        // reset): center it with the same height-capped scale the grid layouts
+        // use, bound straight to the active layer. Cloning here would orphan
+        // the existing layer and offset the device off-center with scale 1
+        // (portrait phones would overflow the canvas height).
+        if (!src) {
+          const [pos] = layoutFrameGrid(s.scene.frame, 1, "horizontal", s.scene.aspectRatio, s.scene.customFrame);
+          const fallback = pos ?? { x: 0.5, y: 0.5, scale: 0.5 };
+          const layerId = s.activeLayerId ?? s.scene.layers[0]?.id ?? null;
+          const copy: FrameInstance = {
+            id: nextFrameInstanceId(),
+            frame: s.scene.frame,
+            x: fallback.x,
+            y: fallback.y,
+            scale: fallback.scale,
+            layerId,
+            orientation: undefined,
+            material: s.scene.frameMaterial
+          };
+          return {
+            ...pushHistory(s, { ...s.scene, frameInstances: [...s.scene.frameInstances, copy] }),
+            activeFrameInstanceId: copy.id,
+            selectedFrameIds: [copy.id]
+          };
+        }
+        const base = { frame: src.frame, layerId: src.layerId, scale: src.scale, material: src.material, orientation: src.orientation };
         let layers = s.scene.layers;
         let layerId = base.layerId;
         if (layerId) {
