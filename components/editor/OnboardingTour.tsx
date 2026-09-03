@@ -12,6 +12,10 @@ export const ONBOARDING_SEEN_KEY = "mocksy.onboardingSeen";
 interface TourStep {
   /** CSS selector of the element to spotlight, or null for a centered card. */
   target: string | null;
+  /** Bottom sheet holding the target on mobile (<=980px), if any. Panel
+   *  steps auto-open their sheet so the spotlight shows the real panel
+   *  instead of a parked off-viewport box; other steps close it again. */
+  sheet?: "controls" | "right" | null;
   titleKey: string;
   bodyKey: string;
 }
@@ -19,8 +23,8 @@ interface TourStep {
 const STEPS: TourStep[] = [
   { target: null, titleKey: "onboarding.welcomeTitle", bodyKey: "onboarding.welcomeBody" },
   { target: "#preview-canvas", titleKey: "onboarding.canvasTitle", bodyKey: "onboarding.canvasBody" },
-  { target: ".control-panel", titleKey: "onboarding.controlsTitle", bodyKey: "onboarding.controlsBody" },
-  { target: ".right-panel", titleKey: "onboarding.rightTitle", bodyKey: "onboarding.rightBody" },
+  { target: ".control-panel", sheet: "controls", titleKey: "onboarding.controlsTitle", bodyKey: "onboarding.controlsBody" },
+  { target: ".right-panel", sheet: "right", titleKey: "onboarding.rightTitle", bodyKey: "onboarding.rightBody" },
   { target: null, titleKey: "onboarding.doneTitle", bodyKey: "onboarding.doneBody" }
 ];
 
@@ -52,6 +56,8 @@ export function OnboardingTour() {
   const t = useTranslations();
   const open = useEditorStore((s) => s.onboardingOpen);
   const setOpen = useEditorStore((s) => s.setOnboardingOpen);
+  const mobileSheet = useEditorStore((s) => s.mobileSheet);
+  const setMobileSheet = useEditorStore((s) => s.setMobileSheet);
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   // Final card position, resolved after the card is measured. Provisional
@@ -64,6 +70,19 @@ export function OnboardingTour() {
   const [finalPos, setFinalPos] = useState<{ left: number; top: number } | null>(null);
 
   const step = STEPS[stepIndex]!;
+  const stepSheet = step.sheet ?? null;
+  // Sheet open before the tour started, restored on finish so a
+  // palette-reopened tour doesn't steal the user's context.
+  const prevSheetRef = useRef<"controls" | "right" | null | undefined>(undefined);
+
+  // Keep the guided panel visible while its step is active. Closed sheets
+  // are parked below the viewport, so without this the spotlight would
+  // highlight an empty off-screen box on mobile.
+  useEffect(() => {
+    if (!open) return;
+    if (prevSheetRef.current === undefined) prevSheetRef.current = useEditorStore.getState().mobileSheet;
+    if (useEditorStore.getState().mobileSheet !== stepSheet) setMobileSheet(stepSheet);
+  }, [open, stepSheet, mobileSheet, setMobileSheet]);
 
   useLayoutEffect(() => {
     const el = cardRef.current;
@@ -113,18 +132,26 @@ export function OnboardingTour() {
       setRect({ left: r.left, top: r.top, width: r.width, height: r.height });
     };
     measure();
+    // Panel steps slide their sheet up over ~280ms: re-measure after the
+    // transition so the spotlight lands on the open position, not the parked
+    // one captured above.
+    const settled = window.setTimeout(measure, 350);
     window.addEventListener("resize", measure);
     window.addEventListener("scroll", measure, true);
     return () => {
+      window.clearTimeout(settled);
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", measure, true);
     };
-  }, [open, step.target]);
+  }, [open, step.target, mobileSheet]);
 
   const finish = useCallback(() => {
     markOnboardingSeen();
+    const prev = prevSheetRef.current;
+    prevSheetRef.current = undefined;
+    setMobileSheet(prev ?? null);
     setOpen(false);
-  }, [setOpen]);
+  }, [setOpen, setMobileSheet]);
 
   useEffect(() => {
     if (!open) return;
@@ -222,11 +249,18 @@ export function OnboardingTour() {
           padding: 16,
           display: "grid",
           gap: 10,
-          // Measured position wins over the provisional branch and drops the
-          // bottom anchor, which can resolve outside the viewport.
-          ...(finalPos ? { left: finalPos.left, top: finalPos.top, bottom: undefined } : {}),
+          // Measured position wins over the provisional branch: it carries
+          // explicit left/top, so the provisional bottom anchor AND the
+          // centered fallback's translate(-50%,-50%) must go — otherwise the
+          // card keeps the centering shift on top of explicit coordinates and
+          // lands half its own size up-left, off-screen (e.g. the Controls
+          // step, whose tall target fits neither above nor below the card).
+          ...(finalPos ? { left: finalPos.left, top: finalPos.top, bottom: undefined, transform: "none" } : {}),
           maxHeight: "calc(100dvh - 16px)",
-          overflowY: "auto"
+          overflowY: "auto",
+          // Glide between steps (and when a sheet slides open underneath)
+          // instead of teleporting; matches the spotlight's own transition.
+          transition: "top 0.25s ease, left 0.25s ease"
         }}
       >
         <div style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{t(step.titleKey)}</div>
