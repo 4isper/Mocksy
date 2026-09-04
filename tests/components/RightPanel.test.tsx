@@ -114,13 +114,24 @@ describe("RightPanel", () => {
     expect(screen.getByRole("tab", { name: "history.title" })).toHaveAttribute("title", "history.title");
   });
 
-  it("hides the decorative label and badge from assistive tech", () => {
+  it("hides the decorative label but exposes the badge as a description", () => {
     useEditorStore.setState({
       scene: { ...initialScene, layers: [{ id: "l1" } as any] }
     });
     render(<RightPanel onShareTemplate={async () => {}} />);
     const layersTab = screen.getByRole("tab", { name: "editor.layers" });
     expect(layersTab.querySelector(".tab-label")).toHaveAttribute("aria-hidden", "true");
-    expect(layersTab.querySelector(".tab-badge")).toHaveAttribute("aria-hidden", "true");
+    // Screen readers announce e.g. "Layers, 1": the badge stays in the
+    // accessibility tree and is referenced, not hidden.
+    expect(layersTab).toHaveAttribute("aria-describedby", "right-tab-layers-count");
+    const badge = layersTab.querySelector(".tab-badge")!;
+    expect(badge).toHaveAttribute("id", "right-tab-layers-count");
+    expect(badge).not.toHaveAttribute("aria-hidden");
+    expect(document.getElementById("right-tab-layers-count")).toHaveTextContent("1");
+  });
+
+  it("omits the description when there is no count", () => {
+    render(<RightPanel onShareTemplate={async () => {}} />);
+    expect(screen.getByRole("tab", { name: "history.title" })).not.toHaveAttribute("aria-describedby");
   });
 });
