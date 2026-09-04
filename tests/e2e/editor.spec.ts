@@ -96,7 +96,9 @@ function previewMedia(page: import("@playwright/test").Page) {
 
 test("shows editor shell", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("Scene presets")).toBeVisible();
+  // The tab's visual label hides in compact icon mode (narrow panel); assert
+  // on the tab role with its stable accessible name instead of the text.
+  await expect(page.getByRole("tab", { name: "Scene presets" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Export PNG \/ MP4/ })).toBeVisible();
 });
 
@@ -211,7 +213,9 @@ test("uploading media reveals a Clear button that resets it", async ({ page }) =
     )
   });
   await expect(previewMedia(page)).toBeVisible();
-  const clear = page.locator("#preview-canvas").getByRole("button", { name: "Clear media" });
+  // The Clear chip lives in the dock bar, a sibling of #preview-canvas (so
+  // canvas screenshots/exports stay chrome-free) — scope to that toolbar.
+  const clear = page.getByRole("toolbar", { name: "Canvas controls" }).getByRole("button", { name: "Clear media" });
   await expect(clear).toBeVisible();
   await clear.click();
   // The active layer's media is gone; the grid's other frame keeps its demo.
@@ -656,10 +660,10 @@ test("undo and redo restore a previous frame choice", async ({ page }) => {
   await selectFrame(page, "Desktop");
   await expect.poll(() => frameIsActive(page, "Desktop")).toBe("true");
 
-  await page.getByRole("button", { name: "Undo" }).click();
+  await page.getByRole("button", { name: "Undo (⌘Z)", exact: true }).click();
   await expect.poll(() => frameIsActive(page, "iPhone")).toBe("true");
 
-  await page.getByRole("button", { name: "Redo" }).click();
+  await page.getByRole("button", { name: "Redo (⇧⌘Z)", exact: true }).click();
   await expect.poll(() => frameIsActive(page, "Desktop")).toBe("true");
 });
 
@@ -720,7 +724,7 @@ test("panels stack and stay within the viewport on a narrow screen", async ({ pa
   await tabbar.getByRole("button", { name: /Controls/ }).click();
   await expect(page.locator("#control-panel")).toBeVisible();
   await tabbar.getByRole("button", { name: /Panels/ }).click();
-  await expect(page.getByText("Scene presets")).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Scene presets" })).toBeVisible();
   // No horizontal overflow on mobile.
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
   expect(overflow).toBe(true);

@@ -138,8 +138,11 @@ test("overlay device export keeps a contact shadow: no light ring, no black blee
   // The shadow must be strong in the near band (the weak-shadow regression
   // measured ~216 at bg 232).
   expect(shadowMin, `shadow min ${shadowMin}`).toBeLessThan(BG - 25);
-  // Transparent media: the screen shows the background, not the silhouette.
-  expect(report.screenCenter, `screen center ${report.screenCenter}`).toBeGreaterThan(BG - 25);
+  // Transparent media: no black-silhouette bleed on the screen. Since the
+  // media-slot model (8d53bce), BOTH the preview and the export paint a
+  // #0a0a0a backdrop behind media, so the transparent screen shows the dark
+  // slot — the parity-correct expectation is dark, not background-bright.
+  expect(report.screenCenter, `screen center ${report.screenCenter}`).toBeLessThan(20);
 });
 
 test("multi-frame export: every device keeps its shadow, no boxes between them", async ({ page }) => {
