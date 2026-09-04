@@ -229,6 +229,8 @@
     "distributeHorizontal": "Distribute horizontally",
     "distributeNeedsFrames": "Needs 3 frames",
     "distributeVertical": "Distribute vertically",
+    "fitToCanvas": "Fit to canvas",
+    "fitToCanvasTitle": "Rescale every frame to fill the canvas for its current aspect ratio (undoable)",
     "media": "Media",
     "mediaPalette": "Media palette",
     "moveDown": "Move layer down",

@@ -227,6 +227,10 @@ export interface EditorStoreState {
   alignFrameInstances: (mode: import("@/lib/state/frameAlign").FrameAlignMode) => void;
   /** Distributes frame instances with equal gaps along an axis (needs ≥3). */
   distributeFrameInstances: (axis: "horizontal" | "vertical") => void;
+  /** Reflows all frame instances onto a grid for the current aspect ratio,
+   *  preserving frames and layer bindings (one undo step). Rescues scenes
+   *  whose scales belonged to a previous ratio. */
+  fitFramesToCanvas: () => void;
   setStylePreset: (stylePreset: StylePreset) => void;
   setAnimationPreset: (animationPreset: AnimationPreset) => void;
   setAnimationEasing: (animationEasing: AnimationEasing) => void;

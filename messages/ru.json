@@ -229,6 +229,8 @@
     "distributeHorizontal": "Распределить по горизонтали",
     "distributeNeedsFrames": "Нужно 3 фрейма",
     "distributeVertical": "Распределить по вертикали",
+    "fitToCanvas": "Вписать в холст",
+    "fitToCanvasTitle": "Перемасштабировать все кадры под текущие пропорции холста (можно отменить)",
     "media": "Медиа",
     "mediaPalette": "Палитра медиа",
     "moveDown": "Переместить слой вниз",

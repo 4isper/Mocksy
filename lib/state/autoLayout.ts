@@ -83,12 +83,7 @@ function buildGrid(
   sceneRatio: number
 ): FrameInstance[] {
   if (count <= 0) return [];
-  // Try to keep cells close to square. Compute cols so cell ratio ~ 1.
-  // cellW/cellH ~ sceneAR, use cols = ceil(sqrt(count * sceneAR))
-  const cols = Math.max(1, Math.min(count, Math.round(Math.sqrt(count * sceneRatio))));
-  const rows = Math.ceil(count / cols);
-  const cellW = (1 - gap * (cols - 1)) / cols;
-  const cellH = (1 - gap * (rows - 1)) / rows;
+  const { cols, cellW, cellH } = gridCells(count, sceneRatio, gap);
   // Instance height = scale * sceneRatio * instAr (canvas fractions); the
   // cell-height cap keeps every instance inside its cell. Null-aspect frames
   // ("none") follow the scene and only need to fit the cell height.
@@ -104,6 +99,72 @@ function buildGrid(
       y: r * (cellH + gap) + cellH / 2,
       scale,
       layerId: null
+    };
+  });
+}
+
+/** Grid cell geometry shared by buildGrid and fitInstancesToCanvas: columns
+ *  chosen so cells stay close to square, then per-cell width/height. */
+export function gridCells(
+  count: number,
+  sceneRatio: number,
+  gap = 0.02
+): { cols: number; rows: number; cellW: number; cellH: number; gap: number } {
+  // Try to keep cells close to square. Compute cols so cell ratio ~ 1.
+  // cellW/cellH ~ sceneAR, use cols = ceil(sqrt(count * sceneAR))
+  const cols = Math.max(1, Math.min(Math.max(1, count), Math.round(Math.sqrt(Math.max(1, count) * sceneRatio))));
+  const rows = Math.ceil(Math.max(1, count) / cols);
+  const cellW = (1 - gap * (cols - 1)) / cols;
+  const cellH = (1 - gap * (rows - 1)) / rows;
+  return { cols, rows, cellW, cellH, gap };
+}
+
+/** Largest width-fraction scale keeping one instance inside its grid cell.
+ *  Null-aspect frames ("none") follow the scene; landscape instances use
+ *  their swapped extents. */
+function fitScaleForCell(
+  instAr: number | null,
+  orientation: FrameInstance["orientation"],
+  cellW: number,
+  cellH: number,
+  sceneRatio: number
+): number {
+  let cap: number;
+  if (!instAr) {
+    cap = Math.min(cellW, cellH);
+  } else if (orientation === "landscape") {
+    cap = Math.min(cellW / instAr, cellH / sceneRatio);
+  } else {
+    cap = Math.min(cellW, cellH / (sceneRatio * instAr));
+  }
+  return Math.max(0.08, cap);
+}
+
+/**
+ * Reflows EXISTING instances onto a grid for the given aspect ratio,
+ * preserving every instance's id, frame, layer binding and orientation —
+ * only x/y/scale change. Used after an aspect-ratio switch leaves frames
+ * tiny (their width-fraction scales belonged to the old ratio). One undo
+ * step at the store level.
+ */
+export function fitInstancesToCanvas(
+  instances: FrameInstance[],
+  aspectRatio: string,
+  customFrame: CustomFrame | null = null
+): FrameInstance[] {
+  if (instances.length === 0) return [];
+  const [w, h] = aspectRatio.split(" / ").map(Number);
+  const sceneRatio = (w ?? 16) / (h ?? 9);
+  const { cols, cellW, cellH, gap } = gridCells(instances.length, sceneRatio);
+  return instances.map((inst, i) => {
+    const c = i % cols;
+    const r = Math.floor(i / cols);
+    const ownAr = frameInstAr(inst.frame, customFrame, aspectRatio);
+    return {
+      ...inst,
+      x: c * (cellW + gap) + cellW / 2,
+      y: r * (cellH + gap) + cellH / 2,
+      scale: fitScaleForCell(ownAr, inst.orientation, cellW, cellH, sceneRatio)
     };
   });
 }

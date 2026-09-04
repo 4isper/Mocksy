@@ -61,7 +61,8 @@ export function ArrangeSection() {
     layoutFrameGrid,
     applyFrameLayout,
     alignFrameInstances,
-    distributeFrameInstances
+    distributeFrameInstances,
+    fitFramesToCanvas
   } = useEditorStore(
     useShallow((s) => ({
       scene: s.scene,
@@ -77,7 +78,8 @@ export function ArrangeSection() {
       layoutFrameGrid: s.layoutFrameGrid,
       applyFrameLayout: s.applyFrameLayout,
       alignFrameInstances: s.alignFrameInstances,
-      distributeFrameInstances: s.distributeFrameInstances
+      distributeFrameInstances: s.distributeFrameInstances,
+      fitFramesToCanvas: s.fitFramesToCanvas
     }))
   );
 
@@ -161,6 +163,19 @@ export function ArrangeSection() {
             })}
           </div>
         </div>
+        {frameCount >= 1 ? (
+          <div className="field">
+            <button
+              type="button"
+              className="btn btn-sm"
+              title={t("editor.fitToCanvasTitle")}
+              aria-label={t("editor.fitToCanvasTitle")}
+              onClick={() => fitFramesToCanvas()}
+            >
+              {t("editor.fitToCanvas")}
+            </button>
+          </div>
+        ) : null}
         {frameCount >= 2 ? (
           <div className="field field-row">
             <span className="text-dim-sm">{t("editor.alignLabel")}</span>

@@ -1,4 +1,4 @@
-import { activeLayer, alignFrameInstances, buildAutoLayout, distributeFrameInstances, layoutFrameGrid, makeDemoLayer, nextLayerId, pushHistory } from "@/lib/state/editorHelpers";
+import { activeLayer, alignFrameInstances, buildAutoLayout, distributeFrameInstances, fitInstancesToCanvas, layoutFrameGrid, makeDemoLayer, nextLayerId, pushHistory } from "@/lib/state/editorHelpers";
 import { nextFrameInstanceId } from "@/lib/state/ids";
 import type { CustomFrame, EditorScene, FrameInstance, MockupFrame } from "@/lib/types/editor";
 import type { FrameAlignMode } from "@/lib/state/frameAlign";
@@ -21,6 +21,7 @@ export type FramesSlice = Pick<
   | "applyFrameLayout"
   | "alignFrameInstances"
   | "distributeFrameInstances"
+  | "fitFramesToCanvas"
   | "selectFrameInstance"
   | "selectFrameIds"
   | "toggleFrameSelected"
@@ -269,6 +270,18 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
           s.scene.customFrame
         );
         return pushHistory(s, { ...s.scene, frameInstances });
+      }),
+    fitFramesToCanvas: () =>
+      set((s) => {
+        if (s.scene.frameInstances.length < 1) return {};
+        const fitted = fitInstancesToCanvas(s.scene.frameInstances, s.scene.aspectRatio, s.scene.customFrame);
+        const byId = new Map(fitted.map((i) => [i.id, i]));
+        const frameInstances = clampFramePositions(
+          s.scene.frameInstances.map((i) => byId.get(i.id) ?? i),
+          s.scene.aspectRatio,
+          s.scene.customFrame
+        );
+        return { ...pushHistory(s, { ...s.scene, frameInstances }), activeFrameInstanceId: frameInstances[0]?.id ?? null, selectedFrameIds: frameInstances.map((i) => i.id) };
       }),
     selectFrameInstance: (id) =>
       set(id == null ? { activeFrameInstanceId: null, selectedFrameIds: [] } : { activeFrameInstanceId: id, selectedFrameIds: [id] }),

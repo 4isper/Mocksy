@@ -453,7 +453,9 @@
     "groupContent": "Content",
     "groupDevice": "Device",
     "groupAdjust": "Adjust",
-    "groupScene": "Scene"
+    "groupScene": "Scene",
+    "fitToCanvas": "Fit to canvas",
+    "fitToCanvasTitle": "Rescale every frame to fill the canvas for its current aspect ratio (undoable)"
   },
   "frame": {
     "none": "কোনোটি নয়",
