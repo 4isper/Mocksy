@@ -207,6 +207,12 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
       onTouchEnd={onTouchEnd}
       onTouchCancel={onTouchCancel}
     >
+      {/* Query container for the dock bar: the dock is a sibling of the
+          stage (not its child), so the stage's own containment can't serve
+          its queries. Inline-size containment only — the column height still
+          follows flex layout, and the canvas keeps sizing against the
+          stage's full size containment. */}
+      <div className="preview-body">
       <div
         style={{
           flex: 1,
@@ -411,6 +417,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         setShowGrid={setShowGrid}
         setGridDivisions={setGridDivisions}
       />
+      </div>
     </div>
   );
 }
