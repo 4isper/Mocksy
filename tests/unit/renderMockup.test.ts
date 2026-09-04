@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { computeFrameBox, computeFrameInstances } from "@/lib/render/frameGeometry";
 import { renderMockupToCanvas } from "@/lib/render/renderMockup";
+import { RENDER } from "@/lib/render/canvasDrawing";
+import { buildSceneCss } from "@/lib/render/mockupRenderer";
 import { getFrameSpec, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
 import { initialScene } from "@/lib/state/editorStore";
 import { layoutFrameGrid } from "@/lib/state/editorHelpers";
@@ -1727,5 +1729,98 @@ describe("renderMockupToCanvas 3D tilt path", () => {
 
     expect(calls.transform).toBe(800); // 2 frames × 400 tiles
     expect(calls.drawImage).toBe(800);
+  });
+});
+
+describe("renderMockupToCanvas media backdrop parity", () => {
+  // The preview's media slot (mediaSlotStyle in buildSceneCss) paints a fixed
+  // `#0a0a0a` backdrop behind the media, so a transparent media shows the
+  // dark slot — NOT the scene background. The canvas export must match the
+  // preview exactly (drawMediaSource paints RENDER.mediaBackdrop inside the
+  // clipped screen for every media layer), including multi-layer scenes
+  // where each entry draws its own backdrop.
+  function backdropCtx() {
+    const fillCalls: Array<{ style: string; x: number; y: number; w: number; h: number }> = [];
+    const ctx = {
+      clearRect: () => {},
+      fillRect: (x: number, y: number, w: number, h: number) => fillCalls.push({ style: String(ctxFillStyle), x, y, w, h }),
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      arcTo: () => {},
+      arc: () => {},
+      ellipse: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      translate: () => {},
+      rotate: () => {},
+      measureText: () => ({ width: 10 }),
+      fillText: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      get filter() { return ctxFilter; },
+      set filter(_v: string) {},
+      set globalAlpha(_v: number) {},
+      set globalCompositeOperation(_v: string) {},
+      set lineWidth(_v: number) {},
+      set lineCap(_v: string) {},
+      set textAlign(_v: string) {},
+      set textBaseline(_v: string) {},
+      set font(_v: string) {},
+      set shadowColor(_v: string) {},
+      set shadowBlur(_v: number) {},
+      set shadowOffsetX(_v: number) {},
+      set shadowOffsetY(_v: number) {},
+      set strokeStyle(_v: string) {}
+    };
+    let ctxFillStyle = "";
+    Object.defineProperty(ctx, "fillStyle", {
+      get: () => ctxFillStyle,
+      set: (v: unknown) => { ctxFillStyle = String(v); },
+      configurable: true
+    });
+    let ctxFilter = "none";
+    Object.defineProperty(ctx, "filter", {
+      get: () => ctxFilter,
+      set: (v: unknown) => { ctxFilter = String(v); },
+      configurable: true
+    });
+    const canvas = { width: 1400, height: 1400, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    return { canvas, fillCalls };
+  }
+
+  it("uses the same backdrop color as the preview's media slot and media element", () => {
+    const css = buildSceneCss(scene({ frame: "iphone15" }));
+    expect(RENDER.mediaBackdrop).toBe("#0a0a0a");
+    expect(css.mediaSlotStyle.background).toBe(RENDER.mediaBackdrop);
+    expect(css.mediaStyle.background).toBe(RENDER.mediaBackdrop);
+  });
+
+  it("paints the backdrop across the whole screen for a fully transparent media (matches the preview's slot)", () => {
+    const { canvas, fillCalls } = backdropCtx();
+    const transparentMedia = { naturalWidth: 1, naturalHeight: 1 } as unknown as CanvasImageSource;
+    const scn = scene({ frame: "iphone15" });
+    renderMockupToCanvas(canvas, scn, transparentMedia, undefined, undefined, 1400, 1400 * (10 / 16));
+    const box = computeFrameBox(scn, 1400, 1400, 2, 1400, 1400 * (10 / 16));
+    const backdrop = fillCalls.filter((c) => c.style === RENDER.mediaBackdrop);
+    expect(backdrop).toHaveLength(1);
+    expect(backdrop[0]!.x).toBeCloseTo(box.innerX, 3);
+    expect(backdrop[0]!.y).toBeCloseTo(box.innerY, 3);
+    expect(backdrop[0]!.w).toBeCloseTo(box.innerW, 3);
+    expect(backdrop[0]!.h).toBeCloseTo(box.innerH, 3);
+  });
+
+  it("keeps the backdrop for a fully transparent multi-layer stack (one per layer)", () => {
+    const { canvas, fillCalls } = backdropCtx();
+    const transparentMedia = { naturalWidth: 1, naturalHeight: 1 } as unknown as CanvasImageSource;
+    const scn = { ...scene(), layers: [layer({ id: "l1" }), layer({ id: "l2" })], activeLayerId: "l1" };
+    renderMockupToCanvas(canvas, scn, transparentMedia, undefined, undefined, 1400, 1400 * (10 / 16), 2, undefined, undefined, undefined, undefined, new Map([["l1", transparentMedia], ["l2", transparentMedia]]));
+    const backdropCount = fillCalls.filter((c) => c.style === RENDER.mediaBackdrop).length;
+    expect(backdropCount).toBeGreaterThanOrEqual(2);
   });
 });

@@ -240,6 +240,22 @@ describe("PreviewCanvas media upload", () => {
     expect(layer?.mediaType).toBe("none");
   });
 
+  // The e2e suite scopes "Clear media" to #preview-canvas. The dock-bar
+  // refactor (dae6ec9) deliberately moved Upload/Clear OUT of the canvas box
+  // (canvas screenshots/exports must stay chrome-free), so keep the dock bar
+  // as a sibling AFTER #preview-canvas — and if that ever changes again,
+  // update tests/e2e/editor.spec.ts "uploading media reveals a Clear button"
+  // in the same commit.
+  it("keeps the Clear-media chip outside #preview-canvas", () => {
+    renderScene();
+    const clearButtons = screen.getAllByRole("button", { name: "editor.clearMedia" });
+    expect(clearButtons).toHaveLength(1);
+    const clear = clearButtons[0]!;
+    const canvas = document.querySelector("#preview-canvas")!;
+    expect(clear.contains(canvas)).toBe(false);
+    expect(canvas.contains(clear)).toBe(false);
+  });
+
   it("tracks drag enter/leave to show the drop outline", () => {
     renderScene();
     const panel = document.querySelector(".panel") as HTMLElement;

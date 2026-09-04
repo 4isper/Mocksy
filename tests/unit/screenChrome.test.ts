@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { screenChromeElements, screenChromeSvg, drawScreenChrome, androidGridGeom, ANDROID_GRID_APPS, GRID_ICON_PRESETS, SCREEN_CHROME_DOCK_COLORS } from "@/lib/render/screenChrome";
-import { frameOs } from "@/lib/render/frames";
+import { frameOs, getFrameSpec, frameViewBox } from "@/lib/render/frames";
+import { buildSceneCss } from "@/lib/render/mockupRenderer";
 import { DEFAULT_SCREEN_CHROME } from "@/lib/state/editorScene";
 import type { ScreenChrome } from "@/lib/types/editor";
 
@@ -684,5 +685,163 @@ describe("GRID_ICON_PRESETS", () => {
   it("google preset matches the default ANDROID_GRID_APPS", () => {
     const google = GRID_ICON_PRESETS.find((p) => p.id === "google")!;
     expect(google.icons).toEqual(ANDROID_GRID_APPS);
+  });
+});
+
+describe("screen chrome preview/export geometry parity", () => {
+  // The CSS preview renders `screenChromeSvg` (SVG viewBox) into the screen
+  // box; the canvas export paints `drawScreenChrome` into the same box. Every
+  // element is positioned by fractions of that box in both renderers, so the
+  // derived SVG view must keep the element geometry proportional to the
+  // canvas draw at the same box size.
+  const CHROME = {
+    ...DEFAULT_SCREEN_CHROME,
+    enabled: true,
+    style: "home" as const,
+    showStatusBar: true,
+    showDock: true,
+    os: "android" as const,
+    dockIcons: [
+      { label: "Phone", color: "#1a73e8", emoji: "📞" },
+      { label: "Gmail", color: "#0f9d58", emoji: "✉️" }
+    ]
+  };
+
+  interface Box {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  }
+
+  function recordingCtx() {
+    const rects: Array<{ tag: string; box: Box; style: string }> = [];
+    let style = "";
+    let tag = "";
+    // Path bounds accumulator: roundRect/arc paths are filled via fill(),
+    // so track the path's extents and record a rect on each fill.
+    let pts: Array<[number, number]> = [];
+    const addPoint = (x: number, y: number) => pts.push([x, y]);
+    const pushRect = () => {
+      if (pts.length === 0) return;
+      const xs = pts.map((p) => p[0]!);
+      const ys = pts.map((p) => p[1]!);
+      const minX = Math.min(...xs);
+      const minY = Math.min(...ys);
+      rects.push({ tag, box: { x: minX, y: minY, w: Math.max(...xs) - minX, h: Math.max(...ys) - minY }, style });
+      pts = [];
+    };
+    const ctx = {
+      save: () => {},
+      restore: () => {},
+      beginPath: () => { pts = []; },
+      moveTo: addPoint,
+      lineTo: addPoint,
+      closePath: () => {},
+      arc: (cx: number, cy: number, r: number) => {
+        addPoint(cx - r, cy - r);
+        addPoint(cx + r, cy + r);
+      },
+      arcTo: (x1: number, y1: number, x2: number) => {
+        addPoint(x1, y1);
+        addPoint(x2, y1);
+      },
+      fill: pushRect,
+      stroke: () => { pts = []; },
+      fillText: () => {},
+      setLineDash: () => {},
+      translate: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      fillRect: (x: number, y: number, w: number, h: number) => rects.push({ tag, box: { x, y, w, h }, style }),
+      set lineWidth(_v: number) {},
+      set lineCap(_v: string) {},
+      set textAlign(_v: string) {},
+      set textBaseline(_v: string) {},
+      set font(_v: string) {},
+      set shadowColor(_v: string) {},
+      set shadowBlur(_v: number) {},
+      set shadowOffsetX(_v: number) {},
+      set shadowOffsetY(_v: number) {}
+    };
+    Object.defineProperty(ctx, "fillStyle", {
+      get: () => style,
+      set: (v: unknown) => { style = String(v); },
+      configurable: true
+    });
+    Object.defineProperty(ctx, "strokeStyle", {
+      get: () => style,
+      set: (v: unknown) => { style = String(v); },
+      configurable: true
+    });
+    return {
+      ctx: ctx as unknown as CanvasRenderingContext2D,
+      rects,
+      setTag: (t: string) => { tag = t; }
+    };
+  }
+
+  /** Vertical center of the dock bar from the SVG markup, in viewBox units. */
+  function svgDockBarY(markup: string, viewBoxH: number): number {
+    // The dock bar is the last large rounded rect in the android-home branch.
+    const re = /<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" rx="[\d.]+" fill="rgba\(255,255,255,0.16\)"/g;
+    let last: RegExpExecArray | null;
+    let match: RegExpExecArray | null = null;
+    while ((last = re.exec(markup))) match = last;
+    if (!match) throw new Error("dock bar rect not found in svg markup");
+    return Number(match[2]) + Number(match[4]) / 2;
+  }
+
+  it("drawScreenChrome places the android dock at the same fraction of the screen box as the preview SVG", () => {
+    const w = 390;
+    const h = 898.9; // pixel8pro chrome box aspect (390 / (420/968))
+    const svg = screenChromeSvg(CHROME, w, h, "t", "xMidYMid meet", "pixel8pro");
+    const svgFraction = svgDockBarY(svg, h) / h;
+
+    const { ctx, rects, setTag } = recordingCtx();
+    setTag("dockbar");
+    drawScreenChrome(ctx, CHROME, 0, 0, w, h, "pixel8pro");
+    // The dock bar is the widest fill painted with the dock fill color
+    // (theme dark → rgba(255,255,255,0.16)).
+    const bar = rects
+      .filter((r) => r.style === "rgba(255,255,255,0.16)" && r.box.w > w * 0.5)
+      .reduce((a, b) => (b.box.w > a.box.w ? b : a));
+    const canvasFraction = (bar.box.y + bar.box.h / 2) / h;
+
+    expect(canvasFraction).toBeCloseTo(svgFraction, 4);
+  });
+
+  it("screenChromeStyle and mediaSlotStyle occupy the same screen box the canvas clips to", () => {
+    // buildSceneCss positions the chrome div and the media slot at the exact
+    // cutout fractions; computeFrameBox derives the canvas clip rect from the
+    // same cutout. Both must agree per axis so the chrome and the media land
+    // on identical geometry in preview and export.
+    const scn = {
+      frame: "pixel8pro" as const,
+      aspectRatio: "9 / 16",
+      screen: CHROME,
+      stylePreset: "default" as const,
+      layers: []
+    } as unknown as Parameters<typeof buildSceneCss>[0];
+    const css = buildSceneCss(scn);
+    const spec = getFrameSpec("pixel8pro");
+    const vb = frameViewBox(spec);
+    const cut = spec.cutout!;
+    const leftFrac = cut.x / vb.w;
+    const topFrac = cut.y / vb.h;
+    const widthFrac = cut.w / vb.w;
+    const heightFrac = cut.h / vb.h;
+
+    for (const style of [css.screenChromeStyle, css.mediaSlotStyle]) {
+      expect(style.left).toBe(`${leftFrac * 100}%`);
+      expect(style.top).toBe(`${topFrac * 100}%`);
+      expect(style.width).toBe(`${widthFrac * 100}%`);
+      expect(style.height).toBe(`${heightFrac * 100}%`);
+    }
+    // The chrome viewBox keeps the cutout aspect, so preserveAspectRatio
+    // "xMidYMid meet" maps it 1:1 onto the screen box in both renderers.
+    const aspect = cut.w / cut.h;
+    const svg = screenChromeSvg(CHROME, 390, 390 / aspect, "t", "xMidYMid meet", "pixel8pro");
+    expect(svg).toContain('preserveAspectRatio="xMidYMid meet"');
+    expect(svg).toContain(`viewBox="0 0 390 ${(390 / aspect).toFixed(1)}"`);
   });
 });

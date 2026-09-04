@@ -189,20 +189,40 @@
 }
 
 /* Toolbar toast text (save/reset/copy notices). Color variant is set inline
-   via --toast-color when the message is success/error. Clipped with ellipsis
-   inside .toolbar-status so long messages never move the action groups. */
+   via --toast-color when the message is success/error. The status slot is the
+   row's shrink absorber (flex:1, min-width:0, clipped): on narrow preview
+   columns the fixed action groups alone over-subscribe the toolbar row, so an
+   in-flow toast would collapse to a zero-width, invisible sliver (clipped by
+   the slot's overflow:hidden). The toast is therefore anchored out of flow to
+   the toolbar itself as a floating pill: it never shifts the action groups,
+   stays readable at any column width, and lets clicks pass through to the
+   controls it overlays (the reset notice's own Undo button opts back in).
+   It stays inside .toolbar (a positioned ancestor), so modals still stack
+   above it. */
 .toolbar .toast-status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 6;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: 100%;
+  max-width: calc(100% - 16px);
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 12px;
   color: var(--toast-color, var(--text-dim));
   white-space: nowrap;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--panel-solid);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--shadow-soft);
+  pointer-events: none;
+}
+.toolbar .toast-status button {
+  pointer-events: auto;
 }
 
 .toolbar .status.saved {

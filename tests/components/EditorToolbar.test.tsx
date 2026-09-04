@@ -80,7 +80,12 @@ describe("EditorToolbar", () => {
 
   it("shows the save toast", () => {
     render(<EditorToolbar {...baseProps} saveToast="Saved" saveStatusType="info" />);
-    expect(screen.getByText("Saved")).toBeInTheDocument();
+    // role="status" is the live-region contract the toolbar toast exposes —
+    // the CSS pill it renders is styled from .toolbar .toast-status.
+    const toast = screen.getByText("Saved");
+    expect(toast).toBeInTheDocument();
+    expect(toast.getAttribute("role")).toBe("status");
+    expect(toast.className).toBe("toast-status");
   });
 
   it("shows the reset notice with undo button", async () => {
