@@ -4,7 +4,10 @@
 }
 
 .tooltip::after {
-  content: attr(data-tooltip);
+  /* No box until hover/focus: an opacity-only hidden tooltip still
+     contributes its box to ancestor scrollable overflow, producing phantom
+     horizontal scrollbars in panels. */
+  content: none;
   position: absolute;
   bottom: calc(100% + 6px);
   left: 50%;
@@ -26,5 +29,6 @@
 
 .tooltip:hover::after,
 .tooltip:focus-visible::after {
+  content: attr(data-tooltip);
   opacity: 1;
 }

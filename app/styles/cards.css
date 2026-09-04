@@ -38,6 +38,9 @@
   font-size: 13px;
   font-weight: 600;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  /* Custom template names accept up to 60 chars with no spaces — break
+     anywhere instead of overflowing the card and the panel. */
+  overflow-wrap: anywhere;
 }
 
 .template-card .t-desc {
@@ -90,6 +93,9 @@
   gap: 6px;
   padding: 6px 8px;
   min-height: 36px;
+  /* Nine controls never fit a narrow panel: wrap instead of forcing the
+     whole control panel wider. */
+  flex-wrap: wrap;
 }
 
 .frame-card-head .frame-thumb {
@@ -120,7 +126,9 @@
 }
 
 .frame-card-head .frame-device {
-  flex: 1;
+  /* Grows on roomy panels, drops to its own readable line when tight
+     instead of squeezing to an unreadable slit. */
+  flex: 1 1 120px;
   min-width: 0;
   font-size: 12px;
   padding: 3px 6px;
@@ -243,6 +251,12 @@
 }
 
 /* ---- Project items (Projects panel) ---- */
+.projects-list {
+  /* Long unbroken project names must not force the grid track (and the
+     panel content) wider: every level below yields. */
+  min-width: 0;
+}
+
 .project-item {
   display: flex;
   align-items: center;
@@ -253,6 +267,7 @@
   background: transparent;
   cursor: pointer;
   transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+  min-width: 0;
 }
 
 .project-item:hover {

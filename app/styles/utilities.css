@@ -28,6 +28,9 @@
   gap: 4px;
   align-items: center;
   width: 100%;
+  /* Layout/align icon rows must wrap on narrow panels instead of forcing
+     the whole control panel wider (only used by ArrangeSection). */
+  flex-wrap: wrap;
 }
 
 .field-compact {
@@ -95,10 +98,21 @@
   padding: 0;
   display: grid;
   gap: 6px;
+  /* Long unbroken custom names must not force the grid track (and the whole
+     panel) wider: every level below yields. */
+  min-width: 0;
 }
 
 .template-item {
   position: relative;
+  min-width: 0;
+}
+
+.template-item .template-card {
+  width: 100%;
+  min-width: 0;
+  /* Clear the absolute delete button overlaying the card's top-right. */
+  padding-right: 34px;
 }
 
 .template-delete-btn {
