@@ -448,7 +448,8 @@
     "screenSectionWidgets": "Widgets",
     "screenSectionFolders": "Folders",
     "screenShowAllIcons": "Show all {count} icons",
-    "screenResetAll": "Reset all customizations"
+    "screenResetAll": "Reset all customizations",
+    "canvasControls": "Canvas controls"
   },
   "frame": {
     "none": "Žádné",
