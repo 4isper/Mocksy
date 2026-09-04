@@ -32,8 +32,7 @@ describe("RightPanel", () => {
     expect(screen.getByRole("tab", { name: /layers/i })).toHaveAttribute("aria-selected", "false");
   });
 
-  it("shows layer count badge", () => {
-    useEditorStore.setState({
+  it("shows layer count badge", () => {    useEditorStore.setState({
       scene: {
         ...initialScene,
         layers: [
@@ -104,5 +103,24 @@ describe("RightPanel", () => {
     expect(projectsTab).toHaveAttribute("aria-selected", "true");
     await user.keyboard("{Home}");
     expect(templatesTab).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("names tabs explicitly so the compact icon mode stays accessible", () => {
+    render(<RightPanel onShareTemplate={async () => {}} />);
+    // Exact names (no badge number leaking in): the visual label hides on
+    // narrow panels, so the name must not depend on it.
+    expect(screen.getByRole("tab", { name: "templates.title" })).toHaveAttribute("title", "templates.title");
+    expect(screen.getByRole("tab", { name: "editor.layers" })).toHaveAttribute("title", "editor.layers");
+    expect(screen.getByRole("tab", { name: "history.title" })).toHaveAttribute("title", "history.title");
+  });
+
+  it("hides the decorative label and badge from assistive tech", () => {
+    useEditorStore.setState({
+      scene: { ...initialScene, layers: [{ id: "l1" } as any] }
+    });
+    render(<RightPanel onShareTemplate={async () => {}} />);
+    const layersTab = screen.getByRole("tab", { name: "editor.layers" });
+    expect(layersTab.querySelector(".tab-label")).toHaveAttribute("aria-hidden", "true");
+    expect(layersTab.querySelector(".tab-badge")).toHaveAttribute("aria-hidden", "true");
   });
 });
