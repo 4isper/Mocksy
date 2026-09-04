@@ -1,7 +1,9 @@
 "use client";
 
+import { useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { exportProjectToFile } from "@/lib/state/projectFile";
+import { ContextMenu, type ContextMenuItem } from "@/components/editor/ContextMenu";
 import type { Project } from "@/lib/types/editor";
 
 interface ProjectItemProps {
@@ -24,7 +26,9 @@ interface ProjectItemProps {
 }
 
 /** One row in the active-projects list: name (editable inline), relative
- *  timestamp, and rename/duplicate/export/delete actions. */
+ *  timestamp, an inline rename button and a "more actions" menu (duplicate /
+ *  export / bundle / delete). Secondary actions live behind the menu so the
+ *  name keeps room: five icon buttons left it an unreadable stub. */
 export function ProjectItem({
   project,
   active,
@@ -44,6 +48,31 @@ export function ProjectItem({
   disableDelete
 }: ProjectItemProps) {
   const t = useTranslations();
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const moreRef = useRef<HTMLButtonElement>(null);
+
+  const toggleMenu = () => {
+    if (menu) {
+      setMenu(null);
+      return;
+    }
+    const r = moreRef.current?.getBoundingClientRect();
+    if (!r) return;
+    // Anchor below the trigger, right-aligned; the menu clamps into the
+    // viewport near panel edges (same pattern as the toolbar overflow).
+    setMenu({ x: r.right - 180, y: r.bottom + 6 });
+  };
+
+  const menuItems = useMemo<ContextMenuItem[]>(
+    () => [
+      { id: "duplicate", label: t("projects.duplicateLabel", { name: project.name }), onSelect: () => onDuplicate(project.id) },
+      { id: "export", label: t("projects.exportLabel", { name: project.name }), onSelect: () => onExport(project) },
+      { id: "bundle", label: t("projects.bundleExportLabel", { name: project.name }), disabled: bundleBusy, onSelect: () => void onExportBundle(project) },
+      { id: "delete", label: t("projects.deleteLabel", { name: project.name }), danger: true, separatorBefore: true, disabled: disableDelete, onSelect: () => onDelete(project.id) }
+    ],
+    [t, project, onDuplicate, onExport, onExportBundle, onDelete, bundleBusy, disableDelete]
+  );
+
   return (
     <li
       key={project.id}
@@ -121,62 +150,19 @@ export function ProjectItem({
       </button>
       <button
         type="button"
+        ref={moreRef}
         className="btn-icon tooltip"
-        aria-label={t("projects.duplicateLabel", { name: project.name })}
-        data-tooltip={t("projects.duplicate")}
-        onClick={(e) => {
-          e.stopPropagation();
-          onDuplicate(project.id);
-        }}
+        aria-label={t("editor.moreActions")}
+        aria-haspopup="menu"
+        aria-expanded={menu !== null}
+        data-tooltip={t("editor.moreActions")}
+        onClick={toggleMenu}
       >
-        ⧉
+        <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="2.6" cy="7" r="1.1" fill="currentColor"/><circle cx="7" cy="7" r="1.1" fill="currentColor"/><circle cx="11.4" cy="7" r="1.1" fill="currentColor"/></svg>
       </button>
-      <button
-        type="button"
-        className="btn-icon tooltip"
-        aria-label={t("projects.exportLabel", { name: project.name })}
-        data-tooltip={t("projects.export")}
-        onClick={(e) => {
-          e.stopPropagation();
-          onExport(project);
-        }}
-      >
-        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 2v6M6 8l3-3M6 8l-3-3M2 9v1a1 1 0 001 1h6a1 1 0 001-1V9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>
-      </button>
-      <button
-        type="button"
-        className="btn-icon tooltip"
-        aria-label={t("projects.bundleExportLabel", { name: project.name })}
-        data-tooltip={t("projects.bundleExporting")}
-        disabled={bundleBusy}
-        aria-busy={bundleBusy}
-        onClick={(e) => {
-          e.stopPropagation();
-          void onExportBundle(project);
-        }}
-      >
-        {bundleBusy ? (
-          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true" className="spin">
-            <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.4" opacity="0.3" />
-            <path d="M10.5 6a4.5 4.5 0 00-4.5-4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-          </svg>
-        ) : (
-          <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M1.5 4 6 1.5 10.5 4 6 6.5 1.5 4zM1.5 4v4L6 10.5V6.5M10.5 4v4L6 10.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        )}
-      </button>
-      <button
-        type="button"
-        className="btn-icon tooltip"
-        aria-label={t("projects.deleteLabel", { name: project.name })}
-        data-tooltip={t("projects.delete")}
-        disabled={disableDelete}
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(project.id);
-        }}
-      >
-        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
-      </button>
+      {menu ? (
+        <ContextMenu x={menu.x} y={menu.y} items={menuItems} triggerRef={moreRef} onClose={() => setMenu(null)} />
+      ) : null}
     </li>
   );
 }

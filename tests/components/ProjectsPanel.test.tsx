@@ -96,7 +96,7 @@ describe("ProjectsPanel", () => {
     expect(items[0]!.className).toContain("is-active");
   });
 
-  it("soft-deletes project on delete click", async () => {
+  it("soft-deletes project via the row menu", async () => {
     useProjectsStore.setState({
       projects: [
         { id: "p1", name: "Project 1", scene: null as any, updatedAt: Date.now() },
@@ -107,21 +107,34 @@ describe("ProjectsPanel", () => {
     render(<ProjectsPanel />);
     const projectItems = document.querySelectorAll(".project-item");
     const firstItem = projectItems[0]!;
-    const btns = firstItem.querySelectorAll(".btn-icon");
-    const delBtn = btns[btns.length - 1]! as HTMLButtonElement;
-    await userEvent.click(delBtn);
+    await userEvent.click(firstItem.querySelector('[aria-haspopup="menu"]') as HTMLElement);
+    await userEvent.click(screen.getByRole("menuitem", { name: "projects.deleteLabel" }));
     // Soft delete: project stays in store but gets deletedAt timestamp
     expect(useProjectsStore.getState().projects.length).toBe(2);
     expect(useProjectsStore.getState().projects[0]!.deletedAt).toBeDefined();
   });
 
-  it("disables delete when only one project remains", () => {
+  it("disables delete in the row menu when only one project remains", async () => {
+    useProjectsStore.setState({ projects: [project("p1", "Solo")], activeProjectId: "p1" });
+    render(<ProjectsPanel />);
+    await userEvent.click(document.querySelector('.project-item [aria-haspopup="menu"]') as HTMLElement);
+    expect(screen.getByRole("menuitem", { name: "projects.deleteLabel" })).toBeDisabled();
+  });
+
+  it("keeps only rename and menu buttons in the row so the name has room", () => {
     useProjectsStore.setState({ projects: [project("p1", "Solo")], activeProjectId: "p1" });
     render(<ProjectsPanel />);
     const item = document.querySelector(".project-item")!;
-    const btns = item.querySelectorAll(".btn-icon");
-    const delBtn = btns[btns.length - 1]! as HTMLButtonElement;
-    expect(delBtn).toBeDisabled();
+    expect(item.querySelectorAll(".btn-icon").length).toBe(2);
+  });
+
+  it("offers duplicate, export, bundle and delete in the row menu", async () => {
+    useProjectsStore.setState({ projects: [project("p1", "Solo")], activeProjectId: "p1" });
+    render(<ProjectsPanel />);
+    await userEvent.click(document.querySelector('.project-item [aria-haspopup="menu"]') as HTMLElement);
+    for (const name of ["projects.duplicateLabel", "projects.exportLabel", "projects.bundleExportLabel", "projects.deleteLabel"]) {
+      expect(screen.getByRole("menuitem", { name })).toBeInTheDocument();
+    }
   });
 
   it("renames a project via the inline editor and Enter", async () => {
@@ -148,18 +161,20 @@ describe("ProjectsPanel", () => {
     expect(useProjectsStore.getState().projects[0]!.name).toBe("Keep Me");
   });
 
-  it("duplicates a project on button click", async () => {
+  it("duplicates a project via the row menu", async () => {
     useProjectsStore.setState({ projects: [project("p1", "Source")], activeProjectId: "p1" });
     render(<ProjectsPanel />);
-    await userEvent.click(screen.getByLabelText("projects.duplicateLabel"));
+    await userEvent.click(document.querySelector('.project-item [aria-haspopup="menu"]') as HTMLElement);
+    await userEvent.click(screen.getByRole("menuitem", { name: "projects.duplicateLabel" }));
     expect(useProjectsStore.getState().projects.length).toBe(2);
   });
 
-  it("exports a project to a file", async () => {
+  it("exports a project to a file via the row menu", async () => {
     const p = project("p1", "Export Me");
     useProjectsStore.setState({ projects: [p], activeProjectId: "p1" });
     render(<ProjectsPanel />);
-    await userEvent.click(screen.getByLabelText("projects.exportLabel"));
+    await userEvent.click(document.querySelector('.project-item [aria-haspopup="menu"]') as HTMLElement);
+    await userEvent.click(screen.getByRole("menuitem", { name: "projects.exportLabel" }));
     expect(mockExport).toHaveBeenCalledWith(p);
   });
 
