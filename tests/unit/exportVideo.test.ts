@@ -257,6 +257,80 @@ describe("exportVideo orchestration", () => {
     expect(statuses).toContain("Done");
   });
 
+  it("keeps the capture canvas attached behind the document while recording", async () => {
+    // Headless Chromium/SwiftShader starves captureStream() of frames when the
+    // canvas is detached, fully off-viewport (left:-9999px) or fixed-position
+    // at square/portrait sizes — recordings then come back empty ("Recording
+    // produced no frames."). The canvas must be an in-flow, opaque, absolutely
+    // positioned element behind the app UI.
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    const doc = {
+      getElementById: vi.fn().mockReturnValue(preview),
+      createElement: vi.fn().mockImplementation((tag: string) => {
+        if (tag === "canvas") return canvas;
+        if (tag === "a") return { click: vi.fn(), set href(_v: string) {}, get href() { return ""; } };
+        return {};
+      }),
+      body: { appendChild: vi.fn(), removeChild: vi.fn() }
+    };
+    vi.stubGlobal("document", doc);
+    installMediaRecorder();
+
+    await exportVideo(sceneWithLayer({ mediaUrl: null, mediaType: "none" }));
+
+    expect(doc.body.appendChild).toHaveBeenCalledWith(canvas);
+    // Document origin, not pushed off-screen.
+    expect(canvas.style.left).toBe("0");
+    expect(canvas.style.top).toBe("0");
+    expect(String(canvas.style.left)).not.toContain("-9999");
+    // Behind the app UI, non-interactive, fully opaque (semi-transparency
+    // starves the stream in headless).
+    expect(canvas.style.pointerEvents).toBe("none");
+    expect(canvas.style.zIndex).toBe("-1");
+    expect(canvas.style.opacity).toBeUndefined();
+    expect(canvas.remove).toHaveBeenCalled();
+  });
+
+  it("captures frames deterministically via requestFrame when available", async () => {
+    // Headless compositors can starve a compositor-sampled stream (frameRate
+    // default) of frames even though the canvas was painted every tick — the
+    // recording randomly comes back empty ("Recording produced no frames.").
+    // The recorder must therefore use captureStream(0) and push each painted
+    // frame explicitly via requestFrame().
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    const requestFrame = vi.fn();
+    canvas.captureStream = vi.fn().mockReturnValue({
+      getTracks: () => [],
+      getVideoTracks: () => [{ requestFrame }]
+    });
+    installDom(preview, canvas);
+    installMediaRecorder();
+
+    await exportVideo(sceneWithLayer({ mediaUrl: null, mediaType: "none" }));
+
+    // frameRate 0 = capture only on explicit requestFrame()
+    expect(canvas.captureStream).toHaveBeenCalledWith(0);
+    // Pre-roll paint and every recording tick push their frame explicitly.
+    expect(requestFrame).toHaveBeenCalled();
+  });
+
+  it("falls back to compositor sampling when requestFrame is unavailable", async () => {
+    const preview = fakePreview();
+    const canvas = fakeCanvas();
+    installDom(preview, canvas);
+    installMediaRecorder();
+
+    await exportVideo(sceneWithLayer({ mediaUrl: null, mediaType: "none" }));
+
+    // The fake canvas track has no requestFrame: the recorder must not stay
+    // on the frameRate-0 stream (that would record nothing at all) and must
+    // restart with the compositor-sampled rate instead.
+    expect(canvas.captureStream).toHaveBeenNthCalledWith(1, 0);
+    expect(canvas.captureStream).toHaveBeenNthCalledWith(2, 30);
+  });
+
   it("reports an error when the preview node is missing", async () => {
     const canvas = fakeCanvas();
     const doc = {

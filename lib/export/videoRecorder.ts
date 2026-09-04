@@ -128,6 +128,13 @@ export function waitForPlayback(
   });
 }
 
+/** The canvas track of a capture stream, typed for requestFrame() (Chromium's
+ *  CanvasCaptureMediaStreamTrack). */
+function frameTrackOf(stream: MediaStream | null): (MediaStreamTrack & { requestFrame?: () => void }) | undefined {
+  if (!stream || typeof stream.getVideoTracks !== "function") return undefined;
+  return stream.getVideoTracks()[0] as (MediaStreamTrack & { requestFrame?: () => void }) | undefined;
+}
+
 export async function recordCanvasToWebm(
   scene: EditorScene,
   canvas: HTMLCanvasElement,
@@ -154,17 +161,20 @@ export async function recordCanvasToWebm(
   const backgroundFill = scene.backgroundMode === "transparent" ? "#000000" : undefined;
 
   const fps = 30;
-  // Attach the canvas to the DOM (off-screen) before capturing: some browsers
-  // won't deliver frames from captureStream() on a detached canvas, which
-  // yields an empty recording. A *zero* opacity is also risky: the compositor
-  // may treat a fully transparent element as nothing to present and stall the
-  // first frames the stream reports — the blank lead we're trying to banish.
-  // A tiny non-zero opacity keeps the canvas composited (frames flow) while
-  // remaining visually invisible.
-  canvas.style.position = "fixed";
-  canvas.style.left = "-9999px";
+  // Attach the canvas to the DOM before capturing: some browsers won't
+  // deliver frames from captureStream() on a detached canvas, which yields
+  // an empty recording. Headless Chromium/SwiftShader is also pickier about
+  // presentation: a `position: fixed` canvas (even opaque) starves the stream
+  // of frames at square/portrait sizes — recordings came back with zero
+  // chunks at 960×960/720×1280 while landscape sizes captured fine. An
+  // absolutely-positioned, fully OPAQUE in-flow canvas at the document origin
+  // captured reliably at every size tested (fixed + near-zero opacity was the
+  // previous approach and flaked). It sits behind the app UI (z-index -1,
+  // no pointer events); the editor's opaque panels cover it for the duration
+  // of the recording.
+  canvas.style.position = "absolute";
+  canvas.style.left = "0";
   canvas.style.top = "0";
-  canvas.style.opacity = "0.004";
   canvas.style.pointerEvents = "none";
   canvas.style.zIndex = "-1";
   document.body.appendChild(canvas);
@@ -191,6 +201,9 @@ export async function recordCanvasToWebm(
   let stream: MediaStream | null = null;
   let bgAudioEl: HTMLAudioElement | null = null;
   let bgAudioCtx: AudioContext | null = null;
+  // Set up once the deterministic stream exists (see below); a no-op before
+  // that and on engines without requestFrame.
+  let requestFrame: () => void = () => {};
 
   // Everything from stream setup onwards must run through the try/finally
   // below: a recorder error, an aborted capture or a render exception inside
@@ -198,7 +211,39 @@ export async function recordCanvasToWebm(
   // MediaStream tracks live and leave background music playing until reload.
   try {
     try {
-      stream = canvas.captureStream(fps);
+      // Deterministic capture: a frameRate of 0 disables the compositor's own
+      // sampling — frames enter the stream only via requestFrame(), one per
+      // painted tick. This makes the recording independent of the compositor,
+      // which on headless Chromium/SwiftShader silently starves semi-
+      // transparent canvases: recordings would randomly come back with zero
+      // chunks ("Recording produced no frames.") even though the canvas was
+      // painted every tick. Every render below is followed by requestFrame(),
+      // so one painted frame === one recorded frame on any machine.
+      stream = canvas.captureStream(0);
+      if (typeof frameTrackOf(stream)?.requestFrame !== "function") {
+        // requestFrame is Chromium-only (CanvasCaptureMediaStreamTrack).
+        // Engines without it would record nothing at frameRate 0 — restart
+        // with compositor sampling and the settle-waits instead.
+        stream.getTracks().forEach((track) => track.stop());
+        stream = canvas.captureStream(fps);
+      }
+      // Every painted frame is delivered explicitly, flushing the raster
+      // pipeline first: on headless Chromium/SwiftShader the 2D backing store
+      // is rasterized lazily, so a bare requestFrame() snapshots a pending
+      // buffer and the VP8 encoder produces zero data ("Recording produced
+      // no frames.") even though pixels provably change on the canvas. A 1px
+      // getImageData readback forces synchronous rasterization before the
+      // snapshot; on GPU machines it costs nothing.
+      requestFrame = () => {
+        const track = frameTrackOf(stream);
+        if (!track?.requestFrame) return;
+        try {
+          canvas.getContext("2d")?.getImageData(canvas.width - 1, canvas.height - 1, 1, 1);
+        } catch {
+          // tainted canvas — capture without the flush
+        }
+        track.requestFrame();
+      };
     } catch (err) {
       if (err instanceof DOMException && err.name === "SecurityError") {
         throw new Error("This video can't be exported: its host doesn't allow cross-origin capture. Use a file you uploaded instead.");
@@ -262,12 +307,15 @@ export async function recordCanvasToWebm(
 
     const chunks: BlobPart[] = [];
     const mimeType = chooseWebmMimeType();
-    // A generous bitrate for the lossy VP8/VP9 intermediate. The webm is only a
-    // stepping stone to the MP4, and the browser default is low, so re-encoding
-    // a low-quality intermediate through H.264 can't recover the lost detail —
-    // it just passes the blockiness along. Capture clean, let the final encode
-    // set the real quality/size tradeoff.
-    const intermediateBitsPerSecond = 16_000_000;
+    // A modest, explicit bitrate: the browser default scales with resolution
+    // (≥3.5Mbps at 1440×810) and the 16Mbps override (126acd3) starved the
+    // software VP8 encoder on headless/SwiftShader runners entirely —
+    // MediaRecorder fell behind frame deliveries, emitted no chunks and every
+    // video export died as "Recording produced no frames." 2.5Mbps keeps the
+    // encoder ahead of the capture on any machine. The webm is only an
+    // intermediate: the final H.264/GIF/WebP encode sets the real quality/
+    // size tradeoff, and static mockup content compresses far below this cap.
+    const intermediateBitsPerSecond = 2_500_000;
     let recorder: MediaRecorder;
     try {
       recorder = mimeType
@@ -343,13 +391,9 @@ export async function recordCanvasToWebm(
       // A render exception is still caught by the tick loop; don't abort here.
     }
     // Force the freshly-painted frame into the capture stream immediately.
-    // Chromium-only: CanvasCaptureMediaStreamTrack.requestFrame() reads the
-    // canvas bitmap straight away. On engines without it this is a no-op, so
-    // the settle-wait below is what actually guarantees a non-blank head.
-    if (stream && typeof stream.getVideoTracks === "function") {
-      const frameTrack = stream.getVideoTracks()[0] as (MediaStreamTrack & { requestFrame?: () => void }) | undefined;
-      frameTrack?.requestFrame?.();
-    }
+    // With the deterministic capture (frameRate 0) this IS the frame-delivery
+    // mechanism; on the fallback path it merely accelerates the first sample.
+    requestFrame();
     // One full sampling period guarantees the capture stream has already
     // taken a frame of the freshly-painted canvas before the recorder's
     // first chunk is opened. A plain timer is more robust than rAF here:
@@ -440,17 +484,23 @@ export async function recordCanvasToWebm(
             if (media.currentTime >= stopAt || elapsed >= duration) {
               media.pause();
               renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId, watermarkImage);
+              requestFrame();
               recorder.stop();
               onProgress?.(100);
               return;
             }
           } else if (elapsed >= duration) {
+            renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId, watermarkImage);
+            requestFrame();
             recorder.stop();
             onProgress?.(100);
             return;
           }
 
           renderMockupToCanvas(canvas, scene, activeForCapture?.hidden ? null : media, undefined, undefined, frameWidth, frameHeight, pixelRatio, transform, backgroundFill, overlay, backgroundImage, layerMedias, frameOverlays, activeLayerId, watermarkImage);
+          // Deliver exactly this painted frame to the recorder (frameRate-0
+          // capture): one paint === one recorded frame, no compositor needed.
+          requestFrame();
           scheduleNext();
         } catch (err) {
           // A render exception must not leave the promise pending forever with
