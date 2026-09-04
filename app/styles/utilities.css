@@ -171,6 +171,13 @@
   text-align: center;
   pointer-events: none;
   z-index: 2;
+  /* Pill backdrop so the hint stays legible over any canvas content. */
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 /* Screen-reader-only: visually hidden but available to assistive technology. */

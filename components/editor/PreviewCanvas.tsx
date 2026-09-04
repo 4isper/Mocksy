@@ -21,7 +21,7 @@ import { FrameInstanceGrid } from "@/components/editor/FrameInstanceGrid";
 import { SingleFrameView } from "@/components/editor/SingleFrameView";
 import { PreviewBackground } from "@/components/editor/PreviewBackground";
 import { PreviewOverlays } from "@/components/editor/PreviewOverlays";
-import { PreviewChips, PreviewGridToggle, PreviewZoomControl } from "@/components/editor/PreviewChips";
+import { PreviewDockBar } from "@/components/editor/PreviewChips";
 
 interface PreviewCanvasProps {
   scene: EditorScene;
@@ -185,11 +185,11 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         minHeight: 0,
         padding: 16,
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        // Establish a size container so the canvas can size itself with
-        // container query units, fitting inside both axes without distortion.
-        containerType: "size",
+        // Column layout: the stage centers the canvas in the remaining space
+        // while the dock bar pins to the panel bottom — controls never cover
+        // the artwork and never shift with the scene aspect ratio.
+        flexDirection: "column",
+        alignItems: "stretch",
         ["--canvas-ar-w" as string]: arW,
         ["--canvas-ar-h" as string]: arH,
         // Let the component own pinch/pan gestures on the frame itself (the
@@ -207,6 +207,21 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
       onTouchEnd={onTouchEnd}
       onTouchCancel={onTouchCancel}
     >
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          minWidth: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          // The size container moved here from the panel so the canvas keeps
+          // sizing itself with container query units against the space above
+          // the dock bar (cqh excludes the bar height).
+          containerType: "size",
+          position: "relative"
+        }}
+      >
       <div
         id="preview-canvas"
         ref={canvasRef}
@@ -356,26 +371,6 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           onGuides={setGuides}
         />
         </PreviewZoomLayer>
-        {/* Upload/Clear chips and the empty-canvas hint are UI chrome: they
-            live outside the zoom layer so they stay fixed-size and readable
-            at any zoom level. */}
-        {isMultiFrame ? (
-          <PreviewChips
-            isMultiFrame
-            canClearActive={!!scene.layers.find((l) => l.id === targetLayerId)?.mediaUrl}
-            targetLayerId={targetLayerId}
-            fileInputKey={fileInputKey}
-            onFile={handleFile}
-          />
-        ) : (
-          <PreviewChips
-            isMultiFrame={false}
-            canClearActive={canClearActive}
-            targetLayerId={null}
-            fileInputKey={fileInputKey}
-            onFile={handleFile}
-          />
-        )}
         {isMultiFrame && scene.layers.every((l) => !l.mediaUrl) ? (
           <div
             className="drop-hint"
@@ -383,13 +378,6 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             <span>{t("editor.dropToStart")}</span>
           </div>
         ) : null}
-        <PreviewGridToggle
-          showGrid={showGrid}
-          gridDivisions={gridDivisions}
-          setShowGrid={setShowGrid}
-          setGridDivisions={setGridDivisions}
-        />
-        <PreviewZoomControl />
         {mediaUploadError ? (
           <div role="alert" className="preview-error">
             {mediaUploadError}
@@ -404,6 +392,25 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           />
         ) : null}
       </div>
+      </div>
+      {/* Docked control bar: Upload/Clear | zoom | grid. Pinned to the panel
+          bottom (not the canvas corners), so it never covers the artwork,
+          never collides on narrow canvases, and stays put across aspect
+          ratios. It sits outside #preview-canvas, so canvas screenshots and
+          exports stay chrome-free without extra hiding. */}
+      <PreviewDockBar
+        isMultiFrame={isMultiFrame}
+        canClearActive={isMultiFrame
+          ? !!scene.layers.find((l) => l.id === targetLayerId)?.mediaUrl
+          : canClearActive}
+        targetLayerId={isMultiFrame ? targetLayerId : null}
+        fileInputKey={fileInputKey}
+        onFile={handleFile}
+        showGrid={showGrid}
+        gridDivisions={gridDivisions}
+        setShowGrid={setShowGrid}
+        setGridDivisions={setGridDivisions}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { PreviewChips, PreviewZoomControl, PreviewGridToggle } from "@/components/editor/PreviewChips";
+import { PreviewChips, PreviewDockBar, PreviewZoomControl, PreviewGridToggle } from "@/components/editor/PreviewChips";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { GRID_DIVISION_OPTIONS } from "@/lib/render/grid";
 import { snapZoom, sliderToZoom, zoomToSlider, resolveZoomScale, ZOOM_SLIDER_MAX } from "@/lib/render/previewViewport";
@@ -45,6 +45,24 @@ describe("PreviewChips", () => {
     render(<PreviewChips isMultiFrame={true} canClearActive={false} targetLayerId="layer-x" fileInputKey={1} onFile={onFile} />);
     expect(screen.getByText("editor.uploadMedia")).toBeInTheDocument();
     expect(screen.queryByText("editor.clearMedia")).not.toBeInTheDocument();
+  });
+
+  it("keeps upload next to clear in multi-frame mode so media is replaceable in one click", () => {
+    render(<PreviewChips isMultiFrame={true} canClearActive={true} targetLayerId="layer-x" fileInputKey={1} onFile={onFile} />);
+    expect(screen.getByText("editor.uploadMedia")).toBeInTheDocument();
+    expect(screen.getByText("editor.clearMedia")).toBeInTheDocument();
+  });
+
+  it("forwards multi-frame replace-uploads to the target layer", () => {
+    const clickSpy = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => {});
+    render(<PreviewChips isMultiFrame={true} canClearActive={true} targetLayerId="layer-x" fileInputKey={1} onFile={onFile} />);
+    fireEvent.click(screen.getByText("editor.uploadMedia"));
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [new File(["x"], "b.png", { type: "image/png" })] } });
+    expect(onFile).toHaveBeenCalledTimes(1);
+    expect(onFile.mock.calls[0]![1]).toBe("layer-x");
+    clickSpy.mockRestore();
   });
 
   it("clears the target instance layer in multi-frame mode", () => {
@@ -139,5 +157,64 @@ describe("PreviewGridToggle", () => {
     expect(screen.getByRole("combobox", { name: /editor.gridDivisions/ })).toBeInTheDocument();
     fireEvent.change(screen.getByRole("combobox", { name: /editor.gridDivisions/ }), { target: { value: String(GRID_DIVISION_OPTIONS[1]) } });
     expect(setGridDivisions).toHaveBeenCalledWith(GRID_DIVISION_OPTIONS[1]);
+  });
+});
+
+describe("PreviewDockBar", () => {
+  const dockProps = {
+    isMultiFrame: false,
+    canClearActive: true,
+    targetLayerId: null as string | null,
+    fileInputKey: 1,
+    onFile: vi.fn(),
+    showGrid: false,
+    gridDivisions: 4,
+    setShowGrid: vi.fn(),
+    setGridDivisions: vi.fn()
+  };
+
+  it("renders upload, zoom and grid groups in one toolbar", () => {
+    render(<PreviewDockBar {...dockProps} />);
+    const bar = screen.getByRole("toolbar", { name: "editor.canvasControls" });
+    expect(bar).toHaveClass("preview-dock-bar");
+    expect(screen.getByText("editor.uploadMedia")).toBeInTheDocument();
+    expect(screen.getByText("editor.clearMedia")).toBeInTheDocument();
+    expect(screen.getByRole("slider", { name: /editor.previewZoom/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /editor.grid/ })).toBeInTheDocument();
+  });
+
+  it("separates the groups with hidden dividers", () => {
+    const { container } = render(<PreviewDockBar {...dockProps} />);
+    const seps = container.querySelectorAll(".preview-dock-bar > .dock-sep");
+    expect(seps.length).toBe(2);
+    seps.forEach((s) => expect(s).toHaveAttribute("aria-hidden", "true"));
+  });
+
+  it("separates the reset-to-100% value from Fit inside the zoom bar", () => {
+    const { container } = render(<PreviewDockBar {...dockProps} />);
+    const inner = container.querySelectorAll(".preview-zoom-bar > .dock-sep");
+    expect(inner.length).toBe(1);
+    expect(inner[0]).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("labels upload/clear buttons for tooltips and compact icon mode", () => {
+    render(<PreviewDockBar {...dockProps} />);
+    const upload = screen.getByRole("button", { name: "editor.uploadMedia" });
+    const clear = screen.getByRole("button", { name: "editor.clearMedia" });
+    expect(upload).toHaveAttribute("title", "editor.uploadMedia");
+    expect(clear).toHaveAttribute("title", "editor.clearMedia");
+    // Icons are decorative; the text label stays for screen readers and is
+    // hidden via CSS (.chip-label) only in the compact icon mode.
+    expect(upload.querySelector(".chip-label")).toHaveTextContent("editor.uploadMedia");
+    expect(clear.querySelector(".chip-label")).toHaveTextContent("editor.clearMedia");
+  });
+
+  it("forwards the multi-frame target layer to upload and clear", () => {
+    const onFile = vi.fn();
+    render(<PreviewDockBar {...dockProps} isMultiFrame targetLayerId="layer-x" onFile={onFile} />);
+    const input = document.querySelector('.preview-dock-bar input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [new File(["x"], "a.png", { type: "image/png" })] } });
+    expect(onFile).toHaveBeenCalledTimes(1);
+    expect(onFile.mock.calls[0]![1]).toBe("layer-x");
   });
 });
