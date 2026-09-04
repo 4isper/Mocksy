@@ -310,7 +310,6 @@ export function EditorShell() {
             display: "grid",
             gridTemplateRows: fullscreenPreview ? "1fr" : "1fr auto",
             gap: 12,
-            minHeight: 0,
             overflow: "hidden",
             position: "relative"
           }}
