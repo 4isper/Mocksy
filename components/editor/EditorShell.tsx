@@ -5,6 +5,7 @@ import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { useEditorExport } from "@/lib/hooks/useEditorExport";
 import { useAutosaveStatus } from "@/lib/hooks/useAutosaveStatus";
 import { STORAGE_FULL_ERROR_KEY } from "@/lib/state/projectsStore";
+import { hasOpenModalSurface } from "@/lib/state/modalRegistry";
 import { warmUpFfmpeg } from "@/lib/export/exportVideo";
 import { useEditorShortcuts } from "@/lib/hooks/useEditorShortcuts";
 import { useClipboardPaste } from "@/lib/hooks/useClipboardPaste";
@@ -15,6 +16,7 @@ import { ErrorBoundary } from "@/components/editor/ErrorBoundary";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { MobileTabBar } from "@/components/editor/MobileTabBar";
 import { PanelResizeHandles } from "@/components/editor/PanelResizeHandles";
+import { SheetGrabber } from "@/components/editor/SheetGrabber";
 import { LiveAnnouncer } from "@/components/editor/LiveAnnouncer";
 import { hasSeenOnboarding } from "@/components/editor/OnboardingTour";
 import { useCommands } from "@/lib/hooks/useCommands";
@@ -76,11 +78,12 @@ export function EditorShell() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [resetNotice, setResetNotice] = useState(false);
   const resetNoticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hasOpenModalRef = useRef(false);
   const bootstrapped = useRef(false);
   const historyCleanupRef = useRef<(() => void) | null>(null);
 
-  const resetTrapRef = useFocusTrap(confirmResetOpen);
+  // ResetConfirmDialog owns its own focus trap (like every other dialog);
+  // a second one here would run side by side with it, double-locking scroll
+  // and restoring focus to the wrong element on close.
   const controlsSheetTrapRef = useFocusTrap(mobileSheet === "controls");
   const rightSheetTrapRef = useFocusTrap(mobileSheet === "right");
 
@@ -91,11 +94,31 @@ export function EditorShell() {
   // is open the global shortcuts are parked so keystrokes land in the dialog,
   // not the editor. The Share-QR dialog is stateful inside exportApi, so it's
   // folded in here as a final boolean rather than a separate local state.
-  useEffect(() => {
-    hasOpenModalRef.current = confirmResetOpen || exportOpen || shortcutsOpen || commandPaletteOpen || exportApi.shareQrUrl !== null;
+  // Dialogs whose open state lives inside panels (inline confirmations, the
+  // onboarding tour, mobile sheets) register in the modal registry through
+  // their focus trap and are polled live via hasOpenModalSurface(): a cached
+  // snapshot would go stale when a registry-backed dialog closes without
+  // re-rendering EditorShell, parking every shortcut (⌘K included) forever.
+  const isModalOpen = useCallback(() => {
+    return (
+      confirmResetOpen ||
+      exportOpen ||
+      shortcutsOpen ||
+      commandPaletteOpen ||
+      exportApi.shareQrUrl !== null ||
+      hasOpenModalSurface()
+    );
   }, [confirmResetOpen, exportOpen, shortcutsOpen, commandPaletteOpen, exportApi.shareQrUrl]);
 
   const { saved, saveToast, savedSceneRef, saveNow, markSaved } = useAutosaveStatus(scene, activeLayerId, bootstrapped);
+
+  // Stable per-fullscreenPreview change: an inline closure passed straight to
+  // useCommands would defeat its useMemo and rebuild the command list on
+  // every render (the always-mounted palette re-renders with it).
+  const toggleFullscreenPreview = useCallback(
+    () => setFullscreenPreview(!fullscreenPreview),
+    [setFullscreenPreview, fullscreenPreview]
+  );
 
   const commands = useCommands(
     exportApi.handleExportPng,
@@ -117,7 +140,7 @@ export function EditorShell() {
     exportApi.handleCopyHtml,
     exportApi.copyShareUrl,
     saveNow,
-    () => setFullscreenPreview(!fullscreenPreview)
+    toggleFullscreenPreview
   );
 
   const handleReset = useCallback(() => setConfirmResetOpen(true), []);
@@ -141,8 +164,8 @@ export function EditorShell() {
     onCopyPng: exportApi.handleCopyPng,
     onOpenShortcuts: () => setShortcutsOpen(true),
     onOpenCommandPalette: () => setCommandPaletteOpen(true),
-    onToggleFullscreen: () => setFullscreenPreview(!fullscreenPreview),
-    isModalOpen: () => hasOpenModalRef.current
+    onToggleFullscreen: toggleFullscreenPreview,
+    isModalOpen
   });
   // ⌘V pastes screenshots / copied media files (or an image URL) into the
   // active layer. Passive listener — no shortcut registration needed.
@@ -277,6 +300,7 @@ export function EditorShell() {
              desktop so the grid still sees the panels directly; at the
              mobile breakpoint they become fixed bottom sheets. */
           <div ref={controlsSheetTrapRef} className={mobileSheet === "controls" ? "sheet-host sheet-host--controls is-open" : "sheet-host sheet-host--controls"}>
+            <SheetGrabber onDismiss={() => setMobileSheet(null)} />
             <ErrorBoundary message={t("errors.message")} retryLabel={t("errors.tryAgain")}><ControlPanel /></ErrorBoundary>
           </div>
         ) : null}
@@ -286,7 +310,6 @@ export function EditorShell() {
             display: "grid",
             gridTemplateRows: fullscreenPreview ? "1fr" : "1fr auto",
             gap: 12,
-            minHeight: 0,
             overflow: "hidden",
             position: "relative"
           }}
@@ -332,6 +355,7 @@ export function EditorShell() {
         </section>
         {!fullscreenPreview ? (
           <div ref={rightSheetTrapRef} className={mobileSheet === "right" ? "sheet-host sheet-host--right is-open" : "sheet-host sheet-host--right"}>
+            <SheetGrabber onDismiss={() => setMobileSheet(null)} />
             <ErrorBoundary message={t("errors.message")} retryLabel={t("errors.tryAgain")}>
               <RightPanel onShareTemplate={exportApi.copyTemplateUrl} />
             </ErrorBoundary>

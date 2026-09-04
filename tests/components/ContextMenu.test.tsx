@@ -3,77 +3,127 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { ContextMenu, type ContextMenuItem } from "@/components/editor/ContextMenu";
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+});
 
-const items: ContextMenuItem[] = [
-  { id: "dup", label: "Duplicate", onSelect: vi.fn() },
-  { id: "front", label: "Bring to front", onSelect: vi.fn() },
-  { id: "remove", label: "Delete", danger: true, separatorBefore: true, onSelect: vi.fn() }
-];
+function items(overrides: Partial<ContextMenuItem>[] = []): ContextMenuItem[] {
+  const base = [
+    { id: "copy", label: "Copy", onSelect: vi.fn() },
+    { id: "paste", label: "Paste", onSelect: vi.fn(), separatorBefore: true },
+    { id: "delete", label: "Delete", onSelect: vi.fn(), danger: true, disabled: true },
+  ];
+  return base.map((item, i) => ({ ...item, ...(overrides[i] ?? {}) }));
+}
 
 describe("ContextMenu", () => {
-  it("renders all items and runs the clicked action", () => {
-    const onClose = vi.fn();
-    render(<ContextMenu x={100} y={100} items={items} onClose={onClose} />);
-
+  it("renders items with separators and disabled state", () => {
+    render(<ContextMenu x={0} y={0} items={items()} onClose={vi.fn()} />);
     expect(screen.getByRole("menu")).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "Duplicate" })).toBeInTheDocument();
-    expect(screen.getByRole("separator")).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Copy" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Delete" })).toBeDisabled();
+    expect(screen.getAllByRole("separator").length).toBeGreaterThanOrEqual(1);
+  });
 
-    fireEvent.click(screen.getByRole("menuitem", { name: "Bring to front" }));
-    expect(items[1]!.onSelect).toHaveBeenCalledTimes(1);
-    // Menu closes before running the action.
+  it("selects an enabled item on click and closes", () => {
+    const list = items();
+    const onClose = vi.fn();
+    render(<ContextMenu x={0} y={0} items={list} onClose={onClose} />);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Copy" }));
+    expect(list[0]!.onSelect).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not select a disabled item on click", () => {
+    const list = items();
+    render(<ContextMenu x={0} y={0} items={list} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
+    expect(list[2]!.onSelect).not.toHaveBeenCalled();
+  });
+
+  it("renders a check mark for checked items", () => {
+    const list = [{ id: "t", label: "Dark", onSelect: vi.fn(), checked: true }];
+    render(<ContextMenu x={0} y={0} items={list} onClose={vi.fn()} />);
+    expect(screen.getByRole("menuitem", { name: "Dark" })).toHaveTextContent("✓");
+  });
+
+  it("closes on Escape", () => {
+    const onClose = vi.fn();
+    render(<ContextMenu x={0} y={0} items={items()} onClose={onClose} />);
+    fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("closes on Escape and on outside pointer-down", () => {
-    const onClose = vi.fn();
-    render(<ContextMenu x={0} y={0} items={items} onClose={onClose} />);
-
-    fireEvent.keyDown(window, { key: "Escape" });
-    expect(onClose).toHaveBeenCalledTimes(1);
-
-    fireEvent.pointerDown(window, { bubbles: true });
-    expect(onClose).toHaveBeenCalledTimes(2);
+  it("navigates with ArrowDown and selects the focused item with Enter", () => {
+    const list = items([{ id: "a", label: "A", onSelect: vi.fn() }, { id: "b", label: "B", onSelect: vi.fn() }]);
+    render(<ContextMenu x={0} y={0} items={list} onClose={vi.fn()} />);
+    const menu = screen.getByRole("menu");
+    fireEvent.keyDown(menu, { key: "ArrowDown" });
+    expect(screen.getByRole("menuitem", { name: "B" })).toHaveAttribute("tabindex", "0");
+    fireEvent.keyDown(menu, { key: "Enter" });
+    expect(list[1]!.onSelect).toHaveBeenCalledTimes(1);
   });
 
-  it("does not close when clicking inside the menu", () => {
+  it("wraps with ArrowUp and treats Space as a select", () => {
+    const list = items([{ id: "a", label: "A", onSelect: vi.fn() }, { id: "b", label: "B", onSelect: vi.fn() }]);
+    render(<ContextMenu x={0} y={0} items={list} onClose={vi.fn()} />);
+    const menu = screen.getByRole("menu");
+    fireEvent.keyDown(menu, { key: "ArrowUp" });
+    expect(screen.getByRole("menuitem", { name: "B" })).toHaveAttribute("tabindex", "0");
+    fireEvent.keyDown(menu, { key: " " });
+    expect(list[1]!.onSelect).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips disabled items while navigating", () => {
+    const list = items();
+    render(<ContextMenu x={0} y={0} items={list} onClose={vi.fn()} />);
+    fireEvent.keyDown(screen.getByRole("menu"), { key: "ArrowDown" });
+    expect(screen.getByRole("menuitem", { name: "Paste" })).toHaveAttribute("tabindex", "0");
+    expect(screen.getByRole("menuitem", { name: "Delete" })).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("moves focus on mouse hover", () => {
+    render(<ContextMenu x={0} y={0} items={items()} onClose={vi.fn()} />);
+    fireEvent.mouseEnter(screen.getByRole("menuitem", { name: "Paste" }));
+    expect(screen.getByRole("menuitem", { name: "Paste" })).toHaveAttribute("tabindex", "0");
+  });
+
+  it("closes on an outside pointerdown", () => {
     const onClose = vi.fn();
-    render(<ContextMenu x={0} y={0} items={items} onClose={onClose} />);
+    render(<ContextMenu x={0} y={0} items={items()} onClose={onClose} />);
+    fireEvent.pointerDown(document.body);
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("does not close on a pointerdown inside the trigger button", () => {
+    const onClose = vi.fn();
+    const trigger = { current: document.createElement("button") };
+    render(<ContextMenu x={0} y={0} items={items()} onClose={onClose} triggerRef={trigger} />);
+    fireEvent.pointerDown(trigger.current!);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("keeps the menu open on an inside pointerdown", () => {
+    const onClose = vi.fn();
+    render(<ContextMenu x={0} y={0} items={items()} onClose={onClose} />);
     fireEvent.pointerDown(screen.getByRole("menu"));
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it("renders disabled items as unclickable", () => {
-    const onSelect = vi.fn();
-    render(
-      <ContextMenu
-        x={0}
-        y={0}
-        items={[{ id: "a", label: "Blocked", disabled: true, onSelect }]}
-        onClose={() => {}}
-      />
-    );
-    const btn = screen.getByRole("menuitem", { name: "Blocked" }) as HTMLButtonElement;
-    expect(btn.disabled).toBe(true);
-    fireEvent.click(btn);
-    expect(onSelect).not.toHaveBeenCalled();
-  });
-
-  it("moves focus to the first enabled item on open so arrow keys work immediately", () => {
-    render(<ContextMenu x={0} y={0} items={items} onClose={() => {}} />);
-    expect(screen.getByRole("menuitem", { name: "Duplicate" })).toHaveFocus();
-  });
-
-  it("skips disabled items when choosing the initial focus target", () => {
-    render(
-      <ContextMenu
-        x={0}
-        y={0}
-        items={[{ id: "a", label: "Blocked", disabled: true, onSelect: vi.fn() }, { id: "b", label: "Enabled", onSelect: vi.fn() }]}
-        onClose={() => {}}
-      />
-    );
-    expect(screen.getByRole("menuitem", { name: "Enabled" })).toHaveFocus();
+  it("restores focus to the previously focused element on close", () => {
+    const onClose = vi.fn();
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.textContent = "Trigger";
+    document.body.appendChild(trigger);
+    trigger.focus();
+    expect(document.activeElement).toBe(trigger);
+    render(<ContextMenu x={0} y={0} items={items()} onClose={onClose} />);
+    // The layout effect refocuses the first menu item after opening.
+    expect(document.activeElement).toBe(screen.getByRole("menuitem", { name: "Copy" }));
+    fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
+    expect(onClose).toHaveBeenCalled();
+    expect(document.activeElement).toBe(trigger);
+    trigger.remove();
   });
 });

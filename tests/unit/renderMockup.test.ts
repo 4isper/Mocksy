@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { computeFrameBox, computeFrameInstances } from "@/lib/render/frameGeometry";
 import { renderMockupToCanvas } from "@/lib/render/renderMockup";
+import { RENDER } from "@/lib/render/canvasDrawing";
+import { buildSceneCss } from "@/lib/render/mockupRenderer";
 import { getFrameSpec, SVG_VIEWBOX_WIDTH } from "@/lib/render/frames";
 import { initialScene } from "@/lib/state/editorStore";
 import { layoutFrameGrid } from "@/lib/state/editorHelpers";
@@ -60,9 +62,9 @@ describe("computeFrameBox geometry", () => {
     expect(insetRatio(box)).toBeCloseTo(spec.padding / cssWidth, 5);
   });
 
-  it("scales the whole frame box by zoom (device + media together)", () => {
-    // Zoom scales the entire mockup, matching the preview where the transform
-    // is applied to the frame container; the inset ratio is preserved.
+  it("does not scale the frame box by the static media zoom (device stays put)", () => {
+    // Media zoom scales the media inside the screen; the frame box is only
+    // scaled by the sampled animation transform.
     const cssWidth = 600;
     const base = computeFrameBox(scene({ frame: "desktop" }), 1200, 1200, 2, cssWidth * 2, cssWidth * 2 * (10 / 16));
     const zoomed = computeFrameBox(
@@ -73,8 +75,8 @@ describe("computeFrameBox geometry", () => {
       cssWidth * 2,
       cssWidth * 2 * (10 / 16)
     );
-    expect(zoomed.width).toBeCloseTo(base.width * 1.5, 3);
-    expect(zoomed.height).toBeCloseTo(base.height * 1.5, 3);
+    expect(zoomed.width).toBeCloseTo(base.width, 3);
+    expect(zoomed.height).toBeCloseTo(base.height, 3);
     expect(insetRatio(zoomed)).toBeCloseTo(insetRatio(base), 5);
   });
 
@@ -171,15 +173,19 @@ describe("renderMockupToCanvas media geometry", () => {
     expect(captured.dx).toBeCloseTo(expectedDx, 3);
   });
 
-  it("scales the media together with the frame under whole-mockup zoom", () => {
-    // Zoom grows the frame box, and the media (drawn at the cover scale inside
-    // the larger cutout) scales by the same factor, so both dw and frame width
-    // grow 1.5x at zoom 1.5.
+  it("scales the media inside the screen under media zoom (frame box unchanged)", () => {
+    // Media zoom scales the laid-out media about the screen center — the CSS
+    // preview's scale() on the media element — while the frame box stays put.
     const base = renderAndCapture({ zoom: 1 });
     const zoomed = renderAndCapture({ zoom: 1.5 });
     expect(zoomed.captured.dw).toBeCloseTo(base.captured.dw * 1.5, 3);
     expect(zoomed.captured.dh).toBeCloseTo(base.captured.dh * 1.5, 3);
-    expect(zoomed.box.width).toBeCloseTo(base.box.width * 1.5, 3);
+    // The scaled rect stays centered on the screen center.
+    const centerX = (base.box.innerX + base.box.innerW / 2);
+    const centerY = (base.box.innerY + base.box.innerH / 2);
+    expect(zoomed.captured.dx + zoomed.captured.dw / 2).toBeCloseTo(centerX, 3);
+    expect(zoomed.captured.dy + zoomed.captured.dh / 2).toBeCloseTo(centerY, 3);
+    expect(zoomed.box.width).toBeCloseTo(base.box.width, 3);
   });
 });
 
@@ -767,9 +773,8 @@ describe("renderMockupToCanvas background image mode", () => {
 });
 
 describe("renderMockupToCanvas video media", () => {
-  it("uses videoWidth/videoHeight for video media", () => {
-    let captured: { dw: number; dh: number } | null = null;
-    const ctx = {
+  function mockCtx(captured: { dw: number; dh: number }) {
+    return {
       clearRect: () => {},
       fillRect: () => {},
       save: () => {},
@@ -784,23 +789,44 @@ describe("renderMockupToCanvas video media", () => {
       stroke: () => {},
       createLinearGradient: () => ({ addColorStop: () => {} }),
       drawImage: (img: any, dx: number, dy: number, dw: number, dh: number) => {
-        captured = { dw, dh };
-      },
-      set fillStyle(_v: unknown) {},
-      set strokeStyle(_v: unknown) {},
-      set lineWidth(_v: unknown) {},
-      set filter(_v: unknown) {}
+        captured.dw = dw;
+        captured.dh = dh;
+      }
     };
+  }
+
+  function videoScene() {
+    return {
+      ...initialScene,
+      layers: [{ ...initialScene.layers[0]!, id: "v1", mediaType: "video" as const, mediaUrl: "data:video/mp4;base64,AAA" }]
+    };
+  }
+
+  it("uses videoWidth/videoHeight for video media", () => {
+    const captured = { dw: 0, dh: 0 };
+    const ctx = mockCtx(captured);
     const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
     // Video with explicit videoWidth/videoHeight (different from natural dimensions)
     const video = { videoWidth: 320, videoHeight: 180 } as unknown as CanvasImageSource;
-    renderMockupToCanvas(canvas, { ...initialScene, layers: [] }, video, undefined, undefined, 400, 300, 2);
-    expect(captured).not.toBeNull();
+    renderMockupToCanvas(canvas, videoScene(), null, undefined, undefined, 400, 300, 2, undefined, undefined, undefined, undefined, new Map([["v1", video]]), undefined, "v1");
+    expect(captured.dw).not.toBe(0);
   });
 
   it("falls back to natural dimensions for video without videoWidth", () => {
-    let captured: { dw: number; dh: number } | null = null;
-    const ctx = {
+    const captured = { dw: 0, dh: 0 };
+    const ctx = mockCtx(captured);
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    // Video without videoWidth uses naturalWidth
+    const video = { naturalWidth: 640, naturalHeight: 360 } as unknown as CanvasImageSource;
+    renderMockupToCanvas(canvas, videoScene(), null, undefined, undefined, 400, 300, 2, undefined, undefined, undefined, undefined, new Map([["v1", video]]), undefined, "v1");
+    expect(captured.dw).not.toBe(0);
+  });
+});
+
+describe("renderMockupToCanvas single-frame media stack", () => {
+  /** Minimal 2D-context mock that records every media draw. */
+  function stackCtx(draws: Array<{ id?: string; dw: number; dh: number }>) {
+    return {
       clearRect: () => {},
       fillRect: () => {},
       save: () => {},
@@ -815,18 +841,90 @@ describe("renderMockupToCanvas video media", () => {
       stroke: () => {},
       createLinearGradient: () => ({ addColorStop: () => {} }),
       drawImage: (img: any, dx: number, dy: number, dw: number, dh: number) => {
-        captured = { dw, dh };
+        draws.push({ id: img?.id, dw, dh });
+      }
+    };
+  }
+
+  function layer(id: string, mediaUrl: string, overrides: Record<string, unknown> = {}) {
+    return { ...initialScene.layers[0]!, id, mediaUrl, ...overrides };
+  }
+
+  it("draws every visible layer's media, matching the preview's stacked media slot", () => {
+    const draws: Array<{ id?: string; dw: number; dh: number }> = [];
+    const ctx = stackCtx(draws);
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    const scene = {
+      ...initialScene,
+      layers: [layer("l1", "data:image/png;base64,A"), layer("l2", "data:image/png;base64,B")]
+    };
+    const medias = new Map<string, CanvasImageSource | null>([
+      ["l1", { id: "l1-media" } as CanvasImageSource],
+      ["l2", { id: "l2-media" } as CanvasImageSource]
+    ]);
+    renderMockupToCanvas(canvas, scene, null, undefined, undefined, 400, 300, 2, undefined, undefined, undefined, undefined, medias, undefined, "l1");
+    // Two layers → two media draws, in layer order.
+    expect(draws.map((d) => d.id)).toEqual(["l1-media", "l2-media"]);
+  });
+
+  it("skips hidden layers' media", () => {
+    const draws: Array<{ id?: string; dw: number; dh: number }> = [];
+    const ctx = stackCtx(draws);
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    const scene = {
+      ...initialScene,
+      layers: [layer("l1", "data:image/png;base64,A"), layer("l2", "data:image/png;base64,B", { hidden: true })]
+    };
+    const medias = new Map<string, CanvasImageSource | null>([
+      ["l1", { id: "l1-media" } as CanvasImageSource],
+      ["l2", { id: "l2-media" } as CanvasImageSource]
+    ]);
+    renderMockupToCanvas(canvas, scene, null, undefined, undefined, 400, 300, 2, undefined, undefined, undefined, undefined, medias, undefined, "l1");
+    expect(draws.map((d) => d.id)).toEqual(["l1-media"]);
+  });
+
+  it("applies a layer's blend mode via globalCompositeOperation", () => {
+    const draws: Array<{ id?: string; dw: number; dh: number }> = [];
+    const ops: string[] = [];
+    const base = stackCtx(draws) as Record<string, unknown>;
+    const ctx = {
+      ...base,
+      drawImage: (img: any, dx: number, dy: number, dw: number, dh: number) => {
+        draws.push({ id: img?.id, dw, dh });
       },
-      set fillStyle(_v: unknown) {},
-      set strokeStyle(_v: unknown) {},
-      set lineWidth(_v: unknown) {},
-      set filter(_v: unknown) {}
+      set globalCompositeOperation(v: string) {
+        ops.push(v);
+      }
     };
     const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
-    // Video without videoWidth uses naturalWidth
-    const video = { naturalWidth: 640, naturalHeight: 360 } as unknown as CanvasImageSource;
-    renderMockupToCanvas(canvas, { ...initialScene, layers: [] }, video, undefined, undefined, 400, 300, 2);
-    expect(captured).not.toBeNull();
+    const scene = {
+      ...initialScene,
+      layers: [layer("l1", "data:image/png;base64,A"), layer("l2", "data:image/png;base64,B", { blendMode: "multiply" })]
+    };
+    const medias = new Map<string, CanvasImageSource | null>([
+      ["l1", { id: "l1-media" } as CanvasImageSource],
+      ["l2", { id: "l2-media" } as CanvasImageSource]
+    ]);
+    renderMockupToCanvas(canvas, scene, null, undefined, undefined, 400, 300, 2, undefined, undefined, undefined, undefined, medias, undefined, "l1");
+    expect(ops).toContain("multiply");
+  });
+
+  it("falls back to the empty-media fill when no visible layer has content", () => {
+    let fillStyle = "";
+    const base = stackCtx([]) as Record<string, unknown>;
+    const ctx = {
+      ...base,
+      set fillStyle(v: unknown) {
+        fillStyle = String(v);
+      }
+    };
+    const canvas = { width: 800, height: 600, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    const scene = {
+      ...initialScene,
+      layers: [layer("l1", "", { mediaUrl: null })]
+    };
+    renderMockupToCanvas(canvas, scene, null, undefined, undefined, 400, 300, 2, undefined, undefined, undefined, undefined, new Map(), undefined, "l1");
+    expect(fillStyle).toBe("rgba(255,255,255,0.04)");
   });
 });
 
@@ -1351,7 +1449,8 @@ describe("renderMockupToCanvas multi-frame mode", () => {
       ]
     };
     const frameOverlays = new Map<string, CanvasImageSource | null>();
-    frameOverlays.set(l.id, { width: 100, height: 200 } as unknown as CanvasImageSource);
+    // Overlay skins are keyed by frame-instance id.
+    frameOverlays.set("f1", { width: 100, height: 200 } as unknown as CanvasImageSource);
     const layerMedias = new Map<string, CanvasImageSource | null>();
     layerMedias.set(l.id, { width: 200, height: 400 } as unknown as CanvasImageSource);
     renderMockupToCanvas(canvas, sceneWithFrames, null, undefined, undefined, 200, 400, 2, undefined, "transparent", undefined, undefined, layerMedias, frameOverlays);
@@ -1398,8 +1497,9 @@ describe("renderMockupToCanvas multi-frame mode", () => {
       ]
     };
     const frameOverlays = new Map<string, CanvasImageSource | null>();
-    frameOverlays.set(layer1.id, { width: 100, height: 200 } as unknown as CanvasImageSource);
-    frameOverlays.set(layer2.id, { width: 100, height: 200 } as unknown as CanvasImageSource);
+    // Overlay skins are keyed by frame-instance id.
+    frameOverlays.set("f1", { width: 100, height: 200 } as unknown as CanvasImageSource);
+    frameOverlays.set("f2", { width: 100, height: 200 } as unknown as CanvasImageSource);
     const layerMedias = new Map<string, CanvasImageSource | null>();
     layerMedias.set(layer1.id, null);
     layerMedias.set(layer2.id, { width: 200, height: 400 } as unknown as CanvasImageSource);
@@ -1629,5 +1729,98 @@ describe("renderMockupToCanvas 3D tilt path", () => {
 
     expect(calls.transform).toBe(800); // 2 frames × 400 tiles
     expect(calls.drawImage).toBe(800);
+  });
+});
+
+describe("renderMockupToCanvas media backdrop parity", () => {
+  // The preview's media slot (mediaSlotStyle in buildSceneCss) paints a fixed
+  // `#0a0a0a` backdrop behind the media, so a transparent media shows the
+  // dark slot — NOT the scene background. The canvas export must match the
+  // preview exactly (drawMediaSource paints RENDER.mediaBackdrop inside the
+  // clipped screen for every media layer), including multi-layer scenes
+  // where each entry draws its own backdrop.
+  function backdropCtx() {
+    const fillCalls: Array<{ style: string; x: number; y: number; w: number; h: number }> = [];
+    const ctx = {
+      clearRect: () => {},
+      fillRect: (x: number, y: number, w: number, h: number) => fillCalls.push({ style: String(ctxFillStyle), x, y, w, h }),
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      closePath: () => {},
+      arcTo: () => {},
+      arc: () => {},
+      ellipse: () => {},
+      clip: () => {},
+      fill: () => {},
+      stroke: () => {},
+      translate: () => {},
+      rotate: () => {},
+      measureText: () => ({ width: 10 }),
+      fillText: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      get filter() { return ctxFilter; },
+      set filter(_v: string) {},
+      set globalAlpha(_v: number) {},
+      set globalCompositeOperation(_v: string) {},
+      set lineWidth(_v: number) {},
+      set lineCap(_v: string) {},
+      set textAlign(_v: string) {},
+      set textBaseline(_v: string) {},
+      set font(_v: string) {},
+      set shadowColor(_v: string) {},
+      set shadowBlur(_v: number) {},
+      set shadowOffsetX(_v: number) {},
+      set shadowOffsetY(_v: number) {},
+      set strokeStyle(_v: string) {}
+    };
+    let ctxFillStyle = "";
+    Object.defineProperty(ctx, "fillStyle", {
+      get: () => ctxFillStyle,
+      set: (v: unknown) => { ctxFillStyle = String(v); },
+      configurable: true
+    });
+    let ctxFilter = "none";
+    Object.defineProperty(ctx, "filter", {
+      get: () => ctxFilter,
+      set: (v: unknown) => { ctxFilter = String(v); },
+      configurable: true
+    });
+    const canvas = { width: 1400, height: 1400, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    return { canvas, fillCalls };
+  }
+
+  it("uses the same backdrop color as the preview's media slot and media element", () => {
+    const css = buildSceneCss(scene({ frame: "iphone15" }));
+    expect(RENDER.mediaBackdrop).toBe("#0a0a0a");
+    expect(css.mediaSlotStyle.background).toBe(RENDER.mediaBackdrop);
+    expect(css.mediaStyle.background).toBe(RENDER.mediaBackdrop);
+  });
+
+  it("paints the backdrop across the whole screen for a fully transparent media (matches the preview's slot)", () => {
+    const { canvas, fillCalls } = backdropCtx();
+    const transparentMedia = { naturalWidth: 1, naturalHeight: 1 } as unknown as CanvasImageSource;
+    const scn = scene({ frame: "iphone15" });
+    renderMockupToCanvas(canvas, scn, transparentMedia, undefined, undefined, 1400, 1400 * (10 / 16));
+    const box = computeFrameBox(scn, 1400, 1400, 2, 1400, 1400 * (10 / 16));
+    const backdrop = fillCalls.filter((c) => c.style === RENDER.mediaBackdrop);
+    expect(backdrop).toHaveLength(1);
+    expect(backdrop[0]!.x).toBeCloseTo(box.innerX, 3);
+    expect(backdrop[0]!.y).toBeCloseTo(box.innerY, 3);
+    expect(backdrop[0]!.w).toBeCloseTo(box.innerW, 3);
+    expect(backdrop[0]!.h).toBeCloseTo(box.innerH, 3);
+  });
+
+  it("keeps the backdrop for a fully transparent multi-layer stack (one per layer)", () => {
+    const { canvas, fillCalls } = backdropCtx();
+    const transparentMedia = { naturalWidth: 1, naturalHeight: 1 } as unknown as CanvasImageSource;
+    const scn = { ...scene(), layers: [layer({ id: "l1" }), layer({ id: "l2" })], activeLayerId: "l1" };
+    renderMockupToCanvas(canvas, scn, transparentMedia, undefined, undefined, 1400, 1400 * (10 / 16), 2, undefined, undefined, undefined, undefined, new Map([["l1", transparentMedia], ["l2", transparentMedia]]));
+    const backdropCount = fillCalls.filter((c) => c.style === RENDER.mediaBackdrop).length;
+    expect(backdropCount).toBeGreaterThanOrEqual(2);
   });
 });

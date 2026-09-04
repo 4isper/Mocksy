@@ -33,7 +33,9 @@ export async function loadCustomFrameFromFile(file: File): Promise<CustomFrame> 
   const text = await file.text();
   const viewBox = parseSvgViewBox(text);
   return {
-    id: `custom-${Date.now()}`,
+    // Two uploads in the same millisecond must not alias the same id — the
+    // random suffix disambiguates (same scheme as ids.ts).
+    id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     asset: await blobToDataUrl(file),
     name: file.name,
     viewBox,

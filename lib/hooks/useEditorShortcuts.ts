@@ -38,7 +38,12 @@ export interface EditorShortcutActions {
 
 function isTypingTarget(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
-  return !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT");
+  if (!el) return false;
+  // contentEditable (the inline annotation editor) is a typing surface just
+  // like inputs: without this check shortcuts fire while the user edits text
+  // — `r` opens the reset dialog, arrows move frame instances, etc.
+  if (el.isContentEditable) return true;
+  return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT";
 }
 
 type ActionMap = {
@@ -230,6 +235,11 @@ export function useEditorShortcuts(actions: EditorShortcutActions): void {
         // keypress would nudge (and possibly resize) twice.
         const target = event.target instanceof Element ? event.target : null;
         if (target?.closest("[data-frame-instance-id]")) return;
+        // Same for annotations: a focused annotation box moves (and Alt+
+        // resizes) itself with its own step semantics. Without this exclusion
+        // the global handler nudges the active frame instance on top of the
+        // annotation's own move.
+        if (target?.closest("[data-annotation]")) return;
         const st = useEditorStore.getState();
         let id = st.activeFrameInstanceId;
         if (!id && st.scene.frameInstances.length > 0) {

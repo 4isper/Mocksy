@@ -19,7 +19,7 @@ import type {
   StylePreset
 } from "@/lib/types/editor";
 import { ALL_FRAMES, ANIMATION_PRESETS, frameOs } from "@/lib/render/frames";
-import { LAYER_FILTER_DEFAULTS } from "@/lib/render/layerFilters";
+import { LAYER_FILTER_DEFAULTS, LAYER_ZOOM } from "@/lib/render/layerFilters";
 // Import from the defining module, not the editorStore barrel: initialScene is
 // mutated after its first assignment (activeLayerId is set a line later), and
 // a re-exported snapshot can drop fields in Turbopack's server bundles.
@@ -59,11 +59,69 @@ export function normalizeScreenChrome(raw: unknown, fallback: ScreenChrome = ini
     showStatusBar: r.showStatusBar !== false,
     showClock: r.showClock !== false,
     showDate: r.showDate !== false,
+    showNotifications: r.showNotifications === true,
+    showLockShortcuts: r.showLockShortcuts !== false,
     showDock: r.showDock !== false,
     showHomeIndicator: r.showHomeIndicator !== false,
     time: str(r.time, fallback.time) ?? fallback.time,
     date: str(r.date, fallback.date) ?? fallback.date,
-    os: pick(r.os, ["ios", "android", "desktop"] as const, frameOs(frame))
+    os: pick(r.os, ["ios", "android", "desktop"] as const, frameOs(frame)),
+    clockSizeFactor: num(r.clockSizeFactor, fallback.clockSizeFactor ?? 0.105, 0.04, 0.25),
+    clockYFactor: num(r.clockYFactor, fallback.clockYFactor ?? 0.175, 0.08, 0.5),
+    clockColor: colorStr(r.clockColor, null),
+    dockBackground: colorStr(r.dockBackground, null),
+    dockColors: Array.isArray(r.dockColors)
+      ? r.dockColors.slice(0, 4).map((c) => colorStr(c, null) ?? "#30d158")
+      : null,
+    dockIcons: Array.isArray(r.dockIcons)
+      ? r.dockIcons.slice(0, 4).map((item) => {
+          const d = item as Record<string, unknown>;
+          return {
+            label: str(d.label, "") ?? "",
+            color: colorStr(d.color, null) ?? "#0a84ff",
+            emoji: typeof d.emoji === "string" ? d.emoji.slice(0, 4) : undefined
+          };
+        })
+      : null,
+    androidGridIcons: Array.isArray(r.androidGridIcons)
+      ? r.androidGridIcons.slice(0, 20).map((item) => {
+          const g = item as Record<string, unknown>;
+          return {
+            label: str(g.label, "") ?? "",
+            color: colorStr(g.color, null) ?? "#1a73e8",
+            emoji: typeof g.emoji === "string" ? g.emoji.slice(0, 4) : undefined
+          };
+        })
+      : null,
+    gridCols: typeof r.gridCols === "number" ? clampInt(r.gridCols, 3, 5) : null,
+    gridRows: typeof r.gridRows === "number" ? clampInt(r.gridRows, 4, 6) : null,
+    folders: Array.isArray(r.folders)
+      ? r.folders.slice(0, 8).map((item) => {
+          const f = item as Record<string, unknown>;
+          return {
+            label: str(f.label, "") ?? "",
+            color: colorStr(f.color, null) ?? "#3a4a5a"
+          };
+        })
+      : null,
+    widgets: Array.isArray(r.widgets)
+      ? r.widgets
+          .slice(0, 2)
+          .map((item) => {
+            const w = item as Record<string, unknown>;
+            return { type: w.type === "weather" ? ("weather" as const) : ("clock" as const) };
+          })
+      : null,
+    notifications: Array.isArray(r.notifications)
+      ? r.notifications.slice(0, 4).map((item) => {
+          const n = item as Record<string, unknown>;
+          return {
+            app: str(n.app, "") ?? "",
+            subtitle: str(n.subtitle, "") ?? "",
+            color: colorStr(n.color, null) ?? "#0a84ff"
+          };
+        })
+      : null
   };
 }
 
@@ -72,9 +130,21 @@ function pick<T extends string>(value: unknown, allowed: readonly T[], fallback:
 }
 
 function num(value: unknown, fallback: number, min: number, max: number): number {
+  // null/false/"" coerce to 0 via Number() — finite, so the fallback would
+  // never apply. They are "missing field" signals for untrusted payloads
+  // (e.g. "opacity": null must stay 100, not become an invisible layer), so
+  // short-circuit before the coercion.
+  if (value === null || value === undefined || value === "" || typeof value === "boolean") return fallback;
   const n = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(n)) return fallback;
   return Math.min(max, Math.max(min, n));
+}
+
+/** Normalizes an optional integer field (e.g. grid dimensions): a valid number
+ *  is rounded and clamped to [min, max]; anything else yields null. */
+function clampInt(value: unknown, min: number, max: number): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.round(Math.min(max, Math.max(min, value)));
 }
 
 function str(value: unknown, fallback: string | null): string | null {
@@ -153,7 +223,7 @@ function normalizeLayer(raw: unknown, fallback: MediaLayer): MediaLayer {
     fontWeight: pick(r.fontWeight, ["normal", "bold"] as const, fallback.fontWeight ?? "bold"),
     fontFamily: str(r.fontFamily, null) ?? undefined,
     hidden: r.hidden === true,
-    zoom: num(r.zoom, fallback.zoom, 0.1, 3),
+    zoom: num(r.zoom, fallback.zoom, LAYER_ZOOM.min, LAYER_ZOOM.max),
     mediaOffsetX: num(r.mediaOffsetX, fallback.mediaOffsetX, -1, 1),
     mediaOffsetY: num(r.mediaOffsetY, fallback.mediaOffsetY, -1, 1),
     mediaFit: pick(r.mediaFit, MEDIA_FITS, fallback.mediaFit),

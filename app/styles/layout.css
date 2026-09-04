@@ -5,6 +5,10 @@
   --panel-left-w: 280px;
   --panel-right-w: 310px;
   --grid-gap: 14px;
+  /* Reserved space for the fixed mobile tab bar (64px of buttons/padding +
+     border + safe area). Shared by the shell padding and the sheet offset so
+     an open sheet never hides behind the tab bar. */
+  --tabbar-space: calc(74px + env(safe-area-inset-bottom));
 }
 
 .editor-shell {
@@ -33,6 +37,12 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* Desktop: let the column shrink below content so the fixed-height shell
+   never scrolls. (Mobile overrides the floor below; the old inline
+   min-height lived in EditorShell and beat every stylesheet rule.) */
+.preview-column {
+  min-height: 0;
+}
 .fullscreen-exit {
   position: absolute;
   top: 10px;
@@ -84,7 +94,10 @@ body.panel-resizing {
   user-select: none;
 }
 
-@media (max-width: 980px) {
+/* Resize is gated on the same breakpoint as the JS (DESKTOP_MQ, 1181px):
+   showing a handle that can't be dragged is a dead affordance, and the slim
+   981–1180px band uses fixed token widths instead. */
+@media (max-width: 1180px) {
   .panel-resize-handle {
     display: none;
   }
@@ -133,12 +146,35 @@ body.panel-resizing {
   }
 }
 
-/* ---- Mobile bottom-sheet layout (<=768px) ----
-   The preview stays in flow at the top; both side panels become fixed
-   bottom sheets toggled from the tab bar, so editing controls are always
-   one tap away without scrolling past them to reach the canvas. */
-/* Desktop: the hosts are layout-transparent so the editor grid keeps seeing
-   the panels as its direct children (min-height/scroll chains stay intact). */
+/* Roomy stacked layout (tall phones, tablets): fixed viewport shell whose
+   preview row stretches to absorb leftover height — no dead void under the
+   toolbar. Short landscape screens keep the scrolling rules above, where the
+   capped column height guarantees a usable canvas. Sheets are fixed
+   overlays in both regimes. */
+@media (max-width: 980px) and (min-height: 600px) {
+  .editor-shell {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .editor-grid {
+    grid-template-rows: minmax(0, 1fr);
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .preview-column {
+    height: 100%;
+    min-height: 0;
+  }
+}
+
+/* ---- Mobile bottom-sheet layout (<=980px) ----
+   Phones and portrait tablets: the preview stays in flow at the top; both
+   side panels become fixed bottom sheets toggled from the tab bar, so editing
+   controls are always one tap away without scrolling past them to reach the
+   canvas. The 769–980px band used to stack the panels in flow with no tab bar,
+   burying the controls below the fold — it now shares the bottom navigation. */
 .sheet-host {
   display: contents;
 }
@@ -148,10 +184,16 @@ body.panel-resizing {
   display: none;
 }
 
-@media (max-width: 768px) {
+/* Swipe-down grabber: only meaningful inside a bottom sheet, and the host is
+   `display: contents` on desktop, so it must stay out of the grid there. */
+.sheet-grabber {
+  display: none;
+}
+
+@media (max-width: 980px) {
   .editor-shell {
     /* Keep the toolbar above the fixed tab bar. */
-    padding-bottom: calc(74px + env(safe-area-inset-bottom));
+    padding-bottom: var(--tabbar-space);
   }
 
   .sheet-host {
@@ -159,12 +201,15 @@ body.panel-resizing {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
+    /* Float above the tab bar (z 46) instead of hiding its last ~74px of
+       content behind it. */
+    bottom: var(--tabbar-space);
     z-index: 45;
-    /* Parked below the viewport; the open state slides it up. `visibility`
-       keeps the parked panel out of the tab order and off screen readers,
-       and is delayed so the slide-out animation stays visible. */
-    transform: translateY(105%);
+    /* Parked below the viewport (own height + the tab bar gap); the open
+       state slides it up. `visibility` keeps the parked panel out of the tab
+       order and off screen readers, and is delayed so the slide-out
+       animation stays visible. */
+    transform: translateY(calc(100% + var(--tabbar-space)));
     visibility: hidden;
     transition: transform 0.28s ease, visibility 0s linear 0.28s;
     pointer-events: none;
@@ -175,18 +220,60 @@ body.panel-resizing {
     transition: transform 0.28s ease;
     pointer-events: auto;
   }
+  .sheet-host.is-dragging {
+    /* The transform follows the finger 1:1 during a swipe-down. */
+    transition: none;
+  }
   .sheet-host > .panel {
-    border-radius: var(--radius) var(--radius) 0 0;
+    border-radius: var(--radius);
     box-shadow: var(--shadow-pop);
+    /* Room for the grabber pill above the panel content. The panels set
+       `padding` inline, so this needs !important to win. */
+    padding-top: 22px !important;
+  }
+  .sheet-grabber {
+    display: grid;
+    place-items: center;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1;
+    width: 64px;
+    height: 20px;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  .sheet-grabber:active {
+    cursor: grabbing;
+  }
+  .sheet-grabber-bar {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--panel-border-strong);
   }
   .sheet-host--controls .control-panel {
-    height: min(72dvh, 640px);
+    /* Peek height: the sheet stays short enough that the preview canvas
+       above remains visible (and live) while adjusting controls — a full
+       72dvh sheet buried the canvas and forced open-tweak-close loops.
+       Content still scrolls inside with chained scroll contained. */
+    height: min(52dvh, 560px);
     max-height: none;
     overflow-y: auto;
+    /* Stop scroll chaining: dragging the panel past its end must not scroll
+       the page behind the sheet. */
+    overscroll-behavior: contain;
   }
   .sheet-host--right .right-panel {
-    height: min(72dvh, 640px);
+    height: min(52dvh, 560px);
     max-height: none;
+  }
+  .sheet-host--right .right-panel-content {
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .sheet-backdrop {
@@ -194,13 +281,16 @@ body.panel-resizing {
     position: fixed;
     inset: 0;
     z-index: 40;
-    background: rgba(0, 0, 0, 0.45);
+    /* Light dim: the peek sheet leaves the preview visible on purpose, so
+       the backdrop only signals overlay and catches dismiss taps instead
+       of burying the canvas the user is adjusting against. */
+    background: rgba(0, 0, 0, 0.18);
     animation: backdropFadeIn 0.2s ease;
   }
 
   .mobile-tabbar {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 4px;
     position: fixed;
     left: 0;
@@ -217,6 +307,7 @@ body.panel-resizing {
   .mtab {
     appearance: none;
     font: inherit;
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -225,7 +316,7 @@ body.panel-resizing {
     min-height: 48px;
     padding: 4px 8px;
     border: 1px solid transparent;
-    border-radius: 10px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--text-dim);
     font-size: 11px;
@@ -235,6 +326,26 @@ body.panel-resizing {
   }
   .mtab:hover {
     color: var(--text);
+  }
+  .mtab:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .mtab-badge {
+    position: absolute;
+    top: 2px;
+    right: 6px;
+    min-width: 16px;
+    height: 16px;
+    display: grid;
+    place-items: center;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
   }
   .mtab.is-active {
     color: var(--accent);
@@ -293,4 +404,21 @@ body.panel-resizing {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-dim);
+}
+
+/* Control-panel task groups (Content/Device/Adjust/Scene): one step below
+   the panel title in the hierarchy so ten accordions scan as four tasks. */
+.control-group {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.control-group-label {
+  margin: 4px 0 -4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
 }

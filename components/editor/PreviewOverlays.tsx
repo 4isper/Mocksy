@@ -55,7 +55,15 @@ export function PreviewOverlays({
         height: "min(100cqh, calc(100cqw * var(--canvas-ar-h) / var(--canvas-ar-w)))",
         aspectRatio: scene.aspectRatio,
         transformOrigin: "top left",
-        pointerEvents: "none"
+        pointerEvents: "none",
+        // The translate above creates a stacking context at level 0. The
+        // single-frame device (SingleFrameView) paints at zIndex 1, so without
+        // an explicit level this whole overlay — annotations included — would
+        // sit *behind* the device and e.g. a blur would sample the background
+        // instead of the screen. Multi-frame instances paint at auto (0) after
+        // the background, so a level above the device keeps both modes with
+        // annotations on top, matching the canvas/SVG/HTML exporters.
+        zIndex: 2
       }}
     >
       {scene.annotations.map((a) => (

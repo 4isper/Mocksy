@@ -45,7 +45,7 @@ export function LayersPanel() {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
 
-  const { dragId, dropTarget, handleDragStart, handleDragOver, handleDrop, handleDragEnd } = useLayerReorder(scene);
+  const { dragId, dropTarget, handleDragStart, handleDragOver, handleDrop, handleDragEnd, handleGripPointerDown, handleGripPointerMove, handleGripPointerUp } = useLayerReorder(scene);
 
   const commitRename = (id: string) => {
     renameLayer(id, draftName.trim());
@@ -158,19 +158,19 @@ export function LayersPanel() {
 
   return (
     <div style={{ padding: 10, display: "grid", gap: 8, alignContent: "start", overflow: "auto", minHeight: 0, minWidth: 0 }}>
-      <label className="btn" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, padding: "6px 10px", cursor: "pointer" }}>
+      <label className="btn btn-compact">
         + {t("editor.addLayer")}
         <input type="file" accept="image/*,video/*" onChange={handleFile} style={{ display: "none" }} />
       </label>
       {error ? (
-        <span role="alert" style={{ color: "var(--danger)", fontSize: 13 }}>
+        <span role="alert" className="field-error">
           {error}
         </span>
       ) : null}
       {isMediaLoading && scene.layers.length === 0 ? (
         <div aria-busy="true" aria-label={t("editor.loadingMedia")} style={{ display: "grid", gap: 6 }}>
           {[0, 1, 2].map((i) => (
-            <div key={i} className="skeleton skeleton-row" style={{ height: 36, borderRadius: 8 }} />
+            <div key={i} className="skeleton skeleton-row" style={{ height: 36 }} />
           ))}
         </div>
       ) : scene.layers.length === 0 ? (
@@ -179,7 +179,7 @@ export function LayersPanel() {
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.3" /><path d="M3 9h18M9 3v18" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>
           </div>
           <p className="empty-state-text">{t("editor.noLayers")}</p>
-          <p className="empty-state-text" style={{ fontSize: 11, color: "var(--text-dim)" }}>{t("help.layersStack")}</p>
+          <p className="empty-state-text">{t("help.layersStack")}</p>
         </div>
       ) : (
         <>
@@ -231,8 +231,8 @@ export function LayersPanel() {
                     alignItems: "center",
                     gap: 4,
                     padding: "3px 6px",
-                    borderRadius: 6,
-                    background: "rgba(0,217,255,0.04)",
+                    borderRadius: "var(--radius-xs)",
+                    background: "color-mix(in srgb, var(--accent) 4%, transparent)",
                     border: "1px solid var(--panel-border)",
                     marginTop: index > 0 ? 4 : 0,
                   }}
@@ -241,7 +241,7 @@ export function LayersPanel() {
                     type="button"
                     aria-label={isCollapsed ? t("editor.expandGroup") : t("editor.collapseGroup")}
                     onClick={() => toggleGroupCollapse(groupId)}
-                    style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", color: "var(--text-dim)" }}
+                    className="group-icon-btn"
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s" }}>
                       <path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
@@ -270,7 +270,7 @@ export function LayersPanel() {
                     type="button"
                     aria-label={allHidden ? t("editor.showGroup") : t("editor.hideGroup")}
                     onClick={() => toggleGroupHidden(groupId)}
-                    style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", color: "var(--text-dim)" }}
+                    className="group-icon-btn"
                   >
                     {allHidden ? <EyeOff size={12} /> : <Eye size={12} />}
                   </button>
@@ -278,7 +278,7 @@ export function LayersPanel() {
                     type="button"
                     aria-label={allLocked ? t("editor.unlockGroup") : t("editor.lockGroup")}
                     onClick={() => toggleGroupLocked(groupId)}
-                    style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", color: "var(--text-dim)" }}
+                    className="group-icon-btn"
                   >
                     {allLocked ? <Lock size={12} /> : <LockOpen size={12} />}
                   </button>
@@ -314,14 +314,17 @@ export function LayersPanel() {
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 onDragEnd={handleDragEnd}
+                onGripPointerDown={handleGripPointerDown}
+                onGripPointerMove={handleGripPointerMove}
+                onGripPointerUp={handleGripPointerUp}
               />
             );
 
             return items;
           })}
           {isMediaLoading ? (
-            <li className="layer-item" aria-busy="true" aria-label={t("editor.loadingMedia")} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 8px", borderRadius: 8, border: "1px solid var(--panel-border)" }}>
-              <span className="skeleton" style={{ flex: 1, height: 14, borderRadius: 6 }} />
+            <li className="layer-item" aria-busy="true" aria-label={t("editor.loadingMedia")} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 8px", borderRadius: "var(--radius-xs)", border: "1px solid var(--panel-border)" }}>
+              <span className="skeleton skeleton-text" style={{ flex: 1 }} />
             </li>
           ) : null}
           </ul>
@@ -340,7 +343,7 @@ export function LayersPanel() {
           {t("editor.clearMedia")}
         </button>
       ) : null}
-      <p style={{ color: "var(--text-dim)", fontSize: 12, margin: 0 }}>
+      <p className="text-dim-sm" style={{ margin: 0 }}>
         {t("help.layersStack")}
       </p>
       {contextMenu ? (

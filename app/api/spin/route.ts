@@ -11,6 +11,48 @@ import { initialScene } from "@/lib/state/editorScene";
  *  caller can't OOM the renderer. */
 const MAX_MEDIA_LENGTH = 32 * 1024 * 1024;
 
+/** Total request-body budget (media + scene JSON overhead). Enforced while
+ *  streaming the body in, so an oversized payload is rejected without being
+ *  buffered — `request.json()` alone would read the whole body into memory
+ *  before any validation runs. */
+const MAX_BODY_BYTES = 40 * 1024 * 1024;
+
+type ReadBodyResult = { ok: true; body: unknown } | { ok: false; reason: "too-large" | "invalid" };
+
+async function readJsonBody(request: Request): Promise<ReadBodyResult> {
+  // Fast path: an honest Content-Length above the budget is rejected before
+  // a single byte is read.
+  const contentLength = Number(request.headers.get("content-length") ?? "");
+  if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
+    return { ok: false, reason: "too-large" };
+  }
+  if (!request.body) return { ok: false, reason: "invalid" };
+  try {
+    const reader = request.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_BODY_BYTES) {
+        void reader.cancel().catch(() => undefined);
+        return { ok: false, reason: "too-large" };
+      }
+      chunks.push(value);
+    }
+    const merged = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      merged.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return { ok: true, body: JSON.parse(new TextDecoder().decode(merged)) };
+  } catch {
+    return { ok: false, reason: "invalid" };
+  }
+}
+
 /** Media must arrive as a data URL so the scene stays self-contained (the
  *  editor renders data: URLs only; remote URLs would need server-side fetch
  *  and open an SSRF/validation hole). */
@@ -22,18 +64,27 @@ function parseSeed(value: unknown): number | null {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  let body: SpinRequest;
-  try {
-    const parsed = (await request.json()) as unknown;
-    if (typeof parsed !== "object" || parsed === null) {
-      return NextResponse.json({ error: "Request body must be a JSON object." }, { status: 400 });
-    }
-    body = parsed as SpinRequest;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+  const read = await readJsonBody(request);
+  if (!read.ok) {
+    return NextResponse.json(
+      { error: read.reason === "too-large" ? "Request body exceeds the 40MB limit." : "Invalid JSON body." },
+      { status: read.reason === "too-large" ? 413 : 400 }
+    );
   }
+  const parsed = read.body;
+  if (typeof parsed !== "object" || parsed === null) {
+    return NextResponse.json({ error: "Request body must be a JSON object." }, { status: 400 });
+  }
+  const body = parsed as SpinRequest;
 
-  const { pack, media, mediaType, seed, format, scale, width, height } = body;
+  const { pack, media, mediaType, format, scale, width, height } = body;
+  // A non-numeric seed previously flowed into the renderer's PRNG, which
+  // coerces every string to 0 — silently collapsing all bad seeds onto one
+  // result. Reject it instead of pretending the request succeeded.
+  const usedSeedInput = parseSeed(body.seed);
+  if (body.seed != null && usedSeedInput === null) {
+    return NextResponse.json({ error: "`seed` must be a finite number." }, { status: 400 });
+  }
 
   if (media != null) {
     if (typeof media !== "string" || media.length === 0) {
@@ -55,7 +106,7 @@ export async function POST(request: Request): Promise<Response> {
   const { scene, seed: usedSeed } = spinScene(
     structuredClone(initialScene),
     pack ?? {},
-    seed ?? undefined
+    usedSeedInput ?? undefined
   );
 
   const framed = media != null ? applySpinMedia(scene, media, type) : scene;

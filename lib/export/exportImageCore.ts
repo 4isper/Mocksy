@@ -14,10 +14,10 @@ export function resolveExportTransform(scene: EditorScene, activeLayerId: string
   const active = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
   if (!active) return { zoom: 1, offsetX: 0, offsetY: 0 };
   if (active.animationPreset === "none") {
-    // The static preview does not translate the frame (only the media inside
-    // it pans, and that is drawn from mediaOffsetX/Y separately), so the frame
-    // transform offset stays zero here.
-    return { zoom: active.zoom, offsetX: 0, offsetY: 0 };
+    // No animation: the frame renders at identity. The layer's static media
+    // zoom is a media-level transform applied inside the screen at draw time
+    // (drawMediaSource / the CSS media element), not a frame-box transform.
+    return { zoom: 1, offsetX: 0, offsetY: 0 };
   }
   const sampled = sampleVideoTransform(active, 0.5);
   return { zoom: sampled.zoom, offsetX: sampled.x, offsetY: sampled.y };

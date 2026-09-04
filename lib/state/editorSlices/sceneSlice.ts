@@ -1,5 +1,5 @@
 import { activePosterTime, pushHistory } from "@/lib/state/editorHelpers";
-import { buildFreshScene } from "@/lib/state/editorScene";
+import { buildEmptyScene } from "@/lib/state/editorScene";
 import type { EditorScene } from "@/lib/types/editor";
 import type { EditorStoreSetter, EditorStoreState } from "../editorStoreTypes";
 
@@ -53,7 +53,7 @@ export function createSceneSlice(set: EditorStoreSetter): SceneSlice {
       }),
     resetScene: () =>
       set((s) => {
-        const fresh = buildFreshScene();
+        const fresh = buildEmptyScene();
         return { ...pushHistory(s, fresh), activeLayerId: reconcileActiveLayerId(fresh, s.activeLayerId) };
       }),
     clearHistory: () =>
@@ -117,7 +117,7 @@ export function createSceneSlice(set: EditorStoreSetter): SceneSlice {
           activeLayerId: reconcileActiveLayerId(nextScene, s.activeLayerId)
         };
       }),
-    setMediaLoading: (loading) => set({ isMediaLoading: loading }),
+    setMediaLoading: (loading) => set(loading ? {} : { isMediaLoading: false, mediaLoadingLayerId: null }),
     setRemovingBackground: (loading) => set({ isRemovingBackground: loading }),
     setMediaUploadError: (msg) => {
       // Auto-clear the shared error so it doesn't linger until the next action,

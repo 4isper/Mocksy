@@ -25,6 +25,9 @@ interface LayerItemProps {
   onDragOver: (e: React.DragEvent<HTMLLIElement>, id: string) => void;
   onDrop: (e: React.DragEvent<HTMLLIElement>, id: string) => void;
   onDragEnd: () => void;
+  onGripPointerDown: (e: React.PointerEvent, id: string) => void;
+  onGripPointerMove: (e: React.PointerEvent) => void;
+  onGripPointerUp: (e: React.PointerEvent) => void;
 }
 
 /** One row in the layer listbox: thumbnail and editable name. The row itself is
@@ -49,7 +52,10 @@ export function LayerItem({
   onDragStart,
   onDragOver,
   onDrop,
-  onDragEnd
+  onDragEnd,
+  onGripPointerDown,
+  onGripPointerMove,
+  onGripPointerUp
 }: LayerItemProps) {
   const t = useTranslations();
 
@@ -64,6 +70,7 @@ export function LayerItem({
     <li
       key={layer.id}
       className={active ? "layer-item is-active" : "layer-item"}
+      data-reorder-id={layer.id}
       role="option"
       aria-selected={selected}
       tabIndex={active ? 0 : -1}
@@ -80,9 +87,9 @@ export function LayerItem({
         alignItems: "center",
         gap: 5,
         padding: "6px 8px",
-        borderRadius: 8,
+        borderRadius: "var(--radius-xs)",
         border: active ? "2px solid var(--accent)" : selected ? "1px solid var(--accent)" : "1px solid var(--panel-border)",
-        background: active ? "rgba(0,217,255,0.08)" : selected ? "rgba(0,217,255,0.04)" : "transparent",
+        background: active ? "color-mix(in srgb, var(--accent) 8%, transparent)" : selected ? "color-mix(in srgb, var(--accent) 4%, transparent)" : "transparent",
         cursor: isDragging ? "grabbing" : "grab",
         opacity: isDragging ? 0.45 : layer.hidden ? 0.5 : 1,
         minWidth: 0,
@@ -104,6 +111,11 @@ export function LayerItem({
       )}
       <span
         aria-hidden="true"
+        className="layer-grip"
+        onPointerDown={(e) => onGripPointerDown(e, layer.id)}
+        onPointerMove={onGripPointerMove}
+        onPointerUp={onGripPointerUp}
+        onPointerCancel={onGripPointerUp}
         style={{
           flex: "0 0 auto",
           display: "grid",
@@ -111,7 +123,12 @@ export function LayerItem({
           color: "var(--text-dim)",
           fontSize: 12,
           lineHeight: 1,
-          letterSpacing: 1
+          letterSpacing: 1,
+          // The grip is the touch reorder handle: the browser must not steal
+          // the gesture for scrolling or selection.
+          touchAction: "none",
+          userSelect: "none",
+          WebkitTouchCallout: "none"
         }}
       >
         ⋮⋮

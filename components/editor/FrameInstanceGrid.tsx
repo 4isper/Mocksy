@@ -262,12 +262,14 @@ export function FrameInstanceGrid({
         const layer = scene.layers.find((l) => l.id === inst.layerId) ?? activeLayer;
         const spec = getFrameSpec(inst.frame);
         const instCss = frameInstanceCssMap.get(inst.id)!;
-        const zoom = layer?.zoom ?? 1;
+        // Frame wrapper carries only the 3D tilt; the layer's media zoom
+        // scales the media inside the screen via the per-instance mediaStyle
+        // (see buildSceneCss), matching the canvas/SVG/HTML renderers.
+        const zoomStyle = { transform: tiltCss(scene), transformOrigin: "center" };
         // mediaOffset pans the MEDIA inside the frame (objectPosition in
         // instCss, matching the exporters) — translating the whole frame here
         // as well double-applies it and shifts the device ~2px per unit away
         // from its exported position.
-        const zoomStyle = { transform: tiltCss(scene) + "scale(" + zoom + ")", transformOrigin: "center" };
         // Live preview uses the native -webkit-box-reflect (Chromium/Safari);
         // canvas-based exports implement the effect fully for every browser.
         const isSelected = activeFrameInstanceId === inst.id;
@@ -377,7 +379,15 @@ export function FrameInstanceGrid({
                         hasEntrance
                           ? <div key={`${layer.id}-${layer.entranceAnimation}`} style={wrapper}>{el}</div>
                           : el;
-                      return isVideoLayer(layer) ? wrap(
+                      // Untransformed clipping frame over the screen: the
+                      // media's rotate/scale transforms stay clipped to the
+                      // screen. Blend lives on the slot — a clip-path slot
+                      // creates a stacking context, so a child blend would be
+                      // isolated into an empty backdrop.
+                      const slot = (el: React.ReactNode) => (
+                        <div style={{ ...instCss.mediaSlotStyle, ...blendCss }}>{wrap(el)}</div>
+                      );
+                      return isVideoLayer(layer) ? slot(
                         <video
                           src={layer.mediaUrl}
                           muted
@@ -386,7 +396,7 @@ export function FrameInstanceGrid({
                           loop={layer.videoLoop}
                           autoPlay={layer.videoAutoplay}
                           crossOrigin="anonymous"
-                          style={{ ...instCss.mediaStyle, objectFit: "contain", backgroundColor: "var(--panel-solid)", cursor: "grab", ...blendCss }}
+                          style={{ ...instCss.mediaStyle, backgroundColor: "var(--panel-solid)", cursor: "grab" }}
                           onPointerDown={() => selectLayer(layer.id)}
                           onLoadedData={(e) => {
                             setMediaLoading(false);
@@ -397,11 +407,11 @@ export function FrameInstanceGrid({
                             e.currentTarget.playbackRate = Math.max(0.5, Math.min(2, layer.playbackSpeed ?? 1));
                           }}
                         />
-                      ) : wrap(
+                      ) : slot(
                         <img
                           src={layer.mediaUrl}
                           alt={t("editor.uploadedMediaAlt")}
-                          style={{ ...instCss.mediaStyle, cursor: "grab", ...blendCss }}
+                          style={{ ...instCss.mediaStyle, cursor: "grab" }}
                           onLoad={(e) => {
                             setMediaLoading(false);
                             analyzeMedia(e.currentTarget);

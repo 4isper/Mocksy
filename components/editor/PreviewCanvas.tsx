@@ -15,12 +15,13 @@ import { useScenePalette } from "@/lib/hooks/useScenePalette";
 import { useCanvasGestures } from "@/lib/hooks/useCanvasGestures";
 import { useCanvasDrop } from "@/lib/hooks/useCanvasDrop";
 import { useCanvasViewport } from "@/lib/hooks/useCanvasViewport";
+import { useLongPress } from "@/lib/hooks/useLongPress";
 import { ContextMenu, type ContextMenuItem } from "@/components/editor/ContextMenu";
 import { FrameInstanceGrid } from "@/components/editor/FrameInstanceGrid";
 import { SingleFrameView } from "@/components/editor/SingleFrameView";
 import { PreviewBackground } from "@/components/editor/PreviewBackground";
 import { PreviewOverlays } from "@/components/editor/PreviewOverlays";
-import { PreviewChips, PreviewGridToggle, PreviewZoomControl } from "@/components/editor/PreviewChips";
+import { PreviewDockBar } from "@/components/editor/PreviewChips";
 
 interface PreviewCanvasProps {
   scene: EditorScene;
@@ -57,6 +58,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   const duplicateAnnotation = useEditorStore((s) => s.duplicateAnnotation);
   const reorderAnnotation = useEditorStore((s) => s.reorderAnnotation);
   const removeAnnotation = useEditorStore((s) => s.removeAnnotation);
+  const removeAnnotations = useEditorStore((s) => s.removeAnnotations);
   const duplicateFrameInstance = useEditorStore((s) => s.duplicateFrameInstance);
   const reorderFrameInstance = useEditorStore((s) => s.reorderFrameInstance);
   const removeFrameInstance = useEditorStore((s) => s.removeFrameInstance);
@@ -80,12 +82,15 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
   // The whole-mockup zoom/animation is applied to the frame container so the
   // device skin and media scale together, matching the export.
   const frameRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  // Per-layer <video> elements (single-frame mode): the timeline seek targets
+  // the active layer's own video — a shared ref would track whichever video
+  // mounted last and scrub the wrong clip when several are visible.
+  const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const canvasRef = useRef<HTMLDivElement>(null);
   const tiltPrefix = useMemo(() => tiltCss(scene), [scene.tiltX, scene.tiltY]); // eslint-disable-line react-hooks/exhaustive-deps
   useFrameTransform(frameRef, activeLayer, scene.animationDurationMs, tiltPrefix);
 
-  const { canPan, onTouchStart, onTouchEnd, onPanDown, onPanMove, onPanUp } = useCanvasGestures({ frameRef, activeLayer });
+  const { canPan, onTouchStart, onTouchEnd, onTouchCancel, onPanDown, onPanMove, onPanUp } = useCanvasGestures({ frameRef, activeLayer });
   const { fileInputKey, isDragging, handleDrop, handleFile, onDragEnter, onDragOver, onDragLeave } = useCanvasDrop({ scene });
   const view = useCanvasViewport({ canvasRef });
 
@@ -96,12 +101,12 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
 
   const { w: arW, h: arH } = parseAspectRatioOr(scene.aspectRatio);
 
-  /** Builds the context-menu items for the right-clicked target: a frame
-   *  instance, an annotation, or the empty canvas (add-annotation actions). */
-  const openContextMenu = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      const target = e.target as HTMLElement;
-      e.preventDefault();
+  /** Builds the context-menu items for the target: a frame instance, an
+   *  annotation, or the empty canvas (add-annotation actions). Shared by the
+   *  desktop `contextmenu` event and the touch long-press (iOS never fires
+   *  `contextmenu`, so the menu would otherwise be unreachable there). */
+  const openContextMenuAt = useCallback(
+    (x: number, y: number, target: HTMLElement) => {
       const frameEl = target.closest("[data-frame-instance-id]");
       const annEl = target.closest("[data-annotation-id]");
 
@@ -112,8 +117,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         const inst = scene.frameInstances.find((fi) => fi.id === id);
         const nextOrientation = inst?.orientation === "landscape" ? "portrait" : "landscape";
         setContextMenu({
-          x: e.clientX,
-          y: e.clientY,
+          x,
+          y,
           items: [
             { id: "rotate", label: t("editor.ctxRotate"), onSelect: () => updateFrameInstance(id, { orientation: nextOrientation }) },
             { id: "dup", label: t("editor.ctxDuplicate"), onSelect: () => duplicateFrameInstance(id) },
@@ -130,8 +135,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         if (!id) return;
         selectAnnotation(id);
         setContextMenu({
-          x: e.clientX,
-          y: e.clientY,
+          x,
+          y,
           items: [
             { id: "dup", label: t("editor.ctxDuplicate"), onSelect: () => duplicateAnnotation(id) },
             { id: "front", label: t("editor.ctxBringToFront"), onSelect: () => reorderAnnotation(id, "front") },
@@ -144,8 +149,8 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
 
       // Empty canvas: annotation shortcuts plus deselect.
       setContextMenu({
-        x: e.clientX,
-        y: e.clientY,
+        x,
+        y,
         items: [
           { id: "add-text", label: t("editor.ctxAddText"), onSelect: () => addAnnotation("text") },
           { id: "add-arrow", label: t("editor.ctxAddArrow"), onSelect: () => addAnnotation("arrow") },
@@ -162,6 +167,16 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
     [t, selectAnnotation, selectFrameInstance, addAnnotation, duplicateAnnotation, reorderAnnotation, removeAnnotation, duplicateFrameInstance, reorderFrameInstance, removeFrameInstance, updateFrameInstance, scene.frameInstances]
   );
 
+  const openContextMenu = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      openContextMenuAt(e.clientX, e.clientY, e.target as HTMLElement);
+    },
+    [openContextMenuAt]
+  );
+
+  const longPress = useLongPress(openContextMenuAt);
+
   return (
     <div
       className="panel"
@@ -170,11 +185,11 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
         minHeight: 0,
         padding: 16,
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        // Establish a size container so the canvas can size itself with
-        // container query units, fitting inside both axes without distortion.
-        containerType: "size",
+        // Column layout: the stage centers the canvas in the remaining space
+        // while the dock bar pins to the panel bottom — controls never cover
+        // the artwork and never shift with the scene aspect ratio.
+        flexDirection: "column",
+        alignItems: "stretch",
         ["--canvas-ar-w" as string]: arW,
         ["--canvas-ar-h" as string]: arH,
         // Let the component own pinch/pan gestures on the frame itself (the
@@ -190,7 +205,29 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
       onDrop={handleDrop}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchCancel}
     >
+      {/* Query container for the dock bar: the dock is a sibling of the
+          stage (not its child), so the stage's own containment can't serve
+          its queries. Inline-size containment only — the column height still
+          follows flex layout, and the canvas keeps sizing against the
+          stage's full size containment. */}
+      <div className="preview-body">
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          minWidth: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          // The size container moved here from the panel so the canvas keeps
+          // sizing itself with container query units against the space above
+          // the dock bar (cqh excludes the bar height).
+          containerType: "size",
+          position: "relative"
+        }}
+      >
       <div
         id="preview-canvas"
         ref={canvasRef}
@@ -205,17 +242,38 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           if (target.closest("[data-annotation]") || target.closest(".preview-watermark")) return;
           selectAnnotation(null);
         }}
-        onPointerDownCapture={view.onPointerDownCapture}
-        onPointerMove={view.onPointerMove}
-        onPointerUp={view.onPointerUp}
-        onPointerCancel={view.onPointerCancel}
+        onPointerDownCapture={(e) => {
+          // Capture phase: annotation drags stopPropagation on pointerdown,
+          // so a long-press started on them would never reach a bubble-phase
+          // handler here.
+          longPress.onPointerDown(e);
+          view.onPointerDownCapture(e);
+        }}
+        onPointerMove={(e) => {
+          longPress.onPointerMove(e);
+          view.onPointerMove(e);
+        }}
+        onPointerUp={(e) => {
+          longPress.onPointerUp(e);
+          view.onPointerUp(e);
+        }}
+        onPointerCancel={(e) => {
+          longPress.onPointerCancel(e);
+          view.onPointerCancel(e);
+        }}
         onDoubleClick={view.onDoubleClickReset}
         onContextMenu={openContextMenu}
         onKeyDown={(e) => {
-          // Delete/Backspace removes the selected annotation when the canvas is focused.
-          if ((e.key === "Delete" || e.key === "Backspace") && selectedAnnotationId) {
+          // Delete/Backspace removes every selected annotation (multi-select
+          // included) when the canvas is focused.
+          // Never fire while typing in the inline annotation editor (or any
+          // other contentEditable): the caret's Backspace must not delete the
+          // annotation itself.
+          const target = e.target instanceof HTMLElement ? e.target : null;
+          if (target?.isContentEditable) return;
+          if ((e.key === "Delete" || e.key === "Backspace") && selectedAnnotationIds.length > 0) {
             e.preventDefault();
-            removeAnnotation(selectedAnnotationId);
+            removeAnnotations(selectedAnnotationIds);
             selectAnnotation(null);
           }
         }}
@@ -229,6 +287,9 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           position: "relative",
           borderRadius: 12,
           overflow: "hidden",
+          // Suppress the iOS long-press callout (copy/lookup popover) so the
+          // synthesized context menu isn't competing with the native one.
+          WebkitTouchCallout: "none",
           cursor: view.viewCursor,
           ...containerStyle
         }}
@@ -287,7 +348,7 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             sceneCss={sceneCss}
             canPan={canPan}
             frameRef={frameRef}
-            videoRef={videoRef}
+            videoRefs={videoRefs}
             onPanDown={onPanDown}
             onPanMove={onPanMove}
             onPanUp={onPanUp}
@@ -316,26 +377,6 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
           onGuides={setGuides}
         />
         </PreviewZoomLayer>
-        {/* Upload/Clear chips and the empty-canvas hint are UI chrome: they
-            live outside the zoom layer so they stay fixed-size and readable
-            at any zoom level. */}
-        {isMultiFrame ? (
-          <PreviewChips
-            isMultiFrame
-            canClearActive={!!scene.layers.find((l) => l.id === targetLayerId)?.mediaUrl}
-            targetLayerId={targetLayerId}
-            fileInputKey={fileInputKey}
-            onFile={handleFile}
-          />
-        ) : (
-          <PreviewChips
-            isMultiFrame={false}
-            canClearActive={canClearActive}
-            targetLayerId={null}
-            fileInputKey={fileInputKey}
-            onFile={handleFile}
-          />
-        )}
         {isMultiFrame && scene.layers.every((l) => !l.mediaUrl) ? (
           <div
             className="drop-hint"
@@ -343,13 +384,6 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             <span>{t("editor.dropToStart")}</span>
           </div>
         ) : null}
-        <PreviewGridToggle
-          showGrid={showGrid}
-          gridDivisions={gridDivisions}
-          setShowGrid={setShowGrid}
-          setGridDivisions={setGridDivisions}
-        />
-        <PreviewZoomControl />
         {mediaUploadError ? (
           <div role="alert" className="preview-error">
             {mediaUploadError}
@@ -363,6 +397,26 @@ export function PreviewCanvas({ scene }: PreviewCanvasProps) {
             onClose={() => setContextMenu(null)}
           />
         ) : null}
+      </div>
+      </div>
+      {/* Docked control bar: Upload/Clear | zoom | grid. Pinned to the panel
+          bottom (not the canvas corners), so it never covers the artwork,
+          never collides on narrow canvases, and stays put across aspect
+          ratios. It sits outside #preview-canvas, so canvas screenshots and
+          exports stay chrome-free without extra hiding. */}
+      <PreviewDockBar
+        isMultiFrame={isMultiFrame}
+        canClearActive={isMultiFrame
+          ? !!scene.layers.find((l) => l.id === targetLayerId)?.mediaUrl
+          : canClearActive}
+        targetLayerId={isMultiFrame ? targetLayerId : null}
+        fileInputKey={fileInputKey}
+        onFile={handleFile}
+        showGrid={showGrid}
+        gridDivisions={gridDivisions}
+        setShowGrid={setShowGrid}
+        setGridDivisions={setGridDivisions}
+      />
       </div>
     </div>
   );

@@ -3,6 +3,10 @@
   overflow: hidden;
   min-height: 0;
   min-width: 0;
+  /* Size container for the tab strip: five labeled tabs never fit the
+     276–310px side panel, so labels collapse to icons there (tooltips and
+     accessible names stay), while the wide mobile bottom sheet keeps labels. */
+  container-type: inline-size;
 }
 
 .right-panel-tabs {
@@ -101,4 +105,17 @@
   min-height: 0;
   min-width: 0;
   animation: tabFadeIn 0.12s ease;
+}
+
+/* Compact icon tabs on narrow panels (the 276–310px desktop side panel and
+   phone-width bottom sheets): labels would truncate to unreadable stubs
+   ("Sce…/An…"), so only icons + count badges show. Tooltips (title) and
+   accessible names carry the label. Wider sheets keep full labels. */
+@container (max-width: 480px) {
+  .right-panel-tabs button {
+    padding: 10px 4px;
+  }
+  .right-panel-tabs .tab-label {
+    display: none;
+  }
 }

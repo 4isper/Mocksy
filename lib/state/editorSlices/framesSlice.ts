@@ -1,4 +1,4 @@
-import { activeLayer, alignFrameInstances, buildAutoLayout, distributeFrameInstances, layoutFrameGrid, makeDemoLayer, nextLayerId, pushHistory } from "@/lib/state/editorHelpers";
+import { activeLayer, alignFrameInstances, buildAutoLayout, distributeFrameInstances, fitInstancesToCanvas, layoutFrameGrid, makeDemoLayer, nextLayerId, pushHistory } from "@/lib/state/editorHelpers";
 import { nextFrameInstanceId } from "@/lib/state/ids";
 import type { CustomFrame, EditorScene, FrameInstance, MockupFrame } from "@/lib/types/editor";
 import type { FrameAlignMode } from "@/lib/state/frameAlign";
@@ -21,6 +21,7 @@ export type FramesSlice = Pick<
   | "applyFrameLayout"
   | "alignFrameInstances"
   | "distributeFrameInstances"
+  | "fitFramesToCanvas"
   | "selectFrameInstance"
   | "selectFrameIds"
   | "toggleFrameSelected"
@@ -109,7 +110,14 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
         const activeLayerId = layers.some((l) => l.id === s.activeLayerId)
           ? s.activeLayerId
           : layers[0]?.id ?? null;
-        return { ...pushHistory(s, { ...s.scene, layers, frameInstances: remaining }), activeLayerId };
+        // Re-point/clear frame selection so it never dangles on a removed id —
+        // a stale activeFrameInstanceId makes setFrameMaterial silently no-op.
+        const activeFrameInstanceId = s.activeFrameInstanceId === id
+          ? remaining[remaining.length - 1]?.id ?? null
+          : s.activeFrameInstanceId;
+        const aliveIds = new Set(remaining.map((fi) => fi.id));
+        const selectedFrameIds = s.selectedFrameIds.filter((fid) => aliveIds.has(fid));
+        return { ...pushHistory(s, { ...s.scene, layers, frameInstances: remaining }), activeLayerId, activeFrameInstanceId, selectedFrameIds };
       }),
     updateFrameInstance: (id, patch, coalesce) =>
       set((s) => {
@@ -120,16 +128,42 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
         // merge a drag of instance A and a quick drag of instance B (within the
         // 400ms window) into a single undo step, dropping the intermediate
         // state. Keying per-instance keeps each frame's drag its own step.
-        return pushHistory(s, { ...s.scene, frameInstances }, coalesce ? `frameInstanceDrag:${id}` : undefined);
+        // Callers may pass an explicit key (e.g. per-slider) to keep distinct
+        // controls from merging with each other.
+        const key = coalesce === true ? `frameInstanceDrag:${id}` : typeof coalesce === "string" ? coalesce : undefined;
+        return pushHistory(s, { ...s.scene, frameInstances }, key);
       }),
     addFrameInstance: () =>
       set((s) => {
         const src = s.activeFrameInstanceId
           ? s.scene.frameInstances.find((fi) => fi.id === s.activeFrameInstanceId)
           : s.scene.frameInstances[s.scene.frameInstances.length - 1];
-        const base = src
-          ? { frame: src.frame, layerId: src.layerId, scale: src.scale, material: src.material, orientation: src.orientation }
-          : { frame: s.scene.frame, layerId: s.activeLayerId, scale: 1, material: s.scene.frameMaterial, orientation: undefined };
+        // First device on an empty canvas (legacy single-frame scene or a fresh
+        // reset): center it with the same height-capped scale the grid layouts
+        // use, bound straight to the active layer. Cloning here would orphan
+        // the existing layer and offset the device off-center with scale 1
+        // (portrait phones would overflow the canvas height).
+        if (!src) {
+          const [pos] = layoutFrameGrid(s.scene.frame, 1, "horizontal", s.scene.aspectRatio, s.scene.customFrame);
+          const fallback = pos ?? { x: 0.5, y: 0.5, scale: 0.5 };
+          const layerId = s.activeLayerId ?? s.scene.layers[0]?.id ?? null;
+          const copy: FrameInstance = {
+            id: nextFrameInstanceId(),
+            frame: s.scene.frame,
+            x: fallback.x,
+            y: fallback.y,
+            scale: fallback.scale,
+            layerId,
+            orientation: undefined,
+            material: s.scene.frameMaterial
+          };
+          return {
+            ...pushHistory(s, { ...s.scene, frameInstances: [...s.scene.frameInstances, copy] }),
+            activeFrameInstanceId: copy.id,
+            selectedFrameIds: [copy.id]
+          };
+        }
+        const base = { frame: src.frame, layerId: src.layerId, scale: src.scale, material: src.material, orientation: src.orientation };
         let layers = s.scene.layers;
         let layerId = base.layerId;
         if (layerId) {
@@ -188,13 +222,13 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
         else frameInstances.unshift(item);
         return pushHistory(s, { ...s.scene, frameInstances });
       }),
-    reorderFrameInstances: (orderedIds) =>
+    reorderFrameInstances: (orderedIds, coalesce) =>
       set((s) => {
         const byId = new Map(s.scene.frameInstances.map((fi) => [fi.id, fi]));
         const reordered = orderedIds.map((id) => byId.get(id)).filter((fi): fi is (typeof s.scene.frameInstances)[number] => Boolean(fi));
         // Ignore invalid input that doesn't cover every existing instance.
         if (reordered.length !== s.scene.frameInstances.length) return {};
-        return pushHistory(s, { ...s.scene, frameInstances: reordered });
+        return pushHistory(s, { ...s.scene, frameInstances: reordered }, coalesce ? "frameOrder" : undefined);
       }),
     layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") =>
       set((s) => {
@@ -236,6 +270,18 @@ export function createFramesSlice(set: EditorStoreSetter): FramesSlice {
           s.scene.customFrame
         );
         return pushHistory(s, { ...s.scene, frameInstances });
+      }),
+    fitFramesToCanvas: () =>
+      set((s) => {
+        if (s.scene.frameInstances.length < 1) return {};
+        const fitted = fitInstancesToCanvas(s.scene.frameInstances, s.scene.aspectRatio, s.scene.customFrame);
+        const byId = new Map(fitted.map((i) => [i.id, i]));
+        const frameInstances = clampFramePositions(
+          s.scene.frameInstances.map((i) => byId.get(i.id) ?? i),
+          s.scene.aspectRatio,
+          s.scene.customFrame
+        );
+        return { ...pushHistory(s, { ...s.scene, frameInstances }), activeFrameInstanceId: frameInstances[0]?.id ?? null, selectedFrameIds: frameInstances.map((i) => i.id) };
       }),
     selectFrameInstance: (id) =>
       set(id == null ? { activeFrameInstanceId: null, selectedFrameIds: [] } : { activeFrameInstanceId: id, selectedFrameIds: [id] }),

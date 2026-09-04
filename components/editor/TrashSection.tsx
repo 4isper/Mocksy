@@ -33,12 +33,7 @@ export function TrashSection({ trashed, relativeTime, onRestore, onEmptyTrash }:
 
   return (
     <div style={{ borderTop: "1px solid var(--panel-border)", paddingTop: 8 }}>
-      <button
-        type="button"
-        className="btn"
-        style={{ width: "100%", fontSize: 12, padding: "7px 10px" }}
-        onClick={() => setShowTrash((v) => !v)}
-      >
+      <button type="button" className="btn btn-compact btn-block" onClick={() => setShowTrash((v) => !v)}>
         {showTrash ? t("projects.hideTrash") : t("projects.showTrash", { n: trashed.length })}
       </button>
       {showTrash ? (
@@ -51,9 +46,9 @@ export function TrashSection({ trashed, relativeTime, onRestore, onEmptyTrash }:
                 alignItems: "center",
                 gap: 5,
                 padding: "6px 8px",
-                borderRadius: 8,
+                borderRadius: "var(--radius-xs)",
                 border: "1px solid var(--panel-border)",
-                opacity: 0.6
+                opacity: 0.5
               }}
             >
               <span style={{ flex: 1, minWidth: 0, overflow: "hidden", fontSize: 12 }}>
@@ -84,12 +79,7 @@ export function TrashSection({ trashed, relativeTime, onRestore, onEmptyTrash }:
           ))}
         </ul>
       ) : null}
-      <button
-        type="button"
-        className="btn"
-        style={{ width: "100%", fontSize: 12, padding: "7px 10px", marginTop: 8, color: "var(--danger)" }}
-        onClick={() => setConfirmEmptyTrash(true)}
-      >
+      <button type="button" className="btn btn-sm btn-danger" style={{ width: "100%", marginTop: 8 }} onClick={() => setConfirmEmptyTrash(true)}>
         {t("projects.emptyTrash")}
       </button>
       {confirmEmptyTrash ? (

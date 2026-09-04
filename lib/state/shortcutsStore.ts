@@ -52,12 +52,14 @@ export function effectiveCombo(def: { id: string; combo: string }, overrides: Re
   return override && parseCombo(override) ? override : def.combo;
 }
 
-/** Finds another remappable shortcut already bound to `combo`, comparing
- *  effective bindings (defaults + current overrides). Self and fixed
- *  (non-remappable) rows never conflict. */
+/** Finds another shortcut already bound to `combo`, comparing effective
+ *  bindings (defaults + current overrides). Self never conflicts.
+ *  Fixed (non-remappable) defs DO conflict: their combos own fixed behaviors
+ *  (paste, command palette, R/F…), so letting a rebind silently take
+ *  `mod+v` would suppress native paste with no way to see the collision. */
 export function findConflict(combo: string, excludeId: string, overrides: Record<string, string>): ConflictInfo | null {
   for (const def of SHORTCUT_DEFS) {
-    if (!def.remappable || def.id === excludeId) continue;
+    if (def.id === excludeId) continue;
     if (effectiveCombo(def, overrides) === combo) return { otherId: def.id };
   }
   return null;

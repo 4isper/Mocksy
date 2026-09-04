@@ -92,6 +92,12 @@ export function RightPanel({ onShareTemplate }: { onShareTemplate: () => Promise
       <div className="right-panel-tabs" role="tablist" aria-label={t("editor.panels")} onKeyDown={onTabKeyDown}>
         {tabs.map((tab) => {
           const count = tab.id === "layers" ? layersCount : tab.id === "annotations" ? annotationsCount : null;
+          const label = t(tab.labelKey);
+          // The count badge is a separate description (not part of the name),
+          // so screen readers announce e.g. "Layers, 2" while tests and tools
+          // keep matching the stable label. Referenced badges must stay in
+          // the accessibility tree.
+          const countId = count != null && count > 0 ? `right-tab-${tab.id}-count` : undefined;
           return (
             <button
               key={tab.id}
@@ -101,14 +107,19 @@ export function RightPanel({ onShareTemplate }: { onShareTemplate: () => Promise
               id={`right-tab-${tab.id}`}
               aria-selected={rightTab === tab.id}
               aria-controls="right-panel-content"
+              // Explicit name: the visual label hides in the compact icon mode
+              // (narrow panel), and the count badge is a description.
+              aria-label={label}
+              aria-describedby={countId}
+              title={label}
               tabIndex={rightTab === tab.id ? 0 : -1}
               className={rightTab === tab.id ? "is-active" : ""}
               onClick={() => switchTab(tab.id)}
             >
-              <span className="tab-icon">{icons[tab.id as TabId]}</span>
-              <span className="tab-label">{t(tab.labelKey)}</span>
-              {count != null && count > 0 ? (
-                <span className="tab-badge">{count}</span>
+              <span className="tab-icon" aria-hidden="true">{icons[tab.id as TabId]}</span>
+              <span className="tab-label" aria-hidden="true">{label}</span>
+              {countId ? (
+                <span className="tab-badge" id={countId}>{count}</span>
               ) : null}
             </button>
           );

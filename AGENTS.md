@@ -21,7 +21,7 @@ Free browser-based mockup editor (Next.js 16 + React 19 + TypeScript). Media is 
 
 ### Path alias
 
-`@/` maps to the project root (configured in `tsconfig.json` and `vitest.config.ts`). Always use `@/lib/...` imports, never relative paths above one level.
+`@/` maps to the project root (configured in `tsconfig.json` and `vitest.config.mts`). Always use `@/lib/...` imports, never relative paths above one level.
 
 ### Generated files
 
@@ -90,8 +90,8 @@ Scene serialized as deflate-compressed base64url JSON (`CompressionStream` with 
 ## Project structure
 
 ```
-app/              Next.js router ([locale]/layout, page, error boundary)
-components/editor/ 50 React components (EditorShell, ControlPanel, PreviewCanvas, ...)
+app/              Next.js router ([locale]/layout, page) + api/spin route, og/spin-render harness pages
+components/editor/ 52 React components (EditorShell, ControlPanel, PreviewCanvas, ...)
 i18n/             Locale request config + canonical locale list (locales.ts)
 lib/state/        Zustand stores, normalization, id generators, share URL, projects, relativeTime
 lib/render/       Frame specs, CSS/canvas geometry, video timeline, canvas drawing
@@ -100,19 +100,21 @@ lib/commands/     Command-palette command factories, search/matching (per featur
 lib/media/        File loading, demo image, palette extraction, IndexedDB media store, AI background removal
 lib/presets/      Background swatches, scene style presets
 lib/hooks/        Client hooks (commands, focus trap, frame transform, scene palette)
+lib/shortcuts/    Single source of truth for keyboard shortcuts + rebinding store
+lib/server/       Server-side PNG renderer for the spin API (headless Chromium)
 lib/types/        TypeScript interfaces
 messages/         57 locale JSON files (en.json is the source of truth)
 public/devices/   SVG device skins for overlay frames
 proxy.ts          Locale middleware for next-intl
 tests/unit/       Vitest (mirrors lib/ structure)
 tests/components/ Vitest + Testing Library (component tests)
-tests/e2e/        Playwright (editor, UX flows, visual regression, preview/export parity)
+tests/e2e/        Playwright (editor, UX flows, visual regression, preview/export parity, spin render)
 ```
 
 ## Testing
 
-- `npm run test` — Vitest (1,765 tests, 127 files)
-- `npm run test:e2e` — Playwright (120 tests: 75 in editor.spec.ts, 8 in ux.spec.ts, 9 visual regression, 2 a11y, 7 mobile, 19 preview/export parity; requires browser install, needs dev server)
+- `npm run test` — Vitest (2,333 tests, 154 files)
+- `npm run test:e2e` — Playwright (128 tests: 75 in editor.spec.ts, 11 in ux.spec.ts, 12 a11y, 9 visual regression, 7 mobile, 4 preview/export parity, 4 spin render, 2 export shadow, 2 i18n, 2 tablet; requires browser install, needs dev server)
 - `npm run test:vrt` — Visual regression tests via Playwright
 - `npm run test:vrt:update` — Update visual regression baselines
 - `npm run test:lhci` — Lighthouse CI (requires built app + server)

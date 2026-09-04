@@ -8,7 +8,7 @@ export interface VideoKeyframe {
 }
 
 /** Cached timelines for the static animation presets. The keyframes depend
- *  only on the preset (unlike "none", which depends on the layer zoom), so the
+ *  only on the preset, so the
  *  same array can be shared across samples and frames instead of re-allocating
  *  at every 60fps export/render step. Callers must not mutate the result. */
 const STATIC_TIMELINES = new Map<string, VideoKeyframe[]>();
@@ -68,7 +68,9 @@ export function buildVideoTimeline(layer: MediaLayer): VideoKeyframe[] {
         { at: 1, zoom: 1, x: -12, y: 0 }
       ]);
     default:
-      return [{ at: 0, zoom: layer.zoom, x: 0, y: 0 }];
+      // No animation: static frame at identity. The layer's media zoom is a
+      // per-layer media transform applied at draw time, not a frame motion.
+      return [{ at: 0, zoom: 1, x: 0, y: 0 }];
   }
 }
 
@@ -121,16 +123,16 @@ export function easingFunction(name: AnimationEasing | undefined, t: number): nu
  */
 export function sampleVideoTransform(layer: MediaLayer, progress: number): SampledTransform {
   const timeline = buildVideoTimeline(layer);
-  if (timeline.length === 0) return { zoom: layer.zoom, x: 0, y: 0 };
+  if (timeline.length === 0) return { zoom: 1, x: 0, y: 0 };
   if (timeline.length === 1) {
     const k = timeline[0];
-    if (!k) return { zoom: layer.zoom, x: 0, y: 0 };
+    if (!k) return { zoom: 1, x: 0, y: 0 };
     return { zoom: k.zoom, x: k.x, y: k.y };
   }
   const p = Math.max(0, Math.min(1, progress));
   const first = timeline[0];
   const last = timeline[timeline.length - 1];
-  if (!first || !last) return { zoom: layer.zoom, x: 0, y: 0 };
+  if (!first || !last) return { zoom: 1, x: 0, y: 0 };
   let lower = first;
   let upper = last;
   for (let i = 0; i < timeline.length - 1; i++) {

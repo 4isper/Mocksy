@@ -186,14 +186,17 @@ describe("editorStore", () => {
     expect(store().scene.stylePreset).toBe(initialScene.stylePreset);
   });
 
-  it("resetScene restores defaults with demo media", () => {
+  it("resetScene clears content back to a blank canvas", () => {
     store().setScene({ frame: "desktop" });
     store().setZoom(1.2);
     store().resetScene();
     expect(store().scene.frame).toBe(initialScene.frame);
-    expect(store().scene.layers[0]!.zoom).toBe(initialScene.layers[0]!.zoom);
-    expect(store().scene.layers[0]!.mediaUrl).toContain("data:image/svg");
-    expect(store().scene.layers[0]!.mediaType).toBe("image");
+    expect(store().scene.layers).toHaveLength(0);
+    expect(store().scene.frameInstances).toHaveLength(0);
+    expect(store().scene.annotations).toHaveLength(0);
+    expect(store().scene.activeLayerId).toBeNull();
+    // Defaults outside the canvas still come back from the initial scene.
+    expect(store().scene.backgroundColor).toBe(initialScene.backgroundColor);
   });
 
   it("records history on a mutation and supports undo/redo", () => {
@@ -514,6 +517,36 @@ describe("annotations", () => {
     store().selectAnnotation(b, true);
     expect(store().selectedAnnotationIds.sort()).toEqual([a, b].sort());
     store().selectAnnotation(b, true);
+    expect(store().selectedAnnotationIds).toEqual([a]);
+  });
+
+  it("removeAnnotations drops the selected annotations in one undo step", () => {
+    reset();
+    store().addAnnotation("rect");
+    const a = store().selectedAnnotationId!;
+    store().addAnnotation("arrow");
+    const b = store().selectedAnnotationId!;
+    store().addAnnotation("text");
+    const c = store().selectedAnnotationId!;
+    const pastBefore = store().past.length;
+    store().selectAnnotations([a, c]);
+    store().removeAnnotations([a, c]);
+    expect(store().scene.annotations.map((x) => x.id)).toEqual([b]);
+    expect(store().selectedAnnotationId).toBeNull();
+    expect(store().selectedAnnotationIds).toEqual([]);
+    expect(store().past.length).toBe(pastBefore + 1);
+  });
+
+  it("removeAnnotations falls back to a remaining selected annotation", () => {
+    reset();
+    store().addAnnotation("rect");
+    const a = store().selectedAnnotationId!;
+    store().addAnnotation("arrow");
+    const b = store().selectedAnnotationId!;
+    store().selectAnnotations([a, b]);
+    store().removeAnnotations([b]);
+    expect(store().scene.annotations.map((x) => x.id)).toEqual([a]);
+    expect(store().selectedAnnotationId).toBe(a);
     expect(store().selectedAnnotationIds).toEqual([a]);
   });
 
@@ -903,6 +936,23 @@ describe("frame control", () => {
     expect(store().scene.frameInstances[1]!.x).toBe(0.2);
   });
 
+  it("an explicit coalesce key collapses slider repeats and stays distinct per control", () => {
+    reset();
+    store().setFrameInstances([
+      { id: "fi1", frame: "iphone" as const, x: 0, y: 0.5, scale: 1, layerId: null }
+    ]);
+    const afterSetup = store().past.length;
+    store().updateFrameInstance("fi1", { x: 0.1 }, "frameSlider:fi1:x");
+    store().updateFrameInstance("fi1", { x: 0.2 }, "frameSlider:fi1:x");
+    // Same slider, same window: one undo step.
+    expect(store().past.length).toBe(afterSetup + 1);
+    store().updateFrameInstance("fi1", { y: 0.6 }, "frameSlider:fi1:y");
+    // A different control gets its own step.
+    expect(store().past.length).toBe(afterSetup + 2);
+    expect(store().scene.frameInstances[0]!.x).toBe(0.2);
+    expect(store().scene.frameInstances[0]!.y).toBe(0.6);
+  });
+
   it("updateFrameInstance leaves other instances unchanged", () => {
     reset();
     store().setFrameInstances([
@@ -1131,6 +1181,23 @@ describe("frame control", () => {
     expect(added.frame).toBe("macbook");
     expect(added.layerId).not.toBeNull();
     expect(store().scene.layers.some((l) => l.id === added.layerId)).toBe(true);
+  });
+
+  it("addFrameInstance creates a centered height-capped first device without cloning the layer", () => {
+    reset();
+    const layersBefore = store().scene.layers.length;
+    const activeBefore = store().activeLayerId;
+    store().addFrameInstance();
+    expect(store().scene.frameInstances.length).toBe(1);
+    const added = store().scene.frameInstances[0]!;
+    expect(added.x).toBe(0.5);
+    expect(added.y).toBe(0.5);
+    expect(added.scale).toBeLessThan(1);
+    // Bound straight to the existing layer so nothing is orphaned.
+    expect(added.layerId).toBe(activeBefore);
+    expect(store().scene.layers.length).toBe(layersBefore);
+    expect(store().activeFrameInstanceId).toBe(added.id);
+    expect(store().selectedFrameIds).toEqual([added.id]);
   });
 
   it("addFrameInstance records undo history on the new instance", () => {

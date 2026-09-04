@@ -84,7 +84,7 @@ describe("useEditorExport", () => {
     expect(mockImage.copyPngToClipboard).toHaveBeenCalledTimes(1);
     expect(api.copyStatus).toBe("Copied PNG to clipboard");
     act(() => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(5000);
     });
     expect(api.copyStatus).toBeNull();
   });
@@ -95,6 +95,15 @@ describe("useEditorExport", () => {
       api.handleExport("webp");
     });
     expect(mockImage.exportWebp).toHaveBeenCalledTimes(1);
+    expect(closeDialog).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes the dialog on video export too (progress lives in the toolbar)", async () => {
+    renderHook();
+    await act(async () => {
+      api.handleExport("mp4");
+    });
+    expect(mockVideo.exportVideo).toHaveBeenCalledTimes(1);
     expect(closeDialog).toHaveBeenCalledTimes(1);
   });
 

@@ -66,9 +66,9 @@ describe("PreviewChips", () => {
     expect(screen.queryByText("editor.clearMedia")).not.toBeInTheDocument();
   });
 
-  it("shows clear-only in multi-frame mode when the target layer has media", () => {
+  it("shows upload + clear in multi-frame mode when the target layer has media", () => {
     render(<PreviewChips isMultiFrame canClearActive targetLayerId="l1" fileInputKey={0} onFile={vi.fn()} />);
-    expect(screen.queryByText("editor.uploadMedia")).not.toBeInTheDocument();
+    expect(screen.getByText("editor.uploadMedia")).toBeInTheDocument();
     expect(screen.getByText("editor.clearMedia")).toBeInTheDocument();
   });
 

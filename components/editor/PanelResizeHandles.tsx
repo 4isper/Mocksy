@@ -96,7 +96,8 @@ export function PanelResizeHandles() {
       const grid = e.currentTarget.closest(".editor-grid");
       if (!(grid instanceof HTMLElement)) return;
       e.preventDefault();
-      e.currentTarget.setPointerCapture(e.pointerId);
+      const handle = e.currentTarget;
+      handle.setPointerCapture(e.pointerId);
       const otherSide: PanelSide = side === "left" ? "right" : "left";
       dragRef.current = {
         side,
@@ -139,7 +140,7 @@ export function PanelResizeHandles() {
         // Clean up pointermove — it uses { once: false } so a missing
         // pointerup/pointercancel (edge-case: contextmenu, alert dialog)
         // would leak it.
-        e.currentTarget.removeEventListener("pointermove", onPointerMove);
+        handle.removeEventListener("pointermove", onPointerMove);
         const state = dragRef.current;
         if (state) {
           const finalWidth = clampPanelWidth(
@@ -155,9 +156,9 @@ export function PanelResizeHandles() {
       };
 
       window.addEventListener("keydown", onKeyDown);
-      e.currentTarget.addEventListener("pointermove", onPointerMove);
-      e.currentTarget.addEventListener("pointerup", onPointerUp, { once: true });
-      e.currentTarget.addEventListener("pointercancel", onPointerUp, { once: true });
+      handle.addEventListener("pointermove", onPointerMove);
+      handle.addEventListener("pointerup", onPointerUp, { once: true });
+      handle.addEventListener("pointercancel", onPointerUp, { once: true });
     },
     [commitWidth]
   );

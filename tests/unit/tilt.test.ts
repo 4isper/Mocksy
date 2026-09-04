@@ -6,8 +6,11 @@ import {
   hasTilt,
   projectPoint,
   projectTiltedRect,
+  projectTiltedRectRotated,
+  rotateQuad,
   tiltCss,
-  tiltMatrixSvg
+  tiltMatrixSvg,
+  tiltMatrixSvgRotated
 } from "@/lib/render/tilt";
 
 function scene(tiltX = 0, tiltY = 0) {
@@ -108,6 +111,73 @@ describe("tiltMatrixSvg", () => {
   it("is identity-like for a zero tilt (matches unit square mapping)", () => {
     const m = tiltMatrixSvg(scene(0, 0), rect);
     expect(m).toBe("");
+  });
+});
+
+describe("rotateQuad / landscape projection", () => {
+  const rect = { x: 100, y: 100, width: 400, height: 300 };
+
+  it("rotateQuad turns the quad about the rect center by 90°", () => {
+    const q = projectTiltedRect(rect, 0, 0);
+    const r = rotateQuad(q, Math.PI / 2, rect.x + rect.width / 2, rect.y + rect.height / 2);
+    // The top-left corner (100,100) rotated +90° about (300,250):
+    // dx=-200, dy=-150 → (450, 50).
+    expect(r.tl.x).toBeCloseTo(450, 5);
+    expect(r.tl.y).toBeCloseTo(50, 5);
+  });
+
+  it("projectTiltedRectRotated preserves the shared center", () => {
+    const q = projectTiltedRectRotated(rect, Math.PI / 2, 0, 0);
+    const cx = (q.tl.x + q.br.x) / 2;
+    const cy = (q.tl.y + q.br.y) / 2;
+    expect(cx).toBeCloseTo(rect.x + rect.width / 2);
+    expect(cy).toBeCloseTo(rect.y + rect.height / 2);
+    // Without tilt the footprint must coincide with the rotated rect: a
+    // 400×300 rect rotated 90° spans 300 wide and 400 tall.
+    const xs = [q.tl.x, q.tr.x, q.bl.x, q.br.x];
+    const ys = [q.tl.y, q.tr.y, q.bl.y, q.br.y];
+    expect(Math.max(...xs) - Math.min(...xs)).toBeCloseTo(rect.height);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeCloseTo(rect.width);
+  });
+
+  it("projectTiltedRectRotated is the identity path for rotation 0", () => {
+    expect(projectTiltedRectRotated(rect, 0, 10, 5)).toEqual(projectTiltedRect(rect, 10, 5));
+  });
+
+  it("tiltMatrixSvgRotated returns an empty string without tilt", () => {
+    expect(tiltMatrixSvgRotated(scene(0, 0), rect, Math.PI / 2)).toBe("");
+  });
+
+  it("tiltMatrixSvgRotated with rotation 0 equals tiltMatrixSvg", () => {
+    expect(tiltMatrixSvgRotated(scene(12, 8), rect, 0)).toBe(tiltMatrixSvg(scene(12, 8), rect));
+  });
+
+  it("tiltMatrixSvgRotated maps the native rect onto a rotated footprint", () => {
+    // Decompose the affine matrix and check where it sends the rect corners.
+    const m = tiltMatrixSvgRotated(scene(15, 10), rect, Math.PI / 2)!;
+    const [a = 0, b = 0, c = 0, d = 0, e = 0, f = 0] = m.match(/^matrix\(([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+)\)$/)!.slice(1).map(Number);
+    const apply = (x: number, y: number) => ({ x: a * x + c * y + e, y: b * x + d * y + f });
+    const tl = apply(rect.x, rect.y);
+    const br = apply(rect.x + rect.width, rect.y + rect.height);
+    // tl must land on the top-right corner of the rotated footprint.
+    expect(tl.x).toBeGreaterThan(rect.x + rect.width / 2);
+    expect(br.x).toBeLessThan(rect.x + rect.width / 2);
+    // Matches the rotated projection of the same rect (matrix == quad fit,
+    // up to the matrix's 2-decimal rounding).
+    const quad = projectTiltedRectRotated(rect, Math.PI / 2, 15, 10);
+    expect(tl.x).toBeCloseTo(quad.tl.x, 0);
+    expect(tl.y).toBeCloseTo(quad.tl.y, 0);
+  });
+
+  it("tiltMatrixSvgRotated preserves the center without tilt", () => {
+    const m = tiltMatrixSvgRotated(scene(0, 0) as never, rect, Math.PI / 2);
+    // No tilt → "" (guard). Use a tiny tilt to force the matrix path and
+    // check center preservation via the pure projection instead.
+    void m;
+    const quad = projectTiltedRectRotated(rect, Math.PI / 2, 0, 0);
+    const mid = { x: (quad.tl.x + quad.br.x) / 2, y: (quad.tl.y + quad.br.y) / 2 };
+    expect(mid.x).toBeCloseTo(rect.x + rect.width / 2, 5);
+    expect(mid.y).toBeCloseTo(rect.y + rect.height / 2, 5);
   });
 });
 

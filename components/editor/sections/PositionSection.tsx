@@ -5,6 +5,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { Segmented } from "@/components/editor/Segmented";
 import { Section } from "@/components/editor/Section";
+import { LAYER_ZOOM } from "@/lib/render/layerFilters";
 
 export function PositionSection() {
   const t = useTranslations();
@@ -30,7 +31,6 @@ export function PositionSection() {
       setMediaOffsetY: s.setMediaOffsetY,
       setRotation: s.setRotation,
       setShadowOpacity: s.setShadowOpacity,
-      setFloorReflection: s.setFloorReflection,
       setBorderRadius: s.setBorderRadius,
       setTiltX: s.setTiltX,
       setTiltY: s.setTiltY
@@ -48,6 +48,7 @@ export function PositionSection() {
       )}
     >
       <div className="field-group">
+        <span className="field-label scope-label">{t("editor.positionLayerScope")}</span>
         <Segmented
           label={t("editor.fillFitLabel")}
           value={activeLayer?.mediaFit ?? "cover"}
@@ -60,8 +61,8 @@ export function PositionSection() {
         <label className="field">
           <span>{t("editor.zoom")}</span>
           <div className="range-wrap">
-            <input type="range" min={0.8} max={1.5} step={0.01} value={activeLayer?.zoom ?? 1} aria-label={t("editor.zoom")} aria-valuetext={`${Math.round((activeLayer?.zoom ?? 1) * 100)}%`} onChange={(e) => setZoom(Number(e.target.value))} />
-            <span className="range-val">{Math.round((activeLayer?.zoom ?? 1) * 100)}%</span>
+            <input type="range" min={LAYER_ZOOM.min} max={LAYER_ZOOM.max} step={0.01} value={activeLayer?.zoom ?? LAYER_ZOOM.default} aria-label={t("editor.zoom")} aria-valuetext={`${Math.round((activeLayer?.zoom ?? LAYER_ZOOM.default) * 100)}%`} onChange={(e) => setZoom(Number(e.target.value))} />
+            <span className="range-val">{Math.round((activeLayer?.zoom ?? LAYER_ZOOM.default) * 100)}%</span>
           </div>
         </label>
         <label className="field">
@@ -85,6 +86,7 @@ export function PositionSection() {
             <span className="range-val">{Math.round(activeLayer?.rotation ?? 0)}°</span>
           </div>
         </label>
+        <span className="field-label scope-label">{t("editor.positionSceneScope")}</span>
         <label className="field">
           <span>{t("editor.shadowOpacity")}</span>
           <div className="range-wrap">

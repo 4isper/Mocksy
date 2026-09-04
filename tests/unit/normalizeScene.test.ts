@@ -52,6 +52,19 @@ describe("normalizeScene", () => {
     expect(s.shadowOpacity).toBe(1);
   });
 
+  it("treats null/false/empty-string numerics as missing (fallback, not 0)", () => {
+    // Number(null) === 0 is finite, so without the guard a null field would
+    // coerce to 0 instead of the fallback — e.g. an invisible layer.
+    const s = normalizeScene({
+      layers: [{ opacity: null, zoom: false, rotation: "" }],
+      shadowOpacity: null
+    });
+    expect(s.layers[0]!.opacity).toBe(initialScene.layers[0]!.opacity);
+    expect(s.layers[0]!.zoom).toBe(initialScene.layers[0]!.zoom);
+    expect(s.layers[0]!.rotation).toBe(initialScene.layers[0]!.rotation);
+    expect(s.shadowOpacity).toBe(initialScene.shadowOpacity);
+  });
+
   it("migrates a legacy single-media payload into one layer", () => {
     const s = normalizeScene({ mediaUrl: "x.png", mediaType: "image", frame: "iphone16pro" });
     expect(s.layers).toHaveLength(1);
@@ -487,6 +500,10 @@ describe("normalizeScene", () => {
     expect(s.screen.showStatusBar).toBe(false);
     expect(s.screen.showClock).toBe(false);
     expect(s.screen.showHomeIndicator).toBe(false);
+    // notifications is opt-in: absent or "false" stays off, only true enables
+    expect(normalizeScene({}).screen.showNotifications).toBe(false);
+    expect(normalizeScene({ screen: { showNotifications: "yes" } }).screen.showNotifications).toBe(false);
+    expect(normalizeScene({ screen: { showNotifications: true } }).screen.showNotifications).toBe(true);
   });
 
   it("derives the chrome os from the frame", () => {
@@ -572,5 +589,158 @@ describe("normalizeScene", () => {
     expect(s.frameInstances[0]!.floorReflection).toBe(false);
     // f2 has no override and stays undefined (inherits the scene default).
     expect(s.frameInstances[1]!.floorReflection).toBeUndefined();
+  });
+});
+
+describe("ScreenChrome new fields normalization", () => {
+  it("clamps clockSizeFactor into [0.04, 0.25]", () => {
+    const s = normalizeScene({ screen: { clockSizeFactor: 99 } });
+    expect(s.screen.clockSizeFactor).toBe(0.25);
+    const lo = normalizeScene({ screen: { clockSizeFactor: 0.01 } });
+    expect(lo.screen.clockSizeFactor).toBe(0.04);
+    const nan = normalizeScene({ screen: { clockSizeFactor: Number.NaN } });
+    expect(nan.screen.clockSizeFactor).toBe(0.105);
+  });
+
+  it("clamps clockYFactor into [0.08, 0.5]", () => {
+    const s = normalizeScene({ screen: { clockYFactor: 1 } });
+    expect(s.screen.clockYFactor).toBe(0.5);
+    const lo = normalizeScene({ screen: { clockYFactor: 0.01 } });
+    expect(lo.screen.clockYFactor).toBe(0.08);
+    const nan = normalizeScene({ screen: { clockYFactor: Number.NaN } });
+    expect(nan.screen.clockYFactor).toBe(0.175);
+  });
+
+  it("accepts a valid hex color for clockColor", () => {
+    const s = normalizeScene({ screen: { clockColor: "#ff0000" } });
+    expect(s.screen.clockColor).toBe("#ff0000");
+  });
+
+  it("rejects an invalid color string for clockColor", () => {
+    const s = normalizeScene({ screen: { clockColor: "not-a-color" } });
+    expect(s.screen.clockColor).toBeNull();
+  });
+
+  it("accepts a valid hex color for dockBackground", () => {
+    const s = normalizeScene({ screen: { dockBackground: "#123456" } });
+    expect(s.screen.dockBackground).toBe("#123456");
+  });
+
+  it("rejects an invalid color string for dockBackground", () => {
+    const s = normalizeScene({ screen: { dockBackground: "rgb(255,0,0)" } });
+    // rgb() is actually valid per the CSS_COLOR_RE in normalizeScene
+    expect(s.screen.dockBackground).toBe("rgb(255,0,0)");
+    const bad = normalizeScene({ screen: { dockBackground: "hsl(0,100%,50%)" } });
+    expect(bad.screen.dockBackground).toBeNull();
+  });
+
+  it("normalizes dockColors to an array of 4 valid hex colors", () => {
+    const s = normalizeScene({ screen: { dockColors: ["#aabbcc", "#112233", "#ffffff", "#000000"] } });
+    expect(s.screen.dockColors).toEqual(["#aabbcc", "#112233", "#ffffff", "#000000"]);
+  });
+
+  it("truncates dockColors to 4 entries and pads invalids", () => {
+    const s = normalizeScene({ screen: { dockColors: ["#aabbcc", "bad", "#112233", "#ffffff", "#000000"] } });
+    expect(s.screen.dockColors).toHaveLength(4);
+    expect(s.screen.dockColors![0]).toBe("#aabbcc");
+    expect(s.screen.dockColors![1]).toBe("#30d158"); // fallback for "bad"
+  });
+
+  it("dockColors falls back to null for non-array input", () => {
+    const s = normalizeScene({ screen: { dockColors: "not-an-array" } });
+    expect(s.screen.dockColors).toBeNull();
+  });
+
+  it("normalizes notifications and falls back to null for invalid input", () => {
+    const s = normalizeScene({
+      screen: {
+        notifications: [
+          { app: "Instagram", subtitle: "Liked your post", color: "#e1306c" },
+          { app: 42, subtitle: "", color: "bad" }
+        ]
+      }
+    });
+    expect(s.screen.notifications).toEqual([
+      { app: "Instagram", subtitle: "Liked your post", color: "#e1306c" },
+      { app: "", subtitle: "", color: "#0a84ff" }
+    ]);
+    expect(normalizeScene({ screen: { notifications: "nope" } }).screen.notifications).toBeNull();
+    expect(normalizeScene({ screen: {} }).screen.notifications).toBeNull();
+  });
+
+  it("normalizes dockIcons and falls back to null for invalid input", () => {
+    const s = normalizeScene({
+      screen: {
+        dockIcons: [
+          { label: "Mail", color: "#ff3b30", emoji: "✉️" },
+          { label: 42, color: "bad" }
+        ]
+      }
+    });
+    expect(s.screen.dockIcons).toEqual([
+      { label: "Mail", color: "#ff3b30", emoji: "✉️" },
+      { label: "", color: "#0a84ff", emoji: undefined }
+    ]);
+    expect(normalizeScene({ screen: { dockIcons: "nope" } }).screen.dockIcons).toBeNull();
+    expect(normalizeScene({ screen: {} }).screen.dockIcons).toBeNull();
+  });
+
+  it("normalizes androidGridIcons (first 20) and falls back to null for invalid input", () => {
+    const s = normalizeScene({
+      screen: {
+        androidGridIcons: [
+          { label: "Mail", color: "#ff0000", emoji: "✉️" },
+          { label: 42, color: "bad" }
+        ]
+      }
+    });
+    expect(s.screen.androidGridIcons).toEqual([
+      { label: "Mail", color: "#ff0000", emoji: "✉️" },
+      { label: "", color: "#1a73e8", emoji: undefined }
+    ]);
+    const capped = normalizeScene({
+      screen: { androidGridIcons: Array.from({ length: 25 }, (_, i) => ({ label: `L${i}`, color: "#1a73e8" })) }
+    });
+    expect(capped.screen.androidGridIcons!.length).toBe(20);
+    expect(normalizeScene({ screen: { androidGridIcons: "nope" } }).screen.androidGridIcons).toBeNull();
+    expect(normalizeScene({ screen: {} }).screen.androidGridIcons).toBeNull();
+  });
+
+  it("normalizes gridCols/gridRows with clamping and null fallback", () => {
+    const s = normalizeScene({ screen: { gridCols: 2, gridRows: 9 } });
+    expect(s.screen.gridCols).toBe(3);
+    expect(s.screen.gridRows).toBe(6);
+    const s2 = normalizeScene({ screen: { gridCols: 4.6, gridRows: 5 }});
+    expect(s2.screen.gridCols).toBe(5);
+    expect(s2.screen.gridRows).toBe(5);
+    expect(normalizeScene({ screen: { gridCols: "x" } }).screen.gridCols).toBeNull();
+    expect(normalizeScene({ screen: {} }).screen.gridCols).toBeNull();
+    expect(normalizeScene({ screen: {} }).screen.gridRows).toBeNull();
+  });
+
+  it("normalizes folders (first 8) and falls back to null for invalid input", () => {
+    const s = normalizeScene({
+      screen: {
+        folders: [
+          { label: "Social", color: "#5e35b1" },
+          { label: 42, color: "bad" }
+        ]
+      }
+    });
+    expect(s.screen.folders).toEqual([
+      { label: "Social", color: "#5e35b1" },
+      { label: "", color: "#3a4a5a" }
+    ]);
+    expect(normalizeScene({ screen: { folders: "nope" } }).screen.folders).toBeNull();
+    expect(normalizeScene({ screen: {} }).screen.folders).toBeNull();
+  });
+
+  it("normalizes widgets (first 2, type-safe) and falls back to null", () => {
+    const s = normalizeScene({
+      screen: { widgets: [{ type: "weather" }, { type: "clock" }, { type: "clock" }] }
+    });
+    expect(s.screen.widgets).toEqual([{ type: "weather" }, { type: "clock" }]);
+    expect(normalizeScene({ screen: { widgets: "nope" } }).screen.widgets).toBeNull();
+    expect(normalizeScene({ screen: {} }).screen.widgets).toBeNull();
   });
 });

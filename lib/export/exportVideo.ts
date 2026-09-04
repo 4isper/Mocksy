@@ -13,6 +13,7 @@ import {
   resolvePixelRatio,
   computeCaptureDuration,
   chooseWebmMimeType,
+  isAbortError,
   QUALITY,
   captureWebm,
   captureWebmWithRetry,
@@ -70,11 +71,22 @@ export async function exportVideo(
   await ffmpeg.writeFile(inputName, new Uint8Array(await webmBlob.arrayBuffer()));
   onProgress?.(50);
   signal?.throwIfAborted();
+  // H.264 (libx264, bundled in @ffmpeg/core) with CRF quality control: far
+  // smaller files with better quality than the legacy mpeg4 encoder. The WASM
+  // build is single-threaded, so encode time is the dominant cost — an
+  // ultrafast preset is the biggest safe lever (CRF, not the preset, governs
+  // quality). +faststart moves the moov atom to the front so the video starts
+  // streaming/playing immediately. The scale filter is a no-op for the even
+  // capture dimensions and a safety net for odd sources: yuv420p rejects
+  // width/height not divisible by 2.
   const code = await ffmpeg.exec([
     "-i", inputName,
-    "-c:v", "mpeg4",
-    "-q:v", String(quality.qscale),
+    "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+    "-c:v", "libx264",
+    "-preset", "ultrafast",
+    "-crf", String(quality.crf),
     "-pix_fmt", "yuv420p",
+    "-movflags", "+faststart",
     outputName,
   ]);
   // FFmpeg returns 0 on success; a non-zero code means the encode failed
@@ -104,7 +116,7 @@ export async function exportVideo(
     // Best-effort temp-file cleanup so the FFmpeg singleton doesn't carry
     // stale input/output between failed exports.
     await cleanupFfmpegTempFiles(getFfmpegSingleton(), [inputName, outputName]);
-    onError?.(err instanceof Error ? err.message : "Video export failed.");
+    if (!isAbortError(err)) onError?.(err instanceof Error ? err.message : "Video export failed.");
   }
 }
 
@@ -126,11 +138,15 @@ export async function exportWebm(
       return;
     }
     signal?.throwIfAborted();
-    downloadBlob(webmBlob, `${exportBaseName(scene, activeLayerId)}.webm`);
+    // Name the file after the blob's ACTUAL container: engines that can't
+    // record WebM (Safari) fall back to the browser's default recorder format
+    // (MP4), and an MP4 payload named .webm won't open in most players.
+    const ext = webmBlob.type.includes("mp4") ? "mp4" : "webm";
+    downloadBlob(webmBlob, `${exportBaseName(scene, activeLayerId)}.${ext}`);
     onStatus?.("Done");
     onProgress?.(100);
   } catch (err) {
-    onError?.(err instanceof Error ? err.message : "WebM export failed.");
+    if (!isAbortError(err)) onError?.(err instanceof Error ? err.message : "WebM export failed.");
   }
 }
 
@@ -193,7 +209,7 @@ export async function exportWebpAnim(
     onProgress?.(100);
   } catch (err) {
     await cleanupFfmpegTempFiles(getFfmpegSingleton(), [inputName, outputName]);
-    onError?.(err instanceof Error ? err.message : "Animated WebP export failed.");
+    if (!isAbortError(err)) onError?.(err instanceof Error ? err.message : "Animated WebP export failed.");
   }
 }
 
@@ -264,6 +280,6 @@ export async function exportGif(
     onProgress?.(100);
   } catch (err) {
     await cleanupFfmpegTempFiles(getFfmpegSingleton(), [inputName, outputName]);
-    onError?.(err instanceof Error ? err.message : "GIF export failed.");
+    if (!isAbortError(err)) onError?.(err instanceof Error ? err.message : "GIF export failed.");
   }
 }

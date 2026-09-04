@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { screenChromeElements, screenChromeSvg, drawScreenChrome, SCREEN_CHROME_DOCK_COLORS } from "@/lib/render/screenChrome";
-import { frameOs } from "@/lib/render/frames";
+import { screenChromeElements, screenChromeSvg, drawScreenChrome, androidGridGeom, ANDROID_GRID_APPS, GRID_ICON_PRESETS, SCREEN_CHROME_DOCK_COLORS } from "@/lib/render/screenChrome";
+import { frameOs, getFrameSpec, frameViewBox } from "@/lib/render/frames";
+import { buildSceneCss } from "@/lib/render/mockupRenderer";
 import { DEFAULT_SCREEN_CHROME } from "@/lib/state/editorScene";
 import type { ScreenChrome } from "@/lib/types/editor";
 
@@ -76,12 +77,34 @@ describe("screenChromeElements", () => {
     expect(out).not.toContain('r="12.8"'); // old inner placeholder dot
   });
 
-  it("home dock uses an iOS-like corner radius and 60pt-scale icons", () => {
+  it("suppresses the shortcut rings when showLockShortcuts is false", () => {
+    const out = screenChromeElements(chrome({ showLockShortcuts: false }), W, H, "t");
+    // no flashlight/camera circles: only the wi-fi dot + camera lens remain
+    expect(out).not.toContain('cx="60.1"');
+    expect(out).not.toContain('cx="329.9"');
+  });
+
+  it("honors the per-frame lockShortcuts spec", () => {
+    // Pixel frame declares lockShortcuts: false, so iOS lock style draws none
+    const out = screenChromeElements(chrome({ style: "lock", os: "ios" }), W, H, "t", "pixel8pro");
+    expect(out).not.toContain('cx="60.1"');
+    expect(out).not.toContain('cx="329.9"');
+    // iPhone shows them
+    const ios = screenChromeElements(chrome({ style: "lock", os: "ios" }), W, H, "t", "iphone15");
+    expect(ios).toContain('cx="60.1"');
+  });
+
+  it("home dock uses an iOS-like corner radius and squircle icons", () => {
     const out = screenChromeElements(chrome({ style: "home" }), W, H, "t");
     const dockH = H * 0.112;
     const dockRx = Math.round(dockH * 0.4 * 10) / 10;
     expect(out).toContain(`rx="${dockRx}"`); // rounded rect, not a capsule
-    expect(out).toContain(`width="${W * 0.15}"`); // ~60pt icons
+    // Icons are superellipse squircles (paths closing with Z), not plain rects.
+    expect(out.match(/d="M [^"]+ Z"/g)).toHaveLength(4);
+    // The squircle outline passes through the first icon's edge midpoints.
+    expect(out).toContain("96.7 742.7"); // right-center of the first icon
+    expect(out).toContain("67.5 713.5"); // top-center of the first icon
+    expect(out).not.toContain(`width="${W * 0.15}"`);
     expect(out).not.toContain(`rx="${dockH / 2}"`);
   });
 
@@ -170,6 +193,165 @@ describe("screenChromeElements", () => {
     expect(light).toContain('fill="#0a0a0a"');
     expect(dark).toContain('fill="#ffffff"');
   });
+
+  it("clockSizeFactor scales the lock clock vertically", () => {
+    const baseline = screenChromeElements(chrome(), W, H, "t");
+    const large = screenChromeElements(chrome({ clockSizeFactor: 0.20 }), W, H, "t");
+    // Default clock y ≈ 147.7; with clockYFactor unchanged, only the font-size changes.
+    const baseSize = Number(baseline.match(/font-size="([\d.]+)" font-weight="200"/)![1]);
+    const largeSize = Number(large.match(/font-size="([\d.]+)" font-weight="200"/)![1]);
+    expect(largeSize).toBeGreaterThan(baseSize);
+  });
+
+  it("clockYFactor moves the lock clock up and down", () => {
+    const high = screenChromeElements(chrome({ clockYFactor: 0.10 }), W, H, "t");
+    const low = screenChromeElements(chrome({ clockYFactor: 0.35 }), W, H, "t");
+    // Grab the y attribute of the <text> element that carries the big lock
+    // clock (font-weight="200").
+    const extractClockY = (svg: string) => {
+      const m = svg.match(/<text x="[\d.]+" y="([\d.]+)" font-size="[\d.]+" font-weight="200"/);
+      return m ? Number(m[1]) : NaN;
+    };
+    const highY = extractClockY(high);
+    const lowY = extractClockY(low);
+    expect(lowY).toBeGreaterThan(highY);
+  });
+
+  it("clockColor overrides the theme-derived clock text color", () => {
+    const defaultDark = screenChromeElements(chrome(), W, H, "t");
+    // Default dark theme clock color is #ffffff; override to red.
+    const custom = screenChromeElements(chrome({ clockColor: "#ff0000" }), W, H, "t");
+    // The clock font-weight=200 text (lock clock) uses clockColor
+    expect(custom).toContain('font-weight="200" fill="#ff0000"');
+    // Default dark theme clock uses fg=#ffffff
+    expect(defaultDark).toContain('font-weight="200" fill="#ffffff"');
+  });
+
+  it("clockColor also colors the lock date line", () => {
+    const custom = screenChromeElements(chrome({ clockColor: "#aabbcc" }), W, H, "t");
+    // Date uses clockDim which equals clockColor when set.
+    expect(custom).toContain('font-weight="600" fill="#aabbcc"');
+  });
+
+  it("dockBackground overrides the default translucent dock fill", () => {
+    const out = screenChromeElements(chrome({ style: "home", dockBackground: "#123456" }), W, H, "t");
+    expect(out).toContain('fill="#123456"');
+    // No default translucent fill present
+    expect(out).not.toContain('fill="rgba(255,255,255,0.16)"');
+  });
+
+  it("dockColors overrides the default 4-icon dock palette", () => {
+    const colors = ["#ff0000", "#00ff00", "#0000ff", "#ffff00"];
+    const out = screenChromeElements(chrome({ style: "home", dockColors: colors }), W, H, "t");
+    for (const c of colors) {
+      expect(out).toContain(`fill="${c}"`);
+    }
+    for (const c of SCREEN_CHROME_DOCK_COLORS) {
+      expect(out).not.toContain(`fill="${c}"`);
+    }
+  });
+
+  it("dockColors falls back to default when empty array is provided", () => {
+    const out = screenChromeElements(chrome({ style: "home", dockColors: [] }), W, H, "t");
+    for (const c of SCREEN_CHROME_DOCK_COLORS) {
+      expect(out).toContain(`fill="${c}"`);
+    }
+  });
+
+  it("renders custom dock icons with emoji and labels on the home dock", () => {
+    const out = screenChromeElements(
+      chrome({
+        style: "home",
+        dockIcons: [
+          { label: "Mail", color: "#ff3b30", emoji: "✉️" },
+          { label: "Maps", color: "#34c759", emoji: "🗺️" }
+        ]
+      }),
+      W, H, "t"
+    );
+    expect(out).toContain('fill="#ff3b30"');
+    expect(out).toContain('fill="#34c759"');
+    expect(out).toContain("✉️");
+    expect(out).toContain("🗺️");
+    expect(out).toContain("Mail");
+    expect(out).toContain("Maps");
+  });
+
+  it("skips empty dockIcons and falls back to the plain palette", () => {
+    const out = screenChromeElements(chrome({ style: "home", dockIcons: [] }), W, H, "t");
+    for (const c of SCREEN_CHROME_DOCK_COLORS) {
+      expect(out).toContain(`fill="${c}"`);
+    }
+  });
+
+  it("android dock honors custom dockIcons instead of the default palette", () => {
+    const out = screenChromeElements(
+      chrome({
+        style: "home",
+        os: "android",
+        dockIcons: [
+          { label: "Phone", color: "#1a73e8", emoji: "📞" },
+          { label: "Mail", color: "#0f9d58", emoji: "✉️" }
+        ]
+      }),
+      W, H, "t"
+    );
+    expect(out).toContain('fill="#1a73e8"');
+    expect(out).toContain('fill="#0f9d58"');
+    expect(out).toContain("📞");
+    expect(out).toContain("✉️");
+  });
+});
+
+describe("lock-screen notifications", () => {
+  it("renders two notification cards below the clock when enabled", () => {
+    const out = screenChromeElements(chrome({ showNotifications: true }), W, H, "t");
+    expect(out).toContain("Messages");
+    expect(out).toContain("Calendar");
+    // two app-icon squircles (superellipse paths), matches the card count
+    expect(out.match(/d="M [^"]+ Z" fill="(?:#30d158|#0a84ff)"/g)).toHaveLength(2);
+    expect(out).toContain('fill="#30d158"'); // Messages icon
+    expect(out).toContain('fill="#0a84ff"'); // Calendar icon
+  });
+
+  it("skips notification cards by default", () => {
+    const out = screenChromeElements(chrome(), W, H, "t");
+    expect(out).not.toContain("Messages");
+    expect(out).not.toContain("Calendar");
+  });
+
+  it("renders notification cards even when the clock is hidden", () => {
+    const out = screenChromeElements(chrome({ showNotifications: true, showClock: false, showDate: false, showStatusBar: false }), W, H, "t");
+    // Cards fall back to a fixed position below the top scrim.
+    expect(out).toContain("Messages");
+    expect(out).toContain("Calendar");
+  });
+
+  it("renders custom notifications from the chrome config", () => {
+    const out = screenChromeElements(
+      chrome({
+        showNotifications: true,
+        notifications: [
+          { app: "Instagram", subtitle: "Liked your post", color: "#e1306c" },
+          { app: "Slack", subtitle: "New message in #design", color: "#4a154b" }
+        ]
+      }),
+      W, H, "t"
+    );
+    expect(out).toContain("Instagram");
+    expect(out).toContain("Slack");
+    expect(out).toContain('fill="#e1306c"');
+    expect(out).toContain('fill="#4a154b"');
+    // default cards are replaced, not appended
+    expect(out).not.toContain("Messages");
+    expect(out).not.toContain("Calendar");
+  });
+
+  it("falls back to default cards when the custom list is empty", () => {
+    const out = screenChromeElements(chrome({ showNotifications: true, notifications: [] }), W, H, "t");
+    expect(out).toContain("Messages");
+    expect(out).toContain("Calendar");
+  });
 });
 
 describe("screenChromeSvg", () => {
@@ -207,7 +389,8 @@ describe("drawScreenChrome", () => {
       set font(_v: unknown) {},
       set textAlign(_v: unknown) {},
       set textBaseline(_v: unknown) {},
-      set lineCap(_v: unknown) {}
+      set lineCap(_v: unknown) {},
+      setLineDash: vi.fn()
     } as unknown as CanvasRenderingContext2D & { _calls: typeof calls };
   }
 
@@ -228,6 +411,14 @@ describe("drawScreenChrome", () => {
     expect(fillTexts.some((args) => args[0] === "9:41")).toBe(true);
   });
 
+  it("draws lock-screen notification cards when enabled", () => {
+    const c = ctx();
+    drawScreenChrome(c as never, chrome({ showNotifications: true }), 0, 0, 390, 844);
+    const fillTexts = (c as unknown as { _calls: { fillText: unknown[][] } })._calls.fillText;
+    expect(fillTexts.some((args) => args[0] === "Messages")).toBe(true);
+    expect(fillTexts.some((args) => args[0] === "Calendar")).toBe(true);
+  });
+
   it("paints nothing when every element is hidden", () => {
     const c = ctx();
     drawScreenChrome(
@@ -239,6 +430,16 @@ describe("drawScreenChrome", () => {
       H
     );
     expect((c as unknown as { _calls: { fillRect: unknown[][] } })._calls.fillRect).toHaveLength(0);
+  });
+
+  it("paints the Android home grid and dock circles with the search glyph", () => {
+    const c = ctx();
+    drawScreenChrome(c as never, chrome({ style: "home", os: "android" }), 0, 0, W, H);
+    const arcCalls = (c as unknown as { arc: ReturnType<typeof vi.fn> }).arc;
+    // 20 grid icons + 4 dock icons + wifi dot + Google G outline.
+    expect(arcCalls.mock.calls.length).toBeGreaterThanOrEqual(24);
+    const fillTexts = (c as unknown as { _calls: { fillText: unknown[][] } })._calls.fillText;
+    expect(fillTexts.some((args) => args[0] === "Search")).toBe(true);
   });
 });
 
@@ -268,7 +469,8 @@ describe("OS-specific chrome (frameOs / os flag)", () => {
       set font(_v: unknown) {},
       set textAlign(_v: unknown) {},
       set textBaseline(_v: unknown) {},
-      set lineCap(_v: unknown) {}
+      set lineCap(_v: unknown) {},
+      setLineDash: vi.fn()
     } as unknown as CanvasRenderingContext2D & { _calls: typeof calls };
   }
 
@@ -289,36 +491,357 @@ describe("OS-specific chrome (frameOs / os flag)", () => {
     expect(frameOs(undefined)).toBe("ios");
   });
 
-  it("android keeps the status bar but drops the iOS dock and home indicator", () => {
+  it("android home renders the search bar, app grid and dock but no iOS indicator", () => {
     const home = screenChromeElements(chrome({ style: "home", os: "android" }), W, H, "t");
     expect(home).toContain("9:41"); // status bar remains
-    expect(home).not.toContain(`fill="${SCREEN_CHROME_DOCK_COLORS[0]}"`); // no iOS dock
+    // Google search pill with the multicolor G.
+    expect(home).toContain('fill="rgba(255,255,255,0.94)"');
+    expect(home).toContain('stroke="#4285f4"');
+    // App grid (20 circles) + dock (4 circles) present; the exact total also
+    // counts the wifi vertex dot and the Google-G outline.
+    expect(home.match(/<circle /g)!.length).toBeGreaterThanOrEqual(24);
+    expect(home).toContain('<circle cx=');
+    // dock icons use the Android palette, not the iOS squircle dock.
+    expect(home).toContain(`fill="#1a73e8"`);
+    expect(home).not.toContain(`fill="${SCREEN_CHROME_DOCK_COLORS[0]}"`);
     const indicator = screenChromeElements(chrome({ showHomeIndicator: true, os: "android" }), W, H, "t");
     // home indicator is an iOS-only pill, gated out for android
     expect(indicator).not.toContain('fill="rgba(0,0,0,0.88)"');
     expect(indicator).not.toContain('fill="rgba(255,255,255,0.92)"');
   });
 
-  it("android status bar uses a triangular signal instead of iOS bars", () => {
+  it("custom android grid icons render label and emoji in SVG", () => {
+    const home = screenChromeElements(
+      chrome({ style: "home", os: "android", androidGridIcons: [{ label: "Mail", color: "#ff0000", emoji: "✉️" }, { label: "Solo", color: "#00ff00" }] }),
+      W,
+      H,
+      "t"
+    );
+    expect(home).toContain('fill="#ff0000"');
+    expect(home).toContain('fill="#00ff00"');
+    expect(home).toContain(">Mail</text>");
+    expect(home).toContain(">Solo</text>");
+    expect(home).toContain("✉️");
+    // A custom single-entry list only paints one grid icon, not the default 20.
+    expect(home.match(/<circle /g)!.length).toBeLessThan(20);
+  });
+
+  it("custom android grid icons render label, emoji and colors on canvas", () => {
+    const c = ctx();
+    drawScreenChrome(
+      c as never,
+      chrome({ style: "home", os: "android", androidGridIcons: [{ label: "Mail", color: "#ff0000", emoji: "✉️" }, { label: "Solo", color: "#00ff00" }] }),
+      0,
+      0,
+      W,
+      H
+    );
+    const arcCalls = (c as unknown as { arc: ReturnType<typeof vi.fn> }).arc;
+    // 2 custom grid icons + 4 dock icons + wifi dot + Google G outline.
+    expect(arcCalls.mock.calls.length).toBeGreaterThanOrEqual(6);
+    expect(arcCalls.mock.calls.length).toBeLessThan(20);
+    const fillTexts = (c as unknown as { _calls: { fillText: unknown[][] } })._calls.fillText;
+    expect(fillTexts.some((args) => args[0] === "Mail")).toBe(true);
+  });
+
+  it("android home folders occupy trailing grid cells in SVG", () => {
+    const plain = screenChromeElements(chrome({ style: "home", os: "android" }), W, H, "t");
+    const home = screenChromeElements(
+      chrome({ style: "home", os: "android", folders: [{ label: "Social", color: "#5e35b1" }] }),
+      W,
+      H,
+      "t"
+    );
+    // The folder stub renders as a rounded tile (rect) with its color, label and
+    // 3 mini-app dots; one icon cell is replaced, so its 19 icon circles still
+    // coexist with the folder tile instead of a 20th grid icon.
+    expect(home).toContain('fill="#5e35b1"');
+    expect(home).toContain(">Social</text>");
+    expect(home).toContain("<rect ");
+    expect(home.match(/<circle /g)!.length).toBeGreaterThan(plain.match(/<circle /g)!.length);
+  });
+
+  it("android home folders render on canvas", () => {
+    const c = ctx();
+    drawScreenChrome(
+      c as never,
+      chrome({ style: "home", os: "android", folders: [{ label: "Social", color: "#5e35b1" }] }),
+      0,
+      0,
+      W,
+      H
+    );
+    const fillTexts = (c as unknown as { _calls: { fillText: unknown[][] } })._calls.fillText;
+    expect(fillTexts.some((args) => args[0] === "Social")).toBe(true);
+  });
+
+  it("android home widgets render cards above the grid in SVG", () => {
+    const home = screenChromeElements(
+      chrome({ style: "home", os: "android", widgets: [{ type: "clock" }, { type: "weather" }] }),
+      W,
+      H,
+      "t"
+    );
+    expect(home).toContain(">9:41</text>");
+    expect(home).toContain(">Tuesday, Sep 2</text>");
+    expect(home).toContain(">72°</text>");
+    expect(home).toContain(">San Francisco</text>");
+    // Two widget cards appear above the app grid.
+    expect(home.match(/<rect /g)!.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("android home widgets render on canvas", () => {
+    const c = ctx();
+    drawScreenChrome(
+      c as never,
+      chrome({ style: "home", os: "android", widgets: [{ type: "clock" }, { type: "weather" }] }),
+      0,
+      0,
+      W,
+      H
+    );
+    const fillTexts = (c as unknown as { _calls: { fillText: unknown[][] } })._calls.fillText;
+    expect(fillTexts.some((args) => args[0] === "9:41")).toBe(true);
+    expect(fillTexts.some((args) => args[0] === "San Francisco")).toBe(true);
+  });
+
+  it("android status bar uses a triangular signal and dotted wifi instead of iOS bars", () => {
     const android = screenChromeElements(chrome({ showStatusBar: true, os: "android" }), W, H, "t");
     const ios = screenChromeElements(chrome({ showStatusBar: true, os: "ios" }), W, H, "t");
     // Android draws a single filled right-triangle (M L L Z); iOS uses 4 bars.
     const triangle = /<path d="M [\d.]+ [\d.]+ L [\d.]+ [\d.]+ L [\d.]+ [\d.]+ Z"/;
     expect(android).toMatch(triangle);
     expect(ios).not.toMatch(triangle);
+    // Android wifi arcs are dotted (stroke-dasharray); iOS wifi is solid.
+    expect(android).toContain("stroke-dasharray=");
+    expect(ios).not.toContain("stroke-dasharray=");
   });
 
-  it("desktop renders no mobile chrome at all", () => {
-    expect(screenChromeElements(chrome({ os: "desktop" }), W, H, "t")).toBe("");
-    expect(screenChromeElements(chrome({ style: "lock", os: "desktop" }), W, H, "t")).toBe("");
+  it("desktop renders a status bar but no lock/home chrome", () => {
+    const statusBar = screenChromeElements(chrome({ os: "desktop", showStatusBar: true }), W, H, "t");
+    expect(statusBar).toContain("9:41"); // time shown
+    expect(statusBar).toContain("fill="); // battery/wifi glyphs present
+    // No lock-screen clock, dock, shortcuts, or home indicator for desktop
+    const lock = screenChromeElements(chrome({ style: "lock", os: "desktop" }), W, H, "t");
+    expect(lock).not.toContain("88.6"); // no large lock clock
     const c = ctx();
     drawScreenChrome(c as never, chrome({ os: "desktop" }), 0, 0, W, H);
-    // drawScreenChrome returns early for desktop, so no scrim fillRect
-    expect((c as unknown as { _calls: { fillRect: unknown[][] } })._calls.fillRect).toHaveLength(0);
+    // Desktop still draws the status bar scrim and glyphs (no early return)
+    expect((c as unknown as { _calls: { fillRect: unknown[][] } })._calls.fillRect.length).toBeGreaterThan(0);
   });
 
   it("defaults to ios chrome when os is omitted", () => {
     const home = screenChromeElements(chrome({ style: "home" }), W, H, "t");
     expect(home).toContain(`fill="${SCREEN_CHROME_DOCK_COLORS[0]}"`); // iOS dock drawn
+  });
+});
+
+describe("androidGridGeom", () => {
+  it("lays out 4×5 cells and marks short screens as not fitting", () => {
+    const g = androidGridGeom(W, H, 60, 36, 0.1, 0.02);
+    expect(g.cols).toBe(4);
+    expect(g.rows).toBe(5);
+    expect(g.fits).toBe(true);
+    // First cell is centered in the top-left quarter.
+    expect(g.center(0)).toEqual({ cx: W / 8, cy: g.gridTop + g.cellH / 2 });
+    // 20th icon (index 19) is the last cell of the bottom row.
+    const last = g.center(19);
+    expect(last.cx).toBe(W - W / 8);
+    expect(last.cy).toBeCloseTo(g.gridTop + g.cellH * 4 + g.cellH / 2);
+    // Label sits just under the icon's edge.
+    expect(g.labelY(g.gridTop)).toBeGreaterThan(g.gridTop);
+  });
+
+  it("does not fit on very short screens", () => {
+    const g = androidGridGeom(400, 60, 20, 20, 0.5, 0.2);
+    expect(g.fits).toBe(false);
+  });
+
+  it("honors custom column/row counts", () => {
+    const g5x5 = androidGridGeom(W, H, 60, 36, 0.1, 0.02, 5, 5);
+    expect(g5x5.cols).toBe(5);
+    expect(g5x5.rows).toBe(5);
+    // 5 columns → narrower cells than the default 4.
+    expect(g5x5.cellW).toBe(W / 5);
+    // A 3×4 layout fills with exactly 12 cells.
+    const g34 = androidGridGeom(W, H, 60, 36, 0.1, 0.02, 3, 4);
+    expect(g34.center(11).cx).toBe(W - W / 6);
+    expect(g34.center(11).cy).toBeCloseTo(g34.gridTop + g34.cellH * 3 + g34.cellH / 2);
+  });
+});
+
+describe("GRID_ICON_PRESETS", () => {
+  it("exposes 4 named presets each with exactly 20 valid icons", () => {
+    expect(GRID_ICON_PRESETS.map((p) => p.id)).toEqual(["google", "classic", "minimal", "none"]);
+    for (const preset of GRID_ICON_PRESETS) {
+      expect(preset.icons.length).toBe(20);
+      for (const icon of preset.icons) {
+        expect(icon.label.length).toBeGreaterThan(0);
+        expect(icon.color).toMatch(/^#[0-9a-f]{6}$/i);
+      }
+    }
+  });
+
+  it("google preset matches the default ANDROID_GRID_APPS", () => {
+    const google = GRID_ICON_PRESETS.find((p) => p.id === "google")!;
+    expect(google.icons).toEqual(ANDROID_GRID_APPS);
+  });
+});
+
+describe("screen chrome preview/export geometry parity", () => {
+  // The CSS preview renders `screenChromeSvg` (SVG viewBox) into the screen
+  // box; the canvas export paints `drawScreenChrome` into the same box. Every
+  // element is positioned by fractions of that box in both renderers, so the
+  // derived SVG view must keep the element geometry proportional to the
+  // canvas draw at the same box size.
+  const CHROME = {
+    ...DEFAULT_SCREEN_CHROME,
+    enabled: true,
+    style: "home" as const,
+    showStatusBar: true,
+    showDock: true,
+    os: "android" as const,
+    dockIcons: [
+      { label: "Phone", color: "#1a73e8", emoji: "📞" },
+      { label: "Gmail", color: "#0f9d58", emoji: "✉️" }
+    ]
+  };
+
+  interface Box {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  }
+
+  function recordingCtx() {
+    const rects: Array<{ tag: string; box: Box; style: string }> = [];
+    let style = "";
+    let tag = "";
+    // Path bounds accumulator: roundRect/arc paths are filled via fill(),
+    // so track the path's extents and record a rect on each fill.
+    let pts: Array<[number, number]> = [];
+    const addPoint = (x: number, y: number) => pts.push([x, y]);
+    const pushRect = () => {
+      if (pts.length === 0) return;
+      const xs = pts.map((p) => p[0]!);
+      const ys = pts.map((p) => p[1]!);
+      const minX = Math.min(...xs);
+      const minY = Math.min(...ys);
+      rects.push({ tag, box: { x: minX, y: minY, w: Math.max(...xs) - minX, h: Math.max(...ys) - minY }, style });
+      pts = [];
+    };
+    const ctx = {
+      save: () => {},
+      restore: () => {},
+      beginPath: () => { pts = []; },
+      moveTo: addPoint,
+      lineTo: addPoint,
+      closePath: () => {},
+      arc: (cx: number, cy: number, r: number) => {
+        addPoint(cx - r, cy - r);
+        addPoint(cx + r, cy + r);
+      },
+      arcTo: (x1: number, y1: number, x2: number) => {
+        addPoint(x1, y1);
+        addPoint(x2, y1);
+      },
+      fill: pushRect,
+      stroke: () => { pts = []; },
+      fillText: () => {},
+      setLineDash: () => {},
+      translate: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      fillRect: (x: number, y: number, w: number, h: number) => rects.push({ tag, box: { x, y, w, h }, style }),
+      set lineWidth(_v: number) {},
+      set lineCap(_v: string) {},
+      set textAlign(_v: string) {},
+      set textBaseline(_v: string) {},
+      set font(_v: string) {},
+      set shadowColor(_v: string) {},
+      set shadowBlur(_v: number) {},
+      set shadowOffsetX(_v: number) {},
+      set shadowOffsetY(_v: number) {}
+    };
+    Object.defineProperty(ctx, "fillStyle", {
+      get: () => style,
+      set: (v: unknown) => { style = String(v); },
+      configurable: true
+    });
+    Object.defineProperty(ctx, "strokeStyle", {
+      get: () => style,
+      set: (v: unknown) => { style = String(v); },
+      configurable: true
+    });
+    return {
+      ctx: ctx as unknown as CanvasRenderingContext2D,
+      rects,
+      setTag: (t: string) => { tag = t; }
+    };
+  }
+
+  /** Vertical center of the dock bar from the SVG markup, in viewBox units. */
+  function svgDockBarY(markup: string, viewBoxH: number): number {
+    // The dock bar is the last large rounded rect in the android-home branch.
+    const re = /<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" rx="[\d.]+" fill="rgba\(255,255,255,0.16\)"/g;
+    let last: RegExpExecArray | null;
+    let match: RegExpExecArray | null = null;
+    while ((last = re.exec(markup))) match = last;
+    if (!match) throw new Error("dock bar rect not found in svg markup");
+    return Number(match[2]) + Number(match[4]) / 2;
+  }
+
+  it("drawScreenChrome places the android dock at the same fraction of the screen box as the preview SVG", () => {
+    const w = 390;
+    const h = 898.9; // pixel8pro chrome box aspect (390 / (420/968))
+    const svg = screenChromeSvg(CHROME, w, h, "t", "xMidYMid meet", "pixel8pro");
+    const svgFraction = svgDockBarY(svg, h) / h;
+
+    const { ctx, rects, setTag } = recordingCtx();
+    setTag("dockbar");
+    drawScreenChrome(ctx, CHROME, 0, 0, w, h, "pixel8pro");
+    // The dock bar is the widest fill painted with the dock fill color
+    // (theme dark → rgba(255,255,255,0.16)).
+    const bar = rects
+      .filter((r) => r.style === "rgba(255,255,255,0.16)" && r.box.w > w * 0.5)
+      .reduce((a, b) => (b.box.w > a.box.w ? b : a));
+    const canvasFraction = (bar.box.y + bar.box.h / 2) / h;
+
+    expect(canvasFraction).toBeCloseTo(svgFraction, 4);
+  });
+
+  it("screenChromeStyle and mediaSlotStyle occupy the same screen box the canvas clips to", () => {
+    // buildSceneCss positions the chrome div and the media slot at the exact
+    // cutout fractions; computeFrameBox derives the canvas clip rect from the
+    // same cutout. Both must agree per axis so the chrome and the media land
+    // on identical geometry in preview and export.
+    const scn = {
+      frame: "pixel8pro" as const,
+      aspectRatio: "9 / 16",
+      screen: CHROME,
+      stylePreset: "default" as const,
+      layers: []
+    } as unknown as Parameters<typeof buildSceneCss>[0];
+    const css = buildSceneCss(scn);
+    const spec = getFrameSpec("pixel8pro");
+    const vb = frameViewBox(spec);
+    const cut = spec.cutout!;
+    const leftFrac = cut.x / vb.w;
+    const topFrac = cut.y / vb.h;
+    const widthFrac = cut.w / vb.w;
+    const heightFrac = cut.h / vb.h;
+
+    for (const style of [css.screenChromeStyle, css.mediaSlotStyle]) {
+      expect(style.left).toBe(`${leftFrac * 100}%`);
+      expect(style.top).toBe(`${topFrac * 100}%`);
+      expect(style.width).toBe(`${widthFrac * 100}%`);
+      expect(style.height).toBe(`${heightFrac * 100}%`);
+    }
+    // The chrome viewBox keeps the cutout aspect, so preserveAspectRatio
+    // "xMidYMid meet" maps it 1:1 onto the screen box in both renderers.
+    const aspect = cut.w / cut.h;
+    const svg = screenChromeSvg(CHROME, 390, 390 / aspect, "t", "xMidYMid meet", "pixel8pro");
+    expect(svg).toContain('preserveAspectRatio="xMidYMid meet"');
+    expect(svg).toContain(`viewBox="0 0 390 ${(390 / aspect).toFixed(1)}"`);
   });
 });

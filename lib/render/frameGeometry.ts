@@ -20,6 +20,16 @@ export interface FrameBox {
   rotation?: number;
   /** The frame this box represents, so renderers can derive OS-specific chrome. */
   frame?: MockupFrame;
+  /** Native-orientation footprint of the whole assembly (device body/skin,
+   *  shadow padding included via padX/padY), centered on the box center. For
+   *  portrait instances these fields are absent — x/y/width/height already
+   *  describe the native orientation. Landscape renderers that draw the
+   *  assembly inside a rotated context must use these dimensions (drawing the
+   *  landscape box itself inside a 90°-rotated context would re-swap its
+   *  extents and squash the device into a strip). */
+  nativeRect?: { x: number; y: number; width: number; height: number };
+  /** Shadow padding around the native rect (see nativeRect). */
+  nativePad?: { x: number; y: number };
 }
 
 export interface RenderTransform {
@@ -90,7 +100,10 @@ export function computeFrameBox(
    const spec = getFrameSpec(scene.frame, scene.customFrame);
    const dpiScale = pixelRatio;
    const activeLayerForRender = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
-    const actualZoom = Math.max(RENDER.minZoom, transform?.zoom ?? activeLayerForRender?.zoom ?? 1);
+    // Frame-box zoom comes ONLY from the sampled animation transform (the
+    // cinematic presets). The layer's static media zoom scales the media
+    // inside the screen at draw time, not the box.
+    const actualZoom = Math.max(RENDER.minZoom, transform?.zoom ?? 1);
     const defaultFrameW = Math.min(RENDER.defaultFrameWidth, (canvasWidth / dpiScale) * RENDER.defaultFrameFill) * dpiScale;
     const ratioSrc = spec.aspectRatio ?? (scene.frame === "none" ? scene.aspectRatio : "1 / 1");
     const { w: ratioW, h: ratioH } = parseAspectRatioOr(ratioSrc);
@@ -130,14 +143,15 @@ export function computeFrameInstances(
   return instances.map((inst) => {
     const layer = scene.layers.find((l) => l.id === inst.layerId);
     // Only the frame instance whose layer is the currently active one should
-    // reflect the live transform (mid-animation zoom/pan sampled for export).
-    // Every other instance keeps its own static layer.zoom and no pan offset —
-    // matching how the preview builds each instance's css independently via
-    // frameInstanceCssMap, instead of applying one global transform to all.
+    // reflect the live animation transform (mid-animation zoom/pan sampled
+    // for export). Every other instance stays at identity — matching how the
+    // preview builds each instance's css independently via frameInstanceCssMap,
+    // instead of applying one global transform to all. The layer's static
+    // media zoom is a media-level transform applied at draw time.
     const isActiveInstance = !!layer && layer.id === activeLayerId;
     const instZoom = Math.max(
       RENDER.minZoom,
-      isActiveInstance ? (transform?.zoom ?? layer?.zoom ?? 1) : (layer?.zoom ?? 1)
+      isActiveInstance ? (transform?.zoom ?? 1) : 1
     );
 
     const spec = getFrameSpec(inst.frame, scene.customFrame);
@@ -187,7 +201,12 @@ export function computeFrameInstances(
       innerRadius: cutout
         ? Math.max(0, (cutout.rx / cutout.w) * (drawW - padX * 2), (cutout.rx / cutout.h) * (drawH - padY * 2))
         : spec.screenRadius * dpiScale * instZoom,
-      frame: inst.frame
+      frame: inst.frame,
+      // Landscape only: the native-orientation rect the rotated context should
+      // draw (skin/body/shadow/URL), centered on the box center. Portrait
+      // renderers keep using x/y/width/height directly.
+      nativeRect: landscape ? { x: dx, y: dy, width: drawW, height: drawH } : undefined,
+      nativePad: landscape ? { x: padX, y: padY } : undefined
     };
   });
 }

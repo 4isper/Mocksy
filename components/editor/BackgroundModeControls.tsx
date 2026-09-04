@@ -1,17 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { CSSProperties } from "react";
-
-const COLOR_INPUT_STYLE: CSSProperties = {
-  width: 32,
-  height: 28,
-  padding: 0,
-  border: "1px solid var(--panel-border)",
-  borderRadius: 6,
-  cursor: "pointer",
-  background: "none"
-};
+import { Segmented } from "@/components/editor/Segmented";
 
 interface BackgroundSolidControlsProps {
   backgroundColor: string;
@@ -21,9 +11,9 @@ interface BackgroundSolidControlsProps {
 export function BackgroundSolidControls({ backgroundColor, setBackgroundSolid }: BackgroundSolidControlsProps) {
   const t = useTranslations();
   return (
-    <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+    <label className="color-input-row">
       <span>{t("editor.customColor")}</span>
-      <input type="color" value={backgroundColor} onChange={(e) => setBackgroundSolid(e.target.value, true)} style={COLOR_INPUT_STYLE} />
+      <input type="color" value={backgroundColor} onChange={(e) => setBackgroundSolid(e.target.value, true)} className="color-input" />
     </label>
   );
 }
@@ -52,18 +42,17 @@ export function BackgroundGradientControls({
   const t = useTranslations();
   return (
     <>
-      <div role="radiogroup" aria-label={t("editor.gradientType")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
-          <input type="radio" name="grad-type" checked={gradientType === "linear"} onChange={() => setGradientType("linear")} />
-          {t("editor.gradientLinear")}
-        </label>
-        <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
-          <input type="radio" name="grad-type" checked={gradientType === "radial"} onChange={() => setGradientType("radial")} />
-          {t("editor.gradientRadial")}
-        </label>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+      <Segmented
+        label={t("editor.gradientType")}
+        value={gradientType}
+        options={[
+          { value: "linear", label: t("editor.gradientLinear") },
+          { value: "radial", label: t("editor.gradientRadial") }
+        ]}
+        onChange={setGradientType}
+      />
+      <div className="color-input-row">
+        <label className="check-label">
           <input type="checkbox" checked={gradientVia != null} onChange={(e) => setGradientVia(e.target.checked ? (gradientVia ?? "#ffffff") : null)} />
           {t("editor.gradientMiddle")}
         </label>
@@ -73,16 +62,16 @@ export function BackgroundGradientControls({
           disabled={gradientVia == null}
           aria-label={t("editor.gradientMiddle")}
           onChange={(e) => setGradientVia(e.target.value, true)}
-          style={COLOR_INPUT_STYLE}
+          className="color-input"
         />
       </div>
-      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+      <label className="color-input-row">
         <span>{t("editor.gradientFrom")}</span>
-        <input type="color" value={gradientFrom} onChange={(e) => setBackgroundGradient(e.target.value, gradientTo, gradientAngle, gradientVia, gradientType, true)} style={COLOR_INPUT_STYLE} />
+        <input type="color" value={gradientFrom} onChange={(e) => setBackgroundGradient(e.target.value, gradientTo, gradientAngle, gradientVia, gradientType, true)} className="color-input" />
       </label>
-      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+      <label className="color-input-row">
         <span>{t("editor.gradientTo")}</span>
-        <input type="color" value={gradientTo} onChange={(e) => setBackgroundGradient(gradientFrom, e.target.value, gradientAngle, gradientVia, gradientType, true)} style={COLOR_INPUT_STYLE} />
+        <input type="color" value={gradientTo} onChange={(e) => setBackgroundGradient(gradientFrom, e.target.value, gradientAngle, gradientVia, gradientType, true)} className="color-input" />
       </label>
       {gradientType === "linear" ? (
         <label className="field">

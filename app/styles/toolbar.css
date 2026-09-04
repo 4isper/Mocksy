@@ -4,7 +4,11 @@
   display: flex;
   gap: 4px;
   align-items: center;
-  flex-wrap: wrap;
+  /* Single row: wrapping pushed the right-side actions to a second line
+     whenever a toast/progress appeared. Statuses live in .toolbar-status
+     (flex:1, clipped) so the action groups never move. */
+  flex-wrap: nowrap;
+  overflow: hidden;
   position: sticky;
   top: 16px;
   z-index: 5;
@@ -13,13 +17,16 @@
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--panel-border);
   box-shadow: var(--shadow-soft);
-  min-height: 40px;
+  min-height: 48px;
+  min-width: 0;
 }
 
 .toolbar .toolbar-group {
   display: flex;
   align-items: center;
   gap: 2px;
+  flex: none;
+  min-width: 0;
 }
 
 .toolbar .toolbar-group + .toolbar-group {
@@ -35,9 +42,9 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  height: 28px;
+  height: 32px;
   padding: 0 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-dim);
@@ -57,7 +64,7 @@
   transform: translateY(1px);
 }
 .toolbar .btn-tb:disabled {
-  opacity: 0.35;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 .toolbar .btn-tb.is-active {
@@ -73,27 +80,43 @@
 .toolbar .btn-tb-primary {
   background: linear-gradient(180deg, var(--accent), var(--accent-press));
   border-color: transparent;
-  color: #04141a;
+  color: var(--accent-contrast);
   font-weight: 700;
-  box-shadow: 0 2px 8px rgba(0, 217, 255, 0.25);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 .toolbar .btn-tb-primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #2ee3ff, var(--accent));
-  box-shadow: 0 4px 12px rgba(0, 217, 255, 0.35);
+  background: linear-gradient(180deg, var(--accent-hover), var(--accent));
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .toolbar .btn-tb-icon {
-  width: 30px;
-  min-height: 30px;
+  width: 32px;
+  min-height: 32px;
   padding: 0;
+}
+
+/* Readable undo/redo depth badge (was 9px/0.7 opacity inline noise). */
+.toolbar .undo-count {
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-left: 2px;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: var(--hover);
+  color: var(--text-dim);
+}
+.toolbar .btn-tb:disabled .undo-count {
+  background: transparent;
 }
 
 .toolbar .locale-select {
   appearance: none;
   font: inherit;
-  height: 28px;
+  height: 32px;
   padding: 0 28px 0 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-dim);
@@ -133,14 +156,30 @@
 .brand-mark {
   width: 26px;
   height: 26px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--accent), #7c3aed);
-  box-shadow: 0 4px 12px rgba(0, 217, 255, 0.35);
+  border-radius: var(--radius-xs);
+  background: linear-gradient(135deg, var(--accent), var(--brand-violet));
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 35%, transparent);
   flex: none;
 }
 
 .toolbar .spacer {
   flex: 1;
+}
+
+/* Middle status slot: always mounted, takes all free space between the left
+   and right action groups. Transient content (toasts, export progress) is
+   clipped here instead of pushing buttons around or wrapping the toolbar. */
+.toolbar .toolbar-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 4px;
+}
+.toolbar .toolbar-status:empty {
+  padding: 0;
 }
 
 .toolbar .status {
@@ -149,8 +188,45 @@
   min-width: 48px;
 }
 
+/* Toolbar toast text (save/reset/copy notices). Color variant is set inline
+   via --toast-color when the message is success/error. The status slot is the
+   row's shrink absorber (flex:1, min-width:0, clipped): on narrow preview
+   columns the fixed action groups alone over-subscribe the toolbar row, so an
+   in-flow toast would collapse to a zero-width, invisible sliver (clipped by
+   the slot's overflow:hidden). The toast is therefore anchored out of flow to
+   the toolbar itself as a floating pill: it never shifts the action groups,
+   stays readable at any column width, and lets clicks pass through to the
+   controls it overlays (the reset notice's own Undo button opts back in).
+   It stays inside .toolbar (a positioned ancestor), so modals still stack
+   above it. */
+.toolbar .toast-status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  color: var(--toast-color, var(--text-dim));
+  white-space: nowrap;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--panel-solid);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--shadow-soft);
+  pointer-events: none;
+}
+.toolbar .toast-status button {
+  pointer-events: auto;
+}
+
 .toolbar .status.saved {
-  color: #4ade80;
+  color: var(--success);
 }
 
 .toolbar .error {
@@ -189,7 +265,7 @@
   align-items: center;
   gap: 7px;
   padding: 7px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   color: var(--text);
   font: inherit;
   font-size: 12px;
@@ -256,7 +332,7 @@
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(120deg, var(--accent), #7c3aed);
+  background: linear-gradient(120deg, var(--accent), var(--brand-violet));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -265,4 +341,48 @@
 .brand .tag {
   font-size: 12px;
   color: var(--text-dim);
+}
+
+/* ---- Mobile (<=980px): collapse the toolbar ---- */
+/* Undo/redo move to the always-visible bottom tab bar and the secondary
+   actions (theme, share, command palette, shortcuts, reset, fullscreen) fold
+   behind the "…" menu, so the sticky toolbar stays a single row on phones. */
+.toolbar .toolbar-more {
+  display: none;
+}
+
+/* Narrow desktop (slim panels, small preview column): secondary actions fold
+   behind "…" earlier so the single-row toolbar never clips Locale/more.
+   Undo stays visible; at <=980px it moves to the bottom tab bar (below). */
+@media (max-width: 1180px) {
+  .toolbar .toolbar-aux {
+    display: none;
+  }
+  .toolbar .toolbar-more {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 980px) {
+  .toolbar .toolbar-undo,
+  .toolbar .toolbar-aux {
+    display: none;
+  }
+  .toolbar .toolbar-more {
+    display: inline-flex;
+  }
+  /* On phones the status slot shrinks first: toasts clip, progress keeps
+     a usable minimum instead of squeezing out Export/locale/more. */
+  .toolbar .toolbar-status {
+    padding: 0 2px;
+  }
+  .toolbar .toast-status {
+    max-width: 32vw;
+  }
+  .toolbar .export-status {
+    flex-basis: 160px;
+  }
+  .toolbar .export-status .progress {
+    width: 56px;
+  }
 }

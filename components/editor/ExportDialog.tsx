@@ -55,22 +55,22 @@ export function ExportDialog({
   onAspectRatioChange?: (aspectRatio: string) => void;
 }) {
   const t = useTranslations();
-  const IMAGE_FORMATS: { value: ExportFormat; label: string }[] = [
-    { value: "png", label: t("export.png") },
-    { value: "jpeg", label: t("export.jpeg") },
-    { value: "webp", label: t("export.webp") },
-    { value: "avif", label: t("export.avif") },
-    ...(isMultiFrame ? [{ value: "zip" as ExportFormat, label: t("export.zip") }] : []),
-    { value: "svg", label: t("export.svg") },
-    { value: "html", label: t("export.html") },
-    { value: "pdf", label: t("export.pdf") }
+  const IMAGE_FORMATS: { value: ExportFormat; label: string; hint: string }[] = [
+    { value: "png", label: t("export.png"), hint: t("export.hint.png") },
+    { value: "jpeg", label: t("export.jpeg"), hint: t("export.hint.jpeg") },
+    { value: "webp", label: t("export.webp"), hint: t("export.hint.webp") },
+    { value: "avif", label: t("export.avif"), hint: t("export.hint.avif") },
+    ...(isMultiFrame ? [{ value: "zip" as ExportFormat, label: t("export.zip"), hint: t("export.hint.zip") }] : []),
+    { value: "svg", label: t("export.svg"), hint: t("export.hint.svg") },
+    { value: "html", label: t("export.html"), hint: t("export.hint.html") },
+    { value: "pdf", label: t("export.pdf"), hint: t("export.hint.pdf") }
   ];
-  const VIDEO_FORMATS: { value: ExportFormat; label: string }[] = [
-    { value: "mp4", label: t("export.mp4") },
-    { value: "webm", label: t("export.webm") },
-    ...(isMultiFrame ? [{ value: "zipVideo" as ExportFormat, label: t("export.zipVideo") }] : []),
-    { value: "gif", label: t("export.gif") },
-    { value: "webpAnim", label: t("export.webpAnim") }
+  const VIDEO_FORMATS: { value: ExportFormat; label: string; hint: string }[] = [
+    { value: "mp4", label: t("export.mp4"), hint: t("export.hint.mp4") },
+    { value: "webm", label: t("export.webm"), hint: t("export.hint.webm") },
+    ...(isMultiFrame ? [{ value: "zipVideo" as ExportFormat, label: t("export.zipVideo"), hint: t("export.hint.zipVideo") }] : []),
+    { value: "gif", label: t("export.gif"), hint: t("export.hint.gif") },
+    { value: "webpAnim", label: t("export.webpAnim"), hint: t("export.hint.webpAnim") }
   ];
   const SCALES: { value: 1 | 2 | 4 | "custom"; label: string }[] = [
     { value: 1, label: t("export.scale1x") },
@@ -89,26 +89,25 @@ export function ExportDialog({
   // The store always mirrors the input values (every change round-trips through
   // onCustomSizeChange), so the inputs are fully controlled by `customSize`.
   const size = customSize ?? DEFAULT_CUSTOM_SIZE;
+  const sizeMp = (size.width * size.height) / 1_000_000;
+  const sizeMpLabel = sizeMp >= 10 ? String(Math.round(sizeMp)) : sizeMp.toFixed(1);
 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      // While an export is running, ESC must not silently close the dialog and
-      // orphan the job (which would continue invisible); route it to the same
-      // cancel the toolbar/button uses.
-      if (e.key === "Escape") {
-        if (busy && onCancel) onCancel();
-        else onClose();
-      }
+      // Closing never cancels a running export: progress and the cancel
+      // button stay visible in the toolbar, so Esc/backdrop/× just dismiss
+      // the dialog while the job continues in the background.
+      if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose, busy, onCancel]);
+  }, [open, onClose]);
 
   if (!open) return null;
   const formatLabel = t(`export.${format}`);
   return (
-    <div className="modal-backdrop" role="presentation" onClick={() => (busy && onCancel ? onCancel() : onClose())}>
+    <div className="modal-backdrop" role="presentation" onClick={onClose}>
       <div
         className="modal export"
         ref={trapRef}
@@ -117,7 +116,18 @@ export function ExportDialog({
         aria-labelledby="export-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 id="export-title">{t("export.title")}</h3>
+        <div className="export-head">
+          <h3 id="export-title">{t("export.title")}</h3>
+          <button
+            type="button"
+            className="btn-tb btn-tb-icon export-close"
+            onClick={onClose}
+            title={t("shortcuts.close")}
+            aria-label={t("shortcuts.close")}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </button>
+        </div>
         <div className="field-group">
           {presets.length > 0 ? (
             <label className="field">
@@ -174,6 +184,7 @@ export function ExportDialog({
                   type="button"
                   aria-pressed={format === f.value}
                   className={format === f.value ? "is-active" : undefined}
+                  title={f.hint}
                   onClick={() => setFormat(f.value)}
                 >
                   {f.label}
@@ -190,6 +201,7 @@ export function ExportDialog({
                   type="button"
                   aria-pressed={format === f.value}
                   className={format === f.value ? "is-active" : undefined}
+                  title={f.hint}
                   onClick={() => setFormat(f.value)}
                 >
                   {f.label}
@@ -197,6 +209,7 @@ export function ExportDialog({
               ))}
             </div>
           </label>
+          <p className="field-hint" role="status">{t(`export.hint.${format}`)}</p>
           {IMAGE_SCALE_FORMATS.includes(format) ? (
             <label className="field">
               <span>{t("export.size")}</span>
@@ -221,32 +234,38 @@ export function ExportDialog({
                 ))}
               </div>
               {activeScale === "custom" ? (
-                <div className="custom-size">
-                  <input
-                    type="number"
-                    min={1}
-                    max={8192}
-                    value={size.width}
-                    aria-label={t("export.width")}
-                    onChange={(e) => {
-                      const width = Math.max(1, Math.min(8192, Math.round(Number(e.target.value) || 0)));
-                      onCustomSizeChange({ width, height: size.height });
-                    }}
-                  />
-                  <span aria-hidden="true">×</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={8192}
-                    value={size.height}
-                    aria-label={t("export.height")}
-                    onChange={(e) => {
-                      const height = Math.max(1, Math.min(8192, Math.round(Number(e.target.value) || 0)));
-                      onCustomSizeChange({ width: size.width, height });
-                    }}
-                  />
-                </div>
+                <>
+                  <div className="custom-size">
+                    <input
+                      type="number"
+                      min={1}
+                      max={8192}
+                      value={size.width}
+                      aria-label={t("export.width")}
+                      onChange={(e) => {
+                        const width = Math.max(1, Math.min(8192, Math.round(Number(e.target.value) || 0)));
+                        onCustomSizeChange({ width, height: size.height });
+                      }}
+                    />
+                    <span aria-hidden="true">×</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={8192}
+                      value={size.height}
+                      aria-label={t("export.height")}
+                      onChange={(e) => {
+                        const height = Math.max(1, Math.min(8192, Math.round(Number(e.target.value) || 0)));
+                        onCustomSizeChange({ width: size.width, height });
+                      }}
+                    />
+                  </div>
+                  <p className="field-hint" role="status">
+                    {size.width}×{size.height} · {closestAspectRatio(size.width, size.height)} · {sizeMpLabel} MP
+                  </p>
+                </>
               ) : null}
+              <p className="field-hint">{t("export.platformAspectNote")}</p>
               <div className="segmented" role="group" aria-label={t("export.platformPresets")}>
                 {PLATFORM_PRESETS.map((p) => {
                   const active = isCustom && size.width === p.width && size.height === p.height;

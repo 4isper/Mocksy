@@ -19,7 +19,11 @@ export function mulberry32(seed: number): () => number {
 
 export function fillGradientBackground(ctx: CanvasRenderingContext2D, scene: EditorScene, width: number, height: number) {
   if (scene.gradientType === "radial") {
-    const grad = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, Math.max(width, height) / 2);
+    // Match the CSS preview's `radial-gradient(circle at center)`: the default
+    // extent is farthest-corner, i.e. radius = hypot(w, h) / 2. Math.max used
+    // to pick the longer half-axis, painting a visibly different gradient on
+    // non-square canvases.
+    const grad = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, Math.hypot(width, height) / 2);
     grad.addColorStop(0, scene.gradientFrom);
     if (scene.gradientVia) grad.addColorStop(0.5, scene.gradientVia);
     grad.addColorStop(1, scene.gradientTo);

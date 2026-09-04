@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildSvgMarkup, exportSvg, inlineSvgAsset, mediaToDataUrl, videoToDataUrl } from "@/lib/export/exportSvg";
+import { buildSvgMarkup, buildStandaloneSvg, copySvgToClipboard, exportSvg, inlineSvgAsset, mediaToDataUrl, videoToDataUrl } from "@/lib/export/exportSvg";
 import { clearImageCache } from "@/lib/render/canvasMedia";
-import { computeFrameBox } from "@/lib/render/frameGeometry";
+import { computeFrameBox, computeFrameInstances } from "@/lib/render/frameGeometry";
+import { projectTiltedRectRotated } from "@/lib/render/tilt";
 import { RENDER } from "@/lib/render/canvasDrawing";
 import { initialScene } from "@/lib/state/editorStore";
-import type { EditorScene } from "@/lib/types/editor";
+import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -184,6 +185,27 @@ describe("buildSvgMarkup", () => {
     expect(noRotation).not.toContain("rotate(");
   });
 
+  it("applies the layer's blend mode to the media group", () => {
+    const scene = sceneWith({ frame: "none", backgroundMode: "transparent" });
+    const box = boxFor(scene);
+    const markup = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      zoom: 1,
+      groups: [{ box, mediaHref: MEDIA, mediaWidth: 400, mediaHeight: 100, isOverlay: false, overlayInner: null, blendMode: "multiply" }]
+    });
+    expect(markup).toContain('<g style="mix-blend-mode:multiply"><image href="data:image/png;base64,AAAA"');
+    const normal = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      zoom: 1,
+      groups: [{ box, mediaHref: MEDIA, mediaWidth: 400, mediaHeight: 100, isOverlay: false, overlayInner: null, blendMode: "normal" }]
+    });
+    expect(normal).not.toContain("mix-blend-mode");
+  });
+
   it("embeds the screen chrome inside the screen clip when enabled", () => {
     const scene = sceneWith({ frame: "none", backgroundMode: "transparent", screen: { ...initialScene.screen, enabled: true } });
     const box = boxFor(scene);
@@ -231,6 +253,41 @@ describe("buildSvgMarkup", () => {
     expect(markup).not.toContain('clip-path="url(#clip-0)"');
   });
 
+  it("keeps the screen glare inside the tilted group", () => {
+    // The glare used to be computed after the tilt branch's early return and
+    // silently vanished from tilted SVG exports.
+    const scene = sceneWith({ frame: "none", backgroundMode: "transparent", tiltX: 15, tiltY: 10, screenGlare: true });
+    const box = boxFor(scene);
+    const markup = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      zoom: 1,
+      groups: [{ box, mediaHref: MEDIA, mediaWidth: 400, mediaHeight: 300, isOverlay: false, overlayInner: null }]
+    });
+    expect(markup).toContain('fill="url(#glare-sweep)"');
+    // It sits in the tilted, clipped group next to the media.
+    expect(markup).toMatch(/clip-path="url\(#clip-t0\)"[^]*glare-sweep[^]*<\/g>/);
+  });
+
+  it("keeps the screen glare inside a landscape instance's rotated group", () => {
+    const scene = sceneWith({
+      frame: "none",
+      backgroundMode: "transparent",
+      screenGlare: true,
+      frameInstances: [{ id: "l", frame: "none" as const, x: 0.5, y: 0.5, scale: 0.4, layerId: null, orientation: "landscape" as const }]
+    });
+    const box = computeFrameInstances(scene, 800, 600, 1)[0]!;
+    const markup = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      zoom: 1,
+      groups: [{ box, mediaHref: MEDIA, mediaWidth: 400, mediaHeight: 300, isOverlay: false, overlayInner: null, orientation: 90 }]
+    });
+    expect(markup).toMatch(/clip-path="url\(#clip-o0\)"[^]*glare-sweep/);
+  });
+
   it("keeps the plain clip when the scene is not tilted", () => {
     const scene = sceneWith({ frame: "none", backgroundMode: "transparent" });
     const box = boxFor(scene);
@@ -243,6 +300,55 @@ describe("buildSvgMarkup", () => {
     });
     expect(markup).toContain('clip-path="url(#clip-0)"');
     expect(markup).not.toContain("matrix(");
+  });
+
+  it("draws a landscape instance's body/skin in native dims inside the rotate group", () => {
+    const scene = sceneWith({
+      frame: "none",
+      backgroundMode: "transparent",
+      frameInstances: [{ id: "l", frame: "none" as const, x: 0.5, y: 0.5, scale: 0.4, layerId: null, orientation: "landscape" as const }]
+    });
+    const box = computeFrameInstances(scene, 800, 600, 1)[0]!;
+    const markup = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      groups: [{ box, mediaHref: MEDIA, mediaWidth: 400, mediaHeight: 300, isOverlay: false, overlayInner: null, orientation: 90, frame: "none" }]
+    });
+    // The rotate wrapper is centered on the (landscape) box.
+    expect(markup).toContain(`rotate(90 ${Math.round(box.x + box.width / 2)} ${Math.round(box.y + box.height / 2)})`);
+    // Inside the group, the body rect must use the NATIVE orientation (the
+    // swapped box), never the landscape extents — otherwise the device lands
+    // squashed into a center strip.
+    const native = box.nativeRect!;
+    expect(markup).toContain(`width="${Math.round(native.width)}" height="${Math.round(native.height)}"`);
+    expect(markup).not.toContain(`width="${Math.round(box.width)}" height="${Math.round(box.height)}"`);
+  });
+
+  it("tilts a landscape instance by projecting the native rect and rotating the matrix", () => {
+    const scene = sceneWith({
+      frame: "none",
+      backgroundMode: "transparent",
+      tiltX: 12,
+      tiltY: 8,
+      frameInstances: [{ id: "l", frame: "none" as const, x: 0.5, y: 0.5, scale: 0.4, layerId: null, orientation: "landscape" as const }]
+    });
+    const box = computeFrameInstances(scene, 800, 600, 1)[0]!;
+    const markup = buildSvgMarkup(scene, {
+      width: 800,
+      height: 600,
+      backgroundHref: null,
+      groups: [{ box, mediaHref: MEDIA, mediaWidth: 400, mediaHeight: 300, isOverlay: false, overlayInner: null, orientation: 90, frame: "none" }]
+    });
+    const m = markup.match(/matrix\(([^)]+)\)/)![1]!.split(" ").map(Number);
+    const [a, b, c, d, e, f] = m as [number, number, number, number, number, number];
+    const apply = (x: number, y: number) => ({ x: a * x + c * y + e, y: b * x + d * y + f });
+    // The native rect's top-left must map to the rotated projection's top-left
+    // (up to the matrix's 2-decimal rounding, amplified by the rect offset).
+    const native = box.nativeRect!;
+    const quad = projectTiltedRectRotated(native, Math.PI / 2, 12, 8);
+    expect(apply(native.x, native.y).x).toBeCloseTo(quad.tl.x, -1);
+    expect(apply(native.x, native.y).y).toBeCloseTo(quad.tl.y, -1);
   });
 
   it("renders an empty media screen when no media is provided", () => {
@@ -561,6 +667,7 @@ describe("exportSvg", () => {
     expect(link.href).toBe("blob:mock");
     expect(link.download).toBe("mocksy-export.svg");
     expect(link.click).toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(5000);
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:mock");
 
     vi.useRealTimers();
@@ -574,4 +681,222 @@ describe("exportSvg", () => {
     expect(onError).toHaveBeenCalledWith("Preview area not found.");
   });
 
+  it("routes unexpected build failures through onError", async () => {
+    // A node that exists but can't run querySelector makes the media
+    // resolution throw mid-export; exportSvg degrades through onError.
+    vi.stubGlobal("document", { getElementById: () => ({}) });
+    const onError = vi.fn();
+    await exportSvg(sceneWith({ frame: "none" }), "preview", "out", onError);
+    expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+});
+
+/** Builds a <video> stub that auto-fires load/seek handlers on assignment. */
+function autoFireVideo(): Record<string, unknown> {
+  const video: Record<string, unknown> = {
+    src: "",
+    crossOrigin: "",
+    muted: false,
+    playsInline: false,
+    videoWidth: 640,
+    videoHeight: 360,
+    duration: 5,
+    currentTime: 0,
+    pause: vi.fn()
+  };
+  const fire = (name: string) =>
+    Object.defineProperty(video, name, {
+      configurable: true,
+      get: () => video[`_${name}`],
+      set(fn: unknown) {
+        (video as Record<string, unknown>)[`_${name}`] = fn;
+        if (fn) queueMicrotask(() => (fn as () => void)());
+      }
+    });
+  fire("onloadedmetadata");
+  fire("onseeked");
+  Object.defineProperty(video, "onerror", {
+    configurable: true,
+    get: () => video._onerror,
+    set: (fn: unknown) => {
+      (video as Record<string, unknown>)._onerror = fn;
+    }
+  });
+  return video;
+}
+
+describe("buildStandaloneSvg", () => {
+  const POSTER = "data:image/png;base64,POSTER";
+
+  function videoLayer(): MediaLayer {
+    return {
+      ...initialScene.layers[0]!,
+      id: "vlayer",
+      mediaUrl: "blob:vid",
+      mediaType: "video",
+      mediaName: "clip.mp4",
+      videoPosterTime: 2
+    } as MediaLayer;
+  }
+
+  it("embeds background, watermark and a video poster frame in a multi-frame grid", async () => {
+    const video = autoFireVideo();
+    vi.stubGlobal("Image", class {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      naturalWidth = 320;
+      naturalHeight = 240;
+      set src(_v: string) {
+        queueMicrotask(() => this.onload?.());
+      }
+    });
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => ({ drawImage: vi.fn() }),
+      toDataURL: () => POSTER
+    };
+    vi.stubGlobal("document", {
+      getElementById: () => ({}),
+      createElement: (tag: string) => (tag === "video" ? video : tag === "canvas" ? canvas : undefined)
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ text: async () => "<rect fill='red'/>" }));
+
+    const scene: EditorScene = sceneWith({
+      backgroundMode: "image",
+      backgroundImageUrl: MEDIA,
+      watermarkEnabled: true,
+      watermarkImageUrl: MEDIA,
+      watermarkSize: 20,
+      layers: [
+        { ...initialScene.layers[0]!, id: "ilayer", mediaUrl: MEDIA },
+        videoLayer()
+      ],
+      frameInstances: [
+        { id: "f1", frame: "none", x: 0.25, y: 0.5, scale: 0.4, layerId: "ilayer" },
+        { id: "f2", frame: "iphone15", x: 0.75, y: 0.5, scale: 0.4, layerId: "vlayer" }
+      ]
+    });
+
+    const svg = await buildStandaloneSvg(scene, "preview");
+    expect(svg).not.toBeNull();
+    // The video frame's poster is embedded instead of a blank screen.
+    expect(svg!.markup).toContain(POSTER);
+    // The device-skin SVG is inlined into the overlay group.
+    expect(svg!.markup).toContain("<rect fill='red'/>");
+    // Background and watermark image are embedded as data URLs.
+    expect(svg!.markup).toContain('href="data:image/png;base64,AAAA"');
+    expect(video.pause).toHaveBeenCalled();
+  });
+
+  it("falls back to a freshly decoded poster frame for an undecoded preview video", async () => {
+    vi.stubGlobal("HTMLVideoElement", class {});
+    const videoEl = autoFireVideo();
+    const undecoded = Object.assign(new (vi.mocked(globalThis.HTMLVideoElement))(), { readyState: 1 });
+    const node = {
+      querySelector: (sel: string) => (sel.startsWith("[data-layer-media=") ? undecoded : null)
+    };
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => ({ drawImage: vi.fn() }),
+      toDataURL: () => POSTER
+    };
+    vi.stubGlobal("document", {
+      getElementById: () => node,
+      createElement: (tag: string) => (tag === "video" ? videoEl : tag === "canvas" ? canvas : undefined)
+    });
+    const scene = sceneWith({
+      frame: "none",
+      backgroundMode: "transparent",
+      watermarkEnabled: false,
+      layers: [videoLayer()],
+      activeLayerId: "vlayer"
+    });
+
+    const svg = await buildStandaloneSvg(scene, "preview");
+    expect(svg).not.toBeNull();
+    expect(svg!.markup).toContain(POSTER);
+    expect(videoEl.pause).toHaveBeenCalled();
+  });
+
+  it("keeps the ready preview element when a fresh poster load fails", async () => {
+    vi.stubGlobal("HTMLVideoElement", class {});
+    const undecoded = Object.assign(new (vi.mocked(globalThis.HTMLVideoElement))(), { readyState: 1 });
+    const node = {
+      querySelector: (sel: string) => (sel.startsWith("[data-layer-media=") ? undecoded : null)
+    };
+    vi.stubGlobal("document", {
+      getElementById: () => node,
+      createElement: (tag: string) => {
+        if (tag === "video") {
+          const broken: Record<string, unknown> = {
+            src: "",
+            crossOrigin: "",
+            muted: false,
+            playsInline: false,
+            duration: 5,
+            currentTime: 0,
+            pause: vi.fn(),
+            set onerror(fn: unknown) {
+              queueMicrotask(() => (fn as () => void)());
+            }
+          };
+          return broken;
+        }
+        return undefined;
+      }
+    });
+    const scene = sceneWith({
+      frame: "none",
+      backgroundMode: "transparent",
+      watermarkEnabled: false,
+      layers: [videoLayer()],
+      activeLayerId: "vlayer"
+    });
+
+    // The flat fallback sees an undecoded element with no dimensions, so it
+    // exports an empty screen rather than throwing the whole export away.
+    const svg = await buildStandaloneSvg(scene, "preview");
+    expect(svg).not.toBeNull();
+    expect(svg!.markup).not.toContain(POSTER);
+  });
+});
+
+describe("copySvgToClipboard", () => {
+  it("reports an error when the clipboard API is unavailable", async () => {
+    vi.stubGlobal("navigator", { clipboard: undefined });
+    const onError = vi.fn();
+    await copySvgToClipboard(sceneWith(), "preview", onError);
+    expect(onError).toHaveBeenCalledWith("Clipboard isn't available here (open over https or localhost).");
+  });
+
+  it("copies the standalone SVG markup to the clipboard", async () => {
+    vi.stubGlobal("HTMLImageElement", class {});
+    vi.stubGlobal("HTMLVideoElement", class {});
+    const img = new (globalThis.HTMLImageElement as unknown as new () => HTMLImageElement)();
+    Object.assign(img, { src: MEDIA, complete: true, naturalWidth: 400, naturalHeight: 300 });
+    const node = {
+      querySelector: (sel: string) => (sel.startsWith("[data-layer-media=") ? img : null)
+    };
+    vi.stubGlobal("document", { getElementById: () => node });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    const onError = vi.fn();
+    const onStatus = vi.fn();
+    await copySvgToClipboard(sceneWith({ frame: "none", backgroundMode: "transparent", watermarkEnabled: false }), "preview", onError, onStatus);
+    expect(onError).not.toHaveBeenCalled();
+    expect(writeText).toHaveBeenCalledTimes(1);
+    expect(String(writeText.mock.calls[0]![0])).toMatch(/^<svg /);
+    expect(onStatus).toHaveBeenCalledWith("Copied SVG to clipboard");
+  });
+
+  it("reports when the preview area is missing", async () => {
+    vi.stubGlobal("navigator", { clipboard: { writeText: vi.fn() } });
+    vi.stubGlobal("document", { getElementById: () => null });
+    const onError = vi.fn();
+    await copySvgToClipboard(sceneWith({ frame: "none" }), "preview", onError);
+    expect(onError).toHaveBeenCalledWith("Preview area not found.");
+  });
 });

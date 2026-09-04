@@ -3,6 +3,8 @@
 import type { EditorScene, MockupFrame } from "@/lib/types/editor";
 import { renderSceneToPngBlob } from "@/lib/export/exportImage";
 import { downloadBlob } from "@/lib/export/downloadBlob";
+import { isAbortError } from "@/lib/export/videoExportHelpers";
+import { getFfmpegInstance } from "@/lib/export/ffmpegLoader";
 
 /**
  * Batch export: renders every frame instance of a multi-frame scene as its
@@ -35,7 +37,8 @@ export async function exportBatchZip(
   onError?: (message: string) => void,
   scale?: number,
   activeLayerId: string | null = scene.activeLayerId,
-  onProgress?: (current: number, total: number) => void
+  onProgress?: (current: number, total: number) => void,
+  signal?: AbortSignal
 ): Promise<void> {
   const instances = scene.frameInstances;
   if (instances.length === 0) {
@@ -44,12 +47,14 @@ export async function exportBatchZip(
   }
 
   try {
+    signal?.throwIfAborted();
     const { default: JSZip } = await import("jszip");
     const zip = new JSZip();
     let exported = 0;
 
     for (let i = 0; i < instances.length; i++) {
       const inst = instances[i]!;
+      signal?.throwIfAborted();
       onProgress?.(i + 1, instances.length);
       // Rendering a single-instance scene variant reuses the exact export
       // geometry: the frame sits at its own layout position with the shared
@@ -75,7 +80,7 @@ export async function exportBatchZip(
     const archive = await zip.generateAsync({ type: "blob" });
     downloadBlob(archive, `${filename}.zip`);
   } catch (err) {
-    onError?.(err instanceof Error ? err.message : "Batch export failed.");
+    if (!isAbortError(err)) onError?.(err instanceof Error ? err.message : "Batch export failed.");
   }
 }
 
@@ -113,14 +118,22 @@ export async function exportVideoBatchZip(
     return;
   }
 
+  // Declared outside the try so the catch path can purge whatever temp files
+  // the failing iteration left in the FFmpeg MEMFS — without this a
+  // failure/abort leaks tens of MB per clip into the shared singleton.
+  type Ffmpeg = Awaited<ReturnType<typeof getFfmpegInstance>>;
+  let ffmpeg: Ffmpeg | null = null;
+  let pendingTempNames: string[] = [];
+  let videoCoreCleanup: ((ffmpeg: Ffmpeg, names: string[]) => Promise<void>) | null = null;
+
   try {
     signal?.throwIfAborted();
     const [{ default: JSZip }, videoCore] = await Promise.all([
       import("jszip"),
       import("@/lib/export/exportVideoCore")
     ]);
+    videoCoreCleanup = videoCore.cleanupFfmpegTempFiles;
     const zip = new JSZip();
-    let ffmpeg: Awaited<ReturnType<typeof videoCore.getFfmpegInstance>> | null = null;
     let exported = 0;
 
     for (let i = 0; i < instances.length; i++) {
@@ -149,15 +162,21 @@ export async function exportVideoBatchZip(
       } else {
         if (!ffmpeg) ffmpeg = await videoCore.getFfmpegInstance();
         const { inputName, outputName } = batchVideoTempNames();
+        pendingTempNames = [inputName, outputName];
         await ffmpeg.writeFile(inputName, new Uint8Array(await webmBlob.arrayBuffer()));
         const quality =
           videoCore.QUALITY[videoCore.activeLayerOf(scene, inst.layerId ?? activeLayerId)?.videoQuality ?? "medium"] ??
           videoCore.QUALITY.medium;
         const code = await ffmpeg.exec([
           "-i", inputName,
-          "-c:v", "mpeg4",
-          "-q:v", String(quality.qscale),
+          // Safety net for odd source dimensions: yuv420p/libx264 rejects
+          // width/height not divisible by 2.
+          "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+          "-c:v", "libx264",
+          "-preset", "ultrafast",
+          "-crf", String(quality.crf),
           "-pix_fmt", "yuv420p",
+          "-movflags", "+faststart",
           outputName
         ]);
         if (code !== 0) throw new Error("Video encoding failed.");
@@ -165,7 +184,8 @@ export async function exportVideoBatchZip(
         const bytes = typeof data === "string" ? new TextEncoder().encode(data) : new Uint8Array(data);
         if (bytes.length === 0) throw new Error("Video encoding produced no output.");
         zip.file(batchEntryName(inst.frame, i + 1, instances.length, "mp4"), bytes);
-        await videoCore.cleanupFfmpegTempFiles(ffmpeg, [inputName, outputName]);
+        await videoCore.cleanupFfmpegTempFiles(ffmpeg, pendingTempNames);
+        pendingTempNames = [];
       }
       exported++;
     }
@@ -178,6 +198,9 @@ export async function exportVideoBatchZip(
     const archive = await zip.generateAsync({ type: "blob" });
     downloadBlob(archive, `${filename}-${format}.zip`);
   } catch (err) {
-    onError?.(err instanceof Error ? err.message : "Batch export failed.");
+    if (ffmpeg && videoCoreCleanup && pendingTempNames.length > 0) {
+      await videoCoreCleanup(ffmpeg, pendingTempNames);
+    }
+    if (!isAbortError(err)) onError?.(err instanceof Error ? err.message : "Batch export failed.");
   }
 }

@@ -4,6 +4,7 @@ import { create } from "zustand";
 import type { EditorScene, Project } from "@/lib/types/editor";
 import { makeDemoScene, useEditorStore } from "@/lib/state/editorStore";
 import { normalizeScene } from "@/lib/state/normalizeScene";
+import { upgradeLegacySingleFrameScene } from "@/lib/state/editorScene";
 import { readSceneFromUrl, clearSceneFromUrl } from "@/lib/state/shareState";
 import { nextProjectId } from "@/lib/state/ids";
 import { beginMediaOffload, decodeProjectsState, encodeProjectsState, endMediaOffload, stateNeedsMediaOffload, sweepOrphanedMedia, type PersistedProjectsState } from "@/lib/state/mediaPersistence";
@@ -64,7 +65,7 @@ function cloneScene(scene: EditorScene): EditorScene {
 function activateEditorScene(project: Project | undefined): void {
   if (!project) return;
   const editor = useEditorStore.getState();
-  editor.setScene(project.scene, false);
+  editor.setScene(upgradeLegacySingleFrameScene(project.scene), false);
   // The undo/redo stacks belong to the replaced project's editing session.
   // Keeping them would let ⌘Z paste the previous project's scene into this
   // one — which the autosave would then persist over the active project.
@@ -213,12 +214,13 @@ export const useProjectsStore = create<ProjectsStoreState>((set, get) => ({
     // wipe the user's saved projects — merge it in as a new project instead.
     const fromUrl = preloaded !== undefined ? preloaded : readSceneFromUrl();
     if (fromUrl) {
+      const upgraded = upgradeLegacySingleFrameScene(fromUrl);
       const stored = readStorage();
       const projects = stored?.projects ?? [];
       const shared: Project = {
         id: nextProjectId(),
         name: "Shared mockup",
-        scene: fromUrl,
+        scene: upgraded,
         updatedAt: Date.now()
       };
       set({ projects: [...projects, shared], activeProjectId: shared.id, hydrated: true });
@@ -226,13 +228,15 @@ export const useProjectsStore = create<ProjectsStoreState>((set, get) => ({
       // Drop the ?scene= param so a reload loads the persisted project list
       // instead of re-importing the share (stacking duplicate projects).
       clearSceneFromUrl();
-      return fromUrl;
+      return upgraded;
     }
 
     const stored = readStorage();
     if (stored && stored.projects.length > 0) {
-      set({ projects: stored.projects, activeProjectId: stored.activeProjectId, hydrated: true });
-      const active = stored.projects.find((p) => p.id === stored.activeProjectId) ?? stored.projects[0]!;
+      const projects = stored.projects.map((p) => ({ ...p, scene: upgradeLegacySingleFrameScene(p.scene) }));
+      const activeProjectId = stored.activeProjectId;
+      set({ projects, activeProjectId, hydrated: true });
+      const active = projects.find((p) => p.id === activeProjectId) ?? projects[0]!;
       return active.scene;
     }
 
@@ -241,7 +245,7 @@ export const useProjectsStore = create<ProjectsStoreState>((set, get) => ({
       try {
         const legacy = window.localStorage.getItem(AUTOSAVE_KEY);
         if (legacy) {
-          const scene = normalizeScene(JSON.parse(legacy));
+          const scene = upgradeLegacySingleFrameScene(normalizeScene(JSON.parse(legacy)));
           const project: Project = { id: nextProjectId(), name: "My mockup", scene, updatedAt: Date.now() };
           set({ projects: [project], activeProjectId: project.id, hydrated: true });
           persist(get());

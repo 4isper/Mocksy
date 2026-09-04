@@ -117,6 +117,17 @@ describe("ExportDialog", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it("closes on backdrop click even while an export is running", async () => {
+    // Closing never cancels: progress + cancel live in the toolbar, so the
+    // dialog must not trap the user during a long video job.
+    const onClose = vi.fn();
+    const onCancel = vi.fn();
+    render(<ExportDialog {...baseProps} onClose={onClose} busy onCancel={onCancel} />);
+    await userEvent.click(document.querySelector(".modal-backdrop")!);
+    expect(onClose).toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
   it("disables buttons when busy", () => {
     render(<ExportDialog {...baseProps} busy />);
     const exportBtn = screen.getByRole("button", { name: "export.exportAction" });
@@ -202,5 +213,48 @@ describe("ExportDialog", () => {
     render(<ExportDialog {...baseProps} customSize={{ width: 1600, height: 1200 }} />);
     expect(screen.getByText("export.platform.dribbbleShot")).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("export.platform.story")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("shows a hint for the selected format", () => {
+    render(<ExportDialog {...baseProps} />);
+    expect(screen.getByText("export.hint.png")).toBeInTheDocument();
+  });
+
+  it("updates the hint when the format changes", async () => {
+    render(<ExportDialog {...baseProps} />);
+    await userEvent.click(screen.getByText("export.mp4"));
+    expect(screen.getByText("export.hint.mp4")).toBeInTheDocument();
+  });
+
+  it("exposes format hints as button tooltips", () => {
+    render(<ExportDialog {...baseProps} />);
+    expect(screen.getByText("export.png")).toHaveAttribute("title", "export.hint.png");
+    expect(screen.getByText("export.mp4")).toHaveAttribute("title", "export.hint.mp4");
+  });
+
+  it("notes that platform presets adjust the canvas aspect", () => {
+    render(<ExportDialog {...baseProps} />);
+    expect(screen.getByText("export.platformAspectNote")).toBeInTheDocument();
+  });
+
+  it("summarizes the custom size with aspect and megapixels", () => {
+    render(<ExportDialog {...baseProps} customSize={{ width: 1600, height: 1200 }} />);
+    expect(screen.getByText("1600×1200 · 4 / 3 · 1.9 MP")).toBeInTheDocument();
+  });
+
+  it("closes via the header close button", async () => {
+    const onClose = vi.fn();
+    render(<ExportDialog {...baseProps} onClose={onClose} busy />);
+    await userEvent.click(screen.getByRole("button", { name: "shortcuts.close" }));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("closes on Escape even while busy instead of cancelling", () => {
+    const onClose = vi.fn();
+    const onCancel = vi.fn();
+    render(<ExportDialog {...baseProps} onClose={onClose} busy onCancel={onCancel} />);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
   });
 });

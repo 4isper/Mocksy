@@ -2,7 +2,6 @@
 
 import { renderMockupToCanvas } from "@/lib/render/renderMockup";
 import {
-  ACTIVE_MEDIA_KEY,
   OVERLAY_KEY_PREFIX,
   isSvgMimeType,
   type RenderImageSlot,
@@ -63,14 +62,12 @@ self.onmessage = async (event: MessageEvent<RenderWorkerPayload>) => {
 
     const layerMedias = new Map<string, CanvasImageSource | null>();
     const frameOverlays = new Map<string, CanvasImageSource | null>();
-    let media: CanvasImageSource | null = null;
 
     for (const [key, bitmap] of bitmaps) {
       if (key.startsWith(OVERLAY_KEY_PREFIX)) {
         frameOverlays.set(key.slice(OVERLAY_KEY_PREFIX.length), bitmap);
       } else {
         layerMedias.set(key, bitmap);
-        if (key === ACTIVE_MEDIA_KEY) media = bitmap;
       }
     }
     // Single-frame scenes carry their skin through the dedicated slot. The
@@ -86,7 +83,7 @@ self.onmessage = async (event: MessageEvent<RenderWorkerPayload>) => {
     renderMockupToCanvas(
       canvas,
       payload.scene,
-      media,
+      layerMedias.get(payload.activeLayerId ?? "") ?? null,
       undefined,
       undefined,
       payload.frameWidth,

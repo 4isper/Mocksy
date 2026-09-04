@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { AxeBuilder } from "@axe-core/playwright";
+import { clickToolbarAction, openRightPanel, openRightTab } from "./helpers";
 
 // Accessibility audit of the editor shell and its interactive surfaces. Runs
 // on the chromium project only (desktop viewport); the mobile layout shares
@@ -8,7 +9,10 @@ import { AxeBuilder } from "@axe-core/playwright";
 
 const EXCLUDED_RULES: Record<string, string> = {
   // "color-contrast": panels intentionally use translucent glass backgrounds;
-  // axe would measure against the wrong layer. Revisit if the theme changes.
+  // axe would measure against the wrong layer (e.g. the tab bar's blurred
+  // glass composited over the demo media, yielding a phantom white backdrop).
+  // Revisit if the theme changes.
+  "color-contrast": "Translucent glass surfaces confuse axe's contrast math"
 };
 
 type AxeImpact = "minor" | "moderate" | "serious" | "critical";
@@ -17,7 +21,7 @@ type AxeImpact = "minor" | "moderate" | "serious" | "critical";
 // given impact, so callers can scope how strict each surface must be.
 async function audit(page: import("@playwright/test").Page, minImpact: AxeImpact = "serious") {
   const builder = Object.keys(EXCLUDED_RULES).length > 0
-    ? new AxeBuilder({ page }).withRules(Object.keys(EXCLUDED_RULES))
+    ? new AxeBuilder({ page }).disableRules(Object.keys(EXCLUDED_RULES))
     : new AxeBuilder({ page });
   const results = await builder.analyze();
   const ranks: AxeImpact[] = ["minor", "moderate", "serious", "critical"];
@@ -29,13 +33,8 @@ function describeViolations(violations: { id: string; impact?: string | null; no
   return violations.map((v) => `${v.id} (${v.impact}): ${v.nodes.length} node(s)`);
 }
 
-// Opens the right-panel tab by its visible label and waits for its panel to
-// render. Each tab is a discrete surface worth auditing on its own.
-async function openRightTab(page: import("@playwright/test").Page, label: string) {
-  // The label may carry a count badge (e.g. "Layers2"), so match as a prefix.
-  await page.getByRole("tab", { name: new RegExp(`^${label}`) }).click();
-  await expect(page.locator("#right-panel-content")).toBeVisible();
-}
+// (The clickToolbarAction / openRightTab helpers live in ./helpers — they
+// must handle the mobile bottom-sheet layout, where these specs also run.)
 
 test.describe("a11y", () => {
   test("editor page has no new axe violations", async ({ page }) => {
@@ -58,7 +57,7 @@ test.describe("a11y", () => {
   test("command palette has no critical violations", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("#preview-canvas")).toBeVisible();
-    await page.getByRole("button", { name: /Open command palette/ }).click();
+    await clickToolbarAction(page, /Open command palette/);
     await expect(page.getByRole("dialog")).toBeVisible();
 
     const violations = await audit(page, "critical");
@@ -79,7 +78,7 @@ test.describe("a11y", () => {
     await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.goto("/");
     await expect(page.locator("#preview-canvas")).toBeVisible();
-    await page.getByRole("button", { name: /Copy Share URL/ }).click();
+    await clickToolbarAction(page, /Copy Share URL/);
     await expect(page.getByRole("dialog", { name: /Scan to open/ })).toBeVisible();
 
     const violations = await audit(page, "critical");
@@ -89,6 +88,7 @@ test.describe("a11y", () => {
   test("right-panel tabs have no serious violations", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("#preview-canvas")).toBeVisible();
+    await openRightPanel(page);
     await expect(page.locator("#right-panel")).toBeVisible();
 
     for (const label of ["Scene presets", "Layers", "Annotations", "History", "Projects"]) {

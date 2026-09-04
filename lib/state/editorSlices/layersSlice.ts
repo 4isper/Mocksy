@@ -86,6 +86,10 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
   const locked = (s: EditorStoreState) => isLayerLocked(s.scene, s.activeLayerId);
   return {
     setMedia: (mediaUrl, mediaType, mediaName = null, targetLayerId = null) => {
+      // Acceptance is resolved inside the updater; the recent-media side
+      // effect must only run when the swap actually happened — a drop on a
+      // locked layer is rejected and must not pollute the recent list.
+      let accepted = false;
       set((s) => {
         // A pinned target layer (captured before an async decode) wins even if
         // the user switched the active layer while the media loaded — otherwise
@@ -95,6 +99,7 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         const pinned = targetLayerId != null ? s.scene.layers.find((l) => l.id === targetLayerId) : undefined;
         if (pinned?.locked === true) return {};
         if (!pinned && locked(s)) return {};
+        accepted = true;
         const layer = pinned ?? activeLayer(s.scene, s.activeLayerId);
         const nextLayers = layer
           ? s.scene.layers.map((l) =>
@@ -119,10 +124,11 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
           activeLayerId,
           videoCurrentTime: 0,
           // A real upload decodes asynchronously; clear media stops loading.
-          isMediaLoading: mediaUrl != null
+          isMediaLoading: mediaUrl != null,
+          mediaLoadingLayerId: mediaUrl != null ? (activeLayerId ?? null) : null
         };
       });
-      if (mediaUrl && mediaType && mediaType !== "none") {
+      if (accepted && mediaUrl && mediaType && mediaType !== "none") {
         useRecentMediaStore.getState().addEntry(mediaUrl, mediaType, mediaName);
       }
     },
@@ -147,7 +153,8 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         return {
           ...pushHistory(s, { ...s.scene, layers }),
           videoCurrentTime: 0,
-          isMediaLoading: mediaUrl != null
+          isMediaLoading: mediaUrl != null,
+          mediaLoadingLayerId: mediaUrl != null ? layerId : null
         };
       }),
     addLayer: (mediaUrl, mediaType, mediaName = null) =>
@@ -165,7 +172,8 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
           ...pushHistory(s, { ...s.scene, layers }),
           activeLayerId: newLayer.id,
           videoCurrentTime: 0,
-          isMediaLoading: mediaUrl != null
+          isMediaLoading: mediaUrl != null,
+          mediaLoadingLayerId: mediaUrl != null ? newLayer.id : null
         };
       }),
     addTextLayer: (textContent) =>
@@ -212,7 +220,14 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
     toggleLayerHidden: (id) =>
       set((s) => {
         const layers = s.scene.layers.map((l) => (l.id === id ? { ...l, hidden: !l.hidden } : l));
-        return pushHistory(s, { ...s.scene, layers });
+        // Hiding the layer whose media is loading stops its <img>/<video>
+        // from ever mounting, so its onLoad/onLoadedData can't clear the
+        // spinner — clear it here or the loading indicator sticks forever.
+        const orphanSpinner = s.isMediaLoading && s.mediaLoadingLayerId === id;
+        return {
+          ...pushHistory(s, { ...s.scene, layers }),
+          ...(orphanSpinner ? { isMediaLoading: false, mediaLoadingLayerId: null } : {})
+        };
       }),
     toggleLayersLocked: (ids) =>
       set((s) => {
@@ -232,7 +247,21 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         const frameInstances = s.scene.frameInstances.filter((fi) => fi.layerId !== id);
         const activeLayerId = s.activeLayerId === id ? layers[0]?.id ?? null : s.activeLayerId;
         const selectedLayerIds = s.selectedLayerIds.filter((x) => x !== id);
-        return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId, selectedLayerIds };
+        // Frame selection must not dangle on instances dropped with the layer.
+        const aliveFrameIds = new Set(frameInstances.map((fi) => fi.id));
+        const activeFrameInstanceId = s.activeFrameInstanceId && aliveFrameIds.has(s.activeFrameInstanceId) ? s.activeFrameInstanceId : frameInstances[frameInstances.length - 1]?.id ?? null;
+        const selectedFrameIds = s.selectedFrameIds.filter((fid) => aliveFrameIds.has(fid));
+        // Same stuck-spinner rule as toggleLayerHidden: a removed layer's
+        // media element never mounts.
+        const orphanSpinner = s.isMediaLoading && s.mediaLoadingLayerId === id;
+        return {
+          ...pushHistory(s, { ...s.scene, layers, frameInstances }),
+          activeLayerId,
+          selectedLayerIds,
+          activeFrameInstanceId,
+          selectedFrameIds,
+          ...(orphanSpinner ? { isMediaLoading: false, mediaLoadingLayerId: null } : {})
+        };
       }),
     duplicateLayers: (ids) =>
       set((s) => {
@@ -274,7 +303,11 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
         const first = layers[0]?.id ?? null;
         const activeLayerId = s.activeLayerId != null && idSet.has(s.activeLayerId) ? first : s.activeLayerId;
         const selectedLayerIds = s.selectedLayerIds.filter((x) => !idSet.has(x));
-        return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId, selectedLayerIds };
+        // Frame selection must not dangle on instances dropped with the layers.
+        const aliveFrameIds = new Set(frameInstances.map((fi) => fi.id));
+        const activeFrameInstanceId = s.activeFrameInstanceId && aliveFrameIds.has(s.activeFrameInstanceId) ? s.activeFrameInstanceId : frameInstances[frameInstances.length - 1]?.id ?? null;
+        const selectedFrameIds = s.selectedFrameIds.filter((fid) => aliveFrameIds.has(fid));
+        return { ...pushHistory(s, { ...s.scene, layers, frameInstances }), activeLayerId, selectedLayerIds, activeFrameInstanceId, selectedFrameIds };
       }),
     transformLayers: (ids, patch) =>
       set((s) => {
@@ -318,7 +351,10 @@ export function createLayersSlice(set: EditorStoreSetter): LayersSlice {
       set((s) => {
         const exists = s.selectedLayerIds.includes(id);
         const next = exists ? s.selectedLayerIds.filter((x) => x !== id) : [...s.selectedLayerIds, id];
-        return { activeLayerId: id, selectedLayerIds: next.length > 0 ? next : [id] };
+        // Deselecting must re-point the active layer at the last remaining
+        // selection (mirrors toggleFrameSelected/selectAnnotation) — keeping
+        // the toggled-off id would put the active layer outside the selection.
+        return { activeLayerId: exists ? (next[next.length - 1] ?? null) : id, selectedLayerIds: next.length > 0 ? next : [id] };
       }),
     selectLayerRange: (id, additive = false) =>
       set((s) => {

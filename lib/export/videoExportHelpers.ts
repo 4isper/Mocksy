@@ -70,12 +70,34 @@ export function chooseWebmMimeType(): string | null {
 
 /**
  * Per-quality export tuning. fps and the VPX/webm capture rate stay fixed; the
- * MP4 encode quality (mpeg4 has no real bitrate control, so we use -q:v, lower
- * is better) and the capture resolution scale drive the output size. "high"
- * keeps the full device-pixel-ratio canvas; lower tiers downscale it.
+ * MP4 encode quality (H.264 CRF, lower is better) and the capture resolution
+ * scale drive the output size. "high" keeps the full device-pixel-ratio canvas;
+ * lower tiers downscale it.
  */
-export const QUALITY: Record<VideoQuality, { qscale: number; scale: number }> = {
-  low: { qscale: 10, scale: 0.5 },
-  medium: { qscale: 5, scale: 0.75 },
-  high: { qscale: 2, scale: 1 }
+export const QUALITY: Record<VideoQuality, { crf: number; scale: number }> = {
+  low: { crf: 26, scale: 0.5 },
+  medium: { crf: 20, scale: 0.75 },
+  high: { crf: 16, scale: 1 }
 };
+
+/**
+ * libx264 with yuv420p (4:2:0 chroma subsampling) rejects odd width/height
+ * ("height not divisible by 2"), which surfaces as "Video encoding failed."
+ * Capture dimensions are rounded down to the nearest even value — at most a
+ * one-pixel difference, imperceptible in motion.
+ */
+export function toEvenDimension(value: number): number {
+  return Math.max(2, Math.floor(value / 2) * 2);
+}
+
+/**
+ * True when the error is a deliberate cancellation (signal.throwIfAborted or
+ * the recorder's "Export cancelled" DOMException). A user-initiated cancel is
+ * not a failure: catch paths must skip onError for it, or the UI shows a
+ * misleading "The operation was aborted." toast right after the user cancels.
+ */
+export function isAbortError(err: unknown): boolean {
+  return err instanceof DOMException
+    ? err.name === "AbortError"
+    : err instanceof Error && err.name === "AbortError";
+}

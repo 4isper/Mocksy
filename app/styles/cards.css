@@ -38,6 +38,9 @@
   font-size: 13px;
   font-weight: 600;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  /* Custom template names accept up to 60 chars with no spaces — break
+     anywhere instead of overflowing the card and the panel. */
+  overflow-wrap: anywhere;
 }
 
 .template-card .t-desc {
@@ -63,8 +66,25 @@
   cursor: grab;
 }
 .frame-card[data-drag-over] {
-  border-color: var(--accent, #4f8cff);
-  box-shadow: 0 -2px 0 0 var(--accent, #4f8cff);
+  border-color: var(--accent);
+  box-shadow: 0 -2px 0 0 var(--accent);
+}
+.frame-card[data-dragging] {
+  opacity: 0.45;
+}
+
+/* Touch reorder handle (also on layer rows): the browser must not steal the
+   gesture for scrolling or text selection. */
+.frame-grip {
+  flex: 0 0 auto;
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 1px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .frame-card-head {
@@ -73,12 +93,15 @@
   gap: 6px;
   padding: 6px 8px;
   min-height: 36px;
+  /* Nine controls never fit a narrow panel: wrap instead of forcing the
+     whole control panel wider. */
+  flex-wrap: wrap;
 }
 
 .frame-card-head .frame-thumb {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   background: var(--range-track);
   overflow: hidden;
   flex: none;
@@ -103,11 +126,13 @@
 }
 
 .frame-card-head .frame-device {
-  flex: 1;
+  /* Grows on roomy panels, drops to its own readable line when tight
+     instead of squeezing to an unreadable slit. */
+  flex: 1 1 120px;
   min-width: 0;
   font-size: 12px;
   padding: 3px 6px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   background: var(--field-bg);
   border: 1px solid var(--field-border);
   color: var(--text);
@@ -131,7 +156,7 @@
   font-size: 12.5px;
   font-weight: 500;
   padding: 8px 11px;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--panel-border);
   background: var(--field-bg);
   color: var(--text-dim);
@@ -173,12 +198,31 @@
 }
 
 /* ---- Layer items (Layers panel) ---- */
+
+/* Bare 12px icon action inside a group header row (collapse/hide/lock). */
+.group-icon-btn {
+  appearance: none;
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.group-icon-btn:hover {
+  color: var(--text);
+}
+
 .layer-item {
   display: flex;
   align-items: center;
   gap: 5px;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   border: 1px solid var(--panel-border);
   background: transparent;
   cursor: grab;
@@ -207,16 +251,23 @@
 }
 
 /* ---- Project items (Projects panel) ---- */
+.projects-list {
+  /* Long unbroken project names must not force the grid track (and the
+     panel content) wider: every level below yields. */
+  min-width: 0;
+}
+
 .project-item {
   display: flex;
   align-items: center;
   gap: 5px;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   border: 1px solid var(--panel-border);
   background: transparent;
   cursor: pointer;
   transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+  min-width: 0;
 }
 
 .project-item:hover {

@@ -105,9 +105,10 @@ jobs:
 
   visual-regression:
     name: Visual regression (VRT)
-    # VRT baselines are darwin-specific (font rendering); macOS runners are
-    # also slower/more contended, so keep the flaky editor suite on ubuntu.
-    runs-on: macos-latest
+    # VRT baselines are darwin-specific (font rendering); pin the major macOS
+    # version so a `macos-latest` migration doesn't silently invalidate every
+    # baseline. When bumping this, regenerate snapshots and expect one red run.
+    runs-on: macos-26
     needs: [lint-and-typecheck, unit-tests]
     steps:
       - name: Checkout
@@ -156,8 +157,10 @@ jobs:
   og-image:
     name: OG image freshness
     # macOS to match the font rendering of the committed public/og-image.png
-    # (scripts/generate-og.mjs screenshots with system fonts).
-    runs-on: macos-latest
+    # (scripts/generate-og.mjs screenshots with system fonts). Pinned for the
+    # same reason as the VRT job: system font rasterization drifts between
+    # major macOS versions.
+    runs-on: macos-26
     needs: [lint-and-typecheck, unit-tests]
     steps:
       - name: Checkout
@@ -175,11 +178,16 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium
 
+      - name: Save committed OG image
+        run: git show HEAD:public/og-image.png > /tmp/og-committed.png
+
       - name: Regenerate public/og-image.png
         run: node scripts/generate-og.mjs
 
       - name: Fail if the committed OG image is stale
-        run: git diff --exit-code -- public/og-image.png
+        # Byte-exact `git diff` fails on font-rasterization noise between
+        # macOS minor versions; allow a small pixel-difference ratio instead.
+        run: node scripts/check-og.mjs /tmp/og-committed.png public/og-image.png
 
       - name: Upload refreshed image on failure
         if: failure()

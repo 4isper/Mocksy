@@ -132,7 +132,8 @@ describe("drawTextLayer", () => {
     expect(ctx.save).toHaveBeenCalled();
     expect(ctx.fillStyle).toBe("#ff0000");
     expect(ctx.font).toBe(`700 ${78}px ${TEXT_LAYER_FONT_FALLBACK}`);
-    expect(ctx.textAlign).toBe("middle");
+    // "middle" is not a valid CanvasTextAlign — the canvas equivalent is "center".
+    expect(ctx.textAlign).toBe("center");
     // Centered anchor x: innerX + 390/2.
     const L = layoutTextLayer(textLayer(), 780);
     expect(ctx.fillText).toHaveBeenCalledTimes(2);
@@ -149,5 +150,14 @@ describe("drawTextLayer", () => {
     drawTextLayer(ctx as unknown as CanvasRenderingContext2D, initialScene.layers[0]!, 0, 0, 100, 100);
     drawTextLayer(ctx as unknown as CanvasRenderingContext2D, textLayer({ textContent: "" }), 0, 0, 100, 100);
     expect(ctx.fillText).not.toHaveBeenCalled();
+  });
+
+  it("maps left/right alignment to valid CanvasTextAlign values", () => {
+    const leftCtx = mockCtx();
+    drawTextLayer(leftCtx as unknown as CanvasRenderingContext2D, textLayer({ textAlign: "left" }), 0, 0, 390, 780);
+    expect(leftCtx.textAlign).toBe("start");
+    const rightCtx = mockCtx();
+    drawTextLayer(rightCtx as unknown as CanvasRenderingContext2D, textLayer({ textAlign: "right" }), 0, 0, 390, 780);
+    expect(rightCtx.textAlign).toBe("end");
   });
 });

@@ -139,10 +139,10 @@ export function ProjectsPanel() {
   return (
     <div style={{ padding: 10, display: "grid", gap: 8, alignContent: "start", overflow: "auto", minHeight: 0 }}>
       <div style={{ display: "flex", gap: 6 }}>
-        <button type="button" className="btn" style={{ flex: 1, fontSize: 12, padding: "7px 10px" }} onClick={handleNew}>
+        <button type="button" className="btn btn-compact btn-flex" onClick={handleNew}>
           {t("projects.newProjectBtn")}
         </button>
-        <label className="btn" style={{ flex: 1, fontSize: 12, padding: "7px 10px", cursor: "pointer", textAlign: "center" }}>
+        <label className="btn btn-compact btn-flex">
           {t("projects.import")}
           <input
             type="file"
@@ -155,14 +155,13 @@ export function ProjectsPanel() {
       <div style={{ display: "flex", gap: 6 }}>
         <button
           type="button"
-          className="btn"
-          style={{ flex: 1, fontSize: 12, padding: "7px 10px" }}
+          className="btn btn-compact btn-flex"
           title={t("projects.templateExportHint")}
           onClick={handleTemplateExport}
         >
           {t("projects.templateExportBtn")}
         </button>
-        <label className="btn" style={{ flex: 1, fontSize: 12, padding: "7px 10px", cursor: "pointer", textAlign: "center" }} title={t("projects.templateImportHint")}>
+        <label className="btn btn-compact btn-flex" title={t("projects.templateImportHint")}>
           {t("projects.templateImportBtn")}
           <input
             type="file"
@@ -173,14 +172,14 @@ export function ProjectsPanel() {
         </label>
       </div>
       {error ? (
-        <span role="alert" style={{ color: "var(--danger)", fontSize: 13 }}>
+        <span role="alert" className="field-error">
           {error}
         </span>
       ) : null}
       {!hydrated ? (
         <div aria-busy="true" aria-label={t("editor.loadingMedia")} style={{ display: "grid", gap: 6 }}>
           {[0, 1, 2].map((i) => (
-            <div key={i} className="skeleton skeleton-row" style={{ height: 36, borderRadius: 8 }} />
+            <div key={i} className="skeleton skeleton-row" style={{ height: 36 }} />
           ))}
         </div>
       ) : activeProjects.length === 0 && trashedProjects.length === 0 ? (
@@ -216,7 +215,7 @@ export function ProjectsPanel() {
         </ul>
       )}
       <TrashSection trashed={trashedProjects} relativeTime={relTime} onRestore={restoreProject} onEmptyTrash={emptyTrash} />
-      <p style={{ color: "var(--text-dim)", fontSize: 12, margin: 0 }}>
+      <p className="text-dim-sm" style={{ margin: 0 }}>
         {t("projects.autosaveNote")}
       </p>
       {pendingSwitchId && (

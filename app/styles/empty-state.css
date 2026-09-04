@@ -12,7 +12,7 @@
 .empty-state-icon {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   background: var(--field-bg);
   border: 1px solid var(--panel-border);
   display: grid;

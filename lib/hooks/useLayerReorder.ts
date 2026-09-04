@@ -4,36 +4,33 @@ import { useRef, useState } from "react";
 import type { DragEvent } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { useEditorStore } from "@/lib/state/editorStore";
-
-interface DropTarget {
-  id: string;
-  pos: "above" | "below";
-}
+import { spliceMove, useTouchReorder, type TouchReorderDropTarget } from "@/lib/hooks/useTouchReorder";
 
 /**
  * Owns the layer-list drag-to-reorder state machine: which row is being
  * dragged, the live drop indicator, and the splice that produces the new order.
  * Reordering is coalesced so a continuous drag collapses into a single undo
  * step. The visible indicator is derived here so the row component stays
- * presentational.
+ * presentational. Two input paths share the state: HTML5 drag-and-drop for
+ * mouse, and the grip-handle pointer path (useTouchReorder) for touch, where
+ * dragstart never fires.
  */
 export function useLayerReorder(scene: EditorScene) {
   const reorderLayers = useEditorStore((s) => s.reorderLayers);
   const [dragId, setDragId] = useState<string | null>(null);
-  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
+  const [dropTarget, setDropTarget] = useState<TouchReorderDropTarget | null>(null);
   const lastReorderRef = useRef<string | null>(null);
+
+  const touch = useTouchReorder({
+    getIds: () => scene.layers.map((l) => l.id),
+    commit: (ids) => reorderLayers(ids, true)
+  });
 
   const reorderByDrag = (targetId: string, pos: "above" | "below") => {
     if (!dragId || dragId === targetId) return;
     const ids = scene.layers.map((l) => l.id);
-    const from = ids.indexOf(dragId);
-    let to = ids.indexOf(targetId);
-    if (from < 0 || to < 0) return;
-    if (pos === "below") to += 1;
-    ids.splice(from, 1);
-    if (to > from) to -= 1;
-    ids.splice(to, 0, dragId);
-    reorderLayers(ids, true);
+    const next = spliceMove(ids, dragId, targetId, pos);
+    if (next !== ids) reorderLayers(next, true);
   };
 
   const posFor = (e: DragEvent<HTMLLIElement>, id: string): "above" | "below" => {
@@ -77,11 +74,14 @@ export function useLayerReorder(scene: EditorScene) {
   };
 
   return {
-    dragId,
-    dropTarget,
+    dragId: dragId ?? touch.dragId,
+    dropTarget: dropTarget ?? touch.dropTarget,
     handleDragStart,
     handleDragOver,
     handleDrop,
-    handleDragEnd
+    handleDragEnd,
+    handleGripPointerDown: touch.handleGripPointerDown,
+    handleGripPointerMove: touch.handleGripPointerMove,
+    handleGripPointerUp: touch.handleGripPointerUp
   };
 }

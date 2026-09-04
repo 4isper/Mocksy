@@ -19,6 +19,29 @@ export function annotationGradientCSS(a: Annotation): string | null {
   return `linear-gradient(${angle}deg, ${stops})`;
 }
 
+/**
+ * Shared CSS-convention gradient geometry. CSS `linear-gradient(θdeg)` measures
+ * θ clockwise from north: the gradient direction in screen coordinates is
+ * (sin θ, −cos θ), and the gradient line runs through the center with length
+ * |w·sin θ| + |h·cos θ|. Using a math-convention (cos, sin) instead mirrors
+ * every export relative to the CSS preview and the HTML export.
+ * Returns the start/end points of the gradient line for a box at (x, y, w, h).
+ */
+function cssGradientLine(x: number, y: number, w: number, h: number, angleDeg: number): { x1: number; y1: number; x2: number; y2: number } {
+  const rad = (angleDeg * Math.PI) / 180;
+  const dx = Math.sin(rad);
+  const dy = -Math.cos(rad);
+  const len = Math.abs(w * dx) + Math.abs(h * dy);
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  return {
+    x1: cx - (dx * len) / 2,
+    y1: cy - (dy * len) / 2,
+    x2: cx + (dx * len) / 2,
+    y2: cy + (dy * len) / 2
+  };
+}
+
 /** Builds a canvas CanvasGradient for annotation stroke/fill. */
 export function annotationCanvasGradient(
   ctx: CanvasRenderingContext2D,
@@ -35,23 +58,16 @@ export function annotationCanvasGradient(
   if (a.gradientType === "radial") {
     const cx = x + w / 2;
     const cy = y + h / 2;
-    const r = Math.max(w, h) / 2;
+    // CSS radial-gradient(circle) defaults to farthest-corner.
+    const r = Math.hypot(w, h) / 2;
     const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
     g.addColorStop(0, from);
     if (via) g.addColorStop(0.5, via);
     g.addColorStop(1, to);
     return g;
   }
-  const angle = ((a.gradientAngle ?? 135) * Math.PI) / 180;
-  const cx = x + w / 2;
-  const cy = y + h / 2;
-  const len = Math.max(w, h) / 2;
-  const g = ctx.createLinearGradient(
-    cx - Math.cos(angle) * len,
-    cy - Math.sin(angle) * len,
-    cx + Math.cos(angle) * len,
-    cy + Math.sin(angle) * len
-  );
+  const { x1, y1, x2, y2 } = cssGradientLine(x, y, w, h, a.gradientAngle ?? 135);
+  const g = ctx.createLinearGradient(x1, y1, x2, y2);
   g.addColorStop(0, from);
   if (via) g.addColorStop(0.5, via);
   g.addColorStop(1, to);
@@ -73,16 +89,24 @@ export function annotationSvgGradientDef(
   const to = escapeAttr(a.gradientTo!);
   const via = a.gradientVia ? escapeAttr(a.gradientVia) : null;
   if (a.gradientType === "radial") {
-    const def = `<radialGradient id="${id}" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="${from}"/>${via ? `<stop offset="50%" stop-color="${via}"/>` : ""}<stop offset="100%" stop-color="${to}"/></radialGradient>`;
+    // userSpaceOnUse with the exact farthest-corner circle so the gradient
+    // matches the CSS preview; objectBoundingBox with r="50%" would degrade
+    // the circle into an ellipse on non-square boxes.
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    const r = Math.hypot(w, h) / 2;
+    const def = `<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${num(cx)}" cy="${num(cy)}" r="${num(r)}"><stop offset="0%" stop-color="${from}"/>${via ? `<stop offset="50%" stop-color="${via}"/>` : ""}<stop offset="100%" stop-color="${to}"/></radialGradient>`;
     return { def, ref: `url(#${id})` };
   }
-  const angle = a.gradientAngle ?? 135;
-  const rad = (angle * Math.PI) / 180;
-  const x1 = 50 - Math.cos(rad) * 50;
-  const y1 = 50 - Math.sin(rad) * 50;
-  const x2 = 50 + Math.cos(rad) * 50;
-  const y2 = 50 + Math.sin(rad) * 50;
-  const def = `<linearGradient id="${id}" x1="${num(x1)}%" y1="${num(y1)}%" x2="${num(x2)}%" y2="${num(y2)}%"><stop offset="0%" stop-color="${from}"/>${via ? `<stop offset="50%" stop-color="${via}"/>` : ""}<stop offset="100%" stop-color="${to}"/></linearGradient>`;
+  // Percent coordinates of the CSS gradient line (through the box center),
+  // expressed in objectBoundingBox fractions so the direction matches the
+  // preview for any box aspect.
+  const { x1, y1, x2, y2 } = cssGradientLine(0, 0, w, h, a.gradientAngle ?? 135);
+  const x1pct = 50 + ((x1 - w / 2) / w) * 100;
+  const y1pct = 50 + ((y1 - h / 2) / h) * 100;
+  const x2pct = 50 + ((x2 - w / 2) / w) * 100;
+  const y2pct = 50 + ((y2 - h / 2) / h) * 100;
+  const def = `<linearGradient id="${id}" x1="${num(x1pct)}%" y1="${num(y1pct)}%" x2="${num(x2pct)}%" y2="${num(y2pct)}%"><stop offset="0%" stop-color="${from}"/>${via ? `<stop offset="50%" stop-color="${via}"/>` : ""}<stop offset="100%" stop-color="${to}"/></linearGradient>`;
   return { def, ref: `url(#${id})` };
 }
 

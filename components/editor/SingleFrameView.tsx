@@ -15,7 +15,9 @@ interface SingleFrameViewProps {
   sceneCss: SceneCss;
   canPan: boolean;
   frameRef: React.RefObject<HTMLDivElement | null>;
-  videoRef: React.MutableRefObject<HTMLVideoElement | null>;
+  /** Live <video> elements keyed by layer id: with several visible video
+   *  layers, the timeline must drive the active layer's own element. */
+  videoRefs: React.MutableRefObject<Map<string, HTMLVideoElement>>;
   onPanDown: (e: React.PointerEvent<HTMLDivElement>) => void;
   onPanMove: (e: React.PointerEvent<HTMLDivElement>) => void;
   onPanUp: (e: React.PointerEvent<HTMLDivElement>) => void;
@@ -34,7 +36,7 @@ export function SingleFrameView({
   sceneCss,
   canPan,
   frameRef,
-  videoRef,
+  videoRefs,
   onPanDown,
   onPanMove,
   onPanUp,
@@ -48,14 +50,16 @@ export function SingleFrameView({
   selectLayer
 }: SingleFrameViewProps) {
   const t = useTranslations();
+  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   // Subscribe here (not in PreviewCanvas) so the whole preview tree — all
   // annotations, the watermark and the frame grid — doesn't re-render on every
-  // video time tick. The seek mirrors the Timeline scrubber onto the <video>:
-  // onTimeUpdate writes the time back to the store, so we only seek when the
-  // delta is large enough to be a user scrub rather than playback echo.
+  // video time tick. The seek mirrors the Timeline scrubber onto the active
+  // layer's <video>: onTimeUpdate writes the time back to the store, so we
+  // only seek when the delta is large enough to be a user scrub rather than
+  // playback echo.
   const videoCurrentTime = useEditorStore((s) => s.videoCurrentTime);
   useEffect(() => {
-    const video = videoRef.current;
+    const video = videoRefs.current.get(activeLayer?.id ?? "");
     if (!video) return;
     if (Math.abs(video.currentTime - videoCurrentTime) > 0.1) {
       try {
@@ -64,20 +68,19 @@ export function SingleFrameView({
         // Seeking before metadata is ready can throw; ignore until it loads.
       }
     }
-  }, [videoCurrentTime, videoRef]);
+  }, [videoCurrentTime, videoRefs, activeLayer?.id]);
   // Mirror the active layer's playback speed onto the preview element (the
   // export pipeline sets it independently on its own detached <video>).
-  const activeLayer = scene.layers.find((l) => l.id === scene.activeLayerId) ?? scene.layers[0];
   const playbackSpeed = Math.max(0.5, Math.min(2, activeLayer?.playbackSpeed ?? 1));
   useEffect(() => {
-    const video = videoRef.current;
+    const video = videoRefs.current.get(activeLayer?.id ?? "");
     if (!video || video.playbackRate === playbackSpeed) return;
     try {
       video.playbackRate = playbackSpeed;
     } catch {
       // Not all engines allow changing the rate before metadata; retried below.
     }
-  }, [playbackSpeed, videoRef]);
+  }, [playbackSpeed, videoRefs, activeLayer?.id]);
   return (
     <div
       ref={frameRef}
@@ -115,11 +118,22 @@ export function SingleFrameView({
                 hasEntrance
                   ? <div key={`${layer.id}-${layer.entranceAnimation}`} style={wrapper}>{el}</div>
                   : el;
+              // The media slot is the untransformed clipping frame over the
+              // screen: the media's rotate/scale transforms stay clipped to
+              // the screen instead of spilling over the bezel. Blend lives on
+              // the slot — a clip-path slot creates a stacking context, so a
+              // child mix-blend-mode would be trapped and blend into nothing.
+              const slot = (el: React.ReactNode) => (
+                <div key={layer.id} style={{ ...sceneCss.mediaSlotStyle, ...blendCss }}>{wrap(el)}</div>
+              );
               return layer.mediaUrl ? (
-                isVideoLayer(layer) ? wrap(
+                isVideoLayer(layer) ? slot(
                   <video
                     key={layer.id}
-                    ref={videoRef}
+                    ref={(el) => {
+                      if (el) videoRefs.current.set(layer.id, el);
+                      else videoRefs.current.delete(layer.id);
+                    }}
                     src={layer.mediaUrl}
                     muted={layer.videoMuted}
                     loop={layer.videoLoop}
@@ -128,7 +142,7 @@ export function SingleFrameView({
                     controls
                     crossOrigin="anonymous"
                     data-layer-media={layer.id}
-                    style={{ ...sceneCss.mediaStyle, objectFit: "contain", backgroundColor: "var(--panel-solid)", ...blendCss }}
+                    style={{ ...sceneCss.mediaStyle, backgroundColor: "var(--panel-solid)" }}
                     onPointerDown={() => selectLayer(layer.id)}
                     onLoadedMetadata={(e) => {
                       const duration = e.currentTarget.duration || 0;
@@ -147,13 +161,13 @@ export function SingleFrameView({
                       analyzeMedia(ev.currentTarget);
                     }}
                   />
-                ) : wrap(
+                ) : slot(
                   <img
                     key={layer.id}
                     src={layer.mediaUrl}
                     alt={t("editor.uploadedMediaAlt")}
                     data-layer-media={layer.id}
-                    style={{ ...sceneCss.mediaStyle, ...blendCss }}
+                    style={{ ...sceneCss.mediaStyle }}
                     onPointerDown={() => selectLayer(layer.id)}
                     onLoad={(e) => {
                       setMediaLoading(false);
@@ -175,7 +189,7 @@ export function SingleFrameView({
           scene.layers.every((l) => !l.mediaUrl) && !scene.layers.some(isTextLayer) ? (
             <label style={sceneCss.emptyMediaStyle}>
               <span>{t("editor.dropToStart")}</span>
-              <input type="file" accept="image/*,video/*" onChange={handleCanvasFile} key={canvasFileInputKey} style={{ display: "none" }} />
+              <input type="file" accept="image/*,video/*" multiple onChange={handleCanvasFile} key={canvasFileInputKey} style={{ display: "none" }} />
             </label>
           ) : null
         }

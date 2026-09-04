@@ -237,6 +237,15 @@ describe("layersSlice edge branches", () => {
     expect(store().selectedLayerIds).toEqual(["A"]);
   });
 
+  it("toggleLayerSelected re-points the active layer at the last remaining selection", () => {
+    seed({ ...initialScene, layers: [layer({ id: "A" }), layer({ id: "B" }), layer({ id: "C" })], activeLayerId: "C" }, { selectedLayerIds: ["A", "B", "C"] });
+    store().toggleLayerSelected("C");
+    expect(store().selectedLayerIds).toEqual(["A", "B"]);
+    // The deselected layer must not remain the active one — the control panel
+    // edits the active layer, so it has to stay inside the selection.
+    expect(store().activeLayerId).toBe("B");
+  });
+
   it("selectLayerRange anchors to the id when nothing is selected", () => {
     seed({ ...initialScene, layers: [layer({ id: "A" }), layer({ id: "B" })], activeLayerId: "A" }, { selectedLayerIds: [] });
     store().selectLayerRange("B");

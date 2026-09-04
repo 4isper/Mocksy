@@ -158,8 +158,10 @@ export async function buildStandaloneSvg(
           mediaFit: layer?.mediaFit,
           offsetX: layer?.mediaOffsetX,
           offsetY: layer?.mediaOffsetY,
+          mediaZoom: layer?.zoom,
           rotation: layer?.rotation ?? 0,
           opacity: layer?.opacity,
+          blendMode: layer?.blendMode,
           orientation: box.rotation ? (box.rotation * 180) / Math.PI : undefined,
           frame: inst.frame,
           screen: inst.screen ?? scene.screen,
@@ -176,8 +178,12 @@ export async function buildStandaloneSvg(
         // logo and other layers' media.
         const el = node.querySelector(layerMediaSelector(activeLayer.id));
         if (el instanceof HTMLVideoElement) {
+          // Always snapshot the poster frame like the PNG and multi-frame SVG
+          // paths do: the preview playhead is transient, so whatever frame it
+          // happens to show would make SVG exports diverge from PNG exports
+          // of the same scene.
           let src: HTMLVideoElement = el;
-          if (el.readyState < 2 && isVideoLayer(activeLayer) && activeLayer.mediaUrl) {
+          if (isVideoLayer(activeLayer) && activeLayer.mediaUrl) {
             try {
               src = await loadVideoFrame(activeLayer.mediaUrl, activeLayer.videoPosterTime ?? 0);
             } catch {
@@ -210,11 +216,13 @@ export async function buildStandaloneSvg(
         mediaFit: activeLayer?.mediaFit,
         offsetX: activeLayer?.mediaOffsetX,
         offsetY: activeLayer?.mediaOffsetY,
+        mediaZoom: activeLayer?.zoom,
         rotation: activeLayer?.rotation ?? 0,
         frame: scene.frame,
         screen: scene.screen,
         floorReflection: scene.floorReflection,
         opacity: activeLayer?.opacity,
+        blendMode: activeLayer?.blendMode,
         textLayer: isTextLayer(activeLayer) ? activeLayer : null
       });
     }

@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties } from "react";
+import { createPortal } from "react-dom";
+import type { CSSProperties, RefObject } from "react";
 
 export interface ContextMenuItem {
   id: string;
@@ -9,6 +10,8 @@ export interface ContextMenuItem {
   onSelect: () => void;
   danger?: boolean;
   disabled?: boolean;
+  /** Draws a check mark after the label (single-select option groups). */
+  checked?: boolean;
   /** Draws a separator line above this item. */
   separatorBefore?: boolean;
 }
@@ -25,7 +28,21 @@ interface Positioned {
  * first paint so it never overflows.
  * Purely presentational — callers build the items for their context.
  */
-export function ContextMenu({ x, y, items, onClose }: { x: number; y: number; items: ContextMenuItem[]; onClose: () => void }) {
+export function ContextMenu({
+  x,
+  y,
+  items,
+  onClose,
+  triggerRef
+}: {
+  x: number;
+  y: number;
+  items: ContextMenuItem[];
+  onClose: () => void;
+  /** Button that opens the menu: pointerdown on it must NOT close the menu so
+   *  the same click can toggle it closed (native menu-button behaviour). */
+  triggerRef?: RefObject<HTMLElement | null>;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<Positioned>({ x, y });
 
@@ -109,6 +126,7 @@ export function ContextMenu({ x, y, items, onClose }: { x: number; y: number; it
 
   useEffect(() => {
     const onDown = (e: PointerEvent) => {
+      if (triggerRef?.current?.contains(e.target as Node)) return;
       if (ref.current && !ref.current.contains(e.target as Node)) closeMenu(false);
     };
     const onKey = (e: KeyboardEvent) => {
@@ -119,28 +137,36 @@ export function ContextMenu({ x, y, items, onClose }: { x: number; y: number; it
     // dismiss the menu mid-interaction. Outside pointer-down does NOT restore
     // focus (it belongs to whatever the user just clicked); keyboard/resize
     // closes do.
+    // One stable reference for add and remove — a fresh arrow passed to
+    // removeEventListener never matches, leaking the listener (and, worse,
+    // firing a stale closeMenu that steals focus on every later resize).
+    const onResize = () => closeMenu(true);
     window.addEventListener("pointerdown", onDown, true);
     window.addEventListener("keydown", onKey);
-    window.addEventListener("resize", () => closeMenu(true));
+    window.addEventListener("resize", onResize);
     return () => {
       window.removeEventListener("pointerdown", onDown, true);
       window.removeEventListener("keydown", onKey);
-      window.removeEventListener("resize", () => closeMenu(true));
+      window.removeEventListener("resize", onResize);
     };
-  }, [closeMenu]);
+  }, [closeMenu, triggerRef]);
 
   const style: CSSProperties = {
     position: "fixed",
     left: pos.x,
     top: pos.y,
-    zIndex: 1000,
+    zIndex: "var(--z-popover)",
     minWidth: 160,
     padding: 4,
     display: "grid",
     gap: 2
   };
 
-  return (
+  // Portalled to document.body: callers render the menu inside stacking
+  // contexts that sit below fixed chrome (the sticky toolbar under the mobile
+  // tab bar), which would clip the popover's z-index and make the last items
+  // untappable. Fixed positioning is unaffected by the portal parent.
+  return createPortal(
     <div ref={ref} className="panel" role="menu" aria-orientation="vertical" onKeyDown={handleKeyDown} style={style}>
       {items.map((item, i) => (
         <div key={item.id}>
@@ -157,26 +183,33 @@ export function ContextMenu({ x, y, items, onClose }: { x: number; y: number; it
               }
             }}
             style={{
-              display: "block",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
               width: "100%",
               textAlign: "left",
               padding: "5px 10px",
               fontSize: 12,
-              borderRadius: 6,
+              borderRadius: "var(--radius-xs)",
               border: "none",
               background: "transparent",
-              color: item.danger ? "var(--danger)" : "var(--text-primary)",
+              color: item.danger ? "var(--danger)" : "var(--text)",
               cursor: item.disabled ? "not-allowed" : "pointer",
-              opacity: item.disabled ? 0.45 : 1
+              opacity: item.disabled ? 0.4 : 1
             }}
             onMouseEnter={() => {
               if (!item.disabled) setFocusIndex(i);
             }}
           >
-            {item.label}
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{item.label}</span>
+            {item.checked ? (
+              <span aria-hidden="true" className="menu-check" style={{ color: "var(--accent)", flex: "none" }}>✓</span>
+            ) : null}
           </button>
         </div>
       ))}
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -77,23 +77,17 @@ export function BackgroundMediaPalette({
         </button>
       </div>
       {hasPalette ? (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        <div className="bg-swatches">
           {scenePalette!.map((color) => (
             <button
               key={color}
               type="button"
+              className="swatch-btn"
               aria-label={color}
               aria-pressed={backgroundMode === "solid" && backgroundColor === color}
               title={color}
               onClick={() => setBackgroundSolid(color)}
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 8,
-                cursor: "pointer",
-                border: backgroundMode === "solid" && backgroundColor === color ? "2px solid var(--accent)" : "1px solid var(--panel-border)",
-                background: color
-              }}
+              style={{ background: color }}
             />
           ))}
         </div>

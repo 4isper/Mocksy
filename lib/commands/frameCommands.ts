@@ -46,5 +46,13 @@ export function createFrameAlignCommands(t: (key: string) => string, scene: Edit
     disabled: count < 3,
     action: () => useEditorStore.getState().distributeFrameInstances(axis),
   }));
-  return [...alignCommands, ...distributeCommands];
+  const fitCommand: Command = {
+    id: "fit-frames-to-canvas",
+    category: "frame",
+    label: t("editor.fitToCanvas"),
+    keywords: ["fit", "frames", "canvas", "refit", "rescale", "aspect"],
+    disabled: count < 1,
+    action: () => useEditorStore.getState().fitFramesToCanvas(),
+  };
+  return [...alignCommands, ...distributeCommands, fitCommand];
 }

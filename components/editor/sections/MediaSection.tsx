@@ -1,6 +1,7 @@
 "use client";
 
 import type { ChangeEvent } from "react";
+import { useSyncExternalStore } from "react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useShallow } from "zustand/react/shallow";
@@ -15,6 +16,11 @@ import { useRecentMediaStore } from "@/lib/state/recentMediaStore";
 function formatElapsed(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
+
+/** Static subscribe/snapshots for the client-only "mounted" flag. */
+const noSubscribe = () => () => {};
+const clientTrue = () => true;
+const clientFalse = () => false;
 
 export function MediaSection() {
   const t = useTranslations();
@@ -35,26 +41,55 @@ export function MediaSection() {
   const activeLayer = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
   const screenRecording = useScreenRecording();
 
-  const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  /** Media-layer ids (in frame-instance order) with no screen content yet, so
+   *  a multi-file upload can distribute one file per empty device. Text layers
+   *  and locked layers are skipped. */
+  const nextEmptyLayerIds = (): string[] => {
+    const dedupe = new Set<string>();
+    return scene.frameInstances
+      .map((fi) => fi.layerId)
+      .filter((id): id is string => Boolean(id))
+      .filter((id) => !dedupe.has(id) && (dedupe.add(id), true))
+      .filter((id) => {
+        const layer = scene.layers.find((l) => l.id === id);
+        return Boolean(layer && layer.kind !== "text" && layer.locked !== true && layer.mediaUrl == null);
+      });
+  };
+
+  const applyFiles = async (fileList: FileList) => {
+    const files = Array.from(fileList);
+    if (files.length === 0) return;
     // Pin the target layer before the async decode: the user may switch the
     // active layer (or lock it) while the file loads, and landing on whatever
     // is active at completion would drop the media into the wrong layer.
     const targetLayerId = activeLayerId ?? scene.layers[0]?.id ?? null;
-    try {
-      const { url, mediaType, mediaName } = await loadMediaFromFile(file);
-      setMediaUploadError(null);
-      // Drop any palette from the previous media; a fresh one is computed once
-      // the new file decodes in the preview.
-      setScenePalette(null);
-      setMedia(url, mediaType, mediaName, targetLayerId);
-    } catch (err) {
-      if (err instanceof UnsupportedMediaError) setMediaUploadError(err.message);
-      else setMediaUploadError(t("editor.uploadError"));
-    } finally {
-      event.target.value = "";
+    // With several files, fill empty devices first so a multi-frame scene gets
+    // one photo per frame; a single pick behaves exactly as before.
+    const emptyLayerIds = files.length > 1 ? nextEmptyLayerIds() : [];
+    setScenePalette(null);
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]!;
+      try {
+        const { url, mediaType, mediaName } = await loadMediaFromFile(file);
+        setMediaUploadError(null);
+        if (i < emptyLayerIds.length) {
+          useEditorStore.getState().setMediaOnLayer(emptyLayerIds[i]!, url, mediaType, mediaName);
+        } else {
+          setMedia(url, mediaType, mediaName, targetLayerId);
+        }
+      } catch (err) {
+        if (err instanceof UnsupportedMediaError) setMediaUploadError(err.message);
+        else setMediaUploadError(t("editor.uploadError"));
+        break;
+      }
     }
+  };
+
+  const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    await applyFiles(files);
+    event.target.value = "";
   };
 
   const handleUrlSubmit = async () => {
@@ -90,8 +125,9 @@ export function MediaSection() {
         <div className="field">
           <label className="file-trigger">
             {t("editor.uploadMediaShort")}
-            <input type="file" accept="image/*,video/*" onChange={handleFile} />
+            <input type="file" accept="image/*,video/*" multiple onChange={handleFile} />
           </label>
+          <span className="text-dim-sm">{t("editor.uploadMediaShortHint")}</span>
           <button
             type="button"
             className="btn btn-sm"
@@ -146,7 +182,7 @@ export function MediaSection() {
           </div>
         </div>
         {mediaUploadError ? (
-          <span role="alert" style={{ color: "var(--danger)", fontSize: 13 }}>
+          <span role="alert" className="field-error">
             {mediaUploadError}
           </span>
         ) : null}
@@ -164,8 +200,15 @@ function RecentMediaGrid() {
   const removeEntry = useRecentMediaStore((s) => s.removeEntry);
   const setMedia = useEditorStore((s) => s.setMedia);
   const setScenePalette = useEditorStore((s) => s.setScenePalette);
+  // zustand persist rehydrates synchronously from localStorage during module
+  // evaluation — before React hydration. Rendering persisted entries on the
+  // first client pass would disagree with the server's empty list (hydration
+  // error), so hold the grid back until after mount. useSyncExternalStore
+  // serves false on the server and true on the client without a
+  // setState-in-effect cascade.
+  const mounted = useSyncExternalStore(noSubscribe, clientTrue, clientFalse);
 
-  if (entries.length === 0) return null;
+  if (!mounted || entries.length === 0) return null;
 
   return (
     <div className="field">
@@ -182,7 +225,7 @@ function RecentMediaGrid() {
             type="button"
             title={entry.mediaName ?? t("editor.recentMedia")}
             style={{
-              border: "1px solid var(--border)",
+              border: "1px solid var(--panel-border)",
               borderRadius: 4,
               padding: 0,
               overflow: "hidden",

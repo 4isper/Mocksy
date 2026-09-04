@@ -75,12 +75,23 @@ function isRenderableLayer(scene: EditorScene, layerId: string | null): boolean 
   return !layer?.hidden && !!layer?.mediaUrl && !isVideoLayer(layer);
 }
 
+/** Single-frame scenes render every visible layer's media (the preview stacks
+ *  them), so the worker path is only viable when none of them is a video —
+ *  workers can't decode video and the poster frame would need main-thread
+ *  extraction anyway. */
+function canRenderSingleFrameInWorker(scene: EditorScene): boolean {
+  return scene.layers
+    .filter((l) => !l.hidden)
+    .every((l) => !l.mediaUrl || !isVideoLayer(l));
+}
+
 /**
  * True when every layer this render draws is decodable inside a worker.
  * Video layers force the main-thread path: workers have no <video> decoder,
  * so their poster frames would need main-thread extraction anyway.
  */
 export function canRenderSceneInWorker(scene: EditorScene, activeLayerId: string | null = scene.activeLayerId): boolean {
+  if (scene.frameInstances.length === 0) return canRenderSingleFrameInWorker(scene);
   if (!isRenderableLayer(scene, activeLayerId)) return false;
   return scene.frameInstances.every((inst) => isRenderableLayer(scene, inst.layerId));
 }
@@ -110,11 +121,15 @@ export function buildRenderWorkerPayload(opts: BuildOptions): RenderWorkerPayloa
   if (!canRenderSceneInWorker(scene, activeLayerId)) return null;
 
   const images: RenderImageSlot[] = [];
-  const active = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
 
   let overlayUrl: string | null = null;
   if (scene.frameInstances.length === 0) {
-    if (active?.mediaUrl) images.push({ key: ACTIVE_MEDIA_KEY, url: active.mediaUrl });
+    // Single-frame mode renders every visible layer's media (the preview
+    // stacks them), keyed by layer id — the renderer rebuilds the paint-order
+    // stack from these slots.
+    for (const layer of scene.layers) {
+      if (!layer.hidden && layer.mediaUrl) images.push({ key: layer.id, url: layer.mediaUrl });
+    }
     const spec = getFrameSpec(scene.frame, scene.customFrame, scene.frameMaterial);
     if (spec.isOverlay && spec.asset) overlayUrl = spec.asset;
   } else {
@@ -122,8 +137,11 @@ export function buildRenderWorkerPayload(opts: BuildOptions): RenderWorkerPayloa
       const layer = scene.layers.find((l) => l.id === inst.layerId);
       if (layer?.mediaUrl) images.push({ key: layer.id, url: layer.mediaUrl });
       const spec = getFrameSpec(inst.frame, scene.customFrame, inst.material);
-      if (spec.isOverlay && spec.asset && layer?.id) {
-        images.push({ key: `${OVERLAY_KEY_PREFIX}${layer.id}`, url: spec.asset });
+      if (spec.isOverlay && spec.asset && inst.id) {
+        // Key skins by frame-INSTANCE id, not layer id: two instances can
+        // share a layer with different materials (graphite/silver/white), and
+        // a layer-keyed map would give both the last-loaded skin.
+        images.push({ key: `${OVERLAY_KEY_PREFIX}${inst.id}`, url: spec.asset });
       }
     }
   }

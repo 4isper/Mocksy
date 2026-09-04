@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildFreshScene, initialScene, makeDemoScene } from "@/lib/state/editorScene";
+import { buildFreshScene, initialScene, makeDemoScene, upgradeLegacySingleFrameScene } from "@/lib/state/editorScene";
 
 describe("editorScene", () => {
   it("initialScene defaults to a single active demo layer", () => {
@@ -45,5 +45,34 @@ describe("editorScene", () => {
     expect(scene.backgroundMode).toBe(initialScene.backgroundMode);
     expect(scene.animationDurationMs).toBe(initialScene.animationDurationMs);
     expect(scene.backgroundAudioUrl).toBeNull();
+  });
+});
+
+describe("upgradeLegacySingleFrameScene", () => {
+  it("turns a legacy 0-instance device scene into one centered movable instance", () => {
+    const upgraded = upgradeLegacySingleFrameScene({ ...initialScene });
+    expect(upgraded.frameInstances).toHaveLength(1);
+    const inst = upgraded.frameInstances[0]!;
+    expect(inst.frame).toBe(initialScene.frame);
+    expect(inst.x).toBe(0.5);
+    expect(inst.y).toBe(0.5);
+    expect(inst.layerId).toBe(initialScene.activeLayerId);
+    // Portrait phones are height-capped so the device fits the canvas.
+    expect(inst.scale).toBeLessThan(1);
+    expect(inst.scale).toBeGreaterThan(0);
+  });
+
+  it("leaves multi-frame scenes untouched", () => {
+    const scene = makeDemoScene();
+    expect(upgradeLegacySingleFrameScene(scene)).toBe(scene);
+  });
+
+  it("leaves frameless and empty scenes untouched", () => {
+    expect(
+      upgradeLegacySingleFrameScene({ ...initialScene, frame: "none" }).frameInstances
+    ).toEqual([]);
+    expect(
+      upgradeLegacySingleFrameScene({ ...initialScene, layers: [], activeLayerId: null }).frameInstances
+    ).toEqual([]);
   });
 });

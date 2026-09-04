@@ -90,6 +90,37 @@ export function projectTiltedRect(rect: RectLike, tiltX: number, tiltY: number, 
   };
 }
 
+/** Rotates every quad point by `rotation` radians about (cx, cy). */
+export function rotateQuad(quad: Quad, rotation: number, cx: number, cy: number): Quad {
+  if (!rotation) return quad;
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  const rot = (p: Point): Point => {
+    const dx = p.x - cx;
+    const dy = p.y - cy;
+    return { x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos };
+  };
+  return { tl: rot(quad.tl), tr: rot(quad.tr), bl: rot(quad.bl), br: rot(quad.br) };
+}
+
+/**
+ * Projection for a landscape (pre-rotated) instance. The CSS preview applies
+ * the parent rotor's 2D rotate(90deg) AFTER the child's 3D tilt (parent
+ * transforms map points after the child's own transform), so the native
+ * rect is projected first and the projected quad is then rotated about the
+ * shared center.
+ */
+export function projectTiltedRectRotated(
+  rect: RectLike,
+  rotation: number,
+  tiltX: number,
+  tiltY: number,
+  perspective: number = TILT_PERSPECTIVE
+): Quad {
+  const quad = projectTiltedRect(rect, tiltX, tiltY, perspective);
+  return rotateQuad(quad, rotation, rect.x + rect.width / 2, rect.y + rect.height / 2);
+}
+
 /**
  * Affine best-fit of the tilted rect (parallelogram through the projected
  * top-left / top-right / bottom-left corners) for SVG, which cannot express a
@@ -99,12 +130,37 @@ export function projectTiltedRect(rect: RectLike, tiltX: number, tiltY: number, 
 export function tiltMatrixSvg(scene: Pick<EditorScene, "tiltX" | "tiltY">, rect: RectLike, perspective: number = TILT_PERSPECTIVE): string {
   if (!hasTilt(scene)) return "";
   const quad = projectTiltedRect(rect, scene.tiltX, scene.tiltY, perspective);
+  return quadToMatrix(quad, rect);
+}
+
+/**
+ * Landscape twin of `tiltMatrixSvg`: projects the NATIVE-orientation rect and
+ * rotates the resulting parallelogram by `rotation` radians about the rect
+ * center, matching the preview's rotor-then-tilt composition order.
+ */
+export function tiltMatrixSvgRotated(
+  scene: Pick<EditorScene, "tiltX" | "tiltY">,
+  rect: RectLike,
+  rotation: number,
+  perspective: number = TILT_PERSPECTIVE
+): string {
+  if (!hasTilt(scene)) return "";
+  const quad = projectTiltedRect(rect, scene.tiltX, scene.tiltY, perspective);
+  return quadToMatrix(rotateQuad(quad, rotation, rect.x + rect.width / 2, rect.y + rect.height / 2), rect);
+}
+
+function quadToMatrix(quad: Quad, rect: RectLike): string {
   const a = (quad.tr.x - quad.tl.x) / rect.width;
   const b = (quad.tr.y - quad.tl.y) / rect.width;
   const c = (quad.bl.x - quad.tl.x) / rect.height;
   const d = (quad.bl.y - quad.tl.y) / rect.height;
+  // The affine must send the rect's top-left corner to quad.tl — e/f are the
+  // translation of the full mapping p(x,y) = tl + (x - rect.x)·A + (y - rect.y)·B,
+  // not tl itself (which is only correct when the rect sits at the origin).
+  const e = quad.tl.x - a * rect.x - c * rect.y;
+  const f = quad.tl.y - b * rect.x - d * rect.y;
   const fmt = (n: number) => String(Math.round(n * 100) / 100);
-  return `matrix(${fmt(a)} ${fmt(b)} ${fmt(c)} ${fmt(d)} ${fmt(quad.tl.x)} ${fmt(quad.tl.y)})`;
+  return `matrix(${fmt(a)} ${fmt(b)} ${fmt(c)} ${fmt(d)} ${fmt(e)} ${fmt(f)})`;
 }
 
 /** Bilinear interpolation inside a quad for one unit-space coordinate. */

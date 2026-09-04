@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { PreviewCanvas } from "@/components/editor/PreviewCanvas";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { initialScene } from "@/lib/state/editorStore";
@@ -26,6 +26,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.useRealTimers();
   useEditorStore.setState({
     scene: { ...initialScene },
     isMediaLoading: false,
@@ -140,6 +141,31 @@ describe("PreviewCanvas", () => {
     fireEvent.click(toggle);
     expect(useEditorStore.getState().showGrid).toBe(false);
   });
+
+  it("deletes every selected annotation on Delete", () => {
+    const annotations = [
+      { id: "a1", type: "text" as const, text: "one", x: 0, y: 0, w: 0.2, h: 0.1, color: "#fff", fontSize: 24, strokeWidth: 2 },
+      { id: "a2", type: "text" as const, text: "two", x: 0, y: 0, w: 0.2, h: 0.1, color: "#fff", fontSize: 24, strokeWidth: 2 },
+    ];
+    useEditorStore.setState({ selectedAnnotationId: "a2", selectedAnnotationIds: ["a1", "a2"] });
+    renderScene({ annotations });
+    const canvas = document.querySelector("#preview-canvas")!;
+    fireEvent.keyDown(canvas, { key: "Delete" });
+    expect(useEditorStore.getState().scene.annotations).toHaveLength(0);
+    expect(useEditorStore.getState().selectedAnnotationIds).toEqual([]);
+  });
+
+  it("deletes the single selected annotation on Backspace", () => {
+    const annotations = [
+      { id: "a1", type: "text" as const, text: "one", x: 0, y: 0, w: 0.2, h: 0.1, color: "#fff", fontSize: 24, strokeWidth: 2 },
+    ];
+    useEditorStore.setState({ selectedAnnotationId: "a1", selectedAnnotationIds: ["a1"] });
+    renderScene({ annotations });
+    const canvas = document.querySelector("#preview-canvas")!;
+    fireEvent.keyDown(canvas, { key: "Backspace" });
+    expect(useEditorStore.getState().scene.annotations).toHaveLength(0);
+    expect(useEditorStore.getState().selectedAnnotationIds).toEqual([]);
+  });
 });
 
 describe("PreviewCanvas media upload", () => {
@@ -173,7 +199,7 @@ describe("PreviewCanvas media upload", () => {
     });
     renderScene();
     const activeId = useEditorStore.getState().activeLayerId;
-    const input = document.querySelector('.preview-chip-stack input[type="file"]') as HTMLInputElement;
+    const input = document.querySelector('.preview-dock-bar input[type="file"]') as HTMLInputElement;
     expect(input).not.toBeNull();
     fireEvent.change(input, { target: { files: [file] } });
     await vi.waitFor(() => {
@@ -212,6 +238,22 @@ describe("PreviewCanvas media upload", () => {
     const layer = useEditorStore.getState().scene.layers[0];
     expect(layer?.mediaUrl).toBeNull();
     expect(layer?.mediaType).toBe("none");
+  });
+
+  // The e2e suite scopes "Clear media" to #preview-canvas. The dock-bar
+  // refactor (dae6ec9) deliberately moved Upload/Clear OUT of the canvas box
+  // (canvas screenshots/exports must stay chrome-free), so keep the dock bar
+  // as a sibling AFTER #preview-canvas — and if that ever changes again,
+  // update tests/e2e/editor.spec.ts "uploading media reveals a Clear button"
+  // in the same commit.
+  it("keeps the Clear-media chip outside #preview-canvas", () => {
+    renderScene();
+    const clearButtons = screen.getAllByRole("button", { name: "editor.clearMedia" });
+    expect(clearButtons).toHaveLength(1);
+    const clear = clearButtons[0]!;
+    const canvas = document.querySelector("#preview-canvas")!;
+    expect(clear.contains(canvas)).toBe(false);
+    expect(canvas.contains(clear)).toBe(false);
   });
 
   it("tracks drag enter/leave to show the drop outline", () => {
@@ -310,5 +352,68 @@ describe("PreviewCanvas multi-frame", () => {
     ];
     renderScene({ layers, frameInstances: instances });
     expect(document.querySelectorAll(".frame-instance").length).toBe(0);
+  });
+});
+
+describe("PreviewCanvas touch context menu", () => {
+  // iOS Safari never fires `contextmenu` from a long-press, so the canvas
+  // menu must be reachable through a synthesized long-press gesture.
+  it("opens the empty-canvas menu after a 500ms single-finger hold", () => {
+    vi.useFakeTimers();
+    renderScene();
+    const canvas = document.querySelector("#preview-canvas") as HTMLElement;
+    fireEvent.pointerDown(canvas, { pointerType: "touch", pointerId: 1, clientX: 100, clientY: 100 });
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(screen.getByText("editor.ctxAddText")).toBeInTheDocument();
+    expect(screen.getByText("editor.ctxAddArrow")).toBeInTheDocument();
+  });
+
+  it("opens the frame-instance menu on long-press over an instance", () => {
+    vi.useFakeTimers();
+    const layers: MediaLayer[] = [{ ...initialScene.layers[0]!, id: "l1", mediaUrl: null, mediaType: "none" }];
+    const instances = [
+      { id: "i1", frame: "iphone16pro" as const, x: 0.5, y: 0.5, scale: 0.5, layerId: "l1" },
+    ];
+    renderScene({ layers, frameInstances: instances });
+    const inst = document.querySelector(".frame-instance") as HTMLElement;
+    fireEvent.pointerDown(inst, { pointerType: "touch", pointerId: 1, clientX: 100, clientY: 100 });
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(screen.getByText("editor.ctxRotate")).toBeInTheDocument();
+    expect(useEditorStore.getState().activeFrameInstanceId).toBe("i1");
+  });
+
+  it("does not open the menu on a quick tap", () => {
+    vi.useFakeTimers();
+    renderScene();
+    const canvas = document.querySelector("#preview-canvas") as HTMLElement;
+    fireEvent.pointerDown(canvas, { pointerType: "touch", pointerId: 1, clientX: 100, clientY: 100 });
+    fireEvent.pointerUp(canvas, { pointerType: "touch", pointerId: 1, clientX: 100, clientY: 100 });
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(screen.queryByText("editor.ctxAddText")).not.toBeInTheDocument();
+  });
+
+  it("does not open the menu when the finger moves (pan/scroll wins)", () => {
+    vi.useFakeTimers();
+    renderScene();
+    const canvas = document.querySelector("#preview-canvas") as HTMLElement;
+    fireEvent.pointerDown(canvas, { pointerType: "touch", pointerId: 1, clientX: 100, clientY: 100 });
+    fireEvent.pointerMove(canvas, { pointerType: "touch", pointerId: 1, clientX: 100, clientY: 160 });
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(screen.queryByText("editor.ctxAddText")).not.toBeInTheDocument();
+  });
+
+  it("still opens the menu on desktop right-click", () => {
+    renderScene();
+    const canvas = document.querySelector("#preview-canvas") as HTMLElement;
+    fireEvent.contextMenu(canvas, { clientX: 100, clientY: 100 });
+    expect(screen.getByText("editor.ctxAddText")).toBeInTheDocument();
   });
 });

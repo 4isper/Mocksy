@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { EditorScene, MediaLayer } from "@/lib/types/editor";
 import { useEditorStore } from "@/lib/state/editorStore";
 import { resolveZoomScale } from "@/lib/render/previewViewport";
+import { LAYER_ZOOM } from "@/lib/render/layerFilters";
 
 interface UseCanvasGestures {
   frameRef: React.RefObject<HTMLDivElement | null>;
@@ -44,6 +45,14 @@ export function useCanvasGestures({ frameRef, activeLayer }: UseCanvasGestures) 
   const onTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
     if (e.touches.length < 2) pinchStart.current = null;
   };
+  // A cancelled touch sequence (incoming call, browser gesture takeover,
+  // edge-swipe nav) fires touchcancel and never touchend. Without clearing
+  // here the stale pinch baseline hijacks the next unrelated two-finger touch
+  // anywhere on the page (the move listener is window-level) and preventDefaults
+  // its scrolling. Mirrors useCanvasViewport's touchcancel handling.
+  const onTouchCancel = () => {
+    pinchStart.current = null;
+  };
 
   // The move half of the pinch is a native non-passive listener: React
   // registers synthetic touchmove handlers as passive, so preventDefault()
@@ -60,7 +69,7 @@ export function useCanvasGestures({ frameRef, activeLayer }: UseCanvasGestures) 
       const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
       if (dist === 0) return;
       e.preventDefault();
-      const next = Math.min(1.5, Math.max(0.8, start.zoom * (dist / start.dist)));
+      const next = Math.min(LAYER_ZOOM.max, Math.max(LAYER_ZOOM.min, start.zoom * (dist / start.dist)));
       useEditorStore.getState().setZoom(next);
     };
     window.addEventListener("touchmove", onTouchMove, { passive: false });
@@ -78,8 +87,12 @@ export function useCanvasGestures({ frameRef, activeLayer }: UseCanvasGestures) 
   const canPan = !!activeLayer?.mediaUrl;
   const onPanDown = (e: React.PointerEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
-    // Let the Clear button and watermark keep their own click behavior.
-    if (target.closest("button") || target.closest(".preview-watermark")) return;
+    // Let the Clear button, watermark and native <video controls> keep their
+    // own behavior: pointer events on video controls are retargeted to the
+    // <video>, so `closest("button")` doesn't see them and the pan gesture
+    // would otherwise capture the pointer away from play/seek UI (mirrors
+    // FrameInstanceGrid's video guard).
+    if (target.closest("button") || target.closest(".preview-watermark") || target.closest("video")) return;
     if (!activeLayer?.mediaUrl) return;
     panState.current = {
       x: e.clientX,
@@ -111,6 +124,7 @@ export function useCanvasGestures({ frameRef, activeLayer }: UseCanvasGestures) 
     canPan,
     onTouchStart,
     onTouchEnd,
+    onTouchCancel,
     onPanDown,
     onPanMove,
     onPanUp

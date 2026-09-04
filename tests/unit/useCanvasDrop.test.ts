@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useCanvasDrop } from "@/lib/hooks/useCanvasDrop";
 import { useEditorStore } from "@/lib/state/editorStore";
-import { initialScene } from "@/lib/state/editorScene";
+import { buildFreshScene, initialScene } from "@/lib/state/editorScene";
 import type { EditorScene } from "@/lib/types/editor";
 
 const mockLoadFile = vi.hoisted(() => ({
@@ -57,6 +57,57 @@ describe("useCanvasDrop", () => {
       await result.current.handleFile({ target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>);
     });
     expect(result.current.fileInputKey).toBe(before + 1);
+  });
+
+  it("distributes multiple files onto empty layers in scene order", async () => {
+    mockLoadFile.loadMediaFromFile
+      .mockResolvedValueOnce({ url: "data:img0", mediaType: "image", mediaName: "a.png" })
+      .mockResolvedValueOnce({ url: "data:img1", mediaType: "image", mediaName: "b.png" });
+    const scene = buildFreshScene("iphone", 3, "horizontal");
+    scene.layers = scene.layers.map((l) => ({ ...l, mediaUrl: null, mediaType: "none" as const }));
+    useEditorStore.setState({ scene });
+    const { result } = renderDrop(scene);
+    await act(async () => {
+      await result.current.handleFile({
+        target: { files: [new File(["a"], "a.png", { type: "image/png" }), new File(["b"], "b.png", { type: "image/png" })] }
+      } as unknown as React.ChangeEvent<HTMLInputElement>);
+    });
+    await vi.waitFor(() => {
+      const layers = useEditorStore.getState().scene.layers;
+      expect(layers[0]?.mediaUrl).toBe("data:img0");
+      expect(layers[1]?.mediaUrl).toBe("data:img1");
+      expect(layers[2]?.mediaUrl).toBeNull();
+    });
+  });
+
+  it("sends files that exceed the number of empty layers onto the active layer", async () => {
+    mockLoadFile.loadMediaFromFile
+      .mockResolvedValueOnce({ url: "data:img0", mediaType: "image", mediaName: "a.png" })
+      .mockResolvedValueOnce({ url: "data:img1", mediaType: "image", mediaName: "b.png" })
+      .mockResolvedValueOnce({ url: "data:img2", mediaType: "image", mediaName: "c.png" });
+    const scene = buildFreshScene("iphone", 2, "horizontal");
+    scene.layers = scene.layers.map((l) => ({ ...l, mediaUrl: null, mediaType: "none" as const }));
+    useEditorStore.setState({ scene });
+    const { result } = renderDrop(scene);
+    await act(async () => {
+      await result.current.handleFile({
+        target: {
+          files: [
+            new File(["a"], "a.png", { type: "image/png" }),
+            new File(["b"], "b.png", { type: "image/png" }),
+            new File(["c"], "c.png", { type: "image/png" })
+          ]
+        }
+      } as unknown as React.ChangeEvent<HTMLInputElement>);
+    });
+    await vi.waitFor(() => {
+      const layers = useEditorStore.getState().scene.layers;
+      // First file fills the first empty device layer.
+      expect(layers[1]?.mediaUrl).toBe("data:img1");
+      // The surplus falls back onto the active layer (layers[0]), overwriting
+      // the first fill since there is nowhere else left in a 2-device scene.
+      expect(layers[0]?.mediaUrl).toBe("data:img2");
+    });
   });
 
   it("tracks drag depth for the drop outline", () => {

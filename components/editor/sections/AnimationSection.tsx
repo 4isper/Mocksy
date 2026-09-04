@@ -75,7 +75,7 @@ export function AnimationSection() {
       )}
     >
       <div className="field-group">
-        <p style={{ color: "var(--text-dim)", fontSize: 12, margin: 0 }}>{t("editor.animationLayerHint", { layer: layerLabel })}</p>
+        <p className="text-dim-sm" style={{ margin: 0 }}>{t("editor.animationLayerHint", { layer: layerLabel })}</p>
         <Segmented
           label={t("editor.animation")}
           value={activeLayer?.animationPreset ?? "none"}
@@ -107,8 +107,8 @@ export function AnimationSection() {
           </div>
         </label>
       </div>
-      <div className="field-group" style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 8 }}>
-        <p style={{ color: "var(--text-dim)", fontSize: 12, margin: "0 0 4px" }}>{t("editor.entranceAnimation")}</p>
+      <div className="field-group" style={{ borderTop: "1px solid var(--panel-border)", paddingTop: 12, marginTop: 8 }}>
+        <p className="text-dim-sm" style={{ margin: "0 0 4px" }}>{t("editor.entranceAnimation")}</p>
         <Segmented
           label={t("editor.entranceAnimation")}
           value={activeLayer?.entranceAnimation ?? "none"}

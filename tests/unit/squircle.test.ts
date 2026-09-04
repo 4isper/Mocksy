@@ -108,7 +108,7 @@ describe("squircle geometry", () => {
     // and the media corners stayed square.
     const scene = { ...initialScene, frameMaterial: "silver" } as EditorScene;
     const css = buildSceneCss(scene);
-    const clipId = (css.mediaStyle.clipPath as string).replace(/^url\(#(.+)\)$/, "$1");
+    const clipId = (css.mediaSlotStyle.clipPath as string).replace(/^url\(#(.+)\)$/, "$1");
     expect(clipId).toBeTruthy();
     expect(collectOverlayClipDefs(scene).map((d) => d.id)).toContain(clipId);
     // And the active material really is reflected in the id.

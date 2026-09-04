@@ -16,7 +16,7 @@
   gap: 6px;
   padding: 8px 4px 6px;
   border: 1px solid var(--panel-border);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--hover);
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;

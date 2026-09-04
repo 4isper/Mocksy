@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { LayoutPreset } from "@/lib/types/editor";
-import { buildAutoLayout, LAYOUT_PRESETS, layoutFrameGrid } from "@/lib/state/editorHelpers";
+import type { FrameInstance, LayoutPreset } from "@/lib/types/editor";
+import { buildAutoLayout, fitInstancesToCanvas, LAYOUT_PRESETS, layoutFrameGrid } from "@/lib/state/editorHelpers";
 
 describe("buildAutoLayout", () => {
   it("grid layout places frames in rows and columns", () => {
@@ -144,5 +144,81 @@ describe("layoutFrameGrid", () => {
     const instances = layoutFrameGrid("iphone", 1, "horizontal", "16 / 9");
     expect(instances.length).toBe(1);
     expect(instances[0]!.x).toBeCloseTo(0.5);
+  });
+});
+
+describe("fitInstancesToCanvas", () => {
+  const makeInst = (over: Partial<FrameInstance> = {}): FrameInstance => ({
+    id: `i-${Math.random().toString(36).slice(2)}`,
+    frame: "iphone",
+    x: 0.1,
+    y: 0.1,
+    scale: 0.05,
+    layerId: null,
+    ...over
+  });
+
+  it("returns an empty array for no instances", () => {
+    expect(fitInstancesToCanvas([], "9 / 16", null)).toEqual([]);
+  });
+
+  it("preserves identity and bindings, changing only geometry", () => {
+    const before = [makeInst({ id: "a", layerId: "l1" }), makeInst({ id: "b", frame: "ipad", layerId: "l2" })];
+    const after = fitInstancesToCanvas(before, "9 / 16", null);
+    expect(after.map((i) => i.id)).toEqual(["a", "b"]);
+    expect(after.map((i) => i.frame)).toEqual(["iphone", "ipad"]);
+    expect(after.map((i) => i.layerId)).toEqual(["l1", "l2"]);
+    expect(after[0]).not.toBe(before[0]);
+  });
+
+  it("fills the canvas height for phones on a tall aspect", () => {
+    // The reported bug: two phones laid out for 16/9 stay tiny after
+    // switching to 9/16. Refitting must spread them over the full height.
+    const before = [makeInst({ id: "a" }), makeInst({ id: "b" })];
+    const after = fitInstancesToCanvas(before, "9 / 16", null);
+    const tops = after.map((i) => i.y - (i.scale * (9 / 16) * (844 / 390)) / 2);
+    const bottoms = after.map((i) => i.y + (i.scale * (9 / 16) * (844 / 390)) / 2);
+    expect(Math.min(...tops)).toBeLessThan(0.1);
+    expect(Math.max(...bottoms)).toBeGreaterThan(0.9);
+  });
+
+  it("keeps every instance inside the canvas", () => {
+    const before = [makeInst({ id: "a" }), makeInst({ id: "b", frame: "ipad" }), makeInst({ id: "c", frame: "macbook" })];
+    for (const ratio of ["16 / 9", "1 / 1", "9 / 16"]) {
+      for (const inst of fitInstancesToCanvas(before, ratio, null)) {
+        expect(inst.x, `x ${ratio}`).toBeGreaterThanOrEqual(0);
+        expect(inst.x, `x ${ratio}`).toBeLessThanOrEqual(1);
+        expect(inst.y, `y ${ratio}`).toBeGreaterThanOrEqual(0);
+        expect(inst.y, `y ${ratio}`).toBeLessThanOrEqual(1);
+        expect(Number.isFinite(inst.scale), `scale ${ratio}`).toBe(true);
+        expect(inst.scale, `scale ${ratio}`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("handles landscape instances without overflowing", () => {
+    const before = [makeInst({ id: "a", orientation: "landscape" }), makeInst({ id: "b", orientation: "landscape" })];
+    const after = fitInstancesToCanvas(before, "9 / 16", null);
+    for (const inst of after) {
+      // Landscape width = scale * nativeAr must fit the (narrow) cell.
+      expect(inst.scale * (844 / 390)).toBeLessThanOrEqual(1.01);
+      expect(Number.isFinite(inst.scale)).toBe(true);
+    }
+  });
+
+  it("centers a single frame filling the canvas height", () => {
+    const after = fitInstancesToCanvas([makeInst({ id: "a" })], "16 / 9", null);
+    expect(after[0]!.x).toBeCloseTo(0.5);
+    expect(after[0]!.y).toBeCloseTo(0.5);
+    // Portrait phone on 16/9: the width-fraction scale looks small, but the
+    // height coverage is what matters.
+    const heightFrac = after[0]!.scale * (16 / 9) * (844 / 390);
+    expect(heightFrac).toBeGreaterThan(0.9);
+  });
+
+  it("treats a malformed aspect ratio as the default 16/9", () => {
+    const after = fitInstancesToCanvas([makeInst({ id: "a" })], "16", null);
+    expect(Number.isFinite(after[0]!.scale)).toBe(true);
+    expect(after[0]!.x).toBeCloseTo(0.5);
   });
 });

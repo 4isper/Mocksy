@@ -28,6 +28,9 @@
   gap: 4px;
   align-items: center;
   width: 100%;
+  /* Layout/align icon rows must wrap on narrow panels instead of forcing
+     the whole control panel wider (only used by ArrangeSection). */
+  flex-wrap: wrap;
 }
 
 .field-compact {
@@ -43,6 +46,17 @@
   padding: 6px 10px;
 }
 
+/* Stretch to the full row width (single action rows in panels). */
+.btn-block {
+  width: 100%;
+}
+
+/* Equal-share row member (paired actions like New / Import). */
+.btn-flex {
+  flex: 1;
+  min-width: 0;
+}
+
 .panel-grid {
   display: grid;
   gap: 8px;
@@ -54,16 +68,51 @@
   gap: 6px;
 }
 
+.template-save-row input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.template-save-row input[type="text"]:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.template-save-row input[type="text"]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .template-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
   gap: 6px;
+  /* Long unbroken custom names must not force the grid track (and the whole
+     panel) wider: every level below yields. */
+  min-width: 0;
 }
 
 .template-item {
   position: relative;
+  min-width: 0;
+}
+
+.template-item .template-card {
+  width: 100%;
+  min-width: 0;
+  /* Clear the absolute delete button overlaying the card's top-right. */
+  padding-right: 34px;
 }
 
 .template-delete-btn {
@@ -84,7 +133,7 @@
   gap: 6px;
   padding: 8px;
   border: 1px solid var(--panel-border);
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
 }
 
 .nudge-pad {
@@ -136,6 +185,13 @@
   text-align: center;
   pointer-events: none;
   z-index: 2;
+  /* Pill backdrop so the hint stays legible over any canvas content. */
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 /* Screen-reader-only: visually hidden but available to assistive technology. */

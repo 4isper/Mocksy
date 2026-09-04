@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
-import { ErrorBoundary } from "@/components/editor/ErrorBoundary";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { ErrorBoundary, LocalizedErrorBoundary } from "@/components/editor/ErrorBoundary";
 
 afterEach(cleanup);
 
@@ -27,5 +27,40 @@ describe("ErrorBoundary", () => {
     const Bomb = () => { throw new Error("💥"); };
     render(<ErrorBoundary><Bomb /></ErrorBoundary>);
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+  });
+
+  it("recovers and re-renders children after clicking retry", () => {
+    let shouldThrow = true;
+    const Bomb = () => {
+      if (shouldThrow) throw new Error("boom");
+      return <span>recovered</span>;
+    };
+    render(<ErrorBoundary><Bomb /></ErrorBoundary>);
+    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+    shouldThrow = false;
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(screen.getByText("recovered")).toBeInTheDocument();
+  });
+
+  it("renders a custom message and retry label", () => {
+    const Bomb = () => { throw new Error("x"); };
+    render(<ErrorBoundary message="Custom msg" retryLabel="Try again"><Bomb /></ErrorBoundary>);
+    expect(screen.getByText("Custom msg")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+  });
+
+  it("logs the caught error with its component stack", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const Bomb = () => { throw new Error("logged"); };
+    render(<ErrorBoundary><Bomb /></ErrorBoundary>);
+    expect(spy).toHaveBeenCalledWith("[ErrorBoundary]", expect.any(Error), expect.any(String));
+    spy.mockRestore();
+  });
+
+  it("passes translated strings down via LocalizedErrorBoundary", () => {
+    const Bomb = () => { throw new Error("x"); };
+    render(<LocalizedErrorBoundary><Bomb /></LocalizedErrorBoundary>);
+    expect(screen.getByText("message")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "tryAgain" })).toBeInTheDocument();
   });
 });

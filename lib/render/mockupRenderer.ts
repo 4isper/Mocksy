@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import type { EditorScene } from "@/lib/types/editor";
 import { frameViewBox, frameOs, getFrameSpec, type FrameSpec } from "@/lib/render/frames";
 import { parseAspectRatioOr } from "@/lib/render/aspectRatio";
-import { buildLayerFilterCss, LAYER_FILTER_DEFAULTS } from "@/lib/render/layerFilters";
+import { buildLayerFilterCss, LAYER_FILTER_DEFAULTS, LAYER_ZOOM } from "@/lib/render/layerFilters";
 import { resolveFrameStyle } from "@/lib/render/canvasDrawing";
 import { screenChromeSvg } from "@/lib/render/screenChrome";
 import { browserChromeSvg, isBrowserFrameSpec } from "@/lib/render/browserChrome";
@@ -25,7 +25,12 @@ export interface SceneCss {
   overlayStyle: CSSProperties;
   /** Corner radius (px) for the media inside the frame. */
   screenRadius: number;
-  /** Style for the media (image/video) element, inset to the frame's screen area. */
+  /** Fixed (untransformed) clipping frame exactly over the screen area. The
+   *  media element — which carries rotate/scale transforms — lives inside it,
+   *  so zoom/rotation can't spill over the bezel. Mirrors the canvas/SVG
+   *  exporters, which clip the transformed media at draw time. */
+  mediaSlotStyle: CSSProperties;
+  /** Style for the media (image/video) element, filling the media slot. */
   mediaStyle: CSSProperties;
   /** Style for the empty-media placeholder when no media is loaded. */
   emptyMediaStyle: CSSProperties;
@@ -109,11 +114,10 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
     // opacity is driven by the Shadow control.
     boxShadow: spec.isOverlay ? "none" : baseShadow,
     filter: spec.isOverlay ? `drop-shadow(0 28px 70px rgba(0,0,0,${scene.shadowOpacity}))` : "none",
-    // Zoom/animation is applied to this frame container in PreviewCanvas (which
-    // also drives zoomIn/zoomOut/parallax) so the live preview matches the
-    // video export, where the whole frame scales by the transform. The hook
-    // overwrites `transform`; we keep `transformOrigin` centered so the
-    // device + media scale together from the middle.
+    // ANIMATION presets are applied to this frame container in PreviewCanvas
+    // (zoomIn/zoomOut/parallax — the whole frame scales, matching the video
+    // export); the hook overwrites `transform`. The static media zoom lives
+    // on the media element (mediaStyle below), NOT here.
     transform: "none",
     transformOrigin: "center",
     backdropFilter: !spec.isOverlay && scene.stylePreset.startsWith("glass") ? "blur(10px)" : "none",
@@ -136,6 +140,23 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
   const activeLayerForCss = scene.layers.find((l) => l.id === activeLayerId) ?? scene.layers[0];
   const mediaPosX = 50 + (activeLayerForCss?.mediaOffsetX ?? 0) * 50;
   const mediaPosY = 50 + (activeLayerForCss?.mediaOffsetY ?? 0) * 50;
+  // Media zoom scales the media INSIDE the screen (device/bezel stay put),
+  // composed with the media rotation about the screen center. Kept off the
+  // style when neutral so the CSS stays clean.
+  const layerZoom = Math.max(LAYER_ZOOM.min, Math.min(LAYER_ZOOM.max, activeLayerForCss?.zoom ?? 1));
+  // Transform chain R·T·S (rotate → translate → scale): the layout pan lives
+  // in object-position (pre-zoom), and this translate adds the post-zoom pan
+  // headroom — offset × (zoom − 1) × 50% of the box. Without it a fitted axis
+  // (e.g. a landscape photo's height on a portrait screen) could never pan
+  // even when zoomed in. The combined pan never exceeds the cover bounds, so
+  // no background gaps can appear.
+  const mediaTransformParts: string[] = [];
+  if (activeLayerForCss?.rotation) mediaTransformParts.push(`rotate(${activeLayerForCss.rotation}deg)`);
+  if (layerZoom !== 1 && (activeLayerForCss?.mediaOffsetX || activeLayerForCss?.mediaOffsetY)) {
+    mediaTransformParts.push(`translate(${activeLayerForCss!.mediaOffsetX! * (layerZoom - 1) * 50}%, ${activeLayerForCss!.mediaOffsetY! * (layerZoom - 1) * 50}%)`);
+  }
+  if (layerZoom !== 1) mediaTransformParts.push(`scale(${layerZoom})`);
+  const mediaTransform = mediaTransformParts.length > 0 ? mediaTransformParts.join(" ") : undefined;
   // Layer opacity fades the media only; bezel/chrome/glare stay at full
   // strength. Kept off the style when neutral so the CSS stays clean.
   const mediaOpacity =
@@ -143,34 +164,41 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
       ? Math.max(0, Math.min(1, activeLayerForCss.opacity / LAYER_FILTER_DEFAULTS.opacity))
       : undefined;
   const vb = frameViewBox(spec);
-  const mediaStyle: CSSProperties = spec.isOverlay && spec.cutout
+  // The media slot is a FIXED (untransformed) clipping frame over the screen
+  // area. The media element inside carries rotate/scale transforms; because
+  // the slot never transforms, its overflow clip stays pinned to the screen —
+  // the CSS counterpart of the canvas exporters' clipScreen()/SVG clip group.
+  const mediaSlotStyle: CSSProperties = spec.isOverlay && spec.cutout
     ? {
         position: "absolute",
         left: `${(spec.cutout.x / vb.w) * 100}%`,
         top: `${(spec.cutout.y / vb.h) * 100}%`,
         width: `${(spec.cutout.w / vb.w) * 100}%`,
         height: `${(spec.cutout.h / vb.h) * 100}%`,
-        objectFit: activeLayerForCss?.mediaFit ?? "cover",
-        objectPosition: `${mediaPosX}% ${mediaPosY}%`,
-        transform: activeLayerForCss?.rotation ? `rotate(${activeLayerForCss.rotation}deg)` : undefined,
-        transformOrigin: "center",
         ...overlayClipCss(spec),
-        background: "#0a0a0a",
-        filter: buildLayerFilterCss(activeLayerForCss),
-        opacity: mediaOpacity
+        overflow: "hidden",
+        background: "#0a0a0a"
       }
     : {
-        width: "100%",
-        height: "100%",
-        objectFit: activeLayerForCss?.mediaFit ?? "cover",
-        objectPosition: `${mediaPosX}% ${mediaPosY}%`,
-        transform: activeLayerForCss?.rotation ? `rotate(${activeLayerForCss.rotation}deg)` : undefined,
-        transformOrigin: "center",
+        position: "absolute",
+        inset: framePadding,
         borderRadius: spec.screenRadius,
-        background: "#0a0a0a",
-        filter: buildLayerFilterCss(activeLayerForCss),
-        opacity: mediaOpacity
+        overflow: "hidden",
+        background: "#0a0a0a"
       };
+  // The media fills the slot; the slot (not the media) is clipped, so the
+  // transform's overflow lands on the slot's overflow:hidden boundary.
+  const mediaStyle: CSSProperties = {
+    width: "100%",
+    height: "100%",
+    objectFit: activeLayerForCss?.mediaFit ?? "cover",
+    objectPosition: `${mediaPosX}% ${mediaPosY}%`,
+    transform: mediaTransform,
+    transformOrigin: "center",
+    background: "#0a0a0a",
+    filter: buildLayerFilterCss(activeLayerForCss),
+    opacity: mediaOpacity
+  };
 
   const emptyMediaStyle: CSSProperties = spec.isOverlay && spec.cutout
     ? {
@@ -210,7 +238,14 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
   // box, so stretch the fixed viewBox onto it ("none") to mirror it precisely.
   const chromePar = spec.isOverlay && spec.cutout ? "xMidYMid meet" : "none";
   const screenChrome = scene.screen.enabled
-    ? screenChromeSvg({ ...scene.screen, os: frameOs(scene.frame) }, chromeW, chromeH, `screen-chrome-${String(scene.frame).replace(/[^a-z0-9]/gi, "")}`, chromePar)
+    ? screenChromeSvg(
+        { ...scene.screen, os: scene.screen.os ?? frameOs(scene.frame) },
+        chromeW,
+        chromeH,
+        `screen-chrome-${String(scene.frame).replace(/[^a-z0-9]/gi, "")}`,
+        chromePar,
+        scene.frame
+      )
     : null;
 
   // Text layers render instead of media, stretched over the same screen box.
@@ -292,6 +327,7 @@ export function buildSceneCss(scene: EditorScene, activeLayerId: string | null =
     frameOverlay: spec.isOverlay ? spec.asset : null,
     overlayStyle,
     screenRadius: spec.screenRadius,
+    mediaSlotStyle,
     mediaStyle,
     emptyMediaStyle,
     textSvg,

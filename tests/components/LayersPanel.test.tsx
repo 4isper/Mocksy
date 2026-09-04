@@ -444,4 +444,29 @@ describe("LayersPanel", () => {
     render(<LayersPanel />);
     expect(screen.getByRole("button", { name: /editor.removeLayer/i })).toBeDisabled();
   });
+
+  it("reorders layers by dragging the grip with a touch pointer", () => {
+    // HTML5 dragstart never fires on touch; the grip's pointer path must
+    // reorder the list instead.
+    useEditorStore.setState({
+      scene: {
+        ...useEditorStore.getState().scene,
+        layers: [makeLayer("a", { mediaName: "A" }), makeLayer("b", { mediaName: "B" })],
+        activeLayerId: "a",
+      },
+      activeLayerId: "a"
+    });
+    vi.spyOn(HTMLElement.prototype, "setPointerCapture").mockImplementation(() => {});
+    vi.spyOn(HTMLElement.prototype, "releasePointerCapture").mockImplementation(() => {});
+    vi.spyOn(HTMLElement.prototype, "hasPointerCapture").mockReturnValue(true);
+    render(<LayersPanel />);
+    const grip = document.querySelector('[data-reorder-id="a"] .layer-grip') as HTMLElement;
+    fireEvent.pointerDown(grip, { pointerType: "touch", pointerId: 1, clientX: 10, clientY: 10 });
+    // The finger hovers over row B's lower half (zero-height rects in
+    // happy-dom put any positive Y below the midpoint → "below").
+    vi.spyOn(document, "elementFromPoint").mockReturnValue(document.querySelector('[data-reorder-id="b"]'));
+    fireEvent.pointerMove(grip, { pointerType: "touch", pointerId: 1, clientX: 10, clientY: 30 });
+    fireEvent.pointerUp(grip, { pointerType: "touch", pointerId: 1, clientX: 10, clientY: 30 });
+    expect(useEditorStore.getState().scene.layers.map((l) => l.id)).toEqual(["b", "a"]);
+  });
 });

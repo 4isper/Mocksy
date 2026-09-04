@@ -1,11 +1,10 @@
 /* ---- Preview overlay chips ---- */
 .preview-chip {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;  z-index: 4;
   padding: 5px 11px;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--panel-border);
   background: var(--panel);
   backdrop-filter: blur(8px);
@@ -22,50 +21,141 @@
   border-color: var(--accent);
 }
 
-/* Stacked corner chips: keep overlay controls in one corner instead of
-   scattering them across the canvas where they'd cover the media. */
-.preview-chip-stack {
-  position: absolute;
-  z-index: 4;
+/* Body column inside the preview panel (stage + dock): the query container
+   for the dock bar's responsive rules. Inline-size containment only, so the
+   column height still follows flex layout and shrink-wrapped content (the
+   dock's fit-content) can never blow the panel wider than its grid track. */
+.preview-body {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  align-items: flex-start;
-  pointer-events: none;
+  container-type: inline-size;
 }
 
-.preview-chip-stack > .preview-chip {
-  position: static;
-  /* The stack disables pointer events so it never blocks the canvas; re-enable
-     them on the chips themselves so upload/grid controls stay clickable. */
-  pointer-events: auto;
+/* Docked control bar: one stable row (Upload/Clear | zoom | grid) pinned to
+   the preview panel bottom instead of scattered canvas corners — it never
+   covers the artwork, never collides on narrow canvases, and never shifts
+   with the scene aspect ratio. Shrink-wraps and centers; scrolls sideways
+   on very narrow panels instead of clipping. */
+.preview-dock-bar {
+  flex: none;
+  width: fit-content;
+  max-width: 100%;
+  margin: 8px auto 0;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.preview-dock-bar .dock-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.preview-dock-bar .dock-sep {
+  width: 1px;
+  align-self: stretch;
+  min-height: 20px;
+  background: var(--panel-border);
+  flex: none;
+}
+
+/* The zoom bar drops its own pill chrome inside the dock — one bar, not
+   a pill inside a pill. */
+.preview-dock-bar .preview-zoom-bar {
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 0;
+}
+
+/* Compact dock: Upload/Clear collapse to icons and the slider shrinks, so
+   zoom %, Fit and Grid stay reachable without scrolling a bar that shows no
+   scroll affordance. Keyed off the PANEL width (container query), not the
+   viewport: a 740px landscape phone or a slim desktop column has a narrow
+   panel at a wide viewport, and viewport queries miss it. The panel is
+   already a size container (see PreviewCanvas). Specificity beats the
+   touch-device slider width in responsive.css regardless of order. */
+@container (max-width: 720px) {
+  .preview-dock-bar {
+    gap: 6px;
+    padding: 5px 8px;
+  }
+  .preview-dock-bar .dock-group,
+  .preview-dock-bar .preview-zoom-bar {
+    gap: 4px;
+  }
+  .preview-dock-bar .chip-label {
+    display: none;
+  }
+  .preview-dock-bar .preview-chip {
+    padding: 5px 8px;
+  }
+  .preview-dock-bar .preview-zoom-slider {
+    width: 76px;
+  }
+  /* The slider snaps to 100% and Fit resets the whole view, so the exact-%
+     reset button is redundant here — hiding it (with its divider) keeps Fit
+     and Grid reachable without scrolling. */
+  .preview-dock-bar .preview-zoom-value,
+  .preview-dock-bar .preview-zoom-bar > .dock-sep {
+    display: none;
+  }
+}
+
+/* Ultra-narrow panels (<=330px, e.g. iPhone SE): the compact bar still
+   overflows, so the −/+ steppers go too — the snapping slider covers
+   precise jumps on its own. */
+@container (max-width: 330px) {
+  .preview-dock-bar {
+    gap: 4px;
+    padding: 5px 6px;
+  }
+  .preview-dock-bar .preview-zoom-btn {
+    display: none;
+  }
+  .preview-dock-bar .preview-zoom-slider {
+    width: 60px;
+  }
 }
 
 /* ---- View zoom bar (- slider + % Fit) ---- */
 .preview-zoom-bar {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 3px 6px;
-  border-radius: 9px;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--panel-border);
   background: var(--panel);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  /* The chip stack disables pointer events (and the property inherits), so
-     re-enable them here for the whole bar - otherwise -/+/slider stay dead. */
-  pointer-events: auto;
 }
 
 .preview-zoom-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  /* WCAG 2.2 target-size-minimum: keep the clickable box at 24px so the
+     Lighthouse target-size audit passes (do not shrink below this). */
+  flex: none;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   background: transparent;
   color: var(--text);
   cursor: pointer;
@@ -76,7 +166,7 @@
 }
 
 .preview-zoom-slider {
-  width: 84px;
+  width: 120px;
   height: 22px;
   margin: 0 4px;
   accent-color: var(--accent);
@@ -92,7 +182,7 @@
 }
 
 .preview-zoom-value {
-  min-width: 46px;
+  min-width: 54px;
   text-align: center;
   padding: 5px 6px;
 }
@@ -122,7 +212,7 @@
   width: auto;
   padding: 4px;
   border: 1px solid var(--panel-border);
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   background: var(--panel-solid);
 }
 
@@ -133,7 +223,7 @@
   right: 12px;
   z-index: 4;
   padding: 9px 13px;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   background: var(--danger-bg);
   color: var(--text);
   font-size: 13px;
@@ -163,16 +253,20 @@
   border-radius: 50%;
   border: 3px solid var(--range-track);
   border-top-color: var(--accent);
-  animation: spin 0.7s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
 /* ---- Export progress (video) ---- */
+/* Lives inside .toolbar-status: bounded flex item that shrinks first and
+   never pushes the toolbar action groups. */
 .export-status {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
-  min-width: 160px;
+  flex: 0 1 260px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .export-status .label {
@@ -248,7 +342,7 @@
   font-size: 12.5px;
   font-weight: 600;
   padding: 8px 12px;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--accent);
   background: var(--accent-soft);
   color: var(--accent);
@@ -261,7 +355,7 @@
 }
 
 .auto-bg-btn:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
   cursor: not-allowed;
   border-color: var(--panel-border);
   background: var(--field-bg);
@@ -291,7 +385,7 @@
   appearance: none;
   aspect-ratio: 1;
   width: 100%;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--panel-border);
   cursor: pointer;
   background-position: center;
@@ -322,46 +416,39 @@
   border-top: 1px solid var(--panel-border);
 }
 
-/* ---- Dual-range trim (video) ---- */
-.trim-range {
-  position: absolute;
-  left: 0;
-  right: 0;
-  width: 100%;
+/* ---- Dual-thumb trim (video) ---- */
+/* The track owns the pointer gestures (nearest-thumb wins in JS), so the
+   browser must not steal them for scrolling. */
+.trim-track {
+  position: relative;
   height: 28px;
+  display: grid;
+  align-items: center;
+  touch-action: none;
+}
+
+.trim-thumb {
+  appearance: none;
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
   margin: 0;
-  background: transparent;
-  pointer-events: none;
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.trim-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  pointer-events: auto;
-  width: 14px;
-  height: 14px;
+  padding: 0;
+  border: 2px solid var(--bg);
   border-radius: 50%;
   background: var(--accent);
-  border: 2px solid var(--bg);
-  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, -50%);
+  cursor: grab;
 }
-
-.trim-range::-moz-range-thumb {
-  pointer-events: auto;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--accent);
-  border: 2px solid var(--bg);
-  cursor: pointer;
+.trim-thumb:hover {
+  transform: translate(-50%, -50%) scale(1.15);
 }
-
-.trim-range::-webkit-slider-runnable-track {
-  background: transparent;
+.trim-thumb:active {
+  cursor: grabbing;
 }
-
-.trim-range::-moz-range-track {
-  background: transparent;
+.trim-thumb:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

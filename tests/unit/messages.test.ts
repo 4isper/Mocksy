@@ -144,6 +144,32 @@ describe("en.json is the complete message tree", () => {
     check(en);
     expect(bad, bad.join("\n")).toEqual([]);
   });
+
+  it("sectionKeywords covers every control-panel section and carries real aliases", () => {
+    const sectionIds = ["media", "text", "frame", "arrange", "animation", "position", "filters", "background", "watermark", "screen"];
+    const keywords = getByPath(en, "editor.sectionKeywords") as Record<string, string>;
+    expect(Object.keys(keywords).sort()).toEqual([...sectionIds].sort());
+    // Representative alias words per section (English + the Russian tree).
+    const aliases: [string, string][] = [
+      ["media", "upload"],
+      ["text", "font"],
+      ["frame", "material"],
+      ["arrange", "align"],
+      ["animation", "easing"],
+      ["position", "shadow"],
+      ["filters", "blur"],
+      ["background", "gradient"],
+      ["watermark", "watermark"],
+      ["screen", "app grid, folder, widget, dock icons, notification, glare"]
+    ];
+    const ruKeywords = getByPath(readMessages("ru"), "editor.sectionKeywords") as Record<string, string>;
+    for (const [id, word] of aliases) {
+      for (const w of word.split(",").map((s) => s.trim()).filter(Boolean)) {
+        expect(keywords[id]!.toLowerCase(), `en alias "${w}" missing from sectionKeywords.${id}`).toContain(w);
+      }
+      expect(ruKeywords[id]!.length).toBeGreaterThan(0);
+    }
+  });
 });
 
 describe("locale files stay consistent with en.json", () => {

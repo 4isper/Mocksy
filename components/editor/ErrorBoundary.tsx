@@ -31,25 +31,9 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         this.props.fallback ?? (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              height: "100%",
-              color: "var(--text-secondary)",
-              fontSize: 13,
-              padding: 24,
-              textAlign: "center"
-            }}
-          >
-            <span>{this.props.message ?? "Something went wrong"}</span>
-            <button
-              className="btn"
-              onClick={() => this.setState({ hasError: false, error: null })}
-            >
+          <div className="empty-state" style={{ height: "100%" }}>
+            <span className="empty-state-text">{this.props.message ?? "Something went wrong"}</span>
+            <button type="button" className="btn btn-sm empty-state-action" onClick={() => this.setState({ hasError: false, error: null })}>
               {this.props.retryLabel ?? "Retry"}
             </button>
           </div>

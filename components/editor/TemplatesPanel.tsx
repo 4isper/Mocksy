@@ -92,7 +92,6 @@ export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Pro
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSave();
           }}
-          style={{ flex: 1, minWidth: 0, fontSize: 12, padding: "6px 8px" }}
         />
         <button
           type="button"
@@ -100,13 +99,12 @@ export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Pro
           onClick={handleSave}
           disabled={!hydrated}
           title={t("templates.saveTitle")}
-          style={{ whiteSpace: "nowrap" }}
         >
           {t("templates.save")}
         </button>
       </div>
       {limitHit ? (
-        <span role="alert" style={{ color: "var(--danger)", fontSize: 12 }}>
+        <span role="alert" className="field-error">
           {t("templates.limitReached", { max: MAX_USER_TEMPLATES })}
         </span>
       ) : null}
@@ -168,7 +166,7 @@ export function TemplatesPanel({ onShareTemplate }: { onShareTemplate: () => Pro
                   style={{
                     width: 28,
                     height: 28,
-                    borderRadius: 6,
+                    borderRadius: "var(--radius-xs)",
                     flex: "0 0 auto",
                     background: tpl.scenePatch.backgroundMode === "gradient" && tpl.scenePatch.gradientFrom && tpl.scenePatch.gradientTo
                       ? `linear-gradient(135deg, ${tpl.scenePatch.gradientFrom}, ${tpl.scenePatch.gradientTo})`

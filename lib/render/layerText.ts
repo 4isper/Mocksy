@@ -103,14 +103,19 @@ export function drawTextLayer(
   innerH: number
 ): void {
   const content = (layer.textContent ?? "").trim();
-  if (!isTextLayer(layer) || !content) return;  const vbH = VB_W / Math.max(innerW / Math.max(innerH, Number.EPSILON), Number.EPSILON);
+  if (!isTextLayer(layer) || !content) return;
+  const vbH = VB_W / Math.max(innerW / Math.max(innerH, Number.EPSILON), Number.EPSILON);
   const k = screenScale(innerW);
   const L = layoutTextLayer(layer, vbH);
   const align = layer.textAlign ?? "center";
-  const x = innerX + L.anchorX[L.anchorByAlign[align] ?? "middle"] * k;
+  const anchor = L.anchorByAlign[align] ?? "middle";
+  const x = innerX + L.anchorX[anchor] * k;
   ctx.save();
   ctx.fillStyle = L.fill;
-  ctx.textAlign = (L.anchorByAlign[align] ?? "middle") as CanvasTextAlign;
+  // CanvasTextAlign has no "middle" — CSS/SVG alignment name must be mapped to
+  // the canvas equivalent ("center") or the assignment is silently dropped and
+  // text renders from the anchor instead of being centered on it.
+  ctx.textAlign = anchor === "middle" ? "center" : anchor;
   ctx.textBaseline = "alphabetic";
   ctx.font = `${L.weight} ${L.fontSize * k}px ${L.fontFamily}`;
   L.lines.forEach((line, i) => {

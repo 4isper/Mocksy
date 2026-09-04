@@ -100,7 +100,7 @@ export function AnnotationsPanel() {
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 3l7 7M10 10l7 7M17 17l-7-7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.3" /></svg>
           </div>
           <p className="empty-state-text">{t("editor.noAnnotations")}</p>
-          <p className="empty-state-text" style={{ fontSize: 11, color: "var(--text-dim)" }}>{t("annotation.addCallouts")}</p>
+          <p className="empty-state-text">{t("annotation.addCallouts")}</p>
         </div>
       ) : (
         <div className="field-group">

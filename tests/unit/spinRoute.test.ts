@@ -47,6 +47,41 @@ describe("POST /api/spin", () => {
     expect(res.status).toBe(400);
   });
 
+  it("rejects a non-numeric seed instead of coercing it", async () => {
+    const res = await POST(new Request("http://localhost/api/spin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ seed: "banana" })
+    }));
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects a request whose body exceeds the byte budget", async () => {
+    // Content-Length above MAX_BODY_BYTES is rejected before parsing; the
+    // oversized media payload (40MB base64) also crosses the line while
+    // streaming, exercising both guards.
+    const res = await POST(new Request("http://localhost/api/spin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ media: `data:image/png;base64,${"A".repeat(40 * 1024 * 1024)}`, seed: 1 })
+    }));
+    expect(res.status).toBe(413);
+  });
+
+  it("rejects an oversized Content-Length without reading the body", async () => {
+    const res = await POST(new Request("http://localhost/api/spin", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // Undersized body, inflated Content-Length: only the header guard can
+        // catch this without buffering anything.
+        "Content-Length": String(50 * 1024 * 1024)
+      },
+      body: JSON.stringify({ seed: 1 })
+    }));
+    expect(res.status).toBe(413);
+  });
+
   it("rejects a null body", async () => {
     const res = await POST(new Request("http://localhost/api/spin", {
       method: "POST",

@@ -2,12 +2,12 @@
 .command-palette-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay);
   display: grid;
   place-items: flex-start center;
-  z-index: 60;
+  z-index: var(--z-command);
   padding: 80px 16px 16px;
-  animation: backdropFadeIn 0.15s ease;
+  animation: backdropFadeIn 0.2s ease;
 }
 
 .command-palette {
@@ -18,7 +18,7 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow-pop);
   overflow: hidden;
-  animation: modalSlideIn 0.2s ease;
+  animation: modalSlideIn 0.25s ease;
 }
 
 .command-palette-header {
@@ -42,7 +42,7 @@
   color: var(--text-dim);
   background: var(--field-bg);
   border: 1px solid var(--panel-border);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
 }
 
 .command-palette-input {
@@ -80,7 +80,7 @@
   width: 100%;
   padding: 8px 10px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   background: transparent;
   color: var(--text);
   font: inherit;

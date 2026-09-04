@@ -1,9 +1,180 @@
 /* ---- Form fields ---- */
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-faint);
+}
+
 .field {
   display: grid;
   gap: 7px;
   min-width: 0;
   font-size: 13px;
+}
+
+/* ---- Shared compact color swatch input ---- */
+.color-input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 32px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-xs);
+  background: var(--field-bg);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Neutralize the native swatch chrome so the swatch reads as a field chip
+   consistent with the other inputs. */
+.color-input::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.color-input::-webkit-color-swatch {
+  border: none;
+  border-radius: calc(var(--radius-xs) - 2px);
+}
+
+.color-input::-moz-color-swatch {
+  border: none;
+  border-radius: calc(var(--radius-xs) - 2px);
+}
+
+.color-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Row layout for "label + color swatch (+ action)" pairs. */
+.color-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+/* Plain checkbox/radio with an inline text label. */
+.check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* Muted helper paragraph above editor rows. */
+.field-hint {
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ---- Custom notification cards editor ---- */
+.screen-notifications {
+  display: grid;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.screen-notifications .field-hint {
+  margin: 0;
+}
+
+.screen-notification-row {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  grid-auto-rows: auto;
+  gap: 4px 8px;
+  align-items: center;
+  padding: 6px;
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-sm);
+  background: var(--field-bg);
+}
+
+.screen-notification-row input[type="color"] {
+  grid-row: 1 / span 2;
+}
+
+.screen-notification-row input[type="text"] {
+  width: 100%;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  outline: none;
+}
+
+.screen-notification-row input[type="text"]:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.dock-icons-editor {
+  display: grid;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.dock-icons-editor .field-hint {
+  margin: 0;
+}
+
+.dock-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.grid-preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.grid-dims-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.preset-chip {
+  appearance: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--panel-border-strong);
+  background: var(--field-bg);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.preset-chip:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: var(--accent);
+}
+
+.preset-chip[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.preset-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .field > span,
@@ -13,10 +184,23 @@
   font-weight: 600;
 }
 
+/* Group scope label that separates a cluster of fields from the previous one. */
+.scope-label {
+  border-top: 1px solid var(--panel-border);
+  padding-top: 14px;
+}
+
+.field-group > .scope-label:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
 .field select,
 .field input[type="text"],
+.field input[type="url"],
 .field input:not([type]),
-.field input[type="number"] {
+.field input[type="number"],
+.field textarea {
   width: 100%;
   font: inherit;
   font-size: 13px;
@@ -26,6 +210,17 @@
   border-radius: var(--radius-sm);
   padding: 8px 11px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field input,
+.field select {
+  color: var(--text);
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 56px;
+  line-height: 1.45;
 }
 
 .field select:focus,
@@ -63,6 +258,63 @@
   color: var(--text);
 }
 
+/* ---- Control panel section filter ---- */
+.control-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.control-search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
+.control-search input {
+  width: 100%;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-sm);
+  padding: 7px 26px 7px 28px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.control-search input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.control-search-clear {
+  position: absolute;
+  right: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--text-dim);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.control-search-clear:hover {
+  color: var(--text);
+}
+
+.control-search-empty {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
 /* File picker: hide the native input and surface a styled label trigger that
    matches the .btn system instead of the browser-default "Choose file" button. */
 .field input[type="file"] {
@@ -89,16 +341,16 @@
   padding: 9px 15px;
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
-  color: #04141a;
+  color: var(--accent-contrast);
   background: linear-gradient(180deg, var(--accent), var(--accent-press));
-  box-shadow: 0 4px 16px rgba(0, 217, 255, 0.3);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 30%, transparent);
   cursor: pointer;
   transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
 }
 
 .file-trigger:hover {
-  background: linear-gradient(180deg, #2ee3ff, var(--accent));
-  box-shadow: 0 6px 20px rgba(0, 217, 255, 0.4);
+  background: linear-gradient(180deg, var(--accent-hover), var(--accent));
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .file-trigger:active {
@@ -133,8 +385,18 @@
   cursor: pointer;
 }
 
-/* ---- Custom range slider ---- */
-.range {
+/* Inline field/alert error message. */
+.field-error {
+  color: var(--danger);
+  font-size: 13px;
+}
+
+/* ---- Custom range slider ----
+   Themed look is the DEFAULT for every bare input[type="range"]; the
+   explicit `.range` class is kept for the few callers that need the taller
+   track. The video trim control is a custom dual-thumb widget (`.trim-track`),
+   not a range input. */
+input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
@@ -145,7 +407,7 @@
   cursor: pointer;
 }
 
-.range::-webkit-slider-thumb {
+input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 16px;
@@ -153,25 +415,25 @@
   border-radius: 50%;
   background: var(--accent);
   border: 2px solid var(--bg);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   transition: transform 0.1s ease;
 }
 
-.range::-webkit-slider-thumb:hover {
+input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.15);
 }
 
-.range::-moz-range-thumb {
+input[type="range"]::-moz-range-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
   background: var(--accent);
   border: 2px solid var(--bg);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   cursor: pointer;
 }
 
-.range:focus-visible {
+input[type="range"]:focus-visible {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
@@ -190,7 +452,7 @@
   font-size: 12.5px;
   font-weight: 500;
   padding: 7px 10px;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--panel-border);
   background: var(--field-bg);
   color: var(--text-dim);
@@ -238,7 +500,7 @@
   width: 38px;
   height: 22px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--range-track);
   position: relative;
   transition: background 0.18s ease;
   flex: none;
@@ -253,6 +515,7 @@
   height: 16px;
   border-radius: 50%;
   background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.18s ease;
 }
 
@@ -315,7 +578,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--text-dim);
 }
 
 .video-options .upload-audio-btn {

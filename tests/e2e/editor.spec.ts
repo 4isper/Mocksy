@@ -96,7 +96,9 @@ function previewMedia(page: import("@playwright/test").Page) {
 
 test("shows editor shell", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("Scene presets")).toBeVisible();
+  // The tab's visual label hides in compact icon mode (narrow panel); assert
+  // on the tab role with its stable accessible name instead of the text.
+  await expect(page.getByRole("tab", { name: "Scene presets" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Export PNG \/ MP4/ })).toBeVisible();
 });
 
@@ -211,7 +213,9 @@ test("uploading media reveals a Clear button that resets it", async ({ page }) =
     )
   });
   await expect(previewMedia(page)).toBeVisible();
-  const clear = page.locator("#preview-canvas").getByRole("button", { name: "Clear media" });
+  // The Clear chip lives in the dock bar, a sibling of #preview-canvas (so
+  // canvas screenshots/exports stay chrome-free) — scope to that toolbar.
+  const clear = page.getByRole("toolbar", { name: "Canvas controls" }).getByRole("button", { name: "Clear media" });
   await expect(clear).toBeVisible();
   await clear.click();
   // The active layer's media is gone; the grid's other frame keeps its demo.
@@ -309,8 +313,13 @@ test("watch frame renders with a squircle screen", async ({ page }) => {
   await selectFrame(page, "Watch");
   await expect.poll(() => frameIsActive(page, "Watch")).toBe("true");
   // The watch bezel is a squircle applied via an SVG clip-path (not a CSS
-  // 50% border-radius), shared between preview and canvas export.
-  const clip = await page.locator("[data-mockup-frame] img").first().evaluate((el) => getComputedStyle(el).clipPath);
+  // 50% border-radius), shared between preview and canvas export. Since the
+  // zoom rework the clip lives on the media-slot wrapper (the untransformed
+  // clipping frame), not on the media element itself.
+  const clip = await page
+    .locator("[data-mockup-frame] img")
+    .first()
+    .evaluate((el) => getComputedStyle(el.parentElement!).clipPath);
   expect(clip).toContain("sq");
 });
 
@@ -344,14 +353,15 @@ test("opens with demo media when nothing is saved", async ({ page, context }) =>
   await expect(previewMedia(page)).toBeVisible();
 });
 
-test("Reset restores default settings and demo media", async ({ page }) => {
+test("Reset clears the mockup to an empty canvas", async ({ page }) => {
   await page.goto("/");
   await selectFrame(page, "Tablet");
   await page.getByRole("button", { name: "Reset" }).click();
   // Reset opens a confirmation modal; confirm it.
   await page.locator(".modal").getByRole("button", { name: "Reset" }).click();
+  // The scene falls back to the default frame with no layers or media left.
   await expect.poll(() => frameIsActive(page, "iPhone")).toBe("true");
-  await expect(previewMedia(page)).toBeVisible();
+  await expect(previewMedia(page)).toHaveCount(0);
 });
 
 test("Layers panel clears media of the active layer", async ({ page }) => {
@@ -434,10 +444,69 @@ test("video in the frame grid paints below the skin and chrome", async ({ page }
   const frame = page.locator("[data-mockup-frame]").first();
   await expect(frame.locator("video")).toHaveCount(1);
   // Paint order mirrors the canvas export (media → chrome → skin): the video
-  // must come before the chrome host and the device-skin overlay image.
-  const tags = await frame.evaluate((el) => Array.from(el.children).map((c) => c.tagName));
-  expect(tags.indexOf("VIDEO")).toBeGreaterThanOrEqual(0);
-  expect(tags.indexOf("VIDEO")).toBeLessThan(tags.lastIndexOf("IMG"));
+  // must come before the chrome host and the device-skin overlay image. The
+  // video sits inside its media-slot wrapper (the untransformed clipping
+  // frame), so walk the whole subtree via a depth-first tag walk instead of
+  // comparing direct children.
+  const order = await frame.evaluate((el) => {
+    const walk = (node: Element): string[] =>
+      Array.from(node.children).flatMap((c) => [c.tagName, ...walk(c)]);
+    return walk(el);
+  });
+  expect(order.indexOf("VIDEO")).toBeGreaterThanOrEqual(0);
+  expect(order.indexOf("VIDEO")).toBeLessThan(order.lastIndexOf("IMG"));
+});
+
+test("lock screen renders custom notification cards", async ({ page }) => {
+  const scene = {
+    frame: "iphone15",
+    aspectRatio: "9 / 16",
+    backgroundMode: "solid",
+    backgroundColor: "#15151c",
+    layers: [],
+    screen: {
+      enabled: true, theme: "dark", time: "9:41", date: "x", style: "lock",
+      showStatusBar: true, showClock: true, showDate: true, showNotifications: true,
+      notifications: [
+        { app: "Instagram", subtitle: "Liked your post", color: "#e1306c" },
+        { app: "Slack", subtitle: "New message in #design", color: "#4a154b" }
+      ]
+    }
+  };
+  await page.goto(`/en?scene=${encodeURIComponent(JSON.stringify(scene))}`);
+  const frame = page.locator("[data-mockup-frame]").first();
+  const svg = frame.locator("svg").first();
+  const text = (await svg.textContent()) ?? "";
+  expect(text).toContain("Instagram");
+  expect(text).toContain("Liked your post");
+  expect(text).toContain("Slack");
+  expect(text).toContain("New message in #design");
+  // the default Messages/Calendar pair is replaced
+  expect(text).not.toContain("Messages");
+});
+
+test("android home screen renders the app grid and Google search", async ({ page }) => {
+  const scene = {
+    frame: "pixel8pro",
+    aspectRatio: "9 / 16",
+    backgroundMode: "solid",
+    backgroundColor: "#0f2027",
+    layers: [],
+    screen: {
+      enabled: true, theme: "light", time: "9:41", style: "home", os: "android",
+      showStatusBar: true, showDock: true
+    }
+  };
+  await page.goto(`/en?scene=${encodeURIComponent(JSON.stringify(scene))}`);
+  const frame = page.locator("[data-mockup-frame]").first();
+  const svg = frame.locator("svg").first();
+  // Attributes and element tags live in the markup, not in textContent.
+  const markup = (await svg.innerHTML()) ?? "";
+  expect(markup).toContain("Search");
+  expect(markup).toContain('stroke="#4285f4"');
+  // The app grid + dock render as circles (not the iOS squircle dock).
+  expect((markup.match(/<circle /g) || []).length).toBeGreaterThanOrEqual(24);
+  expect(markup).not.toContain('fill="#30d158"');
 });
 
 test("Control panel clears the active layer's media", async ({ page }) => {
@@ -591,10 +660,10 @@ test("undo and redo restore a previous frame choice", async ({ page }) => {
   await selectFrame(page, "Desktop");
   await expect.poll(() => frameIsActive(page, "Desktop")).toBe("true");
 
-  await page.getByRole("button", { name: "Undo" }).click();
+  await page.getByRole("button", { name: "Undo (⌘Z)", exact: true }).click();
   await expect.poll(() => frameIsActive(page, "iPhone")).toBe("true");
 
-  await page.getByRole("button", { name: "Redo" }).click();
+  await page.getByRole("button", { name: "Redo (⇧⌘Z)", exact: true }).click();
   await expect.poll(() => frameIsActive(page, "Desktop")).toBe("true");
 });
 
@@ -654,8 +723,8 @@ test("panels stack and stay within the viewport on a narrow screen", async ({ pa
   // The control panels are reachable by opening their sheets.
   await tabbar.getByRole("button", { name: /Controls/ }).click();
   await expect(page.locator("#control-panel")).toBeVisible();
-  await tabbar.getByRole("button", { name: /Layers/ }).click();
-  await expect(page.getByText("Scene presets")).toBeVisible();
+  await tabbar.getByRole("button", { name: /Panels/ }).click();
+  await expect(page.getByRole("tab", { name: "Scene presets" })).toBeVisible();
   // No horizontal overflow on mobile.
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
   expect(overflow).toBe(true);

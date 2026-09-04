@@ -4,13 +4,16 @@
 }
 
 .tooltip::after {
-  content: attr(data-tooltip);
+  /* No box until hover/focus: an opacity-only hidden tooltip still
+     contributes its box to ancestor scrollable overflow, producing phantom
+     horizontal scrollbars in panels. */
+  content: none;
   position: absolute;
   bottom: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%);
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   background: var(--panel-solid);
   border: 1px solid var(--panel-border);
   color: var(--text);
@@ -20,11 +23,12 @@
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.15s ease;
-  z-index: 100;
+  z-index: var(--z-popover);
   box-shadow: var(--shadow-soft);
 }
 
 .tooltip:hover::after,
 .tooltip:focus-visible::after {
+  content: attr(data-tooltip);
   opacity: 1;
 }

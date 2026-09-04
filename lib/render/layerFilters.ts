@@ -23,6 +23,15 @@ export type LayerFilterKey = keyof typeof LAYER_FILTER_DEFAULTS;
 
 export type LayerFilters = Pick<MediaLayer, "brightness" | "contrast" | "saturate" | "blur" | "grayscale">;
 
+/** Media zoom: scales the media INSIDE the screen (device/bezel stay put).
+ *  Shared by the slider, the renderer clamps and normalizeScene so all
+ *  surfaces agree on the range. */
+export const LAYER_ZOOM = {
+  min: 0.8,
+  max: 3,
+  default: 1
+} as const;
+
 /**
  * Builds a CSS filter string from a layer's filter fields, omitting neutral
  * values so a fully-unfiltered layer gets "none". Shared by the CSS preview

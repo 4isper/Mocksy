@@ -81,10 +81,14 @@ describe("pdfPageSize", () => {
     expect(pdfPageSize(sceneWith())).toEqual({ width: 800, height: 450 });
   });
 
-  it("scales the artboard to fit inside a custom size box", async () => {
+  it("uses the custom size verbatim so the raster fallback is not stretched", async () => {
     const { pdfPageSize } = await import("@/lib/export/exportPdf");
     expect(pdfPageSize(sceneWith(), { width: 1280, height: 720 })).toEqual({ width: 1280, height: 720 });
-    expect(pdfPageSize(sceneWith(), { width: 400, height: 600 })).toEqual({ width: 400, height: 225 });
+    // The page keeps the requested size even when its aspect differs from the
+    // scene's: the raster fallback renders a customSize-canvas (letterboxed),
+    // so scaling the artboard to fit a box instead would stretch the image
+    // when the aspects mismatch.
+    expect(pdfPageSize(sceneWith(), { width: 400, height: 600 })).toEqual({ width: 400, height: 600 });
   });
 
   it("ignores an empty custom size", async () => {

@@ -105,26 +105,30 @@ describe("buildSceneCss", () => {
     const overlay = buildSceneCss(base({ frame: "iphone15" }));
     const cssOnly = buildSceneCss(base({ frame: "none" })).frame;
     expect(overlay.frame.padding).toBe(0);
-    expect(overlay.mediaStyle.position).toBe("absolute");
+    // The media SLOT is the positioned/clipped frame; the media element fills
+    // it and carries the rotate/scale transform.
+    expect(overlay.mediaSlotStyle.position).toBe("absolute");
     // Percent-based inset matching the viewBox cutout (19/393, 19/852).
-    expect(overlay.mediaStyle.left).toBe(`${(19 / 393) * 100}%`);
-    expect(overlay.mediaStyle.top).toBe(`${(19 / 852) * 100}%`);
-    expect(overlay.mediaStyle.width).toBe(`${(355 / 393) * 100}%`);
-    expect(overlay.mediaStyle.height).toBe(`${(814 / 852) * 100}%`);
+    expect(overlay.mediaSlotStyle.left).toBe(`${(19 / 393) * 100}%`);
+    expect(overlay.mediaSlotStyle.top).toBe(`${(19 / 852) * 100}%`);
+    expect(overlay.mediaSlotStyle.width).toBe(`${(355 / 393) * 100}%`);
+    expect(overlay.mediaSlotStyle.height).toBe(`${(814 / 852) * 100}%`);
+    expect(overlay.mediaStyle.width).toBe("100%");
+    expect(overlay.mediaStyle.height).toBe("100%");
     expect(cssOnly.padding).toBe(FRAME_SPECS.none.padding);
   });
 
   it("converts cutout percentages off each skin's own viewBox", () => {
     const macbook = buildSceneCss(base({ frame: "macbook" }));
     expect(macbook.frame.aspectRatio).toBe("1600 / 1074");
-    expect(macbook.mediaStyle.left).toBe(`${(44 / 1600) * 100}%`);
-    expect(macbook.mediaStyle.top).toBe(`${(34 / 1074) * 100}%`);
-    expect(macbook.mediaStyle.width).toBe(`${(1512 / 1600) * 100}%`);
-    expect(macbook.mediaStyle.height).toBe(`${(982 / 1074) * 100}%`);
+    expect(macbook.mediaSlotStyle.left).toBe(`${(44 / 1600) * 100}%`);
+    expect(macbook.mediaSlotStyle.top).toBe(`${(34 / 1074) * 100}%`);
+    expect(macbook.mediaSlotStyle.width).toBe(`${(1512 / 1600) * 100}%`);
+    expect(macbook.mediaSlotStyle.height).toBe(`${(982 / 1074) * 100}%`);
     const imac = buildSceneCss(base({ frame: "imac" }));
     expect(imac.frame.aspectRatio).toBe("1600 / 1420");
-    expect(imac.mediaStyle.left).toBe(`${(70 / 1600) * 100}%`);
-    expect(imac.mediaStyle.top).toBe(`${(80 / 1420) * 100}%`);
+    expect(imac.mediaSlotStyle.left).toBe(`${(70 / 1600) * 100}%`);
+    expect(imac.mediaSlotStyle.top).toBe(`${(80 / 1420) * 100}%`);
   });
 
   it("draws a CSS border for outline frames", () => {
@@ -278,6 +282,28 @@ describe("buildSceneCss", () => {
     expect(defaultCss.screenChrome).not.toContain("12:07");
     expect(overrideCss.screenChrome).toContain("12:07");
     expect(overrideCss.screenChrome).not.toContain("9:41");
+  });
+
+  it("honors a user-set os instead of forcing the frame's OS onto the chrome", () => {
+    // iPhone frame normally resolves to "ios". A user-chosen "android" must be
+    // respected: android renders the dock (shared) but uses a triangular
+    // signal instead of the iOS 4-bar glyphs.
+    const home = base({
+      frame: "iphone15",
+      screen: { ...initialScene.screen, enabled: true, style: "home", os: "android" as const }
+    });
+    const androidCss = buildSceneCss(home);
+    expect(androidCss.screenChrome).toContain("9:41"); // status bar remains
+    // Android uses a filled right-triangle signal (M L L Z), not iOS bars
+    expect(androidCss.screenChrome).toMatch(/<path d="M [\d.]+ [\d.]+ L [\d.]+ [\d.]+ L [\d.]+ [\d.]+ Z"/);
+    // Android home draws a Google search bar + app grid, not the iOS squircle dock.
+    expect(androidCss.screenChrome).toContain('fill="rgba(255,255,255,0.94)"');
+    expect(androidCss.screenChrome).not.toContain('fill="#30d158"');
+
+    // Leaving os unset falls back to the frame's OS (ios for an iPhone).
+    const noOs = base({ frame: "iphone15", screen: { ...initialScene.screen, enabled: true, style: "home" } });
+    const iosCss = buildSceneCss(noOs);
+    expect(iosCss.screenChrome).toContain('fill="#30d158"'); // iOS dock drawn
   });
 });
 

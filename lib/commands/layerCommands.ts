@@ -1,5 +1,6 @@
 import type { Command, EditorScene, MediaType } from "@/lib/types/editor";
-import { blobToDataUrl, detectMediaType } from "@/lib/media/loadFile";
+import { loadMediaFromFile } from "@/lib/media/loadFile";
+import { useEditorStore } from "@/lib/state/editorStore";
 
 export function createLayerCommands(
   t: (key: string, values?: Record<string, string | number | Date>) => string,
@@ -32,13 +33,18 @@ export function createLayerCommands(
         input.onchange = e => {
           const file = (e.target as HTMLInputElement).files?.[0];
           if (!file) return;
-          // Store a self-contained data URL like every other upload path: a
-          // raw `blob:` URL here would die on reload, pin the File in memory
-          // forever, and get revoked out from under the preview by the video
-          // export's cleanup.
-          void blobToDataUrl(file).then(url => {
-            addLayer(url, detectMediaType(file), file.name);
-          });
+          // Route through the shared loader so this path validates the file
+          // exactly like every other upload: unsupported types are rejected,
+          // HEIC is transcoded, oversized images are downscaled. A raw
+          // blobToDataUrl here let HEIC/oversized/unknown files reach the
+          // scene and break preview/export.
+          loadMediaFromFile(file)
+            .then((media) => addLayer(media.url, media.mediaType, media.mediaName))
+            .catch(() => {
+              // Mirrors fileCommands' error surface: a rejected/undecodable
+              // file shows the upload error instead of failing silently.
+              useEditorStore.getState().setMediaUploadError(t("editor.uploadError"));
+            });
         };
         input.click();
       },

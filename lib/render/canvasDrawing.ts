@@ -3,7 +3,7 @@ import type { FrameBox } from "./frameGeometry";
 import { getFrameSpec, frameOs } from "@/lib/render/frames";
 import { createLayerCanvas, layerContext } from "@/lib/render/canvasFactory";
 import { watermarkEdges } from "@/lib/render/watermark";
-import { buildLayerFilterCss } from "@/lib/render/layerFilters";
+import { buildLayerFilterCss, LAYER_ZOOM } from "@/lib/render/layerFilters";
 import { drawTextLayer, isTextLayer } from "@/lib/render/layerText";
 import { drawScreenChrome } from "@/lib/render/screenChrome";
 import { drawBrowserUrl } from "@/lib/render/browserChrome";
@@ -24,6 +24,9 @@ export const RENDER = {
   glassDarkStroke: "rgba(255,255,255,0.15)",
   glassLightStroke: "rgba(255,255,255,0.45)",
   emptyMediaFill: "rgba(255,255,255,0.04)",
+  /** Backdrop painted behind the media itself (zoom < 100% or contain fit can
+   *  leave the screen uncovered). Matches the CSS media element's background. */
+  mediaBackdrop: "#0a0a0a",
   gradientAngleDeg: 120,
   annoShadowBlur: 3,
   annoShadowOffsetY: 1,
@@ -43,6 +46,21 @@ export interface ResolvedFrameStyle {
   stroke: boolean;
   strokeWidth: number;
   strokeStyle: string;
+}
+
+/** One entry of the single-frame media stack: a visible layer and its decoded
+ *  media (null for text layers or failed loads). Mirrors the CSS preview,
+ *  which stacks every visible layer's media element in the media slot. */
+export interface MediaStackEntry {
+  layer: MediaLayer;
+  media: CanvasImageSource | null;
+}
+
+/** Maps a layer's blend mode onto the canvas composite operation that matches
+ *  the CSS preview's mix-blend-mode. */
+function blendCompositeOp(layer: MediaLayer): GlobalCompositeOperation {
+  if (!layer.blendMode || layer.blendMode === "normal") return "source-over";
+  return layer.blendMode;
 }
 
 /**
@@ -180,6 +198,10 @@ export function drawAnnotations(
         ctx.strokeStyle = a.color;
         ctx.fillStyle = a.color;
       }
+      // Without an explicit width the shaft strokes at the ambient 1px
+      // regardless of the user's stroke width (preview/SVG scale it).
+      ctx.lineWidth = Math.max(1, a.strokeWidth * s);
+      ctx.lineCap = "round";
       ctx.beginPath();
       ctx.moveTo(startX, startY);
       ctx.lineTo(endX, endY);
@@ -204,7 +226,10 @@ export function drawWatermark(
 ) {
   if (!scene.watermarkEnabled) return;
   const hasImage = scene.watermarkImageUrl != null;
-  if (!hasImage && !scene.watermarkText) return;
+  // A configured image that failed to load (watermarkImage null) must not fall
+  // through to the text branch — with watermarkText null that would draw the
+  // literal string "null" in the corner.
+  if ((!hasImage || !watermarkImage) && !scene.watermarkText) return;
   const s = overlayScaleFor(width);
   const watermarkSize = scene.watermarkSize * s;
   const inset = RENDER.watermarkInset * s;
@@ -331,6 +356,99 @@ function drawFrameShadow(
   ctx.drawImage(layer as CanvasImageSource, box.x - padX, box.y - padY);
 }
 
+/** Draws one media source with the layer's fit/offset/rotation/filter inside
+ *  the (already clipped) screen rect. Opacity and blend are managed by the
+ *  caller via globalAlpha / globalCompositeOperation. */
+function drawMediaSource(
+  ctx: CanvasRenderingContext2D,
+  layer: MediaLayer | undefined,
+  media: CanvasImageSource,
+  innerX: number,
+  innerY: number,
+  innerW: number,
+  innerH: number
+) {
+  const m = media as { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number; videoWidth?: number; videoHeight?: number };
+  const mw = m.videoWidth || m.naturalWidth || m.width || innerW;
+  const mh = m.videoHeight || m.naturalHeight || m.height || innerH;
+  const fit = layer?.mediaFit ?? "cover";
+  const scale = fit === "contain" ? Math.min(innerW / mw, innerH / mh) : Math.max(innerW / mw, innerH / mh);
+  const offsetX = layer?.mediaOffsetX ?? 0;
+  const offsetY = layer?.mediaOffsetY ?? 0;
+  // Base rect at zoom 1: fit + objectPosition-style pan. This matches the CSS
+  // media element's laid-out (pre-transform) content box.
+  const baseW = mw * scale;
+  const baseH = mh * scale;
+  const baseX = innerX + (innerW - baseW) / 2 + offsetX * (innerW - baseW) / 2;
+  const baseY = innerY + (innerH - baseH) / 2 + offsetY * (innerH - baseH) / 2;
+  // Media zoom (layer.zoom) scales the laid-out media about the screen center,
+  // exactly like the CSS preview's `scale()` on the media element whose box is
+  // the screen rect.
+  const zoom = Math.max(LAYER_ZOOM.min, Math.min(LAYER_ZOOM.max, layer?.zoom ?? 1));
+  const centerX = innerX + innerW / 2;
+  const centerY = innerY + innerH / 2;
+  // Post-zoom pan headroom: offset × (zoom − 1) × half the box. Composes with
+  // the layout pan above exactly like the CSS transform chain R·T·S in
+  // buildSceneCss — without it a fitted axis (cover height on a portrait
+  // screen) could never pan even when zoomed in.
+  const dx = centerX + (baseX - centerX) * zoom + offsetX * (innerW - baseW) / 2 * (zoom - 1);
+  const dy = centerY + (baseY - centerY) * zoom + offsetY * (innerH - baseH) / 2 * (zoom - 1);
+  const dw = baseW * zoom;
+  const dh = baseH * zoom;
+  const rotation = layer?.rotation ?? 0;
+  if (rotation) {
+    // Rotate the media about the inner screen's center so the rotation pivot
+    // matches the CSS preview (transform-origin: center) and stays inside the
+    // rounded-screen clip.
+    ctx.translate(innerX + innerW / 2, innerY + innerH / 2);
+    ctx.rotate((rotation * Math.PI) / 180);
+    ctx.translate(-(innerX + innerW / 2), -(innerY + innerH / 2));
+  }
+  // Backdrop behind the media: with zoom < 100% (or a contain fit) the media
+  // no longer covers the whole screen, so the backdrop shows through — same
+  // as the CSS preview's media element background. Drawn inside the rotation
+  // and under the layer filter, matching how the CSS element's background
+  // composes.
+  ctx.filter = buildLayerFilterCss(layer);
+  ctx.fillStyle = RENDER.mediaBackdrop;
+  ctx.fillRect(innerX, innerY, innerW, innerH);
+  ctx.drawImage(media, dx, dy, dw, dh);
+}
+
+/** Draws the media stack for one frame: every visible layer's media (or text)
+ *  in paint order, each with its own opacity/blend, mirroring how the CSS
+ *  preview stacks the media elements in the media slot. */
+function drawMediaStackEntries(
+  ctx: CanvasRenderingContext2D,
+  entries: MediaStackEntry[],
+  innerX: number,
+  innerY: number,
+  innerW: number,
+  innerH: number
+) {
+  const hasContent = entries.some((e) => e.media != null || isTextLayer(e.layer));
+  if (!hasContent) {
+    ctx.fillStyle = RENDER.emptyMediaFill;
+    ctx.fillRect(innerX, innerY, innerW, innerH);
+    return;
+  }
+  for (const entry of entries) {
+    const entryOpacity = Math.max(0, Math.min(1, (entry.layer.opacity ?? 100) / 100));
+    if (!entry.media && !isTextLayer(entry.layer)) continue;
+    ctx.save();
+    ctx.globalAlpha = entryOpacity;
+    ctx.globalCompositeOperation = blendCompositeOp(entry.layer);
+    if (entry.media) {
+      drawMediaSource(ctx, entry.layer, entry.media, innerX, innerY, innerW, innerH);
+    } else {
+      // Text layers paint styled text instead of media, using the exact layout
+      // the CSS/SVG renderers embed (same constants from layerText.ts).
+      drawTextLayer(ctx, entry.layer, innerX, innerY, innerW, innerH);
+    }
+    ctx.restore();
+  }
+}
+
 export function drawFrameAndMedia(  ctx: CanvasRenderingContext2D,
   scene: EditorScene,
   instSpec: ReturnType<typeof getFrameSpec>,
@@ -340,9 +458,18 @@ export function drawFrameAndMedia(  ctx: CanvasRenderingContext2D,
   zoom: number,
   media: CanvasImageSource | null,
   overlay: CanvasImageSource | null,
-  screen: ScreenChrome = scene.screen
+  screen: ScreenChrome = scene.screen,
+  /** All visible layers' media in paint order (bottom → top). When provided it
+   *  replaces the single `media`/`layer` pair so multi-layer single-frame
+   *  scenes export every layer, matching the live preview. */
+  mediaStack?: MediaStackEntry[]
 ) {
   const { x, y, width: frameW, height: frameH, outerRadius, innerX, innerY, innerW, innerH, innerRadius } = box;
+  // Landscape callers pass the NATIVE-orientation assembly rect as the box
+  // (see renderMockup.renderInstance) so the skin/body/shadow/URL land inside
+  // the rotated context exactly like the preview's rotor; the inner screen
+  // rect is native in both orientations. This alias keeps the intent explicit.
+  const drawBox = box;
   // Overlay screens clip to the skin's squircle cutout so the media fills the
   // transparent hole exactly; CSS-only frames keep the circular clip.
   const cutout = instSpec.isOverlay ? instSpec.cutout : null;
@@ -382,31 +509,22 @@ export function drawFrameAndMedia(  ctx: CanvasRenderingContext2D,
   // Layer opacity applies to the media only — chrome/glare/bezel below stay
   // at full strength, mirroring the CSS preview's per-element opacity.
   const layerOpacity = Math.max(0, Math.min(1, (layer?.opacity ?? 100) / 100));
-  if (media) {
+  if (mediaStack) {
+    // Multi-layer single-frame scene: paint every visible layer in order with
+    // its own opacity/blend, exactly like the preview's media slot.
+    drawMediaStackEntries(ctx, mediaStack, innerX, innerY, innerW, innerH);
+  } else if (media) {
     ctx.globalAlpha = layerOpacity;
-    const m = media as { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number; videoWidth?: number; videoHeight?: number };
-    const mw = m.videoWidth || m.naturalWidth || m.width || innerW;
-    const mh = m.videoHeight || m.naturalHeight || m.height || innerH;
-    const fit = layer?.mediaFit ?? "cover";
-    const scale = fit === "contain" ? Math.min(innerW / mw, innerH / mh) : Math.max(innerW / mw, innerH / mh);
-    const dw = mw * scale;
-    const dh = mh * scale;
-    const offsetX = layer?.mediaOffsetX ?? 0;
-    const offsetY = layer?.mediaOffsetY ?? 0;
-    const dx = innerX + (innerW - dw) / 2 + offsetX * (innerW - dw) / 2;
-    const dy = innerY + (innerH - dh) / 2 + offsetY * (innerH - dh) / 2;
-    const rotation = layer?.rotation ?? 0;
-    if (rotation) {
-      // Rotate the media about the inner screen's center so the rotation pivot
-      // matches the CSS preview (transform-origin: center) and stays inside the
-      // rounded-screen clip.
-      ctx.translate(innerX + innerW / 2, innerY + innerH / 2);
-      ctx.rotate((rotation * Math.PI) / 180);
-      ctx.translate(-(innerX + innerW / 2), -(innerY + innerH / 2));
+    // Blend the media like the preview's mix-blend-mode (canvas composite ops
+    // share the CSS keyword names).
+    if (layer && layer.blendMode && layer.blendMode !== "normal") {
+      ctx.globalCompositeOperation = blendCompositeOp(layer);
     }
-    ctx.filter = buildLayerFilterCss(layer);
-    ctx.drawImage(media, dx, dy, dw, dh);
+    drawMediaSource(ctx, layer, media, innerX, innerY, innerW, innerH);
     ctx.globalAlpha = 1;
+    if (layer && layer.blendMode && layer.blendMode !== "normal") {
+      ctx.globalCompositeOperation = "source-over";
+    }
   } else if (isTextLayer(layer)) {
     // Text layers paint styled text instead of media, using the exact layout
     // the CSS/SVG renderers embed (same constants from layerText.ts).
@@ -424,7 +542,7 @@ export function drawFrameAndMedia(  ctx: CanvasRenderingContext2D,
   if (screen.enabled) {
     ctx.save();
     clipScreen();
-    drawScreenChrome(ctx, { ...screen, os: frameOs(box.frame) }, innerX, innerY, innerW, innerH);
+    drawScreenChrome(ctx, { ...screen, os: screen.os ?? frameOs(box.frame) }, innerX, innerY, innerW, innerH, box.frame);
     ctx.restore();
   }
 
@@ -458,8 +576,9 @@ export function drawFrameAndMedia(  ctx: CanvasRenderingContext2D,
 
   // Browser frame: the URL text sits above the window skin (the skin paints
   // the toolbar and pill; only the text is dynamic). Drawn without shadow so
-  // it stays crisp over the pill.
+  // it stays crisp over the pill. Uses the assembly rect the skin was drawn
+  // with so both stay aligned inside a rotated (landscape) context.
   if (instSpec.urlBar) {
-    drawBrowserUrl(ctx, box, instSpec, scene.browserUrl, scene.browserChromeTheme);
+    drawBrowserUrl(ctx, drawBox, instSpec, scene.browserUrl, scene.browserChromeTheme);
   }
 }

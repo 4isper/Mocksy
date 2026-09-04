@@ -56,6 +56,15 @@ describe("projectsStore", () => {
     expect(useProjectsStore.getState().projects).toHaveLength(1);
   });
 
+  it("hydrate upgrades a legacy single-device scene to one movable instance", () => {
+    const legacy = { ...initialScene, frame: "iphone" as const, frameInstances: [] };
+    storage.setItem("mocksy-projects", JSON.stringify({ projects: [{ id: "p1", name: "One", scene: legacy, updatedAt: 1 }], activeProjectId: "p1" }));
+    const scene = useProjectsStore.getState().hydrate();
+    expect(scene.frameInstances).toHaveLength(1);
+    expect(scene.frameInstances[0]!.frame).toBe("iphone");
+    expect(scene.frameInstances[0]!.layerId).toBe(scene.activeLayerId);
+  });
+
   it("hydrate loads persisted projects and keeps the active id", () => {
     const projects: Project[] = [
       { id: "p1", name: "One", scene: makeDemoScene(), updatedAt: 1 },

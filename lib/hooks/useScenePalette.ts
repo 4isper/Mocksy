@@ -11,7 +11,21 @@ export function useScenePalette(scene: EditorScene, activeLayerId: string | null
 
   // Cache palette results per media URL so we don't re-analyse the same media
   // when it appears in multiple frame instances or across layer switches.
+  // Entries are keyed by the full data: URL (up to megabytes of base64), so an
+  // unbounded map would pin every medium loaded this session until unmount —
+  // LRU-capped like the media element cache in canvasMedia.ts.
   const paletteCacheRef = useRef(new Map<string, PaletteResult>());
+  const PALETTE_CACHE_LIMIT = 16;
+  const cachePalette = useCallback((src: string, result: PaletteResult) => {
+    const cache = paletteCacheRef.current;
+    cache.delete(src);
+    cache.set(src, result);
+    while (cache.size > PALETTE_CACHE_LIMIT) {
+      const oldest = cache.keys().next().value;
+      if (oldest === undefined) break;
+      cache.delete(oldest);
+    }
+  }, []);
 
   // Recompute a merged palette from all visible media, applying area-based
   // weighting in multi-frame mode. Stores a flat hex string array for the
@@ -50,7 +64,7 @@ export function useScenePalette(scene: EditorScene, activeLayerId: string | null
     if (!src) return;
     try {
       const result = extractPalette(el, 5);
-      paletteCacheRef.current.set(src, result);
+      cachePalette(src, result);
     } catch {
       paletteCacheRef.current.delete(src);
     }

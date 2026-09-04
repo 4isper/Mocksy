@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { EditorScene, FrameInstance, MockupFrame } from "@/lib/types/editor";
 import { FRAME_ORDER } from "@/lib/render/frames";
+import { useTouchReorder } from "@/lib/hooks/useTouchReorder";
 
 const frames: Exclude<MockupFrame, "custom">[] = FRAME_ORDER;
 
@@ -15,10 +16,10 @@ interface FrameInstanceListProps {
   selectFrameIds: (ids: string[]) => void;
   toggleFrameSelected: (id: string) => void;
   setFrameInstances: (instances: FrameInstance[]) => void;
-  updateFrameInstance: (id: string, patch: Partial<FrameInstance>) => void;
+  updateFrameInstance: (id: string, patch: Partial<FrameInstance>, coalesce?: boolean | string) => void;
   removeFrameInstance: (id: string) => void;
   addFrameInstance: () => void;
-  reorderFrameInstances: (orderedIds: string[]) => void;
+  reorderFrameInstances: (orderedIds: string[], coalesce?: boolean) => void;
   selectedFrameIds: string[];
 }
 
@@ -39,6 +40,12 @@ export function FrameInstanceList({
   const t = useTranslations();
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  // Touch path: HTML5 DnD never fires on touch, so the card grip drives a
+  // pointer-based reorder with live (coalesced) commits.
+  const touch = useTouchReorder({
+    getIds: () => scene.frameInstances.map((f) => f.id),
+    commit: (ids) => reorderFrameInstances(ids, true)
+  });
 
   const frameLabels: Record<Exclude<MockupFrame, "custom">, string> = {
     none: t("frame.none"),
@@ -85,8 +92,10 @@ export function FrameInstanceList({
               <div
                 key={inst.id}
                 className="frame-card"
+                data-reorder-id={inst.id}
                 data-selected={selected || undefined}
-                data-drag-over={overId === inst.id || undefined}
+                data-drag-over={overId === inst.id || touch.dropTarget?.id === inst.id || undefined}
+                data-dragging={touch.dragId === inst.id || undefined}
                 draggable
                 onDragStart={() => setDragId(inst.id)}
                 onDragEnd={() => { setDragId(null); setOverId(null); }}
@@ -120,6 +129,16 @@ export function FrameInstanceList({
                 }}
               >
                 <div className="frame-card-head">
+                  <span
+                    aria-hidden="true"
+                    className="frame-grip"
+                    onPointerDown={(e) => touch.handleGripPointerDown(e, inst.id)}
+                    onPointerMove={touch.handleGripPointerMove}
+                    onPointerUp={touch.handleGripPointerUp}
+                    onPointerCancel={touch.handleGripPointerUp}
+                  >
+                    ⋮⋮
+                  </span>
                   <input
                     type="checkbox"
                     checked={selected}
@@ -198,21 +217,21 @@ export function FrameInstanceList({
                   <div className="frame-card-body">
                     <label className="range-wrap">
                       <span className="range-label">{t("editor.frameX")}</span>
-                      <input type="range" min={0} max={1} step={0.01} value={inst.x} aria-label={t("editor.frameX")} aria-valuetext={`${Math.round(inst.x * 100)}%`} onChange={(e) => updateFrameInstance(inst.id, { x: Number(e.target.value) })} />
+                      <input type="range" min={0} max={1} step={0.01} value={inst.x} aria-label={t("editor.frameX")} aria-valuetext={`${Math.round(inst.x * 100)}%`} onChange={(e) => updateFrameInstance(inst.id, { x: Number(e.target.value) }, `frameSlider:${inst.id}:x`)} />
                       <span className="range-val">{Math.round(inst.x * 100)}%</span>
                     </label>
                     <label className="range-wrap">
                       <span className="range-label">{t("editor.frameY")}</span>
-                      <input type="range" min={0} max={1} step={0.01} value={inst.y} aria-label={t("editor.frameY")} aria-valuetext={`${Math.round(inst.y * 100)}%`} onChange={(e) => updateFrameInstance(inst.id, { y: Number(e.target.value) })} />
+                      <input type="range" min={0} max={1} step={0.01} value={inst.y} aria-label={t("editor.frameY")} aria-valuetext={`${Math.round(inst.y * 100)}%`} onChange={(e) => updateFrameInstance(inst.id, { y: Number(e.target.value) }, `frameSlider:${inst.id}:y`)} />
                       <span className="range-val">{Math.round(inst.y * 100)}%</span>
                     </label>
                     <label className="range-wrap">
                       <span className="range-label">{t("editor.frameScale")}</span>
-                      <input type="range" min={0.1} max={3} step={0.01} value={inst.scale} aria-label={t("editor.frameScale")} aria-valuetext={`${Math.round(inst.scale * 100)}%`} onChange={(e) => updateFrameInstance(inst.id, { scale: Number(e.target.value) })} />
+                      <input type="range" min={0.1} max={3} step={0.01} value={inst.scale} aria-label={t("editor.frameScale")} aria-valuetext={`${Math.round(inst.scale * 100)}%`} onChange={(e) => updateFrameInstance(inst.id, { scale: Number(e.target.value) }, `frameSlider:${inst.id}:scale`)} />
                       <span className="range-val">{Math.round(inst.scale * 100)}%</span>
                     </label>
                     <label className="range-wrap" style={{ display: "grid", gap: 3 }}>
-                      <span className="text-dim-sm" style={{ fontSize: 11, fontWeight: 600 }}>{t("editor.frameLayer")}</span>
+                      <span className="range-label">{t("editor.frameLayer")}</span>
                       <select
                         value={inst.layerId ?? ""}
                         onChange={(e) => updateFrameInstance(inst.id, { layerId: e.target.value || null })}

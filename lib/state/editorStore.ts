@@ -10,7 +10,7 @@ import { createSceneSlice } from "@/lib/state/editorSlices/sceneSlice";
 import type { EditorStoreState } from "@/lib/state/editorStoreTypes";
 
 export type { EditorStoreState } from "@/lib/state/editorStoreTypes";
-export { initialScene, makeDemoScene } from "@/lib/state/editorScene";
+export { initialScene, makeDemoScene, upgradeLegacySingleFrameScene } from "@/lib/state/editorScene";
 
 /**
  * The single editor store, assembled from domain slices. All scene mutations
@@ -32,6 +32,7 @@ export const useEditorStore = create<EditorStoreState>()((set) => ({
   lastHistoryKey: null,
   lastHistoryAt: 0,
   isMediaLoading: false,
+  mediaLoadingLayerId: null,
   isRemovingBackground: false,
   mediaUploadError: null,
   scenePalette: null,

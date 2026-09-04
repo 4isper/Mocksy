@@ -82,7 +82,7 @@ export interface EditorStoreState {
   rightTab: RightTabId;
   /** Mobile bottom-sheet navigation: which side panel is currently open as a
    *  bottom sheet over the preview (null = preview only). Only meaningful at
-   *  the <=768px breakpoint, where the tab bar replaces the side-by-side
+   *  the <=980px breakpoint, where the tab bar replaces the side-by-side
    *  panels. Pure view state — never persisted or undone. */
   mobileSheet: "controls" | "right" | null;
   /** Groups rapid same-field edits (e.g. slider drags) into one undo step. */
@@ -90,6 +90,9 @@ export interface EditorStoreState {
   lastHistoryAt: number;
   /** True while uploaded media is decoding (between setMedia and onLoad). */
   isMediaLoading: boolean;
+  /** Id of the layer whose media is loading, or null. Lets visibility/
+   *  removal changes orphan the loader element and clear the stuck spinner. */
+  mediaLoadingLayerId: string | null;
   /** True while the AI background removal runs on the active layer (the
    *  first run also downloads the wasm/model assets). Kept out of `scene`. */
   isRemovingBackground: boolean;
@@ -203,7 +206,7 @@ export interface EditorStoreState {
    *  the rest of the scene. */
   setCustomFrame: (customFrame: import("@/lib/types/editor").CustomFrame | null) => void;
   setFrameInstances: (instances: FrameInstance[]) => void;
-  updateFrameInstance: (id: string, patch: Partial<FrameInstance>, coalesce?: boolean) => void;
+  updateFrameInstance: (id: string, patch: Partial<FrameInstance>, coalesce?: boolean | string) => void;
   /** Appends a new frame instance cloned from the active one (or the default
    *  scene frame when none exist yet), so the user can incrementally add
    *  devices instead of only via grid/layout presets or right-click duplicate. */
@@ -217,13 +220,17 @@ export interface EditorStoreState {
   /** Reorders frame instances to match the given id order (used by drag-and-drop
    *  in the frame list). Unknown/missing ids are ignored; every existing id must
    *  appear exactly once in `orderedIds`. */
-  reorderFrameInstances: (orderedIds: string[]) => void;
+  reorderFrameInstances: (orderedIds: string[], coalesce?: boolean) => void;
   layoutFrameGrid: (frame: MockupFrame, count: number, direction: "horizontal" | "vertical") => void;
   applyFrameLayout: (frame: MockupFrame, count: number, layout: import("@/lib/types/editor").LayoutPreset) => void;
   /** Aligns all frame instances to a shared edge/center (one undo step). */
   alignFrameInstances: (mode: import("@/lib/state/frameAlign").FrameAlignMode) => void;
   /** Distributes frame instances with equal gaps along an axis (needs ≥3). */
   distributeFrameInstances: (axis: "horizontal" | "vertical") => void;
+  /** Reflows all frame instances onto a grid for the current aspect ratio,
+   *  preserving frames and layer bindings (one undo step). Rescues scenes
+   *  whose scales belonged to a previous ratio. */
+  fitFramesToCanvas: () => void;
   setStylePreset: (stylePreset: StylePreset) => void;
   setAnimationPreset: (animationPreset: AnimationPreset) => void;
   setAnimationEasing: (animationEasing: AnimationEasing) => void;
@@ -294,6 +301,8 @@ export interface EditorStoreState {
    *  annotations in one undo step. */
   applyAnnotationPatches: (patches: Record<string, Partial<Annotation>>) => void;
   removeAnnotation: (id: string) => void;
+  /** Removes many annotations in a single undo step (multi-select delete). */
+  removeAnnotations: (ids: string[]) => void;
   selectAnnotation: (id: string | null, additive?: boolean) => void;
   selectAnnotations: (ids: string[]) => void;
   selectFrameInstance: (id: string | null) => void;
