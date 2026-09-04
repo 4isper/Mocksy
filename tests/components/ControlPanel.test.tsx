@@ -377,4 +377,41 @@ describe("ControlPanel", () => {
     render(<ControlPanel />);
     expect(screen.getByRole("button", { name: "editor.distributeHorizontal" })).toBeInTheDocument();
   });
+
+  it("renders the four task group headings", () => {
+    render(<ControlPanel />);
+    for (const key of ["editor.groupContent", "editor.groupDevice", "editor.groupAdjust", "editor.groupScene"]) {
+      expect(screen.getByText(key)).toBeInTheDocument();
+    }
+  });
+
+  it("orders sections by group (frame, arrange, screen under Device)", () => {
+    render(<ControlPanel />);
+    const header = (id: string) =>
+      document.querySelector(`button.section-header[aria-controls="section-${id}-body"]`)!;
+    expect(header("frame")).not.toBeNull();
+    const order = ["frame", "arrange", "screen"].map(header);
+    for (let i = 0; i < order.length - 1; i++) {
+      expect(order[i]!.compareDocumentPosition(order[i + 1]!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    }
+  });
+
+  it("opens every member section when filtering by group label", async () => {
+    render(<ControlPanel />);
+    const input = screen.getByRole("textbox", { name: "editor.searchControlsLabel" });
+    await userEvent.type(input, "editor.groupDevice");
+    for (const name of ["editor.frame", "editor.arrange", "editor.screen"]) {
+      expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    }
+    expect(screen.queryByRole("button", { name: "editor.background" })).not.toBeInTheDocument();
+  });
+
+  it("hides groups with no matching sections while filtering", async () => {
+    render(<ControlPanel />);
+    const input = screen.getByRole("textbox", { name: "editor.searchControlsLabel" });
+    await userEvent.type(input, "watermark");
+    // Scene group stays (watermark matches); Device group is gone entirely.
+    expect(screen.getByText("editor.groupScene")).toBeInTheDocument();
+    expect(screen.queryByText("editor.groupDevice")).not.toBeInTheDocument();
+  });
 });

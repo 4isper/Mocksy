@@ -449,7 +449,11 @@
     "screenSectionFolders": "Folders",
     "screenShowAllIcons": "Show all {count} icons",
     "screenResetAll": "Reset all customizations",
-    "canvasControls": "Canvas controls"
+    "canvasControls": "Canvas controls",
+    "groupContent": "Content",
+    "groupDevice": "Device",
+    "groupAdjust": "Adjust",
+    "groupScene": "Scene"
   },
   "frame": {
     "none": "არცერთი",

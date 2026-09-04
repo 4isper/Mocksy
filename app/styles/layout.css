@@ -369,3 +369,20 @@ body.panel-resizing {
   text-transform: uppercase;
   color: var(--text-dim);
 }
+
+/* Control-panel task groups (Content/Device/Adjust/Scene): one step below
+   the panel title in the hierarchy so ten accordions scan as four tasks. */
+.control-group {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.control-group-label {
+  margin: 4px 0 -4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
