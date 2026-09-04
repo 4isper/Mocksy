@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Minus, Plus, Upload, X } from "lucide-react";
-import { useRef, type ChangeEvent } from "react";
+import { useEffect, useRef, type ChangeEvent } from "react";
 import { useTranslations } from "next-intl";
 import { GRID_DIVISION_OPTIONS } from "@/lib/render/grid";
 import {
@@ -237,8 +237,79 @@ export function PreviewDockBar({
   setGridDivisions: (n: number) => void;
 }) {
   const t = useTranslations();
+  const barRef = useRef<HTMLDivElement>(null);
+
+  // The hidden file input is programmatic-only (keyboard users go through the
+  // Upload button), so it never joins the keyboard walk — also keeps
+  // layout-less test DOMs, where hidden nodes are still focusable, honest.
+  const items = () =>
+    barRef.current
+      ? Array.from(
+          barRef.current.querySelectorAll<HTMLElement>(
+            "button:not(:disabled), input:not(:disabled):not([type='file']), select:not(:disabled)"
+          )
+        )
+      : [];
+
+  // Roving tabindex (toolbar pattern, mirrors the right-panel tabs): one Tab
+  // stop for the whole bar, arrows move between controls. Sliders and selects
+  // keep their native arrow behavior. focus() on a CSS-hidden control is a
+  // no-op, so the walk verifies each step and skips ahead (e.g. the %-reset
+  // hidden in the compact phone layout).
+  useEffect(() => {
+    const root = barRef.current;
+    if (!root) return;
+    const paint = () => {
+      const list = items();
+      const active = document.activeElement;
+      const inside = active && root.contains(active);
+      list.forEach((el) => {
+        el.tabIndex = inside ? (el === active ? 0 : -1) : -1;
+      });
+      if (!inside && list.length > 0) list[0]!.tabIndex = 0;
+    };
+    paint();
+    root.addEventListener("focusin", paint);
+    return () => root.removeEventListener("focusin", paint);
+  });
+
+  const moveFocus = (from: number, direction: 1 | -1) => {
+    const list = items();
+    if (list.length === 0) return;
+    let i = from;
+    for (let step = 0; step < list.length; step++) {
+      i = (i + direction + list.length) % list.length;
+      list[i]!.focus();
+      if (document.activeElement === list[i]) return;
+    }
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft" && e.key !== "Home" && e.key !== "End") return;
+    const target = e.target as HTMLElement;
+    if (target.matches('input[type="range"], select')) return;
+    e.preventDefault();
+    const list = items();
+    const idx = list.indexOf(document.activeElement as HTMLElement);
+    if (e.key === "Home") {
+      list[0]?.focus();
+      return;
+    }
+    if (e.key === "End") {
+      list[list.length - 1]?.focus();
+      return;
+    }
+    moveFocus(idx, e.key === "ArrowRight" ? 1 : -1);
+  };
+
   return (
-    <div className="preview-dock-bar" role="toolbar" aria-label={t("editor.canvasControls")}>
+    <div
+      className="preview-dock-bar"
+      ref={barRef}
+      role="toolbar"
+      aria-label={t("editor.canvasControls")}
+      onKeyDown={onKeyDown}
+    >
       <div className="dock-group">
         <PreviewChips
           isMultiFrame={isMultiFrame}

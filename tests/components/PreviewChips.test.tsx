@@ -209,6 +209,42 @@ describe("PreviewDockBar", () => {
     expect(clear.querySelector(".chip-label")).toHaveTextContent("editor.clearMedia");
   });
 
+  it("keeps a single tab stop for the whole bar", () => {
+    render(<PreviewDockBar {...dockProps} />);
+    const stops = document.querySelectorAll('.preview-dock-bar [tabindex="0"]');
+    expect(stops.length).toBe(1);
+  });
+
+  it("moves focus with arrow keys", () => {
+    render(<PreviewDockBar {...dockProps} />);
+    const upload = screen.getByRole("button", { name: "editor.uploadMedia" });
+    const clear = screen.getByRole("button", { name: "editor.clearMedia" });
+    upload.focus();
+    fireEvent.keyDown(upload, { key: "ArrowRight" });
+    expect(clear).toHaveFocus();
+    fireEvent.keyDown(clear, { key: "ArrowLeft" });
+    expect(upload).toHaveFocus();
+  });
+
+  it("jumps to the ends with Home/End", () => {
+    render(<PreviewDockBar {...dockProps} />);
+    const upload = screen.getByRole("button", { name: "editor.uploadMedia" });
+    const grid = screen.getByRole("button", { name: /editor.grid/ });
+    upload.focus();
+    fireEvent.keyDown(upload, { key: "End" });
+    expect(grid).toHaveFocus();
+    fireEvent.keyDown(grid, { key: "Home" });
+    expect(upload).toHaveFocus();
+  });
+
+  it("leaves slider arrows to the slider", () => {
+    render(<PreviewDockBar {...dockProps} />);
+    const slider = screen.getByRole("slider", { name: /editor.previewZoom/ });
+    slider.focus();
+    fireEvent.keyDown(slider, { key: "ArrowRight" });
+    expect(slider).toHaveFocus();
+  });
+
   it("forwards the multi-frame target layer to upload and clear", () => {
     const onFile = vi.fn();
     render(<PreviewDockBar {...dockProps} isMultiFrame targetLayerId="layer-x" onFile={onFile} />);
