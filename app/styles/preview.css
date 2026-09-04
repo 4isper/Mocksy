@@ -100,6 +100,18 @@
   }
 }
 
+/* Ultra-narrow phones (<=360px, e.g. iPhone SE): the compact bar still
+   overflows, so the −/+ steppers go too — the snapping slider covers
+   precise jumps on its own. */
+@media (max-width: 360px) {
+  .preview-dock-bar .preview-zoom-btn {
+    display: none;
+  }
+  .preview-dock-bar .preview-zoom-slider {
+    width: 64px;
+  }
+}
+
 /* ---- View zoom bar (- slider + % Fit) ---- */
 .preview-zoom-bar {
   display: flex;

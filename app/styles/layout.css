@@ -227,7 +227,11 @@ body.panel-resizing {
     background: var(--panel-border-strong);
   }
   .sheet-host--controls .control-panel {
-    height: min(72dvh, 640px);
+    /* Peek height: the sheet stays short enough that the preview canvas
+       above remains visible (and live) while adjusting controls — a full
+       72dvh sheet buried the canvas and forced open-tweak-close loops.
+       Content still scrolls inside with chained scroll contained. */
+    height: min(52dvh, 560px);
     max-height: none;
     overflow-y: auto;
     /* Stop scroll chaining: dragging the panel past its end must not scroll
@@ -235,7 +239,7 @@ body.panel-resizing {
     overscroll-behavior: contain;
   }
   .sheet-host--right .right-panel {
-    height: min(72dvh, 640px);
+    height: min(52dvh, 560px);
     max-height: none;
   }
   .sheet-host--right .right-panel-content {
@@ -248,7 +252,10 @@ body.panel-resizing {
     position: fixed;
     inset: 0;
     z-index: 40;
-    background: rgba(0, 0, 0, 0.45);
+    /* Light dim: the peek sheet leaves the preview visible on purpose, so
+       the backdrop only signals overlay and catches dismiss taps instead
+       of burying the canvas the user is adjusting against. */
+    background: rgba(0, 0, 0, 0.18);
     animation: backdropFadeIn 0.2s ease;
   }
 
